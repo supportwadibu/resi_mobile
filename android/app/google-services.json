@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "985472923092",
+    "firebase_url": "https://resi-5c32a-default-rtdb.firebaseio.com",
+    "project_id": "resi-5c32a",
+    "storage_bucket": "resi-5c32a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985472923092:android:52390589ba919b3bce1241",
+        "android_client_info": {
+          "package_name": "africa.resi.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "985472923092-oo3vruqlgj4jk10o2j8oosss7nh6j2mv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "africa.resi.app",
+            "certificate_hash": "f4166cb5ff6f67b690802ea18608ee38b488beb0"
+          }
+        },
+        {
+          "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7-rB0SVNZ1yjCkNdpZ4VEVZUJg7bKLy8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,91 @@
+name: resi_africa
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.8
+  get_it: ^9.2.1
+  auto_route: ^11.1.0
+  dio: ^5.9.2
+  connectivity_plus: ^7.1.1
+  pretty_dio_logger: ^1.4.0
+  flutter_secure_storage: ^10.3.1
+  easy_localization: ^3.0.8
+  logger: ^2.7.0
+  intl: ^0.20.2
+  font_awesome_flutter: ^11.0.0
+  flutter_svg: ^2.3.0
+  latlong2: ^0.9.1
+  flutter_map: ^8.3.0
+  url_launcher: ^6.3.0
+  image_picker: ^1.2.2
+  shared_preferences: ^2.3.5
+  # L'identité est vérifiée par l'API à partir de l'idToken Google : Firebase
+  # Auth n'intervient pas dans la chaîne, seul `firebase_core` est nécessaire.
+  firebase_core: ^4.13.0
+  google_sign_in: ^6.3.0
+  # Sélecteur de pays local (drapeau + indicatif), aucune requête réseau.
+  country_picker: ^2.0.27
+  lottie: ^3.3.2
+  # Validation des numéros via libphonenumber : les regex maison sur les
+  # numéros ivoiriens sont encore souvent calées sur 8 chiffres, alors que le
+  # plan de numérotation est passé à 10.
+  phone_numbers_parser: ^9.0.5
+  geolocator: ^14.0.3
+  flutter_inappwebview: ^6.1.5
+  # Export du rapport de dépenses : `pdf` compose le document, `printing`
+  # l'ouvre dans la visionneuse système (impression ou partage).
+  pdf: ^3.11.1
+  printing: ^5.13.4
+  # Saisie hors réseau : le carnet, les biens et les réservations en attente
+  # d'envoi sont tenus en base locale. SQLite plutôt qu'un stockage
+  # clé-valeur — la file d'envoi porte de l'argent encaissé et exige des
+  # transactions, et le dédoublonnage par téléphone est une recherche.
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  # Identifiant d'idempotence d'une réservation saisie hors ligne.
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.0
+  auto_route_generator: ^10.5.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logotype.png"
+  min_sdk_android: 21
+  adaptive_icon_background: #FFFFFF
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/translations/en.json
+    - assets/translations/fr.json
+    - assets/icons/
+    - assets/images/
+    - assets/lottie/
+    - assets/images/resi/detail_1.png
+    # Villes indexées par code ISO2 (source dr5hn, découpée par pays) : le
+    # chargement est différé au choix du pays, un fichier par pays.
+    - assets/data/cities/
+    # Communes, indexées par ville. Seules les deux villes autonomes
+    # (Abidjan, Yamoussoukro) en ont : ailleurs le champ ne s'affiche pas.
+    - assets/data/communes/
