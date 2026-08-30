@@ -1,5 +1,41 @@
 import 'package:dio/dio.dart';
 
+/// Extrait les erreurs de validation d'une reponse 422.
+///
+/// Deux formes coexistent et doivent etre lues indifferemment : VineJS renvoie
+/// une **liste** d'objets `{field, message, rule}`, tandis que d'autres points
+/// d'entree renvoient une **map** `champ -> [messages]`. N'en lire qu'une
+/// laissait le message vide, et le refus s'affichait sans rien expliquer.
+Map<String, List<String>> parseValidationErrors(dynamic data) {
+  if (data is! Map) return const {};
+  final errors = data['errors'];
+
+  if (errors is List) {
+    final parsed = <String, List<String>>{};
+    for (final entry in errors) {
+      if (entry is! Map) continue;
+      final field = entry['field']?.toString() ?? '_';
+      final message = entry['message']?.toString();
+      if (message == null) continue;
+      parsed.putIfAbsent(field, () => <String>[]).add(message);
+    }
+    return parsed;
+  }
+
+  if (errors is Map) {
+    return errors.map(
+      (key, value) => MapEntry(
+        key.toString(),
+        value is List
+            ? value.map((e) => e.toString()).toList()
+            : <String>[value.toString()],
+      ),
+    );
+  }
+
+  return const {};
+}
+
 class AppFailure implements Exception {
   const AppFailure._({
     required this.userMessage,
@@ -36,12 +72,7 @@ class AppFailure implements Exception {
         if (code == 404) return AppFailure.notFound();
 
         if (code == 422) {
-          final errors =
-              (data['errors'] as Map<String, dynamic>?)?.map(
-                (k, v) => MapEntry(k, List<String>.from(v as List)),
-              ) ??
-              {};
-          return AppFailure.validation(errors: errors);
+          return AppFailure.validation(errors: parseValidationErrors(data));
         }
 
         return AppFailure.serverError(
@@ -78,8 +109,24 @@ class AppFailure implements Exception {
         debugMessage: 'HTTP $code - $message',
         statusCode: code,
       );
-  factory AppFailure.validation({required Map<String, List<String>> errors}) => AppFailure._(
-        userMessage: errors.values.expand((e) => e).join('\n'),
+  /// Refus de validation du serveur.
+  ///
+  /// `statusCode` est indispensable : sans lui, l'appelant ne distingue pas ce
+  /// refus d'une panne de transport. La creation de reservation lisait alors
+  /// un 422 comme une coupure reseau, mettait la saisie en file et affichait
+  /// un ecran de succes — l'argent etait encaisse, la reservation n'existait
+  /// nulle part, et chaque synchronisation rejouait le meme refus.
+  factory AppFailure.validation({
+    required Map<String, List<String>> errors,
+    int statusCode = 422,
+  }) => AppFailure._(
+        userMessage: errors.isEmpty
+            // Le serveur peut renvoyer ses erreurs sous une forme non reconnue :
+            // mieux vaut un message generique qu'une bulle vide.
+            ? 'Les informations saisies ont ete refusees par le serveur.'
+            : errors.values.expand((e) => e).join('\n'),
+        debugMessage: 'HTTP $statusCode - $errors',
+        statusCode: statusCode,
       );
   factory AppFailure.unexpected({String? message}) => AppFailure._(
         userMessage: 'Une erreur inattendue est survenue.',

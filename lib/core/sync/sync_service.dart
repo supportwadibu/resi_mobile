@@ -205,17 +205,21 @@ class SyncService {
     PendingBooking booking,
     AppFailure failure,
   ) async {
-    final isConflict = _looksLikeConflict(failure);
+    // Un chevauchement comme un refus définitif sortent tous deux de la file :
+    // les rejouer ne changerait rien. Ils passent en conflit, seul état qui
+    // remonte la saisie au propriétaire pour arbitrage.
+    final isBlocking =
+        _looksLikeConflict(failure) || _isPermanentRejection(failure);
 
     await _store.markFailure(
       booking.clientRequestId,
       error: failure.userMessage,
-      status: isConflict
+      status: isBlocking
           ? PendingSyncStatus.conflict
           : PendingSyncStatus.pending,
     );
 
-    return isConflict ? _SendOutcome.conflict : _SendOutcome.retry;
+    return isBlocking ? _SendOutcome.conflict : _SendOutcome.retry;
   }
 
   /// Le serveur répond 409 sur un chevauchement de période.
@@ -224,6 +228,18 @@ class SyncService {
   /// traduit ou reformulé sans préavis.
   static bool _looksLikeConflict(AppFailure failure) =>
       failure.statusCode == 409;
+
+  /// Refus définitif : rejouer la même requête produirait le même refus.
+  ///
+  /// Une réservation refusée pour sa forme (422) ou ses droits (401/403) ne
+  /// doit pas boucler en file : sans cette sortie, elle repartait à chaque
+  /// reconnexion, indéfiniment. Elle reste en base — elle porte de l'argent
+  /// encaissé — mais passe en conflit, à arbitrer par le propriétaire.
+  static bool _isPermanentRejection(AppFailure failure) {
+    final code = failure.statusCode;
+    if (code == null) return false;
+    return code >= 400 && code < 500 && code != 408 && code != 429;
+  }
 }
 
 enum _SendOutcome { sent, conflict, retry }

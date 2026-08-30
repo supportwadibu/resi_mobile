@@ -21,18 +21,11 @@ AppFailure _fromResponse(Response? response) {
     401 => AppFailure.unauthorized(),
     403 => AppFailure.forbidden(),
     404 => AppFailure.notFound(),
-    422 => AppFailure.validation(errors: _parseErrors(data)),
+    422 => AppFailure.validation(errors: parseValidationErrors(data)),
     // `serverError` porte le code : la synchronisation hors ligne distingue un
     // 409 (periode deja reservee, a arbitrer) d'une panne a reessayer.
     _   => AppFailure.serverError(code: status, message: _parseMessage(data)),
   };
-}
-
-Map<String, List<String>> _parseErrors(dynamic data) {
-  if (data is! Map<String, dynamic>) return {};
-  final e = data['errors'];
-  if (e is! Map<String, dynamic>) return {};
-  return e.map((k, v) => MapEntry(k, (v as List).map((x) => x.toString()).toList()));
 }
 
 String? _parseMessage(dynamic d) =>

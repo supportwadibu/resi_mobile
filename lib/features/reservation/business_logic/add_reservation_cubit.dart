@@ -333,9 +333,20 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
   /// Panne de transport, par opposition à un refus métier du serveur.
   ///
-  /// Sans code HTTP, la requête n'a jamais abouti : elle est rejouable.
-  static bool _isNetworkFailure(AppFailure failure) =>
-      failure.statusCode == null;
+  /// Sans code HTTP, la requête n'a jamais abouti : elle est rejouable, et la
+  /// saisie peut rejoindre la file.
+  ///
+  /// Un refus explicite du serveur ne doit **jamais** être mis en file : le
+  /// rejouer produirait indéfiniment le même refus, pendant que l'écran
+  /// annonce un enregistrement. C'est ce qui se produisait sur un 422, dont le
+  /// code HTTP était perdu — la réservation disparaissait en silence alors que
+  /// l'argent était encaissé. Le repli sur `statusCode` seul ne suffit donc
+  /// pas : un refus reconnaissable est écarté explicitement.
+  static bool _isNetworkFailure(AppFailure failure) {
+    final code = failure.statusCode;
+    if (code == null) return true;
+    return code >= 500;
+  }
 
   /// Identifiant de la fiche à rattacher à la réservation.
   ///
