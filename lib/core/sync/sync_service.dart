@@ -59,6 +59,15 @@ class SyncService {
   /// Nombre de conflits à arbitrer.
   final ValueNotifier<int> conflictCount = ValueNotifier(0);
 
+  /// Dernière synchronisation ayant réellement transmis quelque chose.
+  ///
+  /// Le service tourne sans `BuildContext` — il est démarré au `bootstrap` —
+  /// et ne peut donc pas afficher lui-même de message. Il publie son rapport,
+  /// et l'écran qui l'observe s'en charge. Le bandeau d'attente disparaît
+  /// silencieusement quand la file se vide : sans cette annonce, le
+  /// propriétaire ne sait jamais que ses saisies sont bien parties.
+  final ValueNotifier<SyncReport?> lastReport = ValueNotifier(null);
+
   /// Commence à écouter le réseau et tente une première passe.
   Future<void> start() async {
     await refreshCounters();
@@ -76,6 +85,7 @@ class SyncService {
     _subscription = null;
     pendingCount.dispose();
     conflictCount.dispose();
+    lastReport.dispose();
   }
 
   Future<void> refreshCounters() async {
@@ -123,12 +133,19 @@ class SyncService {
   }
 
   Future<SyncReport> _report(int sent, int conflicts, int failed) async {
-    return SyncReport(
+    final report = SyncReport(
       sent: sent,
       conflicts: conflicts,
       failed: failed,
       remaining: await _store.pendingCount(),
     );
+
+    // Une passe qui n'a rien fait — file vide, ou réseau toujours absent — ne
+    // vaut pas d'être annoncée : la synchronisation se déclenche seule à
+    // chaque retour de connexion, et signaler chacune deviendrait du bruit.
+    if (report.hasWork) lastReport.value = report;
+
+    return report;
   }
 
   Future<bool> _isOnline() async {

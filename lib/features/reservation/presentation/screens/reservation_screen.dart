@@ -8,6 +8,7 @@ import '../../../home/presentation/widgets/reservations/reservation_item.dart';
 import '../../business_logic/reservation_cubit.dart';
 import '../../business_logic/reservation_state.dart';
 import '../../data/models/reservation_model.dart';
+import '../widgets/sync_result_listener.dart';
 import '../widgets/sync_status_banner.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -33,31 +34,35 @@ class _ReservationView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('reservation.title'.tr())),
-      body: BlocConsumer<ReservationCubit, ReservationState>(
-        listener: (context, state) {
-          if (state is ReservationError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          }
-        },
-        builder: (context, state) => Column(
-          children: [
-            // Au-dessus de la liste : ce qui n'est pas encore parti doit se
-            // voir avant ce qui est confirmé.
-            const SyncStatusBanner(),
-            Expanded(
-              child: switch (state) {
-                ReservationInitial() => const SizedBox.shrink(),
-                ReservationLoading() => const SimpleListSkeleton(),
-                ReservationError() => ErrorState(
-                  message: state.message,
-                  onRetry: () => context.read<ReservationCubit>().load(),
-                ),
-                ReservationLoaded() => _ReservationList(items: state.items),
-              },
-            ),
-          ],
+      // Sous le `Scaffold` : le message a besoin du `ScaffoldMessenger` de cet
+      // écran pour se poser au-dessus de la liste.
+      body: SyncResultListener(
+        child: BlocConsumer<ReservationCubit, ReservationState>(
+          listener: (context, state) {
+            if (state is ReservationError) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
+            }
+          },
+          builder: (context, state) => Column(
+            children: [
+              // Au-dessus de la liste : ce qui n'est pas encore parti doit se
+              // voir avant ce qui est confirmé.
+              const SyncStatusBanner(),
+              Expanded(
+                child: switch (state) {
+                  ReservationInitial() => const SizedBox.shrink(),
+                  ReservationLoading() => const SimpleListSkeleton(),
+                  ReservationError() => ErrorState(
+                    message: state.message,
+                    onRetry: () => context.read<ReservationCubit>().load(),
+                  ),
+                  ReservationLoaded() => _ReservationList(items: state.items),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
