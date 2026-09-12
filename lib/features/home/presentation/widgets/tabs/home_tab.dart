@@ -11,13 +11,10 @@ import '../home/top_bar_widget.dart';
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key, this.onSeeAllProperties});
 
-  /// Bascule vers l'onglet « Mes biens », piloté par l'écran d'accueil.
   final VoidCallback? onSeeAllProperties;
 
   @override
   Widget build(BuildContext context) {
-    // L'aperçu de l'accueil a son propre cubit : l'onglet « Mes biens » vit
-    // dans une autre branche de l'arbre et n'est pas monté en permanence.
     return BlocProvider(
       create: (_) => sl<PropertyCubit>()..load(),
       child: SingleChildScrollView(

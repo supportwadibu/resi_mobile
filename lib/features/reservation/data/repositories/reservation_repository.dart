@@ -138,6 +138,38 @@ class ReservationRepository {
     }
   }
 
+  /// Prolonge un séjour comptoir.
+  ///
+  /// `receivedAmount` est le montant renégocié ; à défaut, le serveur
+  /// réajuste sur le nouveau montant attendu — laisser l’ancien montant
+  /// ferait apparaître un impayé qui n’existe pas.
+  ///
+  /// Un 409 est un conflit de période : le bien est déjà réservé sur la
+  /// période demandée, à arbitrer par le propriétaire.
+  Future<ReservationModel> extend(
+    String id, {
+    required DateTime checkOutAt,
+    num? receivedAmount,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.proprioBookingExtend(id),
+        data: {
+          'check_out_at': checkOutAt.toUtc().toIso8601String(),
+          // `?` plutôt qu'un `if`, comme à la création : sans la clé, le
+          // serveur réajuste sur le montant attendu.
+          'received_amount': ?receivedAmount,
+        },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
   /// Périodes déjà réservées sur un bien.
   ///
   /// Consultées avant la saisie : le propriétaire doit voir les dates prises

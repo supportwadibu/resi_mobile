@@ -84,10 +84,8 @@ class _HomeScreenState extends State<HomeScreen>
     _menuCtrl.reverse();
   }
 
-  /// Index de l'onglet « Mes biens » dans l'`IndexedStack`.
   static const _propertyTabIndex = 2;
 
-  /// Met l'onglet « Mes biens » en avant.
   void _showProperties() {
     if (_currentIndex == _propertyTabIndex) return;
     setState(() => _currentIndex = _propertyTabIndex);
@@ -97,15 +95,9 @@ class _HomeScreenState extends State<HomeScreen>
     _closeMenu();
     switch (action) {
       case 'add_property':
-        // Au retour du dépôt, l'onglet des biens est mis en avant : sans cela
-        // l'utilisateur revenait sur l'accueil et devait chercher lui-même
-        // l'annonce qu'il venait de créer.
         await context.router.push(const AddPropertyRoute());
         if (mounted) _showProperties();
       case 'add_reservation':
-        // Le mode commande tout le formulaire — date verrouillée et séjour
-        // « en cours » pour un check-in, date au choix sinon : il se demande
-        // donc avant d'ouvrir l'écran, pas au milieu de la saisie.
         final mode = await showReservationModeSheet(context);
         if (mode != null && mounted) {
           if (!context.mounted) return;
@@ -113,8 +105,8 @@ class _HomeScreenState extends State<HomeScreen>
         }
       case 'add_expense':
         context.router.push(AddExpenseRoute());
-      case 'add_client':
-        context.router.push(const AddClientRoute());
+      // case 'add_client':
+      //   context.router.push(const AddClientRoute());
     }
   }
 
@@ -124,7 +116,6 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: AppColors.white,
       body: Stack(
         children: [
-
           SafeArea(
             child: Column(
               children: [

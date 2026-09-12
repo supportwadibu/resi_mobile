@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../../property/business_logic/property_state.dart';
+import '../../../residence/business_logic/residence_cubit.dart';
+import '../../../residence/business_logic/residence_state.dart';
 import '../../business_logic/add_expense_cubit.dart';
 import '../../business_logic/add_expense_state.dart';
 import '../../data/models/expense_model.dart';
@@ -31,6 +33,9 @@ class AddExpenseScreen extends StatelessWidget {
         // Les biens du propriétaire alimentent le sélecteur : une dépense doit
         // être imputée à un bien existant, que l'API vérifie de son côté.
         BlocProvider(create: (_) => sl<PropertyCubit>()..load()),
+        // Les résidences alimentent le second sélecteur : une charge commune —
+        // électricité, gardien — se rattache au lieu et non à un logement.
+        BlocProvider(create: (_) => sl<ResidenceCubit>()..load()),
         BlocProvider(create: (_) => sl<AddExpenseCubit>()),
       ],
       child: _AddExpenseView(expense: expense),
@@ -52,6 +57,14 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   late final TextEditingController _noteController;
 
   String? _propertyId;
+  String? _residenceId;
+
+  /// Charge commune du lieu, plutôt que charge d’un logement.
+  ///
+  /// Porté par l’écran et non déduit des identifiants : le propriétaire choisit
+  /// le type avant la cible, et les deux sélecteurs gardent leur valeur s’il
+  /// revient en arrière.
+  bool _isCommonCharge = false;
   ExpenseCategory? _category;
   late DateTime _spentAt;
 
@@ -68,6 +81,8 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     );
     _noteController = TextEditingController(text: original?.note ?? '');
     _propertyId = original?.propertyId;
+    _residenceId = original?.residenceId;
+    _isCommonCharge = original?.isCommonCharge ?? false;
     _category = original?.category;
     _spentAt = original?.spentAt ?? DateTime.now();
   }
@@ -86,7 +101,12 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   /// Les règles reprennent celles du validateur serveur : mieux vaut un refus
   /// immédiat et situé qu'une erreur 422 après coup.
   String? _validate() {
-    if (_propertyId == null) return 'Choisissez le bien concerné.';
+    if (_isCommonCharge && _residenceId == null) {
+      return 'Choisissez la résidence concernée.';
+    }
+    if (!_isCommonCharge && _propertyId == null) {
+      return 'Choisissez le bien concerné.';
+    }
     if (_category == null) return 'Choisissez une catégorie.';
     if (_amount <= 0) return 'Indiquez un montant supérieur à zéro.';
     return null;
@@ -104,7 +124,8 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
 
     if (original == null) {
       cubit.submit(
-        propertyId: _propertyId!,
+        propertyId: _isCommonCharge ? null : _propertyId,
+        residenceId: _isCommonCharge ? _residenceId : null,
         category: _category!,
         amount: _amount,
         spentAt: _spentAt,
@@ -113,7 +134,8 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     } else {
       cubit.update(
         original: original,
-        propertyId: _propertyId!,
+        propertyId: _isCommonCharge ? null : _propertyId,
+        residenceId: _isCommonCharge ? _residenceId : null,
         category: _category!,
         amount: _amount,
         spentAt: _spentAt,
@@ -186,9 +208,19 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
 
                     const SizedBox(height: 40),
 
-                    const Text("Sélectionner la résidence"),
+                    const Text("Type de dépense"),
                     const SizedBox(height: 10),
-                    _residencePicker(),
+                    _chargeKindPicker(),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      _isCommonCharge
+                          ? "Sélectionner la résidence"
+                          : "Sélectionner le logement",
+                    ),
+                    const SizedBox(height: 10),
+                    if (_isCommonCharge) _residenceTargetPicker() else _residencePicker(),
 
                     const SizedBox(height: 24),
 
@@ -252,6 +284,80 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
             ),
           ),
         );
+      },
+    );
+  }
+
+  /// Choix entre charge d’un logement et charge commune du lieu.
+  ///
+  /// Le type est demandé avant la cible : une charge commune n’a pas de
+  /// logement, et présenter les deux sélecteurs ensemble laisserait croire
+  /// qu’on peut renseigner les deux — ce que le serveur refuse.
+  Widget _chargeKindPicker() {
+    return SegmentedButton<bool>(
+      segments: const [
+        ButtonSegment(
+          value: false,
+          label: Text('Un logement'),
+          icon: Icon(Icons.meeting_room_outlined, size: 18),
+        ),
+        ButtonSegment(
+          value: true,
+          label: Text('Partie commune'),
+          icon: Icon(Icons.apartment_outlined, size: 18),
+        ),
+      ],
+      selected: {_isCommonCharge},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) =>
+          setState(() => _isCommonCharge = selection.first),
+    );
+  }
+
+  /// Sélecteur de résidence, pour une charge commune.
+  ///
+  /// Réutilise `ResidenceDropdown`, dont le nom désigne historiquement un
+  /// sélecteur d’identifiant quelconque et non la notion de résidence.
+  Widget _residenceTargetPicker() {
+    return BlocBuilder<ResidenceCubit, ResidenceState>(
+      builder: (context, state) => switch (state) {
+        ResidenceLoading() || ResidenceInitial() => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Chargement de vos résidences...',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+        ResidenceError(:final message) => Text(
+          message,
+          style: const TextStyle(fontSize: 12, color: Colors.red),
+        ),
+        ResidenceLoaded(:final items) when items.isEmpty => Text(
+          'Créez d’abord une résidence pour y imputer une charge commune.',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        ResidenceLoaded(:final items) => ResidenceDropdown(
+          hint: 'Choisir une résidence',
+          // La résidence d’une dépense en cours d’édition peut avoir été
+          // supprimée : sans ce garde-fou, `DropdownButtonFormField` lèverait
+          // sur une valeur absente de ses éléments.
+          value: items.any((r) => r.id == _residenceId) ? _residenceId : null,
+          residences: [
+            for (final residence in items)
+              ResidenceOption(id: residence.id, label: residence.name),
+          ],
+          onChanged: (value) => setState(() => _residenceId = value),
+        ),
       },
     );
   }

@@ -226,7 +226,13 @@ class _AddReservationViewState extends State<_AddReservationView> {
     final isQueued = state.status == AddReservationStatus.queued;
     if (state.status != AddReservationStatus.success && !isQueued) return;
 
-    context.router.replace(
+    // Le routeur est résolu ici, et non dans les rappels : `replace`
+    // désactive l'élément de cet écran, si bien qu'un `context.router`
+    // évalué plus tard remonterait un ancêtre détruit.
+    final router = context.router;
+    final mode = state.mode;
+
+    router.replace(
       SuccessRoute(
         title: isQueued
             ? 'Enregistrée sur l’appareil'
@@ -240,9 +246,8 @@ class _AddReservationViewState extends State<_AddReservationView> {
             : 'La réservation est confirmée.',
         buttonText: 'Retour à l’accueil',
         secondaryButtonText: 'Nouvelle réservation',
-        onPrimaryAction: () => context.router.replaceAll([const HomeRoute()]),
-        onSecondaryAction: () =>
-            context.router.replace(AddReservationRoute(mode: state.mode)),
+        onPrimaryAction: () => router.replaceAll([const HomeRoute()]),
+        onSecondaryAction: () => router.replace(AddReservationRoute(mode: mode)),
       ),
     );
   }

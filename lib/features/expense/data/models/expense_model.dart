@@ -53,34 +53,91 @@ class ExpenseProperty {
   }
 }
 
-/// Dépense engagée sur un bien, telle que servie par `/proprio/expenses`.
+/// Résidence à laquelle une charge commune est imputée, telle que jointe par
+/// le serveur.
+///
+/// Distincte d’`ExpenseProperty` : une charge commune — électricité, gardien —
+/// ne concerne aucun logement en particulier et se rattache au lieu.
+class ExpenseResidence {
+  const ExpenseResidence({
+    required this.id,
+    required this.name,
+    required this.city,
+  });
+
+  final String id;
+  final String name;
+  final String city;
+
+  factory ExpenseResidence.fromJson(Map<String, dynamic> json) {
+    return ExpenseResidence(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+    );
+  }
+}
+
+/// Dépense engagée sur un bien ou sur une résidence, telle que servie par
+/// `/proprio/expenses`.
+///
+/// **Exactement un** des deux rattachements est renseigné : `propertyId` pour
+/// la charge d’un logement, `residenceId` pour une charge commune du lieu.
+/// Aucun des deux n’est donc garanti non nul — s’appuyer sur `propertyId` seul
+/// afficherait une charge commune sans libellé.
 class ExpenseModel {
   const ExpenseModel({
     required this.id,
-    required this.propertyId,
     required this.category,
     required this.amount,
     required this.spentAt,
+    this.propertyId,
+    this.residenceId,
     this.property,
+    this.residence,
     this.note,
   });
 
   final String id;
-  final String propertyId;
+
+  /// `null` pour une charge commune de résidence.
+  final String? propertyId;
+
+  /// `null` pour une charge de logement.
+  final String? residenceId;
   final ExpenseCategory category;
   final double amount;
 
   /// Date d'engagement de la dépense, distincte de celle de la saisie.
   final DateTime spentAt;
 
-  /// `null` si le bien a été supprimé depuis la saisie.
+  /// `null` si le bien a été supprimé depuis la saisie, ou si la dépense est
+  /// une charge commune.
   final ExpenseProperty? property;
+
+  /// `null` si la résidence a été supprimée depuis, ou si la dépense porte sur
+  /// un logement.
+  final ExpenseResidence? residence;
   final String? note;
+
+  /// Vrai pour une charge commune du lieu, réparties sur aucune unité.
+  bool get isCommonCharge => residenceId != null;
+
+  /// Libellé de la cible, quel que soit son type.
+  ///
+  /// Une cible supprimée depuis la saisie ne laisse qu’un identifiant : le
+  /// repli évite d’afficher une ligne vide dans l’historique.
+  String get targetLabel {
+    if (residence != null) return residence!.name;
+    if (property != null) return property!.title;
+    return isCommonCharge ? 'Résidence supprimée' : 'Bien supprimé';
+  }
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
     return ExpenseModel(
       id: json['id'] as String? ?? '',
-      propertyId: json['property_id'] as String? ?? '',
+      propertyId: json['property_id'] as String?,
+      residenceId: json['residence_id'] as String?,
       category:
           ExpenseCategory.fromCode(json['category'] as String?) ??
           ExpenseCategory.other,
@@ -90,6 +147,9 @@ class ExpenseModel {
           DateTime.now(),
       property: json['property'] is Map<String, dynamic>
           ? ExpenseProperty.fromJson(json['property'] as Map<String, dynamic>)
+          : null,
+      residence: json['residence'] is Map<String, dynamic>
+          ? ExpenseResidence.fromJson(json['residence'] as Map<String, dynamic>)
           : null,
       note: json['note'] as String?,
     );
@@ -114,23 +174,39 @@ String formatApiDate(DateTime date) {
 }
 
 /// Charge utile de création, distincte du modèle de lecture.
+///
+/// Les deux constructeurs nommés rendent l’exclusivité impossible à violer :
+/// le serveur refuse en 422 une dépense sans cible ou portant les deux, et un
+/// seul champ optionnel laisserait l’appelant construire les deux cas fautifs.
 class CreateExpensePayload {
-  const CreateExpensePayload({
-    required this.propertyId,
+  /// Charge d’un logement : ménage, réparation.
+  const CreateExpensePayload.forProperty({
+    required String this.propertyId,
     required this.category,
     required this.amount,
     required this.spentAt,
     this.note,
-  });
+  }) : residenceId = null;
 
-  final String propertyId;
+  /// Charge commune du lieu : électricité, gardien. Répartie sur aucune unité.
+  const CreateExpensePayload.forResidence({
+    required String this.residenceId,
+    required this.category,
+    required this.amount,
+    required this.spentAt,
+    this.note,
+  }) : propertyId = null;
+
+  final String? propertyId;
+  final String? residenceId;
   final ExpenseCategory category;
   final double amount;
   final DateTime spentAt;
   final String? note;
 
   Map<String, dynamic> toJson() => {
-    'property_id': propertyId,
+    if (propertyId != null) 'property_id': propertyId,
+    if (residenceId != null) 'residence_id': residenceId,
     'category': category.code,
     'amount': amount,
     'spent_at': formatApiDate(spentAt),
@@ -143,16 +219,46 @@ class CreateExpensePayload {
 /// Seules les clés fournies partent : l'API applique un patch partiel, et
 /// envoyer un champ inchangé risquerait d'écraser une valeur modifiée ailleurs.
 class UpdateExpensePayload {
+  /// Modification sans changer le rattachement.
   const UpdateExpensePayload({
-    this.propertyId,
     this.category,
     this.amount,
     this.spentAt,
     this.note,
     this.clearNote = false,
-  });
+  }) : propertyId = null,
+       residenceId = null,
+       _switchesTarget = false;
+
+  /// Bascule la dépense vers un logement.
+  ///
+  /// Les deux clés partent ensemble, celle de la résidence à `null` : le serveur
+  /// valide le rattachement *résultant*, et poser la nouvelle cible sans
+  /// effacer l’ancienne ferait coexister les deux — la dépense serait alors
+  /// comptée deux fois dans un relevé de résidence.
+  const UpdateExpensePayload.toProperty(
+    String this.propertyId, {
+    this.category,
+    this.amount,
+    this.spentAt,
+    this.note,
+    this.clearNote = false,
+  }) : residenceId = null,
+       _switchesTarget = true;
+
+  /// Bascule la dépense vers une charge commune de résidence.
+  const UpdateExpensePayload.toResidence(
+    String this.residenceId, {
+    this.category,
+    this.amount,
+    this.spentAt,
+    this.note,
+    this.clearNote = false,
+  }) : propertyId = null,
+       _switchesTarget = true;
 
   final String? propertyId;
+  final String? residenceId;
   final ExpenseCategory? category;
   final double? amount;
   final DateTime? spentAt;
@@ -162,8 +268,20 @@ class UpdateExpensePayload {
   /// faut un signal distinct pour la vider.
   final bool clearNote;
 
+  /// Distingue « je ne touche pas au rattachement » de « je le change ».
+  ///
+  /// Sans ce drapeau, les deux constructeurs de bascule seraient
+  /// indiscernables du constructeur simple : leurs champs non retenus valent
+  /// `null`, qui signifie déjà « ne pas toucher ».
+  final bool _switchesTarget;
+
   Map<String, dynamic> toJson() => {
-    if (propertyId != null) 'property_id': propertyId,
+    // Les deux clés voyagent ensemble, `null` compris : c’est ce `null` qui
+    // efface l’ancien rattachement côté serveur.
+    if (_switchesTarget) ...{
+      'property_id': propertyId,
+      'residence_id': residenceId,
+    },
     if (category != null) 'category': category!.code,
     if (amount != null) 'amount': amount,
     if (spentAt != null) 'spent_at': formatApiDate(spentAt!),

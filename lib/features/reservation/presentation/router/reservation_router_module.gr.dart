@@ -10,11 +10,11 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:auto_route/auto_route.dart' as _i5;
-import 'package:flutter/material.dart' as _i6;
+import 'package:flutter/material.dart' as _i7;
 import 'package:resi_africa/features/reservation/business_logic/add_reservation_state.dart'
-    as _i8;
+    as _i6;
 import 'package:resi_africa/features/reservation/data/models/reservation_model.dart'
-    as _i7;
+    as _i8;
 import 'package:resi_africa/features/reservation/presentation/screens/add_reservation.dart'
     as _i1;
 import 'package:resi_africa/features/reservation/presentation/screens/details_reservation_screen.dart'
@@ -28,12 +28,12 @@ import 'package:resi_africa/features/reservation/presentation/screens/stay_exten
 /// [_i1.AddReservationScreen]
 class AddReservationRoute extends _i5.PageRouteInfo<AddReservationRouteArgs> {
   AddReservationRoute({
-    _i6.Key? key,
-    _i8.ReservationMode mode = _i8.ReservationMode.checkIn,
+    _i6.ReservationMode mode = _i6.ReservationMode.checkIn,
+    _i7.Key? key,
     List<_i5.PageRouteInfo>? children,
   }) : super(
          AddReservationRoute.name,
-         args: AddReservationRouteArgs(key: key, mode: mode),
+         args: AddReservationRouteArgs(mode: mode, key: key),
          initialChildren: children,
        );
 
@@ -45,25 +45,35 @@ class AddReservationRoute extends _i5.PageRouteInfo<AddReservationRouteArgs> {
       final args = data.argsAs<AddReservationRouteArgs>(
         orElse: () => const AddReservationRouteArgs(),
       );
-      return _i1.AddReservationScreen(key: args.key, mode: args.mode);
+      return _i1.AddReservationScreen(mode: args.mode, key: args.key);
     },
   );
 }
 
 class AddReservationRouteArgs {
   const AddReservationRouteArgs({
+    this.mode = _i6.ReservationMode.checkIn,
     this.key,
-    this.mode = _i8.ReservationMode.checkIn,
   });
 
-  final _i6.Key? key;
+  final _i6.ReservationMode mode;
 
-  final _i8.ReservationMode mode;
+  final _i7.Key? key;
 
   @override
   String toString() {
-    return 'AddReservationRouteArgs{key: $key, mode: $mode}';
+    return 'AddReservationRouteArgs{mode: $mode, key: $key}';
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AddReservationRouteArgs) return false;
+    return mode == other.mode && key == other.key;
+  }
+
+  @override
+  int get hashCode => mode.hashCode ^ key.hashCode;
 }
 
 /// generated route for
@@ -71,8 +81,8 @@ class AddReservationRouteArgs {
 class DetailsReservationRoute
     extends _i5.PageRouteInfo<DetailsReservationRouteArgs> {
   DetailsReservationRoute({
-    _i6.Key? key,
-    required _i7.ReservationModel reservation,
+    _i7.Key? key,
+    required _i8.ReservationModel reservation,
     List<_i5.PageRouteInfo>? children,
   }) : super(
          DetailsReservationRoute.name,
@@ -97,9 +107,9 @@ class DetailsReservationRoute
 class DetailsReservationRouteArgs {
   const DetailsReservationRouteArgs({this.key, required this.reservation});
 
-  final _i6.Key? key;
+  final _i7.Key? key;
 
-  final _i7.ReservationModel reservation;
+  final _i8.ReservationModel reservation;
 
   @override
   String toString() {
@@ -137,8 +147,8 @@ class ReservationRoute extends _i5.PageRouteInfo<void> {
 /// [_i4.StayExtensionScreen]
 class StayExtensionRoute extends _i5.PageRouteInfo<StayExtensionRouteArgs> {
   StayExtensionRoute({
-    _i6.Key? key,
-    required _i7.ReservationModel reservation,
+    _i7.Key? key,
+    required _i8.ReservationModel reservation,
     List<_i5.PageRouteInfo>? children,
   }) : super(
          StayExtensionRoute.name,
@@ -163,9 +173,9 @@ class StayExtensionRoute extends _i5.PageRouteInfo<StayExtensionRouteArgs> {
 class StayExtensionRouteArgs {
   const StayExtensionRouteArgs({this.key, required this.reservation});
 
-  final _i6.Key? key;
+  final _i7.Key? key;
 
-  final _i7.ReservationModel reservation;
+  final _i8.ReservationModel reservation;
 
   @override
   String toString() {

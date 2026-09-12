@@ -138,7 +138,16 @@ class ReservationLocalStore {
   /// Remplacement et non fusion : un bien supprimé côté serveur doit
   /// disparaître du sélecteur, sans quoi le propriétaire pourrait réserver un
   /// logement qu'il ne possède plus.
-  Future<void> replaceProperties(List<PropertyModel> properties) async {
+  /// Refait le cache des biens.
+  ///
+  /// [residenceNames] associe un identifiant de résidence à son nom. Le nom
+  /// est recopié sur chaque ligne plutôt que lu par jointure : le sélecteur
+  /// hors ligne doit afficher « Resi Adja › Studio 1 » sans dépendre d’une
+  /// seconde table, que rien ne garantit peuplée.
+  Future<void> replaceProperties(
+    List<PropertyModel> properties, {
+    Map<String, String> residenceNames = const {},
+  }) async {
     final db = await _db;
     final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -149,13 +158,21 @@ class ReservationLocalStore {
           'id': property.id,
           'title': property.title,
           'daily_price': property.pricing.dailyPrice,
-          // Seuls ces trois champs servent au formulaire hors ligne : la
-          // fiche complète du bien reste au serveur, et la recopier ici
-          // obligerait à migrer le cache à chaque évolution de l'API.
+          // Le rattachement suit le bien : sans lui, la saisie hors ligne
+          // proposerait trois « Studio 1 » indiscernables dès que le
+          // propriétaire gère plusieurs résidences.
+          'residence_id': property.residenceId,
+          'residence_name': residenceNames[property.residenceId],
+          'unit_label': property.unitLabel,
+          // Seuls ces champs servent au formulaire hors ligne : la fiche
+          // complète du bien reste au serveur, et la recopier ici obligerait
+          // à migrer le cache à chaque évolution de l'API.
           'payload': jsonEncode({
             'id': property.id,
             'title': property.title,
             'daily_price': property.pricing.dailyPrice,
+            'residence_id': property.residenceId,
+            'unit_label': property.unitLabel,
           }),
           'synced_at': now,
         });
@@ -497,17 +514,45 @@ class CachedProperty {
     required this.id,
     required this.title,
     required this.dailyPrice,
+    this.residenceId,
+    this.residenceName,
+    this.unitLabel,
   });
 
   final String id;
   final String title;
   final double dailyPrice;
 
+  /// `null` pour un bien autonome — y compris sur les lignes écrites avant la
+  /// version 2 du schéma, que la migration laisse à `NULL`.
+  final String? residenceId;
+
+  /// Nom de la résidence, recopié pour que le sélecteur hors ligne ne dépende
+  /// pas d’une seconde table.
+  final String? residenceName;
+  final String? unitLabel;
+
+  /// Libellé affiché par le sélecteur : « Resi Adja › Studio 1 ».
+  ///
+  /// Le titre de l’annonce sert de repli quand l’unité n’est pas nommée, et
+  /// reste seul pour un bien autonome.
+  String get displayLabel {
+    final unit = unitLabel?.trim();
+    final residence = residenceName?.trim();
+
+    if (residence == null || residence.isEmpty) return title;
+    if (unit == null || unit.isEmpty) return '$residence › $title';
+    return '$residence › $unit';
+  }
+
   factory CachedProperty.fromRow(Map<String, Object?> row) {
     return CachedProperty(
       id: row['id'] as String,
       title: row['title'] as String,
       dailyPrice: (row['daily_price'] as num?)?.toDouble() ?? 0,
+      residenceId: row['residence_id'] as String?,
+      residenceName: row['residence_name'] as String?,
+      unitLabel: row['unit_label'] as String?,
     );
   }
 }

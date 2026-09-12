@@ -30,7 +30,7 @@ CreateExpensePayload _payload({
   double amount = 25000,
   String? note,
 }) {
-  return CreateExpensePayload(
+  return CreateExpensePayload.forProperty(
     propertyId: 'prop_1',
     category: category,
     amount: amount,

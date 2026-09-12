@@ -11,6 +11,10 @@ import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/filter_bottom_sheet.dart';
 import 'package:resi_africa/shared/widgets/property_card.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
+import '../../../../../core/error/failures.dart';
+import '../../../../residence/data/models/residence_model.dart';
+import '../../../../residence/data/repositories/residence_repository.dart';
+import '../../../../residence/presentation/widgets/attach_residence_sheet.dart';
 
 /// Onglet « Mes biens » : les annonces du propriétaire connecté.
 class PropertyTab extends StatelessWidget {
@@ -212,6 +216,7 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
         data: propertyCardData(items[i]),
         isListMode: false,
         onTap: () => _openDetail(items[i]),
+        onLongPress: () => _attachResidence(items[i]),
         onDelete: () => _confirmDelete(items[i]),
         onShare: () {},
       ),
@@ -228,6 +233,7 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
         data: propertyCardData(items[i]),
         isListMode: true,
         onTap: () => _openDetail(items[i]),
+        onLongPress: () => _attachResidence(items[i]),
         onDelete: () => _confirmDelete(items[i]),
         onShare: () {},
       ),
@@ -238,6 +244,55 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
   Future<void> _openDetail(PropertyModel property) async {
     await context.router.push(PropertyDetailRoute(property: property));
     if (mounted) context.read<PropertyCubit>().load();
+  }
+
+  /// Rattache le bien à une résidence, ou l’en détache.
+  ///
+  /// Appui long plutôt qu’un bouton : l’action est occasionnelle, et la carte
+  /// est déjà dense. Les résidences sont lues à l’ouverture, la feuille devant
+  /// proposer la liste à jour.
+  Future<void> _attachResidence(PropertyModel property) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final repository = sl<ResidenceRepository>();
+
+    List<ResidenceModel> residences;
+    try {
+      residences = await repository.getAllResidences();
+    } on AppFailure catch (f) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
+      return;
+    }
+
+    if (!mounted) return;
+
+    final result = await showModalBottomSheet<AttachResidenceResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => AttachResidenceSheet(
+        residences: residences,
+        propertyTitle: property.title,
+        currentResidenceId: property.residenceId,
+        currentUnitLabel: property.unitLabel,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    try {
+      await repository.attachToResidence(
+        property.id,
+        residenceId: result.residenceId,
+        unitLabel: result.unitLabel,
+        copyAddress: result.copyAddress,
+      );
+      if (mounted) context.read<PropertyCubit>().load();
+    } on AppFailure catch (f) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
+    }
   }
 
   void _confirmDelete(PropertyModel property) {

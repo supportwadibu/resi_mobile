@@ -5,18 +5,35 @@ import '../data/models/expense_model.dart';
 /// Regroupés en un objet : ils voyagent ensemble du cubit à la feuille de
 /// filtres, et les passer un par un multiplierait les signatures.
 class ExpenseFilters {
-  const ExpenseFilters({this.propertyId, this.category, this.from, this.to});
+  const ExpenseFilters({
+    this.propertyId,
+    this.residenceId,
+    this.category,
+    this.from,
+    this.to,
+  });
 
   final String? propertyId;
+
+  /// Restreint aux charges communes d’une résidence.
+  ///
+  /// Ne se combine pas utilement avec [propertyId] : une dépense ne porte
+  /// jamais les deux rattachements.
+  final String? residenceId;
   final ExpenseCategory? category;
   final DateTime? from;
   final DateTime? to;
 
   bool get isEmpty =>
-      propertyId == null && category == null && from == null && to == null;
+      propertyId == null &&
+      residenceId == null &&
+      category == null &&
+      from == null &&
+      to == null;
 
   int get activeCount => [
     propertyId,
+    residenceId,
     category,
     // Une plage de dates compte pour un seul filtre : elle se règle d'un geste.
     from ?? to,
@@ -24,15 +41,18 @@ class ExpenseFilters {
 
   ExpenseFilters copyWith({
     String? propertyId,
+    String? residenceId,
     ExpenseCategory? category,
     DateTime? from,
     DateTime? to,
     bool clearProperty = false,
+    bool clearResidence = false,
     bool clearCategory = false,
     bool clearRange = false,
   }) {
     return ExpenseFilters(
       propertyId: clearProperty ? null : propertyId ?? this.propertyId,
+      residenceId: clearResidence ? null : residenceId ?? this.residenceId,
       category: clearCategory ? null : category ?? this.category,
       from: clearRange ? null : from ?? this.from,
       to: clearRange ? null : to ?? this.to,

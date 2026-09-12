@@ -14,24 +14,38 @@ class AddExpenseCubit extends Cubit<AddExpenseState> {
 
   final ExpenseRepository _repository;
 
+  /// Enregistre une dépense.
+  ///
+  /// Exactement un de [propertyId] et [residenceId] doit être fourni : une
+  /// charge de logement, ou une charge commune du lieu. Le serveur refuse en
+  /// 422 les deux autres cas.
   Future<void> submit({
-    required String propertyId,
     required ExpenseCategory category,
     required double amount,
     required DateTime spentAt,
+    String? propertyId,
+    String? residenceId,
     String? note,
   }) async {
     emit(const AddExpenseSubmitting());
 
     try {
       final expense = await _repository.create(
-        CreateExpensePayload(
-          propertyId: propertyId,
-          category: category,
-          amount: amount,
-          spentAt: spentAt,
-          note: note,
-        ),
+        residenceId != null
+            ? CreateExpensePayload.forResidence(
+                residenceId: residenceId,
+                category: category,
+                amount: amount,
+                spentAt: spentAt,
+                note: note,
+              )
+            : CreateExpensePayload.forProperty(
+                propertyId: propertyId ?? '',
+                category: category,
+                amount: amount,
+                spentAt: spentAt,
+                note: note,
+              ),
       );
 
       if (!isClosed) emit(AddExpenseSuccess(expense));
@@ -46,27 +60,59 @@ class AddExpenseCubit extends Cubit<AddExpenseState> {
   /// bougé évite d'écraser un champ qu'un autre appareil vient de changer.
   Future<void> update({
     required ExpenseModel original,
-    required String propertyId,
     required ExpenseCategory category,
     required double amount,
     required DateTime spentAt,
+    String? propertyId,
+    String? residenceId,
     String? note,
   }) async {
     final trimmedNote = note?.trim() ?? '';
     final previousNote = original.note?.trim() ?? '';
 
-    final payload = UpdateExpensePayload(
-      propertyId: propertyId == original.propertyId ? null : propertyId,
-      category: category == original.category ? null : category,
-      amount: amount == original.amount ? null : amount,
-      spentAt: _sameDay(spentAt, original.spentAt) ? null : spentAt,
-      note: trimmedNote == previousNote || trimmedNote.isEmpty
-          ? null
-          : trimmedNote,
-      // Une note effacée doit être transmise explicitement : `null` seul
-      // signifierait « inchangée ».
-      clearNote: previousNote.isNotEmpty && trimmedNote.isEmpty,
-    );
+    final changedCategory = category == original.category ? null : category;
+    final changedAmount = amount == original.amount ? null : amount;
+    final changedSpentAt = _sameDay(spentAt, original.spentAt) ? null : spentAt;
+    final changedNote = trimmedNote == previousNote || trimmedNote.isEmpty
+        ? null
+        : trimmedNote;
+    // Une note effacée doit être transmise explicitement : `null` seul
+    // signifierait « inchangée ».
+    final clearNote = previousNote.isNotEmpty && trimmedNote.isEmpty;
+
+    // La bascule de cible passe par un constructeur dédié, qui envoie les deux
+    // clés ensemble : le serveur valide le rattachement résultant, et poser la
+    // nouvelle cible sans effacer l’ancienne les ferait coexister.
+    final movesToResidence =
+        residenceId != null && residenceId != original.residenceId;
+    final movesToProperty =
+        propertyId != null && propertyId != original.propertyId;
+
+    final payload = movesToResidence
+        ? UpdateExpensePayload.toResidence(
+            residenceId,
+            category: changedCategory,
+            amount: changedAmount,
+            spentAt: changedSpentAt,
+            note: changedNote,
+            clearNote: clearNote,
+          )
+        : movesToProperty
+            ? UpdateExpensePayload.toProperty(
+                propertyId,
+                category: changedCategory,
+                amount: changedAmount,
+                spentAt: changedSpentAt,
+                note: changedNote,
+                clearNote: clearNote,
+              )
+            : UpdateExpensePayload(
+                category: changedCategory,
+                amount: changedAmount,
+                spentAt: changedSpentAt,
+                note: changedNote,
+                clearNote: clearNote,
+              );
 
     if (payload.isEmpty) {
       // Rien n'a changé : inutile d'appeler l'API, mais l'écran doit se fermer

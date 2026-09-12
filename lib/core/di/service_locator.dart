@@ -16,6 +16,8 @@ import 'package:resi_africa/features/auth/data/services/property_manager_service
 import 'package:resi_africa/features/expense/business_logic/add_expense_cubit.dart';
 import 'package:resi_africa/features/expense/business_logic/expense_cubit.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
+import 'package:resi_africa/features/residence/business_logic/residence_cubit.dart';
+import 'package:resi_africa/features/residence/data/repositories/residence_repository.dart';
 import 'package:resi_africa/features/property/business_logic/create_property_cubit.dart';
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/data/repositories/property_repository.dart';
@@ -98,6 +100,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
     () => ReservationLocalStore(AppDatabase.instance),
   );
   sl.registerLazySingleton(() => ExpenseRepository(sl<Dio>()));
+  sl.registerLazySingleton(() => ResidenceRepository(sl<Dio>()));
   sl.registerLazySingleton(() => FinanceRepository(sl<Dio>()));
 
   // Services
@@ -137,7 +140,11 @@ Future<void> setupServiceLocator(AppConfig config) async {
     () => OwnerProfileCubit(sl<PropertyManagerService>()),
   );
   sl.registerFactory(
-    () => PropertyCubit(sl<PropertyRepository>(), sl<ReservationLocalStore>()),
+    () => PropertyCubit(
+      sl<PropertyRepository>(),
+      sl<ReservationLocalStore>(),
+      sl<ResidenceRepository>(),
+    ),
   );
   sl.registerFactory(() => CreatePropertyCubit(sl<PropertyRepository>()));
   sl.registerFactory(() => ReservationCubit(sl<ReservationRepository>()));
@@ -157,5 +164,6 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerFactory(() => ExpenseCubit(sl<ExpenseRepository>()));
   sl.registerFactory(() => AddExpenseCubit(sl<ExpenseRepository>()));
+  sl.registerFactory(() => ResidenceCubit(sl<ResidenceRepository>()));
   sl.registerFactory(() => FinanceCubit(sl<FinanceRepository>()));
 }

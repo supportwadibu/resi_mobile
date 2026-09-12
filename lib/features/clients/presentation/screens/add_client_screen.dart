@@ -44,6 +44,7 @@ class _AddClientView extends StatelessWidget {
           );
           Navigator.pop(context);
         }
+
         if (state.status == AddClientStatus.error) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

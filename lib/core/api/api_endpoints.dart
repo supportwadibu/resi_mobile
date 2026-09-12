@@ -30,6 +30,20 @@ abstract final class ApiEndpoints {
   /// Séparé de la création : le secret Cloudinary ne quittant pas le serveur,
   /// l'upload direct depuis le mobile est exclu.
   static const String proprioPropertyImages = '$_v1/proprio/properties/images';
+  /// Résidences du propriétaire : des lieux regroupant plusieurs logements.
+  /// `GET` pour lister, `POST` pour créer.
+  static const String proprioResidences = '$_v1/proprio/residences';
+
+  static String proprioResidence(String id) =>
+      '$_v1/proprio/residences/$id';
+
+  /// Rattache un bien à une résidence, ou l’en détache avec
+  /// `residence_id: null`.
+  ///
+  /// Route dédiée et non un champ du PATCH générique : le rattachement
+  /// déplace un compteur sur deux résidences et peut recopier l’adresse.
+  static String proprioPropertyResidence(String id) =>
+      '$_v1/proprio/properties/$id/residence';
 
   static String proprioProperty(String id) => '$_v1/proprio/properties/$id';
 
@@ -46,6 +60,10 @@ abstract final class ApiEndpoints {
   /// fiche du client.
   static String proprioBookingCheckOut(String id) =>
       '$_v1/proprio/bookings/$id/check-out';
+  /// Prolongation d’un séjour comptoir : repousse la sortie et réajuste le
+  /// montant. Un 409 est un conflit de période à arbitrer, pas une panne.
+  static String proprioBookingExtend(String id) =>
+      '$_v1/proprio/bookings/$id/extend';
 
   /// Carnet de clients du propriétaire connecté — des clients qui se
   /// présentent au comptoir et n'ont pas de compte sur la plateforme.

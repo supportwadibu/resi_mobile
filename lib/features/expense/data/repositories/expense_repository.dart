@@ -16,6 +16,7 @@ class ExpenseRepository {
   /// pour que l'écran sache s'il reste des pages à charger.
   Future<ExpensePage> getExpensePage({
     String? propertyId,
+    String? residenceId,
     ExpenseCategory? category,
     DateTime? from,
     DateTime? to,
@@ -28,6 +29,7 @@ class ExpenseRepository {
         queryParameters: {
           ...?_filters(
             propertyId: propertyId,
+            residenceId: residenceId,
             category: category,
             from: from,
             to: to,
@@ -51,6 +53,7 @@ class ExpenseRepository {
   /// volume, et les lancer tous d'un coup exposerait à une limitation de débit.
   Future<List<ExpenseModel>> getAllExpenses({
     String? propertyId,
+    String? residenceId,
     ExpenseCategory? category,
     DateTime? from,
     DateTime? to,
@@ -61,6 +64,7 @@ class ExpenseRepository {
     while (true) {
       final result = await getExpensePage(
         propertyId: propertyId,
+        residenceId: residenceId,
         category: category,
         from: from,
         to: to,
@@ -79,6 +83,7 @@ class ExpenseRepository {
   /// Total et ventilation par catégorie, sur les mêmes filtres que la liste.
   Future<ExpenseSummary> getSummary({
     String? propertyId,
+    String? residenceId,
     ExpenseCategory? category,
     DateTime? from,
     DateTime? to,
@@ -88,6 +93,7 @@ class ExpenseRepository {
         ApiEndpoints.proprioExpenseSummary,
         queryParameters: _filters(
           propertyId: propertyId,
+          residenceId: residenceId,
           category: category,
           from: from,
           to: to,
@@ -146,12 +152,17 @@ class ExpenseRepository {
   /// validateur, qui attend une valeur ou rien.
   Map<String, dynamic>? _filters({
     String? propertyId,
+    String? residenceId,
     ExpenseCategory? category,
     DateTime? from,
     DateTime? to,
   }) {
     final params = <String, dynamic>{
       if (propertyId != null && propertyId.isNotEmpty) 'property_id': propertyId,
+      // Filtre les charges communes du lieu. Les deux filtres ne se combinent
+      // pas utilement : une dépense ne porte jamais les deux rattachements.
+      if (residenceId != null && residenceId.isNotEmpty)
+        'residence_id': residenceId,
       if (category != null) 'category': category.code,
       if (from != null) 'from': _formatDate(from),
       if (to != null) 'to': _formatDate(to),

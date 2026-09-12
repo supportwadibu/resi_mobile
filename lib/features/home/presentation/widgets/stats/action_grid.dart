@@ -31,6 +31,12 @@ class ActionGrid extends StatelessWidget {
       color: Color(0xFF0EA5E9),
       route: ClientsRoute(),
     ),
+    StatsAction(
+      icon: FontAwesomeIcons.building,
+      label: 'Mes résidences',
+      color: Color(0xFF10B981),
+      route: ResidenceRoute(),
+    ),
   ];
 
   @override

@@ -38,12 +38,14 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       final results = await Future.wait([
         _repository.getExpensePage(
           propertyId: _filters.propertyId,
+          residenceId: _filters.residenceId,
           category: _filters.category,
           from: _filters.from,
           to: _filters.to,
         ),
         _repository.getSummary(
           propertyId: _filters.propertyId,
+          residenceId: _filters.residenceId,
           category: _filters.category,
           from: _filters.from,
           to: _filters.to,
@@ -81,6 +83,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
     try {
       final page = await _repository.getExpensePage(
         propertyId: _filters.propertyId,
+        residenceId: _filters.residenceId,
         category: _filters.category,
         from: _filters.from,
         to: _filters.to,

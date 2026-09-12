@@ -49,7 +49,7 @@ class AppConfig {
 
   static const String _devApiUrl = String.fromEnvironment(
     'DEV_API_URL',
-    defaultValue: 'https://api-resi.onrender.com',
+    defaultValue: 'https://resi-api.onrender.com',
   );
 
   static const dev = AppConfig(
@@ -61,14 +61,14 @@ class AppConfig {
 
   static const staging = AppConfig(
     flavor: AppFlavor.staging,
-    baseUrl: 'https://api.staging.example.com',
+    baseUrl: 'https://resi-api.onrender.com',
     appName: 'App (Staging)',
     enableLogging: true,
   );
 
   static const prod = AppConfig(
     flavor: AppFlavor.prod,
-    baseUrl: 'https://api-resi.onrender.com',
+    baseUrl: 'https://resi-api.onrender.com',
     appName: 'App',
   );
 }

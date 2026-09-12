@@ -21,6 +21,8 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: SuccessRoute.page),
     AutoRoute(page: ProfileRoute.page),
     AutoRoute(page: PropertyManagerProfileRoute.page),
+    AutoRoute(page: ResidenceRoute.page),
+    AutoRoute(page: AddResidenceRoute.page),
     AutoRoute(page: ExpenseRoute.page),
     AutoRoute(page: AddExpenseRoute.page),
     AutoRoute(page: DetailsReservationRoute.page),

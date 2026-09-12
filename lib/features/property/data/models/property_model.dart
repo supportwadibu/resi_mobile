@@ -338,6 +338,8 @@ class PropertyModel {
     this.additionalCharges = 0,
     this.isPublic = false,
     this.viewsCount = 0,
+    this.residenceId,
+    this.unitLabel,
   });
 
   final String id;
@@ -356,6 +358,20 @@ class PropertyModel {
   final double additionalCharges;
   final bool isPublic;
   final int viewsCount;
+
+  /// Résidence du logement, `null` pour un bien autonome.
+  ///
+  /// Absent des biens créés avant l'introduction des résidences : `null`
+  /// signifie « autonome », le comportement d'origine.
+  final String? residenceId;
+
+  /// Nom du logement dans sa résidence — « Studio 1 ».
+  ///
+  /// Distinct de [title], qui reste le titre de l’annonce vu par le client.
+  final String? unitLabel;
+
+  /// Le logement appartient-il à une résidence ?
+  bool get belongsToResidence => residenceId != null;
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
     final amenities = json['amenities'] as Map<String, dynamic>? ?? const {};
@@ -398,6 +414,8 @@ class PropertyModel {
       additionalCharges: (json['additional_charges'] as num?)?.toDouble() ?? 0,
       isPublic: visibility['is_public'] as bool? ?? false,
       viewsCount: (metadata['views_count'] as num?)?.toInt() ?? 0,
+      residenceId: json['residence_id'] as String?,
+      unitLabel: json['unit_label'] as String?,
     );
   }
 

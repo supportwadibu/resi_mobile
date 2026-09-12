@@ -104,6 +104,7 @@ class PropertyCard extends StatelessWidget {
     super.key,
     required this.data,
     this.onTap,
+    this.onLongPress,
     this.onDelete,
     this.onShare,
     this.isListMode = false, // ← nouveau
@@ -111,6 +112,12 @@ class PropertyCard extends StatelessWidget {
 
   final PropertyData data;
   final VoidCallback? onTap;
+
+  /// Actions secondaires du bien — le rattachement à une résidence.
+  ///
+  /// Optionnel : les appelants qui ne le fournissent pas gardent le
+  /// comportement d’origine.
+  final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
   final bool isListMode;
@@ -124,6 +131,7 @@ class PropertyCard extends StatelessWidget {
   Widget _buildGrid() {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -176,6 +184,7 @@ class PropertyCard extends StatelessWidget {
   Widget _buildList() {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(

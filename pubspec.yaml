@@ -30,31 +30,18 @@ dependencies:
   url_launcher: ^6.3.0
   image_picker: ^1.2.2
   shared_preferences: ^2.3.5
-  # L'identité est vérifiée par l'API à partir de l'idToken Google : Firebase
-  # Auth n'intervient pas dans la chaîne, seul `firebase_core` est nécessaire.
   firebase_core: ^4.13.0
   google_sign_in: ^6.3.0
-  # Sélecteur de pays local (drapeau + indicatif), aucune requête réseau.
   country_picker: ^2.0.27
   lottie: ^3.3.2
-  # Validation des numéros via libphonenumber : les regex maison sur les
-  # numéros ivoiriens sont encore souvent calées sur 8 chiffres, alors que le
-  # plan de numérotation est passé à 10.
   phone_numbers_parser: ^9.0.5
   geolocator: ^14.0.3
   flutter_inappwebview: ^6.1.5
-  # Export du rapport de dépenses : `pdf` compose le document, `printing`
-  # l'ouvre dans la visionneuse système (impression ou partage).
   pdf: ^3.11.1
   printing: ^5.13.4
-  # Saisie hors réseau : le carnet, les biens et les réservations en attente
-  # d'envoi sont tenus en base locale. SQLite plutôt qu'un stockage
-  # clé-valeur — la file d'envoi porte de l'argent encaissé et exige des
-  # transactions, et le dédoublonnage par téléphone est une recherche.
   sqflite: ^2.4.1
   path: ^1.9.0
   path_provider: ^2.1.5
-  # Identifiant d'idempotence d'une réservation saisie hors ligne.
   uuid: ^4.5.1
 
 dev_dependencies:
@@ -65,6 +52,8 @@ dev_dependencies:
   build_runner: ^2.15.0
   auto_route_generator: ^10.5.0
   flutter_launcher_icons: ^0.14.4
+
+  sqflite_common_ffi: ^2.3.4
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -83,9 +72,5 @@ flutter:
     - assets/images/
     - assets/lottie/
     - assets/images/resi/detail_1.png
-    # Villes indexées par code ISO2 (source dr5hn, découpée par pays) : le
-    # chargement est différé au choix du pays, un fichier par pays.
     - assets/data/cities/
-    # Communes, indexées par ville. Seules les deux villes autonomes
-    # (Abidjan, Yamoussoukro) en ont : ailleurs le champ ne s'affiche pas.
     - assets/data/communes/

@@ -9,76 +9,80 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:auto_route/auto_route.dart' as _i25;
-import 'package:flutter/material.dart' as _i26;
+import 'package:auto_route/auto_route.dart' as _i27;
+import 'package:flutter/material.dart' as _i28;
 import 'package:resi_africa/features/auth/presentation/screens/auth_screen.dart'
-    as _i6;
+    as _i7;
 import 'package:resi_africa/features/auth/presentation/screens/login_screen.dart'
-    as _i13;
+    as _i14;
 import 'package:resi_africa/features/auth/presentation/screens/property_manager_profile_screen.dart'
-    as _i16;
+    as _i17;
 import 'package:resi_africa/features/auth/presentation/screens/register_screen.dart'
-    as _i18;
+    as _i19;
 import 'package:resi_africa/features/auth/presentation/screens/trial_welcome_screen.dart'
-    as _i24;
+    as _i26;
 import 'package:resi_africa/features/clients/data/models/client_model.dart'
-    as _i28;
+    as _i31;
 import 'package:resi_africa/features/clients/presentation/screens/add_client_screen.dart'
     as _i1;
 import 'package:resi_africa/features/clients/presentation/screens/client_detail_screen.dart'
-    as _i7;
-import 'package:resi_africa/features/clients/presentation/screens/clients_screen.dart'
     as _i8;
+import 'package:resi_africa/features/clients/presentation/screens/clients_screen.dart'
+    as _i9;
 import 'package:resi_africa/features/expense/data/models/expense_model.dart'
-    as _i27;
+    as _i29;
 import 'package:resi_africa/features/expense/presentation/screens/add_expense_screen.dart'
     as _i2;
 import 'package:resi_africa/features/expense/presentation/screens/expense_screen.dart'
-    as _i10;
+    as _i11;
 import 'package:resi_africa/features/home/presentation/screens/all_reviews_screen.dart'
-    as _i5;
+    as _i6;
 import 'package:resi_africa/features/home/presentation/screens/home_screen.dart'
-    as _i12;
+    as _i13;
 import 'package:resi_africa/features/home/presentation/widgets/tabs/profile_tab.dart'
-    as _i14;
+    as _i15;
 import 'package:resi_africa/features/property/data/models/property_model.dart'
-    as _i30;
+    as _i33;
 import 'package:resi_africa/features/property/presentation/screens/add_property_screen.dart'
     as _i3;
 import 'package:resi_africa/features/property/presentation/screens/property_detail_screen.dart'
-    as _i15;
+    as _i16;
 import 'package:resi_africa/features/property/presentation/screens/property_screen.dart'
-    as _i17;
+    as _i18;
 import 'package:resi_africa/features/property/presentation/screens/success_screen.dart'
-    as _i22;
+    as _i24;
 import 'package:resi_africa/features/rapport/presentation/screens/rapport_screen.dart'
-    as _i19;
+    as _i20;
 import 'package:resi_africa/features/reservation/business_logic/add_reservation_state.dart'
-    as _i31;
+    as _i30;
 import 'package:resi_africa/features/reservation/data/models/reservation_model.dart'
-    as _i29;
+    as _i32;
 import 'package:resi_africa/features/reservation/presentation/screens/add_reservation.dart'
     as _i4;
 import 'package:resi_africa/features/reservation/presentation/screens/details_reservation_screen.dart'
-    as _i9;
+    as _i10;
 import 'package:resi_africa/features/reservation/presentation/screens/reservation_screen.dart'
-    as _i20;
-import 'package:resi_africa/features/reservation/presentation/screens/stay_extension_screen.dart'
     as _i21;
-import 'package:resi_africa/features/stats/presentation/screens/finance_screen.dart'
-    as _i11;
-import 'package:resi_africa/features/support/presentation/screens/support_chat_screen.dart'
+import 'package:resi_africa/features/reservation/presentation/screens/stay_extension_screen.dart'
     as _i23;
+import 'package:resi_africa/features/residence/presentation/screens/add_residence_screen.dart'
+    as _i5;
+import 'package:resi_africa/features/residence/presentation/screens/residence_screen.dart'
+    as _i22;
+import 'package:resi_africa/features/stats/presentation/screens/finance_screen.dart'
+    as _i12;
+import 'package:resi_africa/features/support/presentation/screens/support_chat_screen.dart'
+    as _i25;
 
 /// generated route for
 /// [_i1.AddClientScreen]
-class AddClientRoute extends _i25.PageRouteInfo<void> {
-  const AddClientRoute({List<_i25.PageRouteInfo>? children})
+class AddClientRoute extends _i27.PageRouteInfo<void> {
+  const AddClientRoute({List<_i27.PageRouteInfo>? children})
     : super(AddClientRoute.name, initialChildren: children);
 
   static const String name = 'AddClientRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       return const _i1.AddClientScreen();
@@ -88,11 +92,11 @@ class AddClientRoute extends _i25.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i2.AddExpenseScreen]
-class AddExpenseRoute extends _i25.PageRouteInfo<AddExpenseRouteArgs> {
+class AddExpenseRoute extends _i27.PageRouteInfo<AddExpenseRouteArgs> {
   AddExpenseRoute({
-    _i26.Key? key,
-    _i27.ExpenseModel? expense,
-    List<_i25.PageRouteInfo>? children,
+    _i28.Key? key,
+    _i29.ExpenseModel? expense,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          AddExpenseRoute.name,
          args: AddExpenseRouteArgs(key: key, expense: expense),
@@ -101,7 +105,7 @@ class AddExpenseRoute extends _i25.PageRouteInfo<AddExpenseRouteArgs> {
 
   static const String name = 'AddExpenseRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<AddExpenseRouteArgs>(
@@ -115,9 +119,9 @@ class AddExpenseRoute extends _i25.PageRouteInfo<AddExpenseRouteArgs> {
 class AddExpenseRouteArgs {
   const AddExpenseRouteArgs({this.key, this.expense});
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
-  final _i27.ExpenseModel? expense;
+  final _i29.ExpenseModel? expense;
 
   @override
   String toString() {
@@ -137,13 +141,13 @@ class AddExpenseRouteArgs {
 
 /// generated route for
 /// [_i3.AddPropertyScreen]
-class AddPropertyRoute extends _i25.PageRouteInfo<void> {
-  const AddPropertyRoute({List<_i25.PageRouteInfo>? children})
+class AddPropertyRoute extends _i27.PageRouteInfo<void> {
+  const AddPropertyRoute({List<_i27.PageRouteInfo>? children})
     : super(AddPropertyRoute.name, initialChildren: children);
 
   static const String name = 'AddPropertyRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       return const _i3.AddPropertyScreen();
@@ -153,86 +157,151 @@ class AddPropertyRoute extends _i25.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i4.AddReservationScreen]
-class AddReservationRoute extends _i25.PageRouteInfo<AddReservationRouteArgs> {
+class AddReservationRoute extends _i27.PageRouteInfo<AddReservationRouteArgs> {
   AddReservationRoute({
-    _i26.Key? key,
-    _i31.ReservationMode mode = _i31.ReservationMode.checkIn,
-    List<_i25.PageRouteInfo>? children,
+    _i30.ReservationMode mode = _i30.ReservationMode.checkIn,
+    _i28.Key? key,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          AddReservationRoute.name,
-         args: AddReservationRouteArgs(key: key, mode: mode),
+         args: AddReservationRouteArgs(mode: mode, key: key),
          initialChildren: children,
        );
 
   static const String name = 'AddReservationRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<AddReservationRouteArgs>(
         orElse: () => const AddReservationRouteArgs(),
       );
-      return _i4.AddReservationScreen(key: args.key, mode: args.mode);
+      return _i4.AddReservationScreen(mode: args.mode, key: args.key);
     },
   );
 }
 
 class AddReservationRouteArgs {
   const AddReservationRouteArgs({
+    this.mode = _i30.ReservationMode.checkIn,
     this.key,
-    this.mode = _i31.ReservationMode.checkIn,
   });
 
-  final _i26.Key? key;
+  final _i30.ReservationMode mode;
 
-  final _i31.ReservationMode mode;
+  final _i28.Key? key;
 
   @override
   String toString() {
-    return 'AddReservationRouteArgs{key: $key, mode: $mode}';
+    return 'AddReservationRouteArgs{mode: $mode, key: $key}';
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AddReservationRouteArgs) return false;
+    return mode == other.mode && key == other.key;
+  }
+
+  @override
+  int get hashCode => mode.hashCode ^ key.hashCode;
 }
 
 /// generated route for
-/// [_i5.AllReviewsScreen]
-class AllReviewsRoute extends _i25.PageRouteInfo<void> {
-  const AllReviewsRoute({List<_i25.PageRouteInfo>? children})
+/// [_i5.AddResidenceScreen]
+class AddResidenceRoute extends _i27.PageRouteInfo<AddResidenceRouteArgs> {
+  AddResidenceRoute({
+    _i28.Key? key,
+    String? residenceId,
+    List<_i27.PageRouteInfo>? children,
+  }) : super(
+         AddResidenceRoute.name,
+         args: AddResidenceRouteArgs(key: key, residenceId: residenceId),
+         rawQueryParams: {'id': residenceId},
+         initialChildren: children,
+       );
+
+  static const String name = 'AddResidenceRoute';
+
+  static _i27.PageInfo page = _i27.PageInfo(
+    name,
+    builder: (data) {
+      final queryParams = data.queryParams;
+      final args = data.argsAs<AddResidenceRouteArgs>(
+        orElse: () =>
+            AddResidenceRouteArgs(residenceId: queryParams.optString('id')),
+      );
+      return _i5.AddResidenceScreen(
+        key: args.key,
+        residenceId: args.residenceId,
+      );
+    },
+  );
+}
+
+class AddResidenceRouteArgs {
+  const AddResidenceRouteArgs({this.key, this.residenceId});
+
+  final _i28.Key? key;
+
+  final String? residenceId;
+
+  @override
+  String toString() {
+    return 'AddResidenceRouteArgs{key: $key, residenceId: $residenceId}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AddResidenceRouteArgs) return false;
+    return key == other.key && residenceId == other.residenceId;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ residenceId.hashCode;
+}
+
+/// generated route for
+/// [_i6.AllReviewsScreen]
+class AllReviewsRoute extends _i27.PageRouteInfo<void> {
+  const AllReviewsRoute({List<_i27.PageRouteInfo>? children})
     : super(AllReviewsRoute.name, initialChildren: children);
 
   static const String name = 'AllReviewsRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i5.AllReviewsScreen();
+      return const _i6.AllReviewsScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i6.AuthScreen]
-class AuthRoute extends _i25.PageRouteInfo<void> {
-  const AuthRoute({List<_i25.PageRouteInfo>? children})
+/// [_i7.AuthScreen]
+class AuthRoute extends _i27.PageRouteInfo<void> {
+  const AuthRoute({List<_i27.PageRouteInfo>? children})
     : super(AuthRoute.name, initialChildren: children);
 
   static const String name = 'AuthRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i6.AuthScreen();
+      return const _i7.AuthScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i7.ClientDetailScreen]
-class ClientDetailRoute extends _i25.PageRouteInfo<ClientDetailRouteArgs> {
+/// [_i8.ClientDetailScreen]
+class ClientDetailRoute extends _i27.PageRouteInfo<ClientDetailRouteArgs> {
   ClientDetailRoute({
-    _i26.Key? key,
-    required _i28.ClientModel client,
-    _i26.VoidCallback? onArchiveToggle,
-    List<_i25.PageRouteInfo>? children,
+    _i28.Key? key,
+    required _i31.ClientModel client,
+    _i28.VoidCallback? onArchiveToggle,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          ClientDetailRoute.name,
          args: ClientDetailRouteArgs(
@@ -245,11 +314,11 @@ class ClientDetailRoute extends _i25.PageRouteInfo<ClientDetailRouteArgs> {
 
   static const String name = 'ClientDetailRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<ClientDetailRouteArgs>();
-      return _i7.ClientDetailScreen(
+      return _i8.ClientDetailScreen(
         key: args.key,
         client: args.client,
         onArchiveToggle: args.onArchiveToggle,
@@ -265,11 +334,11 @@ class ClientDetailRouteArgs {
     this.onArchiveToggle,
   });
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
-  final _i28.ClientModel client;
+  final _i31.ClientModel client;
 
-  final _i26.VoidCallback? onArchiveToggle;
+  final _i28.VoidCallback? onArchiveToggle;
 
   @override
   String toString() {
@@ -290,29 +359,29 @@ class ClientDetailRouteArgs {
 }
 
 /// generated route for
-/// [_i8.ClientsScreen]
-class ClientsRoute extends _i25.PageRouteInfo<void> {
-  const ClientsRoute({List<_i25.PageRouteInfo>? children})
+/// [_i9.ClientsScreen]
+class ClientsRoute extends _i27.PageRouteInfo<void> {
+  const ClientsRoute({List<_i27.PageRouteInfo>? children})
     : super(ClientsRoute.name, initialChildren: children);
 
   static const String name = 'ClientsRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i8.ClientsScreen();
+      return const _i9.ClientsScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i9.DetailsReservationScreen]
+/// [_i10.DetailsReservationScreen]
 class DetailsReservationRoute
-    extends _i25.PageRouteInfo<DetailsReservationRouteArgs> {
+    extends _i27.PageRouteInfo<DetailsReservationRouteArgs> {
   DetailsReservationRoute({
-    _i26.Key? key,
-    required _i29.ReservationModel reservation,
-    List<_i25.PageRouteInfo>? children,
+    _i28.Key? key,
+    required _i32.ReservationModel reservation,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          DetailsReservationRoute.name,
          args: DetailsReservationRouteArgs(key: key, reservation: reservation),
@@ -321,11 +390,11 @@ class DetailsReservationRoute
 
   static const String name = 'DetailsReservationRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<DetailsReservationRouteArgs>();
-      return _i9.DetailsReservationScreen(
+      return _i10.DetailsReservationScreen(
         key: args.key,
         reservation: args.reservation,
       );
@@ -336,9 +405,9 @@ class DetailsReservationRoute
 class DetailsReservationRouteArgs {
   const DetailsReservationRouteArgs({this.key, required this.reservation});
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
-  final _i29.ReservationModel reservation;
+  final _i32.ReservationModel reservation;
 
   @override
   String toString() {
@@ -357,92 +426,92 @@ class DetailsReservationRouteArgs {
 }
 
 /// generated route for
-/// [_i10.ExpenseScreen]
-class ExpenseRoute extends _i25.PageRouteInfo<void> {
-  const ExpenseRoute({List<_i25.PageRouteInfo>? children})
+/// [_i11.ExpenseScreen]
+class ExpenseRoute extends _i27.PageRouteInfo<void> {
+  const ExpenseRoute({List<_i27.PageRouteInfo>? children})
     : super(ExpenseRoute.name, initialChildren: children);
 
   static const String name = 'ExpenseRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i10.ExpenseScreen();
+      return const _i11.ExpenseScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i11.FinanceScreen]
-class FinanceRoute extends _i25.PageRouteInfo<void> {
-  const FinanceRoute({List<_i25.PageRouteInfo>? children})
+/// [_i12.FinanceScreen]
+class FinanceRoute extends _i27.PageRouteInfo<void> {
+  const FinanceRoute({List<_i27.PageRouteInfo>? children})
     : super(FinanceRoute.name, initialChildren: children);
 
   static const String name = 'FinanceRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i11.FinanceScreen();
+      return const _i12.FinanceScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i12.HomeScreen]
-class HomeRoute extends _i25.PageRouteInfo<void> {
-  const HomeRoute({List<_i25.PageRouteInfo>? children})
+/// [_i13.HomeScreen]
+class HomeRoute extends _i27.PageRouteInfo<void> {
+  const HomeRoute({List<_i27.PageRouteInfo>? children})
     : super(HomeRoute.name, initialChildren: children);
 
   static const String name = 'HomeRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i12.HomeScreen();
+      return const _i13.HomeScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i13.LoginScreen]
-class LoginRoute extends _i25.PageRouteInfo<void> {
-  const LoginRoute({List<_i25.PageRouteInfo>? children})
+/// [_i14.LoginScreen]
+class LoginRoute extends _i27.PageRouteInfo<void> {
+  const LoginRoute({List<_i27.PageRouteInfo>? children})
     : super(LoginRoute.name, initialChildren: children);
 
   static const String name = 'LoginRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i13.LoginScreen();
+      return const _i14.LoginScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i14.ProfileScreen]
-class ProfileRoute extends _i25.PageRouteInfo<void> {
-  const ProfileRoute({List<_i25.PageRouteInfo>? children})
+/// [_i15.ProfileScreen]
+class ProfileRoute extends _i27.PageRouteInfo<void> {
+  const ProfileRoute({List<_i27.PageRouteInfo>? children})
     : super(ProfileRoute.name, initialChildren: children);
 
   static const String name = 'ProfileRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i14.ProfileScreen();
+      return const _i15.ProfileScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i15.PropertyDetailScreen]
-class PropertyDetailRoute extends _i25.PageRouteInfo<PropertyDetailRouteArgs> {
+/// [_i16.PropertyDetailScreen]
+class PropertyDetailRoute extends _i27.PageRouteInfo<PropertyDetailRouteArgs> {
   PropertyDetailRoute({
-    _i26.Key? key,
-    required _i30.PropertyModel property,
-    List<_i25.PageRouteInfo>? children,
+    _i28.Key? key,
+    required _i33.PropertyModel property,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          PropertyDetailRoute.name,
          args: PropertyDetailRouteArgs(key: key, property: property),
@@ -451,11 +520,11 @@ class PropertyDetailRoute extends _i25.PageRouteInfo<PropertyDetailRouteArgs> {
 
   static const String name = 'PropertyDetailRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PropertyDetailRouteArgs>();
-      return _i15.PropertyDetailScreen(key: args.key, property: args.property);
+      return _i16.PropertyDetailScreen(key: args.key, property: args.property);
     },
   );
 }
@@ -463,9 +532,9 @@ class PropertyDetailRoute extends _i25.PageRouteInfo<PropertyDetailRouteArgs> {
 class PropertyDetailRouteArgs {
   const PropertyDetailRouteArgs({this.key, required this.property});
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
-  final _i30.PropertyModel property;
+  final _i33.PropertyModel property;
 
   @override
   String toString() {
@@ -484,13 +553,13 @@ class PropertyDetailRouteArgs {
 }
 
 /// generated route for
-/// [_i16.PropertyManagerProfileScreen]
+/// [_i17.PropertyManagerProfileScreen]
 class PropertyManagerProfileRoute
-    extends _i25.PageRouteInfo<PropertyManagerProfileRouteArgs> {
+    extends _i27.PageRouteInfo<PropertyManagerProfileRouteArgs> {
   PropertyManagerProfileRoute({
-    _i26.Key? key,
+    _i28.Key? key,
     bool isOnboarding = false,
-    List<_i25.PageRouteInfo>? children,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          PropertyManagerProfileRoute.name,
          args: PropertyManagerProfileRouteArgs(
@@ -502,13 +571,13 @@ class PropertyManagerProfileRoute
 
   static const String name = 'PropertyManagerProfileRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PropertyManagerProfileRouteArgs>(
         orElse: () => const PropertyManagerProfileRouteArgs(),
       );
-      return _i16.PropertyManagerProfileScreen(
+      return _i17.PropertyManagerProfileScreen(
         key: args.key,
         isOnboarding: args.isOnboarding,
       );
@@ -519,7 +588,7 @@ class PropertyManagerProfileRoute
 class PropertyManagerProfileRouteArgs {
   const PropertyManagerProfileRouteArgs({this.key, this.isOnboarding = false});
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
   final bool isOnboarding;
 
@@ -540,76 +609,92 @@ class PropertyManagerProfileRouteArgs {
 }
 
 /// generated route for
-/// [_i17.PropertyScreen]
-class PropertyRoute extends _i25.PageRouteInfo<void> {
-  const PropertyRoute({List<_i25.PageRouteInfo>? children})
+/// [_i18.PropertyScreen]
+class PropertyRoute extends _i27.PageRouteInfo<void> {
+  const PropertyRoute({List<_i27.PageRouteInfo>? children})
     : super(PropertyRoute.name, initialChildren: children);
 
   static const String name = 'PropertyRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i17.PropertyScreen();
+      return const _i18.PropertyScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i18.RegisterScreen]
-class RegisterRoute extends _i25.PageRouteInfo<void> {
-  const RegisterRoute({List<_i25.PageRouteInfo>? children})
+/// [_i19.RegisterScreen]
+class RegisterRoute extends _i27.PageRouteInfo<void> {
+  const RegisterRoute({List<_i27.PageRouteInfo>? children})
     : super(RegisterRoute.name, initialChildren: children);
 
   static const String name = 'RegisterRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i18.RegisterScreen();
+      return const _i19.RegisterScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i19.ReportScreen]
-class ReportRoute extends _i25.PageRouteInfo<void> {
-  const ReportRoute({List<_i25.PageRouteInfo>? children})
+/// [_i20.ReportScreen]
+class ReportRoute extends _i27.PageRouteInfo<void> {
+  const ReportRoute({List<_i27.PageRouteInfo>? children})
     : super(ReportRoute.name, initialChildren: children);
 
   static const String name = 'ReportRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i19.ReportScreen();
+      return const _i20.ReportScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i20.ReservationScreen]
-class ReservationRoute extends _i25.PageRouteInfo<void> {
-  const ReservationRoute({List<_i25.PageRouteInfo>? children})
+/// [_i21.ReservationScreen]
+class ReservationRoute extends _i27.PageRouteInfo<void> {
+  const ReservationRoute({List<_i27.PageRouteInfo>? children})
     : super(ReservationRoute.name, initialChildren: children);
 
   static const String name = 'ReservationRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i20.ReservationScreen();
+      return const _i21.ReservationScreen();
     },
   );
 }
 
 /// generated route for
-/// [_i21.StayExtensionScreen]
-class StayExtensionRoute extends _i25.PageRouteInfo<StayExtensionRouteArgs> {
+/// [_i22.ResidenceScreen]
+class ResidenceRoute extends _i27.PageRouteInfo<void> {
+  const ResidenceRoute({List<_i27.PageRouteInfo>? children})
+    : super(ResidenceRoute.name, initialChildren: children);
+
+  static const String name = 'ResidenceRoute';
+
+  static _i27.PageInfo page = _i27.PageInfo(
+    name,
+    builder: (data) {
+      return const _i22.ResidenceScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [_i23.StayExtensionScreen]
+class StayExtensionRoute extends _i27.PageRouteInfo<StayExtensionRouteArgs> {
   StayExtensionRoute({
-    _i26.Key? key,
-    required _i29.ReservationModel reservation,
-    List<_i25.PageRouteInfo>? children,
+    _i28.Key? key,
+    required _i32.ReservationModel reservation,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          StayExtensionRoute.name,
          args: StayExtensionRouteArgs(key: key, reservation: reservation),
@@ -618,11 +703,11 @@ class StayExtensionRoute extends _i25.PageRouteInfo<StayExtensionRouteArgs> {
 
   static const String name = 'StayExtensionRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<StayExtensionRouteArgs>();
-      return _i21.StayExtensionScreen(
+      return _i23.StayExtensionScreen(
         key: args.key,
         reservation: args.reservation,
       );
@@ -633,9 +718,9 @@ class StayExtensionRoute extends _i25.PageRouteInfo<StayExtensionRouteArgs> {
 class StayExtensionRouteArgs {
   const StayExtensionRouteArgs({this.key, required this.reservation});
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
-  final _i29.ReservationModel reservation;
+  final _i32.ReservationModel reservation;
 
   @override
   String toString() {
@@ -654,18 +739,18 @@ class StayExtensionRouteArgs {
 }
 
 /// generated route for
-/// [_i22.SuccessScreen]
-class SuccessRoute extends _i25.PageRouteInfo<SuccessRouteArgs> {
+/// [_i24.SuccessScreen]
+class SuccessRoute extends _i27.PageRouteInfo<SuccessRouteArgs> {
   SuccessRoute({
-    _i26.Key? key,
+    _i28.Key? key,
     String title = 'Félicitations !',
     String subtitle = 'Votre bien a été enregistré avec succès',
     String buttonText = 'Voir mes biens',
     String secondaryButtonText = 'Ajouter un autre bien',
     int autoRedirectDuration = 5,
-    _i26.VoidCallback? onPrimaryAction,
-    _i26.VoidCallback? onSecondaryAction,
-    List<_i25.PageRouteInfo>? children,
+    _i28.VoidCallback? onPrimaryAction,
+    _i28.VoidCallback? onSecondaryAction,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          SuccessRoute.name,
          args: SuccessRouteArgs(
@@ -683,13 +768,13 @@ class SuccessRoute extends _i25.PageRouteInfo<SuccessRouteArgs> {
 
   static const String name = 'SuccessRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<SuccessRouteArgs>(
         orElse: () => const SuccessRouteArgs(),
       );
-      return _i22.SuccessScreen(
+      return _i24.SuccessScreen(
         key: args.key,
         title: args.title,
         subtitle: args.subtitle,
@@ -715,7 +800,7 @@ class SuccessRouteArgs {
     this.onSecondaryAction,
   });
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
   final String title;
 
@@ -727,9 +812,9 @@ class SuccessRouteArgs {
 
   final int autoRedirectDuration;
 
-  final _i26.VoidCallback? onPrimaryAction;
+  final _i28.VoidCallback? onPrimaryAction;
 
-  final _i26.VoidCallback? onSecondaryAction;
+  final _i28.VoidCallback? onSecondaryAction;
 
   @override
   String toString() {
@@ -763,13 +848,13 @@ class SuccessRouteArgs {
 }
 
 /// generated route for
-/// [_i23.SupportChatScreen]
-class SupportChatRoute extends _i25.PageRouteInfo<SupportChatRouteArgs> {
+/// [_i25.SupportChatScreen]
+class SupportChatRoute extends _i27.PageRouteInfo<SupportChatRouteArgs> {
   SupportChatRoute({
-    _i26.Key? key,
+    _i28.Key? key,
     String? visitorName,
     String? visitorEmail,
-    List<_i25.PageRouteInfo>? children,
+    List<_i27.PageRouteInfo>? children,
   }) : super(
          SupportChatRoute.name,
          args: SupportChatRouteArgs(
@@ -782,13 +867,13 @@ class SupportChatRoute extends _i25.PageRouteInfo<SupportChatRouteArgs> {
 
   static const String name = 'SupportChatRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<SupportChatRouteArgs>(
         orElse: () => const SupportChatRouteArgs(),
       );
-      return _i23.SupportChatScreen(
+      return _i25.SupportChatScreen(
         key: args.key,
         visitorName: args.visitorName,
         visitorEmail: args.visitorEmail,
@@ -800,7 +885,7 @@ class SupportChatRoute extends _i25.PageRouteInfo<SupportChatRouteArgs> {
 class SupportChatRouteArgs {
   const SupportChatRouteArgs({this.key, this.visitorName, this.visitorEmail});
 
-  final _i26.Key? key;
+  final _i28.Key? key;
 
   final String? visitorName;
 
@@ -826,17 +911,17 @@ class SupportChatRouteArgs {
 }
 
 /// generated route for
-/// [_i24.TrialWelcomeScreen]
-class TrialWelcomeRoute extends _i25.PageRouteInfo<void> {
-  const TrialWelcomeRoute({List<_i25.PageRouteInfo>? children})
+/// [_i26.TrialWelcomeScreen]
+class TrialWelcomeRoute extends _i27.PageRouteInfo<void> {
+  const TrialWelcomeRoute({List<_i27.PageRouteInfo>? children})
     : super(TrialWelcomeRoute.name, initialChildren: children);
 
   static const String name = 'TrialWelcomeRoute';
 
-  static _i25.PageInfo page = _i25.PageInfo(
+  static _i27.PageInfo page = _i27.PageInfo(
     name,
     builder: (data) {
-      return const _i24.TrialWelcomeScreen();
+      return const _i26.TrialWelcomeScreen();
     },
   );
 }

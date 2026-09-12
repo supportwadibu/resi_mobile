@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -25,7 +26,16 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'resi_local.db';
-  static const _version = 1;
+  /// Version du schéma local.
+  ///
+  /// 2 — `cached_properties` porte le libellé de l’unité et le nom de sa
+  /// résidence, pour que la saisie comptoir hors ligne affiche
+  /// « Resi Adja › Studio 1 » et non le seul titre de l’annonce.
+  static const _version = 2;
+
+  /// Version courante du schéma, lue par les tests de migration.
+  @visibleForTesting
+  static int get schemaVersion => _version;
 
   Database? _db;
 
@@ -36,7 +46,8 @@ class AppDatabase {
     return openDatabase(
       p.join(directory, _fileName),
       version: _version,
-      onCreate: (db, _) => _createSchema(db),
+      onCreate: (db, _) => createSchema(db),
+      onUpgrade: upgradeSchema,
       onConfigure: (db) async {
         // Les réservations en attente référencent un client local : sans
         // contrainte, supprimer le client laisserait une référence morte.
@@ -45,7 +56,12 @@ class AppDatabase {
     );
   }
 
-  Future<void> _createSchema(Database db) async {
+  /// Crée le schéma complet, à la version courante.
+  ///
+  /// Publique pour que les tests la lancent sur une base en mémoire : une
+  /// copie du SQL dans le test divergerait au premier changement de schéma.
+  @visibleForTesting
+  Future<void> createSchema(Database db) async {
     final batch = db.batch();
 
     // ── Caches ──────────────────────────────────────────────────────────────
@@ -55,11 +71,14 @@ class AppDatabase {
 
     batch.execute('''
       CREATE TABLE cached_properties (
-        id           TEXT PRIMARY KEY,
-        title        TEXT NOT NULL,
-        daily_price  REAL NOT NULL DEFAULT 0,
-        payload      TEXT NOT NULL,
-        synced_at    INTEGER NOT NULL
+        id             TEXT PRIMARY KEY,
+        title          TEXT NOT NULL,
+        daily_price    REAL NOT NULL DEFAULT 0,
+        residence_id   TEXT,
+        residence_name TEXT,
+        unit_label     TEXT,
+        payload        TEXT NOT NULL,
+        synced_at      INTEGER NOT NULL
       )
     ''');
 
@@ -150,6 +169,34 @@ class AppDatabase {
     );
 
     await batch.commit(noResult: true);
+  }
+
+  /// Fait évoluer un schéma déjà installé.
+  ///
+  /// Les migrations sont cumulatives et sans `else` : un appareil resté en
+  /// version 1 doit traverser toutes les étapes jusqu’à la version courante.
+  ///
+  /// Les caches ne sont pas recréés de zéro, même si leur contenu est
+  /// jetable : `pending_bookings` vit dans la même base et porte de l’argent
+  /// encaissé pas encore parvenu au serveur.
+  /// Publique pour la même raison que [createSchema] : la migration est
+  /// exactement ce que le test doit exercer, pas une réécriture.
+  @visibleForTesting
+  Future<void> upgradeSchema(Database db, int from, int to) async {
+    if (from < 2) {
+      // Colonnes ajoutées et non table recréée : `ALTER TABLE ADD COLUMN`
+      // laisse les lignes en place, et les valeurs manquantes valent `NULL`
+      // — c’est-à-dire « bien autonome », le comportement d’avant.
+      await db.execute(
+        'ALTER TABLE cached_properties ADD COLUMN residence_id TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE cached_properties ADD COLUMN residence_name TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE cached_properties ADD COLUMN unit_label TEXT',
+      );
+    }
   }
 
   /// Vide les caches et la file — à la déconnexion.
