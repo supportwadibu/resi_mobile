@@ -6,6 +6,20 @@ import 'package:dio/dio.dart';
 /// une **liste** d'objets `{field, message, rule}`, tandis que d'autres points
 /// d'entree renvoient une **map** `champ -> [messages]`. N'en lire qu'une
 /// laissait le message vide, et le refus s'affichait sans rien expliquer.
+/// Extrait le code metier stable du corps d'une reponse d'erreur.
+///
+/// Le corps n'est pas toujours l'objet attendu : un proxy en panne renvoie de
+/// l'HTML, et un champ `code` numerique existe ailleurs dans l'API. Tout ce
+/// qui n'est pas une chaine non vide vaut absence — faire lever ici priverait
+/// la synchronisation de son refus et lui ferait perdre la saisie.
+String? parseErrorCode(dynamic data) {
+  if (data is! Map) return null;
+  final code = data['code'];
+  if (code is! String) return null;
+  final trimmed = code.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 Map<String, List<String>> parseValidationErrors(dynamic data) {
   if (data is! Map) return const {};
   final errors = data['errors'];
@@ -41,6 +55,7 @@ class AppFailure implements Exception {
     required this.userMessage,
     this.debugMessage,
     this.statusCode,
+    this.code,
   });
   final String userMessage;
   final String? debugMessage;
@@ -53,6 +68,14 @@ class AppFailure implements Exception {
   /// que d'analyser `debugMessage`, dont le texte peut changer sans préavis.
   final int? statusCode;
 
+  /// Code métier stable renvoyé par l'API, quand elle en fournit un.
+  ///
+  /// Distinct du `statusCode` HTTP : deux refus partagent le même 403 sans
+  /// appeler la même réaction — un logement sorti du périmètre est définitif,
+  /// un jeton expiré ne l'est pas. Le texte du message ne peut pas servir à
+  /// trancher : il est destiné à l'utilisateur et peut être reformulé.
+  final String? code;
+
   factory AppFailure.fromDio(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionError:
@@ -64,20 +87,35 @@ class AppFailure implements Exception {
         return AppFailure.timeout();
 
       case DioExceptionType.badResponse:
-        final code = e.response?.statusCode ?? 0;
+        final status = e.response?.statusCode ?? 0;
         final data = e.response?.data;
 
-        if (code == 401) return AppFailure.unauthorized();
-        if (code == 403) return AppFailure.forbidden();
-        if (code == 404) return AppFailure.notFound();
+        // Lu pour tous les statuts, pas seulement le 403 : d'autres refus
+        // portent un code métier que l'appelant doit pouvoir distinguer.
+        final businessCode = parseErrorCode(data);
 
-        if (code == 422) {
-          return AppFailure.validation(errors: parseValidationErrors(data));
+        if (status == 401) return AppFailure.unauthorized();
+        if (status == 403) {
+          return AppFailure.forbidden(
+            message: data is Map ? data['message'] as String? : null,
+            code: businessCode,
+          );
+        }
+        if (status == 404) return AppFailure.notFound(code: businessCode);
+
+        if (status == 422) {
+          return AppFailure.validation(
+            errors: parseValidationErrors(data),
+            code: businessCode,
+          );
         }
 
         return AppFailure.serverError(
-          code: code,
-          message: data?['message'] as String?,
+          code: status,
+          // Le corps peut n'être pas un objet — un proxy en panne renvoie de
+          // l'HTML : le lire sans vérifier lèverait au lieu de rendre un refus.
+          message: data is Map ? data['message'] as String? : null,
+          businessCode: businessCode,
         );
 
       default:
@@ -85,21 +123,43 @@ class AppFailure implements Exception {
     }
   }
 
-  factory AppFailure.noInternet() => const AppFailure._(userMessage: 'Pas de connexion internet.');
-  factory AppFailure.timeout() => const AppFailure._(userMessage: 'La requete a expire. Reessayez.');
+  factory AppFailure.noInternet() =>
+      const AppFailure._(userMessage: 'Pas de connexion internet.');
+  factory AppFailure.timeout() =>
+      const AppFailure._(userMessage: 'La requete a expire. Reessayez.');
   factory AppFailure.unauthorized() => const AppFailure._(
-        userMessage: 'Session expiree. Reconnectez-vous.',
-        statusCode: 401,
-      );
-  factory AppFailure.forbidden() => const AppFailure._(
-        userMessage: 'Acces refuse.',
-        statusCode: 403,
-      );
-  factory AppFailure.notFound() => const AppFailure._(
-        userMessage: 'Ressource introuvable.',
-        statusCode: 404,
-      );
-  factory AppFailure.serverError({required int code, String? message}) => AppFailure._(
+    userMessage: 'Session expiree. Reconnectez-vous.',
+    statusCode: 401,
+  );
+
+  /// [message] : explication renvoyée par l'API, préférée au libellé générique.
+  ///
+  /// Un 403 métier dit souvent quoi faire pour lever le refus — « Complétez
+  /// votre dossier avant de publier une annonce ». L'écraser par « Accès
+  /// refusé » laisserait le propriétaire devant une impasse sans issue.
+  factory AppFailure.forbidden({String? message, String? code}) => AppFailure._(
+    userMessage: message?.trim().isNotEmpty == true
+        ? message!.trim()
+        : 'Acces refuse.',
+    statusCode: 403,
+    code: code,
+  );
+  factory AppFailure.notFound({String? code}) => AppFailure._(
+    userMessage: 'Ressource introuvable.',
+    statusCode: 404,
+    code: code,
+  );
+
+  /// [code] : statut HTTP. [businessCode] : code métier du corps de réponse.
+  ///
+  /// Les deux noms se ressemblent pour une raison historique — `code` désignait
+  /// le statut avant que l'API n'expose un code métier — et les renommer
+  /// casserait les appels existants.
+  factory AppFailure.serverError({
+    required int code,
+    String? message,
+    String? businessCode,
+  }) => AppFailure._(
         // Un conflit n'est pas une panne : le serveur a compris la demande et
         // la refuse pour une raison métier, que l'appelant doit pouvoir
         // présenter telle quelle.
@@ -108,7 +168,9 @@ class AppFailure implements Exception {
             : 'Erreur serveur. Reessayez plus tard.',
         debugMessage: 'HTTP $code - $message',
         statusCode: code,
+        code: businessCode,
       );
+
   /// Refus de validation du serveur.
   ///
   /// `statusCode` est indispensable : sans lui, l'appelant ne distingue pas ce
@@ -119,19 +181,21 @@ class AppFailure implements Exception {
   factory AppFailure.validation({
     required Map<String, List<String>> errors,
     int statusCode = 422,
+    String? code,
   }) => AppFailure._(
-        userMessage: errors.isEmpty
-            // Le serveur peut renvoyer ses erreurs sous une forme non reconnue :
-            // mieux vaut un message generique qu'une bulle vide.
-            ? 'Les informations saisies ont ete refusees par le serveur.'
-            : errors.values.expand((e) => e).join('\n'),
-        debugMessage: 'HTTP $statusCode - $errors',
-        statusCode: statusCode,
-      );
+    userMessage: errors.isEmpty
+        // Le serveur peut renvoyer ses erreurs sous une forme non reconnue :
+        // mieux vaut un message generique qu'une bulle vide.
+        ? 'Les informations saisies ont ete refusees par le serveur.'
+        : errors.values.expand((e) => e).join('\n'),
+    debugMessage: 'HTTP $statusCode - $errors',
+    statusCode: statusCode,
+    code: code,
+  );
   factory AppFailure.unexpected({String? message}) => AppFailure._(
-        userMessage: 'Une erreur inattendue est survenue.',
-        debugMessage: message,
-      );
+    userMessage: 'Une erreur inattendue est survenue.',
+    debugMessage: message,
+  );
 
   @override
   String toString() => 'AppFailure($userMessage | debug: $debugMessage)';
