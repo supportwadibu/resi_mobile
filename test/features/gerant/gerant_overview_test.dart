@@ -257,6 +257,34 @@ void main() {
       expect(built.cubit.state, isNot(isA<HomeStatsLoaded>()));
     });
 
+    test('son état initial est déjà le sien, avant tout appel', () async {
+      // `HomeStatsInitial` est commun aux deux rôles et fait rendre la rangée
+      // du propriétaire : le cubit d'un gérant ne doit jamais s'y trouver.
+      final built = _build('gerant');
+
+      expect(built.cubit.state, isA<HomeStatsManagerLoaded>());
+      expect(built.spy.captured, isEmpty);
+    });
+
+    test('l’attente du relevé n’est jamais l’état du propriétaire', () async {
+      // `load()` n'est pas attendu : on observe ce qui est émis pendant que le
+      // relevé est en vol, c'est-à-dire ce que voit l'écran sur une connexion
+      // lente.
+      final built = _build('gerant');
+      final seen = <HomeStatsState>[];
+      final sub = built.cubit.stream.listen(seen.add);
+
+      final pending = built.cubit.load();
+      await Future<void>.delayed(Duration.zero);
+      await pending;
+      await sub.cancel();
+
+      expect(seen, isNotEmpty);
+      expect(seen.whereType<HomeStatsLoading>(), isEmpty);
+      expect(seen.whereType<HomeStatsLoaded>(), isEmpty);
+      expect(seen.every((s) => s is HomeStatsManagerLoaded), isTrue);
+    });
+
     test('une panne du relevé laisse la rangée sans valeur', () async {
       // Un tiret vaut mieux qu'un zéro, qui se lirait comme un fait.
       final built = _build('gerant', managerFails: true);
@@ -288,6 +316,22 @@ void main() {
       expect(loaded.propertiesCount, 20);
       expect(loaded.activeBookings, 5);
       expect(loaded.netIncome, 918840);
+    });
+
+    test('garde son état initial et son attente', () async {
+      // Non-régression : la bifurcation du gérant ne doit rien changer au
+      // chemin du propriétaire, qui part d'`Initial` et passe par `Loading`.
+      final built = _build('proprio');
+      expect(built.cubit.state, isA<HomeStatsInitial>());
+
+      final seen = <HomeStatsState>[];
+      final sub = built.cubit.stream.listen(seen.add);
+
+      await built.cubit.load();
+      await sub.cancel();
+
+      expect(seen.first, isA<HomeStatsLoading>());
+      expect(seen.whereType<HomeStatsManagerLoaded>(), isEmpty);
     });
 
     test('aucune route gérant n’est appelée pour un propriétaire', () async {
@@ -343,6 +387,34 @@ void main() {
       await tester.pumpWidget(_statsRow(const HomeStatsManagerLoaded()));
 
       expect(find.text('—'), findsNWidgets(3));
+    });
+
+    testWidgets('les états neutres rendent bien la rangée du propriétaire', (
+      tester,
+    ) async {
+      // Ce que le widget fait vraiment, énoncé sans détour : faute de connaître
+      // le rôle, il rend la rangée du propriétaire pour tout état neutre. C'est
+      // pourquoi le cloisonnement se joue dans le cubit, qui ne doit jamais
+      // mettre un gérant dans l'un de ces états — les deux tests de
+      // `HomeStatsCubit` ci-dessus le verrouillent.
+      for (final state in const <HomeStatsState>[
+        HomeStatsInitial(),
+        HomeStatsLoading(),
+      ]) {
+        await tester.pumpWidget(_statsRow(state));
+        expect(find.text('Mes biens'), findsOneWidget, reason: '$state');
+        expect(find.text('Bénéfice ce mois'), findsOneWidget, reason: '$state');
+      }
+    });
+
+    testWidgets('l’attente montre déjà sa rangée à lui', (tester) async {
+      // Sans quoi l'écran sauterait d'une rangée à l'autre à l'arrivée du
+      // relevé, à chaque ouverture et à chaque `reloadStats()`.
+      await tester.pumpWidget(_statsRow(const HomeStatsManagerLoaded()));
+
+      expect(find.text('Réservations ce mois'), findsOneWidget);
+      expect(find.text('Encaissé ce mois'), findsOneWidget);
+      expect(find.text('Occupation'), findsOneWidget);
     });
 
     testWidgets('la rangée du propriétaire reste inchangée', (tester) async {

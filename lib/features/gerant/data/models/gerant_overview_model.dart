@@ -36,14 +36,6 @@ class GerantOverviewModel {
 
   final List<RevenuePointModel> revenuePoints;
 
-  /// Relevé d'un gérant sans affectation, ou fraîchement nommé.
-  static const empty = GerantOverviewModel(
-    bookingsCount: 0,
-    grossRevenue: 0,
-    expensesTotal: 0,
-    occupancyRate: 0,
-  );
-
   factory GerantOverviewModel.fromJson(Map<String, dynamic> json) {
     return GerantOverviewModel(
       // Replis à zéro : un gérant fraîchement affecté n'a encore aucune

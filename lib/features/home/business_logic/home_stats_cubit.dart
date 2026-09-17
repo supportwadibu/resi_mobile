@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
-import '../../gerant/data/models/gerant_overview_model.dart';
 import '../../gerant/data/repositories/gerant_repository.dart';
 import '../../reservation/data/repositories/reservation_repository.dart';
 import '../../stats/data/repositories/finance_repository.dart';
@@ -22,7 +21,16 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
     this._finance,
     this._gerant,
     this._roleOf,
-  ) : super(const HomeStatsInitial());
+  ) : super(
+        // État initial déjà typé par le rôle, et non un `HomeStatsInitial`
+        // commun : `StatsRowWidget` choisit sa rangée sur le type du state, et
+        // un état neutre lui ferait rendre celle du propriétaire — « Mes
+        // biens » et « Bénéfice ce mois » sur l'écran d'un gérant, le temps du
+        // premier relevé.
+        _roleOf() == 'gerant'
+            ? const HomeStatsManagerLoaded()
+            : const HomeStatsInitial(),
+      );
 
   final PropertyStatsRepository _properties;
   final ReservationRepository _bookings;
@@ -33,14 +41,22 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
   /// même forme que dans `OwnerRouteGuard`.
   final String Function() _roleOf;
 
+  /// L'attente est émise dans chaque branche, et non avant elles.
+  ///
+  /// `HomeStatsLoading` fait rendre à `StatsRowWidget` la rangée du
+  /// propriétaire, qui bifurque sur le type du state. L'émettre avant de
+  /// connaître le rôle montrait à un gérant « Mes biens » et « Bénéfice ce
+  /// mois » pendant toute la latence — et sur les connexions lentes du terrain
+  /// la fenêtre n'a rien de bref, l'écran sautant d'une rangée à l'autre.
   Future<void> load() async {
-    emit(const HomeStatsLoading());
-
     if (_roleOf() == 'gerant') {
+      // La rangée du gérant en attente : ses trois tuiles, toutes au tiret.
+      emit(const HomeStatsManagerLoaded());
       await _loadManager();
       return;
     }
 
+    emit(const HomeStatsLoading());
     await _loadOwner();
   }
 
@@ -91,7 +107,7 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
   /// n'en rend aucun, et le reconstituer en retranchant `expenses_total` du brut
   /// donnerait un chiffre faux sur un périmètre partiel.
   Future<void> _loadManager() async {
-    final overview = await _guardOverview(
+    final overview = await _guard(
       () => _gerant.getOverview(from: _startOfMonth(), to: DateTime.now()),
     );
 
@@ -116,22 +132,11 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
   }
 
   /// Exécute un relevé, ou rend `null` s'il échoue.
-  Future<num?> _guard(Future<num> Function() run) async {
-    try {
-      return await run();
-    } on AppFailure {
-      return null;
-    }
-  }
-
-  /// Même repli pour le relevé du gérant, qui rend un modèle et non un nombre.
   ///
-  /// L'échec laisse les trois tuiles au tiret plutôt qu'à zéro, qui se lirait
-  /// comme un fait — un gérant sans réservation et un relevé en panne ne sont
-  /// pas la même information.
-  Future<GerantOverviewModel?> _guardOverview(
-    Future<GerantOverviewModel> Function() run,
-  ) async {
+  /// L'échec laisse la tuile au tiret plutôt qu'à zéro, qui se lirait comme un
+  /// fait — un gérant sans réservation et un relevé en panne ne sont pas la
+  /// même information.
+  Future<T?> _guard<T>(Future<T> Function() run) async {
     try {
       return await run();
     } on AppFailure {
