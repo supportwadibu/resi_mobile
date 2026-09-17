@@ -1,8 +1,14 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/router/role_guard.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../property/business_logic/property_cubit.dart';
+import '../../business_logic/home_stats_cubit.dart';
 import '../../../auth/presentation/widgets/profile_completion_banner.dart';
 import '../../../reservation/presentation/widgets/create/reservation_mode_sheet.dart';
 import '../../../../shared/widgets/app_bottom_nav.dart';
@@ -24,6 +30,10 @@ class _HomeScreenState extends State<HomeScreen>
   int _currentIndex = 0;
 
   bool _menuOpen = false;
+
+  /// Donne accès aux onglets pour relire les chiffres de l'accueil : le cubit
+  /// qui les porte est fourni sous `build`, donc hors de portée d'ici.
+  final _tabsKey = GlobalKey<_HomeTabsState>();
 
   late final AnimationController _menuCtrl;
   late final Animation<double> _menuScale;
@@ -52,6 +62,20 @@ class _HomeScreenState extends State<HomeScreen>
       action: 'add_expense',
     ),
   ];
+
+  /// Créations offertes au rôle courant. Le menu, ses animations et son
+  /// ancrage ne changent pas : seule la liste rendue est plus courte.
+  ///
+  /// Le rôle se lit sur la session, comme partout ailleurs dans le projet :
+  /// l'état de l'`AuthCubit` ne le porte pas, et il doit rester lisible sans
+  /// reconnexion après un redémarrage.
+  List<FloatingFeature> get _visibleFeatures {
+    final visible = featuresForRole(
+      sl<SessionRole>().value,
+      _features.map((f) => f.action).toList(),
+    );
+    return _features.where((f) => visible.contains(f.action)).toList();
+  }
 
   @override
   void initState() {
@@ -95,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen>
     _closeMenu();
     switch (action) {
       case 'add_property':
-        await context.router.push(const AddPropertyRoute());
+        await context.router.push(AddPropertyRoute());
         if (mounted) _showProperties();
       case 'add_reservation':
         final mode = await showReservationModeSheet(context);
@@ -104,11 +128,20 @@ class _HomeScreenState extends State<HomeScreen>
           context.router.push(AddReservationRoute(mode: mode));
         }
       case 'add_expense':
-        context.router.push(AddExpenseRoute());
-      // case 'add_client':
-      //   context.router.push(const AddClientRoute());
+        // Attendu, puis les chiffres relus : une dépense change le bénéfice
+        // net affiché sur l'accueil, qui reste monté sous la pile.
+        await context.router.push(AddExpenseRoute());
+        if (mounted) _reloadStats();
+      case 'add_client':
+        context.router.push(const AddClientRoute());
     }
   }
+
+  /// Relit la rangée de l'accueil.
+  ///
+  /// Le cubit est fourni sous `build`, hors de portée de `context.read` ici :
+  /// la clé donne accès à l'état qui le détient.
+  void _reloadStats() => _tabsKey.currentState?.reloadStats();
 
   @override
   Widget build(BuildContext context) {
@@ -121,14 +154,22 @@ class _HomeScreenState extends State<HomeScreen>
               children: [
                 const ProfileCompletionBanner(),
                 Expanded(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: [
-                      HomeTab(onSeeAllProperties: _showProperties),
-                      const ReservationTab(),
-                      const PropertyTab(),
-                      const StatsTab(),
+                  child: MultiBlocProvider(
+                    providers: [
+                      BlocProvider(create: (_) => sl<PropertyCubit>()..load()),
+                      // Fourni ici et non dans l'onglet : celui-ci reste monté
+                      // dans l'`IndexedStack`, et un cubit local ne serait
+                      // jamais rechargé après l'ajout d'un bien ou d'une
+                      // dépense.
+                      BlocProvider(
+                        create: (_) => sl<HomeStatsCubit>()..load(),
+                      ),
                     ],
+                    child: _HomeTabs(
+                      key: _tabsKey,
+                      currentIndex: _currentIndex,
+                      onSeeAllProperties: _showProperties,
+                    ),
                   ),
                 ),
               ],
@@ -157,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen>
                     scale: _menuScale,
                     alignment: Alignment.bottomRight,
                     child: FloatingActionCard(
-                      features: _features,
+                      features: _visibleFeatures,
                       onSelect: _handleAdd,
                       onDismiss: _closeMenu,
                     ),
@@ -183,6 +224,59 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Les quatre onglets, et le rafraîchissement des chiffres de l'accueil.
+///
+/// Les onglets restent montés dans l'`IndexedStack` : sans ce rechargement au
+/// retour, la rangée de l'accueil garderait les chiffres d'avant la saisie
+/// d'un bien, d'une réservation ou d'une dépense.
+class _HomeTabs extends StatefulWidget {
+  const _HomeTabs({
+    super.key,
+    required this.currentIndex,
+    this.onSeeAllProperties,
+  });
+
+  final int currentIndex;
+  final VoidCallback? onSeeAllProperties;
+
+  @override
+  State<_HomeTabs> createState() => _HomeTabsState();
+}
+
+class _HomeTabsState extends State<_HomeTabs> {
+  static const _homeTabIndex = 0;
+
+  /// Relit les chiffres de l'accueil, appelée au retour d'un écran de saisie.
+  void reloadStats() => context.read<HomeStatsCubit>().load();
+
+  @override
+  void didUpdateWidget(_HomeTabs oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Au retour sur l'accueil seulement : recharger à chaque changement
+    // d'onglet lancerait trois requêtes pour un aller-retour vers les
+    // statistiques, qui ne touchent à rien.
+    final cameBack =
+        widget.currentIndex == _homeTabIndex &&
+        oldWidget.currentIndex != _homeTabIndex;
+
+    if (cameBack) context.read<HomeStatsCubit>().load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IndexedStack(
+      index: widget.currentIndex,
+      children: [
+        HomeTab(onSeeAllProperties: widget.onSeeAllProperties),
+        const ReservationTab(),
+        const PropertyTab(),
+        const StatsTab(),
+      ],
     );
   }
 }

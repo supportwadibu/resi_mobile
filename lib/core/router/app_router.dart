@@ -1,10 +1,18 @@
 import 'package:auto_route/auto_route.dart';
+import '../di/service_locator.dart';
+import '../session/session_role.dart';
 import 'app_router.gr.dart';
+import 'role_guard.dart';
 
 @AutoRouterConfig(replaceInRouteName: 'Screen,Route')
 class AppRouter extends RootStackRouter {
   @override
   RouteType get defaultRouteType => const RouteType.adaptive();
+
+  /// Le rôle est relu à chaque navigation, et non capturé à la construction
+  /// du routeur : celui-ci naît avant la connexion, quand la session porte
+  /// encore son repli `proprio`.
+  final _ownerOnly = OwnerRouteGuard(() => sl<SessionRole>().value);
 
   @override
   List<AutoRoute> get routes => [
@@ -16,19 +24,20 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: PropertyDetailRoute.page),
     AutoRoute(page: AllReviewsRoute.page),
     AutoRoute(page: PropertyRoute.page),
-    AutoRoute(page: AddPropertyRoute.page),
+    AutoRoute(page: AddPropertyRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: AddReservationRoute.page),
     AutoRoute(page: SuccessRoute.page),
     AutoRoute(page: ProfileRoute.page),
-    AutoRoute(page: PropertyManagerProfileRoute.page),
+    AutoRoute(page: PropertyManagerProfileRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ResidenceRoute.page),
-    AutoRoute(page: AddResidenceRoute.page),
+    AutoRoute(page: ResidenceDetailRoute.page),
+    AutoRoute(page: AddResidenceRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ExpenseRoute.page),
     AutoRoute(page: AddExpenseRoute.page),
     AutoRoute(page: DetailsReservationRoute.page),
     AutoRoute(page: StayExtensionRoute.page),
-    AutoRoute(page: FinanceRoute.page),
-    AutoRoute(page: ReportRoute.page),
+    AutoRoute(page: FinanceRoute.page, guards: [_ownerOnly]),
+    AutoRoute(page: ReportRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ClientsRoute.page),
     AutoRoute(page: AddClientRoute.page),
     AutoRoute(page: SupportChatRoute.page),
