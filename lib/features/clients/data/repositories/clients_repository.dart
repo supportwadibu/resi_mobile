@@ -4,6 +4,7 @@ import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/client_creation_result.dart';
 import '../models/client_model.dart';
 import '../models/client_reservation_model.dart';
 
@@ -168,7 +169,11 @@ class ClientsRepository {
   /// Le serveur répond `already_existed` quand le numéro est déjà au carnet :
   /// aucune fiche n'est créée, et celle qui existe est retournée pour que
   /// l'application propose de la réutiliser.
-  Future<({ClientModel client, bool alreadyExisted})> create({
+  ///
+  /// Pour un gérant, cette fiche existante peut être **hors de son périmètre** :
+  /// le serveur l'accuse alors sans la livrer, et `client` est nul. Voir
+  /// [ClientCreationResult.isOutOfScope].
+  Future<ClientCreationResult> create({
     required String fullName,
     required String phone,
     String? whatsapp,
@@ -197,10 +202,8 @@ class ClientsRepository {
         options: Options(contentType: Headers.multipartFormDataContentType),
       );
 
-      final body = response.data as Map<String, dynamic>;
-      return (
-        client: ClientModel.fromJson(body['data'] as Map<String, dynamic>),
-        alreadyExisted: body['already_existed'] as bool? ?? false,
+      return ClientCreationResult.fromJson(
+        response.data as Map<String, dynamic>,
       );
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);

@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../clients/data/models/client_creation_result.dart';
 import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../data/datasources/reservation_local_store.dart';
@@ -353,6 +354,10 @@ class AddReservationCubit extends Cubit<AddReservationState> {
   /// Le serveur retourne la fiche existante si le numéro est déjà au carnet,
   /// sans en créer une seconde : aucun doublon n'est possible même si la
   /// recherche pendant la saisie n'a rien vu.
+  ///
+  /// Sauf pour un gérant dont le périmètre ne couvre pas cette fiche : le
+  /// serveur accuse sans la livrer, il n'y a alors aucun identifiant à
+  /// rattacher et la réservation ne peut pas aboutir.
   Future<String> _resolveClientId() async {
     final selected = state.selectedClient;
     if (selected != null) return selected.id;
@@ -364,7 +369,19 @@ class AddReservationCubit extends Cubit<AddReservationState> {
       documentBackPath: state.documentBackPath,
     );
 
-    return created.client.id;
+    final client = created.client;
+    if (client == null) {
+      // Levé en 403 et non sans statut : `_isNetworkFailure` traite l'absence
+      // de code comme une panne et mettrait la saisie en file, où chaque passe
+      // rejouerait le même refus pendant que l'écran annonce un
+      // enregistrement. Un refus de périmètre est définitif.
+      throw AppFailure.forbidden(
+        message: clientOutOfScopeMessage,
+        code: 'client_out_of_scope',
+      );
+    }
+
+    return client.id;
   }
 
   /// Signale un chevauchement avec une réservation connue.

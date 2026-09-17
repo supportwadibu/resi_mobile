@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../features/clients/data/models/client_creation_result.dart';
 import '../../features/clients/data/repositories/clients_repository.dart';
 import '../../features/reservation/data/datasources/reservation_local_store.dart';
 import '../../features/reservation/data/repositories/reservation_repository.dart';
@@ -12,9 +13,15 @@ import '../error/failures.dart';
 ///
 /// `out_of_scope` : le logement a quitté le périmètre du gérant entre la saisie
 /// et l'envoi. `manager_not_assigned` : son affectation a été suspendue.
-/// Dans les deux cas le serveur refusera identiquement à chaque tentative, et
+/// `client_out_of_scope` : la fiche du client existe hors de son périmètre, le
+/// serveur l'accuse sans la livrer et aucun identifiant ne peut être rattaché.
+/// Dans les trois cas le serveur refusera identiquement à chaque tentative, et
 /// la saisie resterait en tête de file à bloquer tout ce qui suit.
-const _definitiveCodes = <String>{'out_of_scope', 'manager_not_assigned'};
+const _definitiveCodes = <String>{
+  'out_of_scope',
+  'manager_not_assigned',
+  'client_out_of_scope',
+};
 
 /// Ce refus doit-il retirer la saisie de la file plutôt que d'être rejoué ?
 ///
@@ -105,8 +112,7 @@ class SyncReport {
   final int remaining;
   final int failed;
 
-  bool get hasWork =>
-      sent > 0 || conflicts > 0 || rejected > 0 || failed > 0;
+  bool get hasWork => sent > 0 || conflicts > 0 || rejected > 0 || failed > 0;
 }
 
 /// Envoie les réservations saisies hors ligne dès que le réseau revient.
@@ -306,8 +312,24 @@ class SyncService {
       documentBackPath: pending.documentBackPath,
     );
 
-    await _store.linkClientRemoteId(localId, created.client.id);
-    return created.client.id;
+    final client = created.client;
+    if (client == null) {
+      // La fiche existe hors du périmètre du gérant : le serveur l'accuse sans
+      // la livrer, et il n'y a aucun identifiant à rattacher.
+      //
+      // Levé en 403 plutôt que rendu `null` : `null` vaut ici « à réessayer »,
+      // et la réservation repartirait à chaque reconnexion sur un refus qui ne
+      // bougera pas, bloquant toute la file derrière elle. Le 403 la classe en
+      // refus définitif — retirée de la file, signalée au gérant, conservée en
+      // base parce qu'elle porte de l'argent encaissé.
+      throw AppFailure.forbidden(
+        message: clientOutOfScopeMessage,
+        code: 'client_out_of_scope',
+      );
+    }
+
+    await _store.linkClientRemoteId(localId, client.id);
+    return client.id;
   }
 
   /// Décide du sort d'une réservation refusée, et l'applique à la base.
