@@ -20,6 +20,10 @@ class AuthUser {
 
   bool get isOwner => role == 'proprio';
 
+  /// Gérant : sert les logements que son propriétaire lui a affectés.
+  /// Symétrique de `isOwner`, qui existait avant l'ajout du rôle.
+  bool get isManager => role == 'gerant';
+
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
       id: json['id'] as String,
