@@ -40,6 +40,7 @@ import 'package:resi_africa/features/reservation/business_logic/add_reservation_
 import 'package:resi_africa/features/reservation/business_logic/reservation_cubit.dart';
 import 'package:resi_africa/features/reservation/data/datasources/reservation_local_store.dart';
 import 'package:resi_africa/features/reservation/data/repositories/reservation_repository.dart';
+import 'package:resi_africa/features/gerant/data/repositories/gerant_repository.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
@@ -132,6 +133,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
     () => FinanceRepository(sl<Dio>(), sl<SessionRole>()),
   );
   sl.registerLazySingleton(() => PropertyStatsRepository(sl<Dio>()));
+  sl.registerLazySingleton(
+    () => GerantRepository(sl<Dio>(), sl<SessionRole>()),
+  );
   sl.registerLazySingleton(() => FeedbackRepository(sl<Dio>()));
   sl.registerLazySingleton(() => RapportRepository(sl<Dio>()));
 
@@ -214,6 +218,11 @@ Future<void> setupServiceLocator(AppConfig config) async {
       sl<PropertyStatsRepository>(),
       sl<ReservationRepository>(),
       sl<FinanceRepository>(),
+      sl<GerantRepository>(),
+      // Lu à chaque chargement et non figé à l'enregistrement : le cubit est
+      // une fabrique, mais le rôle change à la reconnexion sans que le
+      // conteneur soit reconstruit.
+      () => sl<SessionRole>().value,
     ),
   );
   sl.registerFactory(
