@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/features/property/data/repositories/property_repository.dart';
 
@@ -87,7 +89,7 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
     interceptor = _CapturingInterceptor();
     dio.interceptors.add(interceptor);
-    repository = PropertyRepository(dio);
+    repository = PropertyRepository(dio, sessionRoleFixture());
   });
 
   group('Contrat de création — champs exigés par l’API', () {

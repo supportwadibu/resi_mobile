@@ -110,13 +110,25 @@ Future<void> setupServiceLocator(AppConfig config) async {
   // Repositories
   sl.registerLazySingleton(() => AuthRepository(sl<Dio>()));
   sl.registerLazySingleton(() => OwnerProfileRepository(sl<Dio>()));
-  sl.registerLazySingleton(() => PropertyRepository(sl<Dio>()));
-  sl.registerLazySingleton(() => ReservationRepository(sl<Dio>()));
-  sl.registerLazySingleton(() => ClientsRepository(sl<Dio>()));
+  sl.registerLazySingleton(
+    () => PropertyRepository(sl<Dio>(), sl<SessionRole>()),
+  );
+  sl.registerLazySingleton(
+    () => ReservationRepository(sl<Dio>(), sl<SessionRole>()),
+  );
+  sl.registerLazySingleton(
+    () => ClientsRepository(sl<Dio>(), sl<SessionRole>()),
+  );
   sl.registerLazySingleton(() => ReservationLocalStore(AppDatabase.instance));
-  sl.registerLazySingleton(() => ExpenseRepository(sl<Dio>()));
-  sl.registerLazySingleton(() => ResidenceRepository(sl<Dio>()));
-  sl.registerLazySingleton(() => FinanceRepository(sl<Dio>()));
+  sl.registerLazySingleton(
+    () => ExpenseRepository(sl<Dio>(), sl<SessionRole>()),
+  );
+  sl.registerLazySingleton(
+    () => ResidenceRepository(sl<Dio>(), sl<SessionRole>()),
+  );
+  sl.registerLazySingleton(
+    () => FinanceRepository(sl<Dio>(), sl<SessionRole>()),
+  );
   sl.registerLazySingleton(() => PropertyStatsRepository(sl<Dio>()));
   sl.registerLazySingleton(() => FeedbackRepository(sl<Dio>()));
   sl.registerLazySingleton(() => RapportRepository(sl<Dio>()));

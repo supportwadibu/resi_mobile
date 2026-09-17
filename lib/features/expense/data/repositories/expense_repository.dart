@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../models/expense_model.dart';
 
 /// Dépenses du propriétaire connecté.
 class ExpenseRepository {
-  const ExpenseRepository(this._dio);
+  const ExpenseRepository(this._dio, this._role);
   final Dio _dio;
+  final SessionRole _role;
 
   /// Une page de dépenses, la plus récente d'abord.
   ///
@@ -25,7 +27,7 @@ class ExpenseRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioExpenses,
+        ApiEndpoints.expenses(_role.value),
         queryParameters: {
           ...?_filters(
             propertyId: propertyId,
@@ -90,7 +92,7 @@ class ExpenseRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioExpenseSummary,
+        ApiEndpoints.expenseSummary(_role.value),
         queryParameters: _filters(
           propertyId: propertyId,
           residenceId: residenceId,
@@ -111,7 +113,7 @@ class ExpenseRepository {
   Future<ExpenseModel> create(CreateExpensePayload payload) async {
     try {
       final response = await _dio.post(
-        ApiEndpoints.proprioExpenses,
+        ApiEndpoints.expenses(_role.value),
         data: payload.toJson(),
       );
       final data = (response.data as Map<String, dynamic>)['data'];
@@ -126,7 +128,7 @@ class ExpenseRepository {
   Future<ExpenseModel> update(String id, UpdateExpensePayload payload) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioExpense(id),
+        ApiEndpoints.expense(_role.value, id),
         data: payload.toJson(),
       );
       final data = (response.data as Map<String, dynamic>)['data'];
@@ -140,7 +142,7 @@ class ExpenseRepository {
 
   Future<void> delete(String id) async {
     try {
-      await _dio.delete(ApiEndpoints.proprioExpense(id));
+      await _dio.delete(ApiEndpoints.expense(_role.value, id));
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);
     } catch (e) {
@@ -158,7 +160,8 @@ class ExpenseRepository {
     DateTime? to,
   }) {
     final params = <String, dynamic>{
-      if (propertyId != null && propertyId.isNotEmpty) 'property_id': propertyId,
+      if (propertyId != null && propertyId.isNotEmpty)
+        'property_id': propertyId,
       // Filtre les charges communes du lieu. Les deux filtres ne se combinent
       // pas utilement : une dépense ne porte jamais les deux rattachements.
       if (residenceId != null && residenceId.isNotEmpty)

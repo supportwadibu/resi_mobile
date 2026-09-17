@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/expense/business_logic/expense_state.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
@@ -39,7 +41,10 @@ class _CapturingInterceptor extends Interceptor {
   final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
   final spy = _CapturingInterceptor();
   dio.interceptors.add(spy);
-  return (cubit: FinanceCubit(FinanceRepository(dio)), spy: spy);
+  return (
+    cubit: FinanceCubit(FinanceRepository(dio, sessionRoleFixture())),
+    spy: spy,
+  );
 }
 
 void main() {
@@ -59,7 +64,10 @@ void main() {
 
       await built.cubit.filterByResidence('resi-adja');
 
-      expect(built.spy.captured.single.queryParameters['residence_id'], 'resi-adja');
+      expect(
+        built.spy.captured.single.queryParameters['residence_id'],
+        'resi-adja',
+      );
       expect(built.cubit.residenceId, 'resi-adja');
     });
 
@@ -73,7 +81,10 @@ void main() {
       await built.cubit.load();
 
       expect(built.spy.captured, hasLength(2));
-      expect(built.spy.captured.last.queryParameters['residence_id'], 'resi-adja');
+      expect(
+        built.spy.captured.last.queryParameters['residence_id'],
+        'resi-adja',
+      );
     });
 
     test('revenir à « tout le parc » retire le filtre', () async {

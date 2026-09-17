@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
 
@@ -16,11 +18,7 @@ class _CapturingInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     captured = options;
     handler.resolve(
-      Response(
-        requestOptions: options,
-        statusCode: 200,
-        data: body(options),
-      ),
+      Response(requestOptions: options, statusCode: 200, data: body(options)),
     );
   }
 }
@@ -59,11 +57,15 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
     interceptor = _CapturingInterceptor(body);
     dio.interceptors.add(interceptor);
-    repository = ExpenseRepository(dio);
+    repository = ExpenseRepository(dio, sessionRoleFixture());
   }
 
   setUp(() {
-    arrange((_) => const {'data': [_expenseJson]});
+    arrange(
+      (_) => const {
+        'data': [_expenseJson],
+      },
+    );
   });
 
   group('Contrat de création', () {
@@ -154,7 +156,10 @@ void main() {
     test('sans filtre, seule la pagination est envoyée', () async {
       await repository.getExpensePage();
 
-      expect(interceptor.captured!.queryParameters, {'page': 1, 'per_page': 20});
+      expect(interceptor.captured!.queryParameters, {
+        'page': 1,
+        'per_page': 20,
+      });
     });
 
     test('les filtres fournis partent en paramètres', () async {
@@ -212,7 +217,11 @@ void main() {
     });
 
     test('sans `meta`, une page unique est supposée', () async {
-      arrange((_) => const {'data': [_expenseJson]});
+      arrange(
+        (_) => const {
+          'data': [_expenseJson],
+        },
+      );
 
       final page = await repository.getExpensePage();
 
@@ -228,7 +237,12 @@ void main() {
           'data': [
             {..._expenseJson, 'id': 'exp_page_$page'},
           ],
-          'meta': {'total': 2, 'perPage': 1, 'currentPage': page, 'lastPage': 2},
+          'meta': {
+            'total': 2,
+            'perPage': 1,
+            'currentPage': page,
+            'lastPage': 2,
+          },
         };
       });
 
@@ -275,10 +289,7 @@ void main() {
     });
 
     test('cible la dépense visée', () async {
-      await repository.update(
-        'exp_1',
-        const UpdateExpensePayload(amount: 1),
-      );
+      await repository.update('exp_1', const UpdateExpensePayload(amount: 1));
 
       expect(interceptor.captured!.path, '/api/v1/proprio/expenses/exp_1');
     });
@@ -322,10 +333,10 @@ void main() {
     test('la ventilation conserve l’ordre décroissant du serveur', () async {
       final summary = await repository.getSummary();
 
-      expect(
-        summary.byCategory.map((b) => b.category),
-        [ExpenseCategory.electricity, ExpenseCategory.water],
-      );
+      expect(summary.byCategory.map((b) => b.category), [
+        ExpenseCategory.electricity,
+        ExpenseCategory.water,
+      ]);
       expect(summary.byCategory.first.sharePercent, 63);
     });
 

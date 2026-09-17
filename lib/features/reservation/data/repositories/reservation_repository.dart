@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/booking_stats_model.dart';
 import '../models/occupied_period_model.dart';
 import '../models/reservation_model.dart';
 
@@ -39,8 +41,9 @@ class ReservationPage {
 
 /// Réservations reçues par le propriétaire connecté.
 class ReservationRepository {
-  const ReservationRepository(this._dio);
+  const ReservationRepository(this._dio, this._role);
   final Dio _dio;
+  final SessionRole _role;
 
   /// Une page de réservations, la plus récente d'abord.
   Future<ReservationPage> getReservationPage({
@@ -51,7 +54,7 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioBookings,
+        ApiEndpoints.bookings(_role.value),
         queryParameters: {
           if (propertyId != null && propertyId.isNotEmpty)
             'property_id': propertyId,
@@ -75,6 +78,20 @@ class ReservationRepository {
     return page.items;
   }
 
+  /// Chiffres du tableau de bord : occupation du mois, séjours à venir et en
+  /// cours, revenu du mois rapporté au précédent.
+  Future<BookingStatsModel> getStats() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.proprioBookingStats);
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return BookingStatsModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
   /// Enregistre une réservation prise au comptoir.
   ///
   /// [clientRequestId] rend la création idempotente : sur un réseau instable,
@@ -95,7 +112,7 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.post(
-        ApiEndpoints.proprioBookings,
+        ApiEndpoints.bookings(_role.value),
         data: {
           'property_id': propertyId,
           'client_id': clientId,
@@ -127,7 +144,7 @@ class ReservationRepository {
   Future<ReservationModel> checkOut(String id) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioBookingCheckOut(id),
+        ApiEndpoints.bookingCheckOut(_role.value, id),
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);
@@ -153,7 +170,7 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioBookingExtend(id),
+        ApiEndpoints.bookingExtend(_role.value, id),
         data: {
           'check_out_at': checkOutAt.toUtc().toIso8601String(),
           // `?` plutôt qu'un `if`, comme à la création : sans la clé, le
@@ -181,7 +198,7 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioPropertyAvailability,
+        ApiEndpoints.propertyAvailability(_role.value),
         queryParameters: {
           'property_id': propertyId,
           if (from != null) 'from': from.toUtc().toIso8601String(),
@@ -189,8 +206,8 @@ class ReservationRepository {
         },
       );
 
-      final data = (response.data as Map<String, dynamic>)['data'] as List? ??
-          const [];
+      final data =
+          (response.data as Map<String, dynamic>)['data'] as List? ?? const [];
       return data
           .map((e) => OccupiedPeriodModel.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);

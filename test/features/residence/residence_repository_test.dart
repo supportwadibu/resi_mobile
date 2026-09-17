@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/residence/data/models/residence_model.dart';
 import 'package:resi_africa/features/residence/data/repositories/residence_repository.dart';
 
@@ -32,7 +34,9 @@ const _residenceJson = {
     'postal_code': '01 BP 1234',
   },
   'amenities': {'pool': true, 'security': true, 'gym': false},
-  'media': {'images': <String>['https://img/1.jpg']},
+  'media': {
+    'images': <String>['https://img/1.jpg'],
+  },
   'units_count': 3,
 };
 
@@ -42,7 +46,7 @@ const _residenceJson = {
   final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
   final spy = _CapturingInterceptor(body);
   dio.interceptors.add(spy);
-  return (repo: ResidenceRepository(dio), spy: spy);
+  return (repo: ResidenceRepository(dio, sessionRoleFixture()), spy: spy);
 }
 
 void main() {
@@ -81,7 +85,10 @@ void main() {
     test('tolère une réponse minimale', () {
       // Compatibilité ascendante : une résidence écrite avant l'ajout du
       // compteur n'en porte pas.
-      final residence = ResidenceModel.fromJson({'id': 'r3', 'name': 'Minimale'});
+      final residence = ResidenceModel.fromJson({
+        'id': 'r3',
+        'name': 'Minimale',
+      });
 
       expect(residence.unitsCount, 0);
       expect(residence.address.city, '');
@@ -176,7 +183,11 @@ void main() {
     });
 
     test('le détachement envoie un residence_id nul', () async {
-      final built = _build((_) => {'data': {'id': 'studio-1', 'title': 'Studio 1'}});
+      final built = _build(
+        (_) => {
+          'data': {'id': 'studio-1', 'title': 'Studio 1'},
+        },
+      );
 
       await built.repo.attachToResidence('studio-1', residenceId: null);
 
@@ -188,7 +199,11 @@ void main() {
     });
 
     test('copyAddress est transmis quand il est demandé', () async {
-      final built = _build((_) => {'data': {'id': 'studio-1', 'title': 'Studio 1'}});
+      final built = _build(
+        (_) => {
+          'data': {'id': 'studio-1', 'title': 'Studio 1'},
+        },
+      );
 
       await built.repo.attachToResidence(
         'studio-1',
