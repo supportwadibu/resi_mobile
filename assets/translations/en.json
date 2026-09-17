@@ -16,5 +16,24 @@
     "timeout": "Request timed out. Please retry.",
     "not_found": "Resource not found.",
     "forbidden": "Access denied."
+  },
+  "sync": {
+    "done": "Synchronisation complete.",
+    "sent": {
+      "one": "1 booking sent",
+      "other": "{} bookings sent"
+    },
+    "conflicts": {
+      "one": "1 refused (dates already booked)",
+      "other": "{} refused (dates already booked)"
+    },
+    "rejected": {
+      "one": "1 dropped (property outside your scope)",
+      "other": "{} dropped (properties outside your scope)"
+    },
+    "failed": {
+      "one": "1 waiting for network",
+      "other": "{} waiting for network"
+    }
   }
 }

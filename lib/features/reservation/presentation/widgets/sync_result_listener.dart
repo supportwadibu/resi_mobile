@@ -1,8 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/sync/sync_service.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Annonce le résultat d'une synchronisation.
 ///
@@ -41,59 +42,46 @@ class _SyncResultListenerState extends State<SyncResultListener> {
     final report = _sync.lastReport.value;
     if (report == null || !mounted) return;
 
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
-
     // Un envoi réussi et un refus peuvent survenir dans la même passe : le
     // message doit dire ce qui s'est réellement produit, sous peine
     // d'annoncer un succès alors qu'une réservation reste à arbitrer.
-    final hasProblem = report.conflicts > 0 || report.failed > 0;
+    final hasProblem =
+        report.conflicts > 0 || report.rejected > 0 || report.failed > 0;
 
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(_message(report)),
-          backgroundColor: hasProblem ? AppColors.warning : AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    if (hasProblem) {
+      AppToast.warning(_message(report), context: context);
+    } else {
+      AppToast.success(_message(report), context: context);
+    }
   }
 
   static String _message(SyncReport report) {
     final parts = <String>[];
 
     if (report.sent > 0) {
-      parts.add(
-        report.sent == 1
-            ? '1 réservation transmise'
-            : '${report.sent} réservations transmises',
-      );
+      parts.add(_plural('sync.sent', report.sent));
     }
 
     if (report.conflicts > 0) {
-      parts.add(
-        report.conflicts == 1
-            ? '1 refusée (période déjà prise)'
-            : '${report.conflicts} refusées (périodes déjà prises)',
-      );
+      parts.add(_plural('sync.conflicts', report.conflicts));
+    }
+
+    // Annoncé à part du conflit : un conflit s'arbitre — le propriétaire
+    // tranche qui occupe le logement — tandis qu'un rejet se constate. Les
+    // confondre laisserait le gérant attendre un arbitrage qui ne viendra pas.
+    if (report.rejected > 0) {
+      parts.add(_plural('sync.rejected', report.rejected));
     }
 
     if (report.failed > 0) {
-      parts.add(
-        report.failed == 1
-            ? '1 en attente de réseau'
-            : '${report.failed} en attente de réseau',
-      );
+      parts.add(_plural('sync.failed', report.failed));
     }
 
-    return parts.isEmpty
-        ? 'Synchronisation terminée.'
-        : '${parts.join(' · ')}.';
+    return parts.isEmpty ? 'sync.done'.tr() : '${parts.join(' · ')}.';
   }
+
+  static String _plural(String key, int count) =>
+      key.plural(count, args: ['$count']);
 
   @override
   Widget build(BuildContext context) => widget.child;

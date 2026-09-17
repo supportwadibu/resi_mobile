@@ -8,11 +8,80 @@ import '../../features/reservation/data/datasources/reservation_local_store.dart
 import '../../features/reservation/data/repositories/reservation_repository.dart';
 import '../error/failures.dart';
 
+/// Codes d'un refus que rejouer ne résoudra jamais.
+///
+/// `out_of_scope` : le logement a quitté le périmètre du gérant entre la saisie
+/// et l'envoi. `manager_not_assigned` : son affectation a été suspendue.
+/// Dans les deux cas le serveur refusera identiquement à chaque tentative, et
+/// la saisie resterait en tête de file à bloquer tout ce qui suit.
+const _definitiveCodes = <String>{'out_of_scope', 'manager_not_assigned'};
+
+/// Ce refus doit-il retirer la saisie de la file plutôt que d'être rejoué ?
+///
+/// Le code prime sur le statut : un 403 dont on ne reconnaît pas le code peut
+/// être transitoire — un jeton expiré que l'interceptor rafraîchira. Supprimer
+/// la saisie perdrait le travail du gérant, ce qu'aucune reprise ne rattrape.
+bool isDefinitiveRejection(int? statusCode, String? code) {
+  if (statusCode != 403) return false;
+  if (code == null) return false;
+  return _definitiveCodes.contains(code);
+}
+
+/// Sort réservé à une réservation que le serveur vient de refuser.
+enum FailureDisposition {
+  /// Retirée de la file : la rejouer donnerait le même refus, indéfiniment.
+  rejected,
+
+  /// Gardée en base, hors file active, en attente d'arbitrage.
+  conflict,
+
+  /// Remise en file : la cause est transitoire.
+  retry,
+}
+
+/// Décide du sort d'une réservation refusée, sur le seul couple statut + code.
+///
+/// Extraite du service pour être éprouvée sans base ni réseau : c'est la
+/// décision dont dépend le déblocage de la file, et la tester au travers de
+/// SQLite reviendrait à ne pas la tester du tout.
+FailureDisposition classifyFailure(AppFailure failure) {
+  if (isDefinitiveRejection(failure.statusCode, failure.code)) {
+    return FailureDisposition.rejected;
+  }
+
+  // Un chevauchement comme un refus définitif restent tous deux en base : ils
+  // portent de l'argent encaissé, et seul l'état « conflit » les remonte au
+  // propriétaire pour arbitrage.
+  final isBlocking =
+      _looksLikeConflict(failure) || _isPermanentRejection(failure);
+
+  return isBlocking ? FailureDisposition.conflict : FailureDisposition.retry;
+}
+
+/// Le serveur répond 409 sur un chevauchement de période.
+///
+/// Le code HTTP fait foi plutôt que le texte du message, qui peut être
+/// traduit ou reformulé sans préavis.
+bool _looksLikeConflict(AppFailure failure) => failure.statusCode == 409;
+
+/// Refus définitif : rejouer la même requête produirait le même refus.
+///
+/// Une réservation refusée pour sa forme (422) ou ses droits (401/403) ne
+/// doit pas boucler en file : sans cette sortie, elle repartait à chaque
+/// reconnexion, indéfiniment. Elle reste en base — elle porte de l'argent
+/// encaissé — mais passe en conflit, à arbitrer par le propriétaire.
+bool _isPermanentRejection(AppFailure failure) {
+  final code = failure.statusCode;
+  if (code == null) return false;
+  return code >= 400 && code < 500 && code != 408 && code != 429;
+}
+
 /// Ce que la synchronisation vient de faire, pour l'affichage.
 class SyncReport {
   const SyncReport({
     this.sent = 0,
     this.conflicts = 0,
+    this.rejected = 0,
     this.remaining = 0,
     this.failed = 0,
   });
@@ -23,10 +92,18 @@ class SyncReport {
   /// attendent l'arbitrage du propriétaire.
   final int conflicts;
 
+  /// Réservations retirées de la file sur un refus définitif du serveur.
+  ///
+  /// Distinct de [conflicts] : un conflit s'arbitre — le propriétaire tranche
+  /// qui occupe le logement — tandis qu'un rejet se constate, le gérant n'a
+  /// plus le logement dans son périmètre et rien ne lui rendra.
+  final int rejected;
+
   final int remaining;
   final int failed;
 
-  bool get hasWork => sent > 0 || conflicts > 0 || failed > 0;
+  bool get hasWork =>
+      sent > 0 || conflicts > 0 || rejected > 0 || failed > 0;
 }
 
 /// Envoie les réservations saisies hors ligne dès que le réseau revient.
@@ -104,6 +181,7 @@ class SyncService {
     _running = true;
     var sent = 0;
     var conflicts = 0;
+    var rejected = 0;
     var failed = 0;
 
     try {
@@ -117,11 +195,17 @@ class SyncService {
             sent++;
           case _SendOutcome.conflict:
             conflicts++;
+          case _SendOutcome.rejected:
+            // La saisie vient de quitter la file : la passe continue, c'est
+            // précisément ce que ce retrait débloque.
+            rejected++;
           case _SendOutcome.retry:
             failed++;
             // Le réseau vient de retomber : inutile d'insister sur le reste
             // de la file, la prochaine reconnexion la reprendra.
-            if (!await _isOnline()) return _report(sent, conflicts, failed);
+            if (!await _isOnline()) {
+              return _report(sent, conflicts, rejected, failed);
+            }
         }
       }
     } finally {
@@ -129,13 +213,19 @@ class SyncService {
       await refreshCounters();
     }
 
-    return _report(sent, conflicts, failed);
+    return _report(sent, conflicts, rejected, failed);
   }
 
-  Future<SyncReport> _report(int sent, int conflicts, int failed) async {
+  Future<SyncReport> _report(
+    int sent,
+    int conflicts,
+    int rejected,
+    int failed,
+  ) async {
     final report = SyncReport(
       sent: sent,
       conflicts: conflicts,
+      rejected: rejected,
       failed: failed,
       remaining: await _store.pendingCount(),
     );
@@ -212,51 +302,51 @@ class SyncService {
     return created.client.id;
   }
 
-  /// Décide du sort d'une réservation refusée.
+  /// Décide du sort d'une réservation refusée, et l'applique à la base.
   ///
   /// Un conflit de période est définitif tant que le propriétaire n'a pas
-  /// tranché ; une panne réseau se réessaie. Dans les deux cas la réservation
+  /// tranché ; une panne réseau se réessaie. Dans ces deux cas la réservation
   /// reste en base : elle porte de l'argent encaissé, la perdre serait pire
-  /// que tout.
+  /// que tout. Seul un refus de périmètre la retire, parce que la garder
+  /// bloquerait tout ce qui la suit dans la file.
+  ///
+  /// Exposée aux tests : la classification seule ne dit rien de ce qui est
+  /// réellement écrit en base, et c'est ce retrait — non la valeur rendue —
+  /// qui débloque la file.
+  @visibleForTesting
+  Future<void> handleFailureForTest(
+    PendingBooking booking,
+    AppFailure failure,
+  ) => _handleFailure(booking, failure);
+
   Future<_SendOutcome> _handleFailure(
     PendingBooking booking,
     AppFailure failure,
   ) async {
-    // Un chevauchement comme un refus définitif sortent tous deux de la file :
-    // les rejouer ne changerait rien. Ils passent en conflit, seul état qui
-    // remonte la saisie au propriétaire pour arbitrage.
-    final isBlocking =
-        _looksLikeConflict(failure) || _isPermanentRejection(failure);
+    switch (classifyFailure(failure)) {
+      case FailureDisposition.rejected:
+        // Retirée de la file, et signalée : le gérant doit en référer au
+        // propriétaire. La garder ferait échouer toute la file derrière elle.
+        await _store.dequeue(booking.clientRequestId);
+        return _SendOutcome.rejected;
 
-    await _store.markFailure(
-      booking.clientRequestId,
-      error: failure.userMessage,
-      status: isBlocking
-          ? PendingSyncStatus.conflict
-          : PendingSyncStatus.pending,
-    );
+      case FailureDisposition.conflict:
+        await _store.markFailure(
+          booking.clientRequestId,
+          error: failure.userMessage,
+          status: PendingSyncStatus.conflict,
+        );
+        return _SendOutcome.conflict;
 
-    return isBlocking ? _SendOutcome.conflict : _SendOutcome.retry;
-  }
-
-  /// Le serveur répond 409 sur un chevauchement de période.
-  ///
-  /// Le code HTTP fait foi plutôt que le texte du message, qui peut être
-  /// traduit ou reformulé sans préavis.
-  static bool _looksLikeConflict(AppFailure failure) =>
-      failure.statusCode == 409;
-
-  /// Refus définitif : rejouer la même requête produirait le même refus.
-  ///
-  /// Une réservation refusée pour sa forme (422) ou ses droits (401/403) ne
-  /// doit pas boucler en file : sans cette sortie, elle repartait à chaque
-  /// reconnexion, indéfiniment. Elle reste en base — elle porte de l'argent
-  /// encaissé — mais passe en conflit, à arbitrer par le propriétaire.
-  static bool _isPermanentRejection(AppFailure failure) {
-    final code = failure.statusCode;
-    if (code == null) return false;
-    return code >= 400 && code < 500 && code != 408 && code != 429;
+      case FailureDisposition.retry:
+        await _store.markFailure(
+          booking.clientRequestId,
+          error: failure.userMessage,
+          status: PendingSyncStatus.pending,
+        );
+        return _SendOutcome.retry;
+    }
   }
 }
 
-enum _SendOutcome { sent, conflict, retry }
+enum _SendOutcome { sent, conflict, rejected, retry }

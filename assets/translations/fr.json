@@ -16,5 +16,24 @@
     "timeout": "La requete a expire. Reessayez.",
     "not_found": "Ressource introuvable.",
     "forbidden": "Acces refuse."
+  },
+  "sync": {
+    "done": "Synchronisation terminee.",
+    "sent": {
+      "one": "1 reservation transmise",
+      "other": "{} reservations transmises"
+    },
+    "conflicts": {
+      "one": "1 refusee (periode deja prise)",
+      "other": "{} refusees (periodes deja prises)"
+    },
+    "rejected": {
+      "one": "1 abandonnee (logement hors de votre perimetre)",
+      "other": "{} abandonnees (logements hors de votre perimetre)"
+    },
+    "failed": {
+      "one": "1 en attente de reseau",
+      "other": "{} en attente de reseau"
+    }
   }
 }
