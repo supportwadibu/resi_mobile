@@ -21,62 +21,11 @@ class SyncStatusBanner extends StatelessWidget {
         return ValueListenableBuilder<int>(
           valueListenable: sync.conflictCount,
           builder: (context, conflicts, _) {
-            if (pending == 0 && conflicts == 0) {
-              return const SizedBox.shrink();
-            }
-
-            // Un conflit prime : il demande un arbitrage, là où une attente de
-            // réseau se résout seule.
-            final isConflict = conflicts > 0;
-
-            return Container(
-              margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: isConflict ? AppColors.errorBg : AppColors.warningBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: (isConflict ? AppColors.error : AppColors.warning)
-                      .withValues(alpha: 0.25),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isConflict
-                        ? Icons.error_outline
-                        : Icons.cloud_upload_outlined,
-                    size: 18,
-                    color: isConflict ? AppColors.error : AppColors.warning,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _label(pending, conflicts),
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textPrimary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  if (!isConflict)
-                    TextButton(
-                      onPressed: sync.synchronize,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: const Text(
-                        'Envoyer',
-                        style: TextStyle(fontSize: 12.5),
-                      ),
-                    ),
-                ],
-              ),
+            return ValueListenableBuilder<int>(
+              valueListenable: sync.rejectedCount,
+              builder: (context, rejected, _) {
+                return _banner(sync, pending, conflicts, rejected);
+              },
             );
           },
         );
@@ -84,7 +33,65 @@ class SyncStatusBanner extends StatelessWidget {
     );
   }
 
-  static String _label(int pending, int conflicts) {
+  Widget _banner(SyncService sync, int pending, int conflicts, int rejected) {
+    if (pending == 0 && conflicts == 0 && rejected == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final isConflict = conflicts > 0 || rejected > 0;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isConflict ? AppColors.errorBg : AppColors.warningBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (isConflict ? AppColors.error : AppColors.warning).withValues(
+            alpha: 0.25,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isConflict ? Icons.error_outline : Icons.cloud_upload_outlined,
+            size: 18,
+            color: isConflict ? AppColors.error : AppColors.warning,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label(pending, conflicts, rejected),
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textPrimary,
+                height: 1.4,
+              ),
+            ),
+          ),
+          if (!isConflict)
+            TextButton(
+              onPressed: sync.synchronize,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Envoyer', style: TextStyle(fontSize: 12.5)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @visibleForTesting
+  static String label(int pending, int conflicts, int rejected) {
+    if (rejected > 0) {
+      return rejected == 1
+          ? '1 réservation refusée : logement hors de votre périmètre.'
+          : '$rejected réservations refusées : logements hors de votre périmètre.';
+    }
+
     if (conflicts > 0) {
       return conflicts == 1
           ? '1 réservation refusée : la période était déjà prise.'

@@ -57,9 +57,7 @@ class PendingBooking {
       remoteClientId: row['remote_client_id'] as String?,
       propertyId: row['property_id'] as String,
       stayType: StayType.fromCode(row['stay_type'] as String?),
-      checkInAt: DateTime.fromMillisecondsSinceEpoch(
-        row['check_in_at'] as int,
-      ),
+      checkInAt: DateTime.fromMillisecondsSinceEpoch(row['check_in_at'] as int),
       checkOutAt: row['check_out_at'] == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(row['check_out_at'] as int),
@@ -83,14 +81,31 @@ enum PendingSyncStatus {
   /// Refusée par le serveur pour cause de chevauchement. Jamais supprimée :
   /// le propriétaire doit arbitrer, la machine ne sait pas qui occupe
   /// réellement le logement.
-  conflict('conflict');
+  conflict('conflict'),
+
+  /// Refusée définitivement : le logement a quitté le périmètre du gérant, ou
+  /// son affectation a été suspendue.
+  ///
+  /// Sortie de la file d'envoi — la rejouer donnerait le même refus — mais
+  /// **conservée** : la saisie porte de l'argent encaissé au comptoir, et la
+  /// détruire laisserait le gérant sans rien à montrer au propriétaire.
+  rejected('rejected');
 
   const PendingSyncStatus(this.code);
 
   final String code;
 
-  static PendingSyncStatus fromCode(String? code) =>
-      code == 'conflict' ? PendingSyncStatus.conflict : PendingSyncStatus.pending;
+  /// Un code inconnu vaut `pending`.
+  ///
+  /// Repli délibéré : les lignes écrites avant ce statut n'ont que `pending` ou
+  /// `conflict`, et une base d'une version ultérieure ne doit pas faire lever
+  /// la lecture. Réessayer une saisie est toujours moins grave que la perdre.
+  static PendingSyncStatus fromCode(String? code) {
+    for (final status in PendingSyncStatus.values) {
+      if (status.code == code) return status;
+    }
+    return PendingSyncStatus.pending;
+  }
 }
 
 /// Client saisi hors ligne, en attente de création côté serveur.
@@ -228,7 +243,9 @@ class ReservationLocalStore {
     if (query != null && query.trim().isNotEmpty) {
       final term = '%${query.trim().toLowerCase()}%';
       where.add('(LOWER(full_name) LIKE ? OR phone LIKE ?)');
-      args..add(term)..add(term);
+      args
+        ..add(term)
+        ..add(term);
     }
 
     final rows = await db.query(
@@ -240,9 +257,11 @@ class ReservationLocalStore {
     );
 
     return rows
-        .map((r) => ClientModel.fromJson(
-              jsonDecode(r['payload'] as String) as Map<String, dynamic>,
-            ))
+        .map(
+          (r) => ClientModel.fromJson(
+            jsonDecode(r['payload'] as String) as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
   }
 
@@ -336,9 +355,7 @@ class ReservationLocalStore {
           ),
           checkOutAt: row['check_out_at'] == null
               ? DateTime.fromMillisecondsSinceEpoch(row['check_in_at'] as int)
-              : DateTime.fromMillisecondsSinceEpoch(
-                  row['check_out_at'] as int,
-                ),
+              : DateTime.fromMillisecondsSinceEpoch(row['check_out_at'] as int),
           // En file d'attente : le bien est pris, même si le serveur l'ignore
           // encore.
           status: ReservationStatus.confirmed,
@@ -478,6 +495,15 @@ class ReservationLocalStore {
     final result = await db.rawQuery(
       'SELECT COUNT(*) AS total FROM pending_bookings WHERE sync_status = ?',
       [PendingSyncStatus.conflict.code],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<int> rejectedCount() async {
+    final db = await _db;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM pending_bookings WHERE sync_status = ?',
+      [PendingSyncStatus.rejected.code],
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }

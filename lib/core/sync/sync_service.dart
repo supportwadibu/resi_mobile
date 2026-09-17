@@ -49,9 +49,12 @@ FailureDisposition classifyFailure(AppFailure failure) {
     return FailureDisposition.rejected;
   }
 
-  // Un chevauchement comme un refus définitif restent tous deux en base : ils
-  // portent de l'argent encaissé, et seul l'état « conflit » les remonte au
-  // propriétaire pour arbitrage.
+  // Passé ce point, plus rien n'est rejouable en l'état : un chevauchement
+  // (409) comme un refus de forme ou de droits (4xx) passent en « conflit »,
+  // seul état qui remonte la saisie au propriétaire pour arbitrage.
+  //
+  // Aucune saisie n'est jamais détruite, quelle que soit la branche : elles
+  // portent toutes de l'argent encaissé au comptoir.
   final isBlocking =
       _looksLikeConflict(failure) || _isPermanentRejection(failure);
 
@@ -136,6 +139,9 @@ class SyncService {
   /// Nombre de conflits à arbitrer.
   final ValueNotifier<int> conflictCount = ValueNotifier(0);
 
+  /// Nombre de saisies définitivement refusées, conservées pour consultation.
+  final ValueNotifier<int> rejectedCount = ValueNotifier(0);
+
   /// Dernière synchronisation ayant réellement transmis quelque chose.
   ///
   /// Le service tourne sans `BuildContext` — il est démarré au `bootstrap` —
@@ -162,12 +168,14 @@ class SyncService {
     _subscription = null;
     pendingCount.dispose();
     conflictCount.dispose();
+    rejectedCount.dispose();
     lastReport.dispose();
   }
 
   Future<void> refreshCounters() async {
     pendingCount.value = await _store.pendingCount();
     conflictCount.value = await _store.conflictCount();
+    rejectedCount.value = await _store.rejectedCount();
   }
 
   /// Vide la file, une réservation après l'autre.
@@ -325,9 +333,18 @@ class SyncService {
   ) async {
     switch (classifyFailure(failure)) {
       case FailureDisposition.rejected:
-        // Retirée de la file, et signalée : le gérant doit en référer au
-        // propriétaire. La garder ferait échouer toute la file derrière elle.
-        await _store.dequeue(booking.clientRequestId);
+        // Sortie de la file, et signalée : le gérant doit en référer au
+        // propriétaire. La laisser en attente ferait échouer toute la file
+        // derrière elle.
+        //
+        // Marquée et non supprimée : la saisie porte de l'argent encaissé au
+        // comptoir. `getQueue()` ne sert que les `pending`, donc ce statut
+        // suffit à l'écarter des envois sans rien détruire.
+        await _store.markFailure(
+          booking.clientRequestId,
+          error: failure.userMessage,
+          status: PendingSyncStatus.rejected,
+        );
         return _SendOutcome.rejected;
 
       case FailureDisposition.conflict:

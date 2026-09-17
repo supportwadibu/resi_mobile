@@ -1,11 +1,5 @@
 import 'package:dio/dio.dart';
 
-/// Extrait les erreurs de validation d'une reponse 422.
-///
-/// Deux formes coexistent et doivent etre lues indifferemment : VineJS renvoie
-/// une **liste** d'objets `{field, message, rule}`, tandis que d'autres points
-/// d'entree renvoient une **map** `champ -> [messages]`. N'en lire qu'une
-/// laissait le message vide, et le refus s'affichait sans rien expliquer.
 /// Extrait le code metier stable du corps d'une reponse d'erreur.
 ///
 /// Le corps n'est pas toujours l'objet attendu : un proxy en panne renvoie de
@@ -20,6 +14,12 @@ String? parseErrorCode(dynamic data) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
+/// Extrait les erreurs de validation d'une reponse 422.
+///
+/// Deux formes coexistent et doivent etre lues indifferemment : VineJS renvoie
+/// une **liste** d'objets `{field, message, rule}`, tandis que d'autres points
+/// d'entree renvoient une **map** `champ -> [messages]`. N'en lire qu'une
+/// laissait le message vide, et le refus s'affichait sans rien expliquer.
 Map<String, List<String>> parseValidationErrors(dynamic data) {
   if (data is! Map) return const {};
   final errors = data['errors'];
@@ -137,6 +137,11 @@ class AppFailure implements Exception {
   /// Un 403 métier dit souvent quoi faire pour lever le refus — « Complétez
   /// votre dossier avant de publier une annonce ». L'écraser par « Accès
   /// refusé » laisserait le propriétaire devant une impasse sans issue.
+  ///
+  /// Ce report du message est un **changement assumé** : auparavant tout 403
+  /// affichait le seul libellé générique. Il vaut pour toute l'application,
+  /// pas pour le seul gérant. Revenir au générique se verrait — des tests le
+  /// verrouillent dans `failures_code_test.dart`.
   factory AppFailure.forbidden({String? message, String? code}) => AppFailure._(
     userMessage: message?.trim().isNotEmpty == true
         ? message!.trim()

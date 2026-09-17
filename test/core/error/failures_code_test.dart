@@ -129,8 +129,9 @@ void main() {
       );
     });
 
-    test('un refus construit sans code se comporte comme avant', () {
-      expect(AppFailure.forbidden().userMessage, 'Acces refuse.');
+    test('les libelles par defaut restent inchanges', () {
+      // Ne dit rien du 403 porteur d'un message serveur : ce cas a son propre
+      // groupe ci-dessous, parce que son comportement a change volontairement.
       expect(AppFailure.forbidden().code, isNull);
       expect(AppFailure.notFound().userMessage, 'Ressource introuvable.');
       expect(AppFailure.unauthorized().statusCode, 401);
@@ -141,6 +142,76 @@ void main() {
       expect(
         AppFailure.validation(errors: const {}).userMessage,
         'Les informations saisies ont ete refusees par le serveur.',
+      );
+    });
+  });
+
+  group('message d’un 403', () {
+    // CHANGEMENT DE COMPORTEMENT ASSUME, decide par l'utilisateur.
+    //
+    // Avant, tout 403 affichait « Acces refuse. » — le message du serveur etait
+    // jete. Un refus metier dit souvent quoi faire pour le lever (« Completez
+    // votre dossier avant de publier »), et l'ecraser laissait l'utilisateur
+    // devant une impasse sans issue.
+    //
+    // Cela touche tous les 403 de l'application, pas seulement le gerant. Ces
+    // tests sont la pour qu'un retour au libelle generique se voie, au lieu de
+    // passer pour une simplification anodine.
+
+    test('le message du serveur est affiche tel quel', () {
+      final failure = AppFailure.fromDio(
+        _dioError(403, {
+          'message': 'Completez votre dossier avant de publier une annonce.',
+        }),
+      );
+
+      expect(
+        failure.userMessage,
+        'Completez votre dossier avant de publier une annonce.',
+      );
+      expect(
+        failure.userMessage,
+        isNot('Acces refuse.'),
+        reason: 'le message du serveur ne doit pas etre ecrase',
+      );
+    });
+
+    test('le message du serveur passe aussi par le second mapper', () {
+      // `mapDioExceptionToFailure` est le chemin des reservations : les deux
+      // doivent se comporter pareil, sans quoi le libelle dependrait du
+      // repository appelant.
+      final failure = mapDioExceptionToFailure(
+        _dioError(403, {
+          'message': 'Ce logement ne fait pas partie de votre perimetre.',
+        }),
+      );
+
+      expect(
+        failure.userMessage,
+        'Ce logement ne fait pas partie de votre perimetre.',
+      );
+    });
+
+    test('sans message serveur, le libelle generique subsiste', () {
+      // Le repli reste indispensable : une bulle vide n'apprendrait rien.
+      expect(
+        AppFailure.fromDio(_dioError(403, null)).userMessage,
+        'Acces refuse.',
+      );
+      expect(
+        mapDioExceptionToFailure(_dioError(403, {})).userMessage,
+        'Acces refuse.',
+      );
+    });
+
+    test('un message vide ou blanc retombe sur le generique', () {
+      expect(
+        AppFailure.fromDio(_dioError(403, {'message': '   '})).userMessage,
+        'Acces refuse.',
+      );
+      expect(
+        AppFailure.fromDio(_dioError(403, {'message': ''})).userMessage,
+        'Acces refuse.',
       );
     });
   });

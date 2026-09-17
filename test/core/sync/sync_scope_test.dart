@@ -174,7 +174,7 @@ void main() {
     // La classification ne dit rien de ce qui est ecrit en base. C'est le
     // retrait — pas la valeur rendue — qui debloque la file, et lui seul.
 
-    test('un hors perimetre est retire de la file', () async {
+    test('un hors perimetre sort de la file sans etre detruit', () async {
       final store = _SpyStore();
 
       await _service(store).handleFailureForTest(
@@ -182,13 +182,16 @@ void main() {
         AppFailure.forbidden(code: 'out_of_scope'),
       );
 
-      expect(store.dequeued, ['req-1']);
+      // Conservee : la saisie porte de l'argent encaisse au comptoir, et le
+      // gerant doit pouvoir la montrer au proprietaire.
+      expect(store.dequeued, isEmpty);
+      expect(store.marked['req-1'], PendingSyncStatus.rejected);
       // Surtout pas remise en attente : elle repartirait a la passe suivante
       // et bloquerait de nouveau tout ce qui la suit.
-      expect(store.marked, isEmpty);
+      expect(store.marked['req-1'], isNot(PendingSyncStatus.pending));
     });
 
-    test('un gerant suspendu est retire de la file', () async {
+    test('un gerant suspendu sort de la file sans etre detruit', () async {
       final store = _SpyStore();
 
       await _service(store).handleFailureForTest(
@@ -196,7 +199,32 @@ void main() {
         AppFailure.forbidden(code: 'manager_not_assigned'),
       );
 
-      expect(store.dequeued, ['req-1']);
+      expect(store.dequeued, isEmpty);
+      expect(store.marked['req-1'], PendingSyncStatus.rejected);
+    });
+
+    test('aucun refus ne detruit jamais une saisie', () async {
+      // Verrou transversal : c'est la regle que tout le reste du code protege
+      // — « elle porte de l'argent encaisse, la perdre serait pire que tout ».
+      final refus = [
+        AppFailure.forbidden(code: 'out_of_scope'),
+        AppFailure.forbidden(code: 'manager_not_assigned'),
+        AppFailure.forbidden(),
+        AppFailure.serverError(code: 409),
+        AppFailure.validation(errors: const {}),
+        AppFailure.noInternet(),
+      ];
+
+      for (final failure in refus) {
+        final store = _SpyStore();
+        await _service(store).handleFailureForTest(_booking(), failure);
+
+        expect(
+          store.dequeued,
+          isEmpty,
+          reason: 'un refus ${failure.statusCode} a detruit la saisie',
+        );
+      }
     });
 
     test('un conflit de periode reste en base, jamais retire', () async {
