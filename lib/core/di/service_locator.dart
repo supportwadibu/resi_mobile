@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -14,14 +15,24 @@ import 'package:resi_africa/features/auth/data/services/auth_service.dart';
 import 'package:resi_africa/features/auth/data/services/google_auth_service.dart';
 import 'package:resi_africa/features/auth/data/services/property_manager_service.dart';
 import 'package:resi_africa/features/expense/business_logic/add_expense_cubit.dart';
+import 'package:resi_africa/features/feedback/business_logic/feedback_cubit.dart';
+import 'package:resi_africa/features/feedback/data/repositories/feedback_repository.dart';
+import 'package:resi_africa/features/feedback/data/services/feedback_context_service.dart';
+import 'package:resi_africa/features/rapport/business_logic/report_form_cubit.dart';
+import 'package:resi_africa/features/rapport/data/repositories/rapport_repository.dart';
 import 'package:resi_africa/features/expense/business_logic/expense_cubit.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
+import 'package:resi_africa/features/reservation/business_logic/stay_extension_cubit.dart';
+import 'package:resi_africa/features/home/business_logic/home_stats_cubit.dart';
 import 'package:resi_africa/features/residence/business_logic/residence_cubit.dart';
+import 'package:resi_africa/features/residence/business_logic/residence_detail_cubit.dart';
 import 'package:resi_africa/features/residence/data/repositories/residence_repository.dart';
 import 'package:resi_africa/features/property/business_logic/create_property_cubit.dart';
+import 'package:resi_africa/features/property/business_logic/edit_property_cubit.dart';
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/data/repositories/property_repository.dart';
 import 'package:resi_africa/features/property/data/services/location_service.dart';
+import 'package:resi_africa/features/clients/business_logic/client_detail_cubit.dart';
 import 'package:resi_africa/features/clients/business_logic/clients_cubit.dart';
 import 'package:resi_africa/features/clients/data/repositories/clients_repository.dart';
 import 'package:resi_africa/features/reservation/business_logic/add_reservation_cubit.dart';
@@ -29,8 +40,10 @@ import 'package:resi_africa/features/reservation/business_logic/add_reservation_
 import 'package:resi_africa/features/reservation/business_logic/reservation_cubit.dart';
 import 'package:resi_africa/features/reservation/data/datasources/reservation_local_store.dart';
 import 'package:resi_africa/features/reservation/data/repositories/reservation_repository.dart';
+import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
+import 'package:resi_africa/features/stats/data/repositories/property_stats_repository.dart';
 
 import '../api/api_client.dart';
 import '../storage/app_database.dart';
@@ -40,6 +53,7 @@ import '../api/interceptors/connectivity_interceptor.dart';
 import '../api/interceptors/retry_interceptor.dart';
 import '../config/app_config.dart';
 import '../router/app_router.dart';
+import '../session/session_role.dart';
 import '../storage/local_storage.dart';
 import '../storage/secure_storage.dart';
 
@@ -64,10 +78,15 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerSingleton<SharedPreferences>(sharedPreferences);
   sl.registerSingleton<LocalStorage>(LocalStorage(sl()));
 
+  // Enregistré avant les repositories : ils le reçoivent en dépendance, et le
+  // rôle doit être connu avant le premier appel d'API.
+  sl.registerSingleton<SessionRole>(SessionRole(sl<LocalStorage>()));
+
   sl.registerSingleton<GoogleSignIn>(
     GoogleSignIn(
       scopes: const ['email'],
-      clientId: defaultTargetPlatform == TargetPlatform.iOS ||
+      clientId:
+          defaultTargetPlatform == TargetPlatform.iOS ||
               defaultTargetPlatform == TargetPlatform.macOS
           ? DefaultFirebaseOptions.ios.iosClientId
           : null,
@@ -76,9 +95,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
           : AppConfig.googleServerClientId,
     ),
   );
-  sl.registerLazySingleton<GoogleAuthService>(
-    () => GoogleAuthService(sl()),
-  );
+  sl.registerLazySingleton<GoogleAuthService>(() => GoogleAuthService(sl()));
 
   // ── Network ────────────────────────────────────────────────────────────────
   sl.registerSingleton<AuthInterceptor>(AuthInterceptor(sl()));
@@ -90,18 +107,19 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerSingleton<AppRouter>(AppRouter());
 
   // ── Features ───────────────────────────────────────────────────────────────
-// Repositories
+  // Repositories
   sl.registerLazySingleton(() => AuthRepository(sl<Dio>()));
   sl.registerLazySingleton(() => OwnerProfileRepository(sl<Dio>()));
   sl.registerLazySingleton(() => PropertyRepository(sl<Dio>()));
   sl.registerLazySingleton(() => ReservationRepository(sl<Dio>()));
   sl.registerLazySingleton(() => ClientsRepository(sl<Dio>()));
-  sl.registerLazySingleton(
-    () => ReservationLocalStore(AppDatabase.instance),
-  );
+  sl.registerLazySingleton(() => ReservationLocalStore(AppDatabase.instance));
   sl.registerLazySingleton(() => ExpenseRepository(sl<Dio>()));
   sl.registerLazySingleton(() => ResidenceRepository(sl<Dio>()));
   sl.registerLazySingleton(() => FinanceRepository(sl<Dio>()));
+  sl.registerLazySingleton(() => PropertyStatsRepository(sl<Dio>()));
+  sl.registerLazySingleton(() => FeedbackRepository(sl<Dio>()));
+  sl.registerLazySingleton(() => RapportRepository(sl<Dio>()));
 
   // Services
   sl.registerLazySingleton(
@@ -109,6 +127,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
       sl<AuthRepository>(),
       sl<SecureStorage>(),
       sl<GoogleAuthService>(),
+      sl<SessionRole>(),
     ),
   );
   sl.registerLazySingleton<PropertyManagerService>(
@@ -119,6 +138,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   // Client HTTP propre : Nominatim ne doit pas recevoir le jeton Resi.
   sl.registerLazySingleton(() => LocationService());
+  // Singleton : la version de l'application ne change pas en cours de session,
+  // et le service la garde en cache après la première lecture.
+  sl.registerLazySingleton(() => FeedbackContextService(sl<AppConfig>()));
 
   // Vide la file des réservations saisies hors réseau dès que la connexion
   // revient. Singleton : deux instances videraient la même file en parallèle
@@ -136,9 +158,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(
     () => AuthCubit(sl<AuthService>(), sl<PropertyManagerService>()),
   );
-  sl.registerFactory(
-    () => OwnerProfileCubit(sl<PropertyManagerService>()),
-  );
+  sl.registerFactory(() => OwnerProfileCubit(sl<PropertyManagerService>()));
   sl.registerFactory(
     () => PropertyCubit(
       sl<PropertyRepository>(),
@@ -147,10 +167,13 @@ Future<void> setupServiceLocator(AppConfig config) async {
     ),
   );
   sl.registerFactory(() => CreatePropertyCubit(sl<PropertyRepository>()));
+  sl.registerFactory(() => EditPropertyCubit(sl<PropertyRepository>()));
   sl.registerFactory(() => ReservationCubit(sl<ReservationRepository>()));
+  sl.registerFactory(() => StayExtensionCubit(sl<ReservationRepository>()));
   sl.registerFactory(
     () => ClientsCubit(sl<ClientsRepository>(), sl<ReservationLocalStore>()),
   );
+  sl.registerFactory(() => ClientDetailCubit(sl<ClientsRepository>()));
   // Le mode est propre à chaque ouverture du formulaire : check-in immédiat ou
   // réservation future, choisi dans la boîte de dialogue d'entrée.
   sl.registerFactoryParam<AddReservationCubit, ReservationMode, void>(
@@ -165,5 +188,28 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => ExpenseCubit(sl<ExpenseRepository>()));
   sl.registerFactory(() => AddExpenseCubit(sl<ExpenseRepository>()));
   sl.registerFactory(() => ResidenceCubit(sl<ResidenceRepository>()));
+  sl.registerFactory(
+    () => ResidenceDetailCubit(
+      sl<ResidenceRepository>(),
+      sl<PropertyRepository>(),
+    ),
+  );
   sl.registerFactory(() => FinanceCubit(sl<FinanceRepository>()));
+  sl.registerFactory(
+    () => HomeStatsCubit(
+      sl<PropertyStatsRepository>(),
+      sl<ReservationRepository>(),
+      sl<FinanceRepository>(),
+    ),
+  );
+  sl.registerFactory(
+    () =>
+        DashboardCubit(sl<FinanceRepository>(), sl<PropertyStatsRepository>()),
+  );
+  sl.registerFactory(
+    () => FeedbackCubit(sl<FeedbackRepository>(), sl<FeedbackContextService>()),
+  );
+  sl.registerFactory(
+    () => ReportFormCubit(sl<RapportRepository>(), sl<ResidenceRepository>()),
+  );
 }

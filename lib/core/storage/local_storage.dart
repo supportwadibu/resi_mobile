@@ -8,6 +8,19 @@ class LocalStorage {
   final SharedPreferences _prefs;
 
   static const String _propertyManagerKey = 'property_manager';
+  static const String _sessionRoleKey = 'session_role';
+
+  Future<void> saveRole(String role) async {
+    await _prefs.setString(_sessionRoleKey, role);
+  }
+
+  Future<String?> getRole() async {
+    return _prefs.getString(_sessionRoleKey);
+  }
+
+  Future<void> clearRole() async {
+    await _prefs.remove(_sessionRoleKey);
+  }
 
   Future<void> savePropertyManager(PropertyManagerModel manager) async {
     final jsonString = jsonEncode(manager.toJson());
@@ -17,7 +30,7 @@ class LocalStorage {
   Future<PropertyManagerModel?> getPropertyManager() async {
     final jsonString = _prefs.getString(_propertyManagerKey);
     if (jsonString == null) return null;
-    
+
     try {
       final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
       return PropertyManagerModel.fromJson(jsonMap);

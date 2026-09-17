@@ -12,6 +12,7 @@ import '../firebase_options.dart';
 import 'bloc/app_bloc_observer.dart';
 import 'config/app_config.dart';
 import 'di/service_locator.dart';
+import 'session/session_role.dart';
 import 'sync/sync_service.dart';
 
 Future<void> bootstrap(AppConfig config) async {
@@ -22,10 +23,12 @@ Future<void> bootstrap(AppConfig config) async {
     DeviceOrientation.portraitDown,
   ]);
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   await EasyLocalization.ensureInitialized();
 
@@ -33,13 +36,16 @@ Future<void> bootstrap(AppConfig config) async {
   // à la première mise en forme d'une date.
   await initializeDateFormatting('fr');
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   Bloc.observer = AppBlocObserver(enableLogging: config.enableLogging);
 
   await setupServiceLocator(config);
+
+  // Attendu avant tout le reste : la synchronisation lancée juste en dessous
+  // poste des réservations, et un rôle encore inconnu les enverrait au
+  // préfixe propriétaire au nom d'un gérant.
+  await sl<SessionRole>().restore();
 
   // Écoute le réseau et vide la file des réservations saisies hors ligne.
   // Lancé sans attendre : une file vide ne doit pas retarder l'affichage, et
