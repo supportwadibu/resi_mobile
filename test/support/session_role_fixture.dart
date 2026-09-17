@@ -4,17 +4,20 @@ import 'package:resi_africa/features/auth/data/models/property_manager_model.dar
 
 /// Stockage en mémoire : les tests unitaires du projet ne touchent aucun
 /// stockage réel, et `SharedPreferences` exigerait le binding de plateforme.
-class _MemoryStorage implements LocalStorage {
-  String? _role;
+///
+/// `role` est laissé public : les tests de `SessionRole` vérifient ce qui a
+/// été réellement écrit sur le disque, et pas seulement l'état en mémoire.
+class MemoryLocalStorage implements LocalStorage {
+  String? role;
 
   @override
-  Future<void> saveRole(String role) async => _role = role;
+  Future<void> saveRole(String value) async => role = value;
 
   @override
-  Future<String?> getRole() async => _role;
+  Future<String?> getRole() async => role;
 
   @override
-  Future<void> clearRole() async => _role = null;
+  Future<void> clearRole() async => role = null;
 
   @override
   Future<void> savePropertyManager(PropertyManagerModel manager) async {}
@@ -26,7 +29,7 @@ class _MemoryStorage implements LocalStorage {
   Future<void> clearPropertyManager() async {}
 
   @override
-  Future<void> clear() async => _role = null;
+  Future<void> clear() async => role = null;
 }
 
 /// Session de test portant un rôle donné, `proprio` par défaut.
@@ -34,7 +37,7 @@ class _MemoryStorage implements LocalStorage {
 /// Les tests existants vérifient des chemins `/proprio/*` : le repli par
 /// défaut les laisse inchangés, et seul un test du gérant passe `'gerant'`.
 SessionRole sessionRoleFixture([String role = 'proprio']) {
-  final session = SessionRole(_MemoryStorage());
+  final session = SessionRole(MemoryLocalStorage());
   // `set` est asynchrone mais n'attend que le stockage en mémoire : le rôle
   // en mémoire est posé dès l'appel, avant que le test ne construise son Dio.
   session.set(role);

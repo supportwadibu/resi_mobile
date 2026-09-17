@@ -1,16 +1,27 @@
 import 'package:dio/dio.dart';
+import '../../session/session_role.dart';
 import '../../storage/secure_storage.dart';
 import '../api_endpoints.dart';
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._storage);
+  AuthInterceptor(this._storage, this._sessionRole);
   final SecureStorage _storage;
 
+  /// Purgé avec les jetons : une session perdue ici ne repasse pas par
+  /// `AuthService.logout`, et un rôle gérant qui survivrait serait ressuscité
+  /// par `restore()` au redémarrage — la file hors ligne posterait alors sur
+  /// `/api/v1/gerant/*` sans session.
+  final SessionRole _sessionRole;
+
   bool _isRefreshing = false;
-  final List<({RequestOptions options, ErrorInterceptorHandler handler})> _queue = [];
+  final List<({RequestOptions options, ErrorInterceptorHandler handler})>
+  _queue = [];
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final token = await _storage.accessToken;
     if (token != null) options.headers['Authorization'] = 'Bearer $token';
     handler.next(options);
@@ -18,18 +29,32 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode != 401) { handler.next(err); return; }
+    if (err.response?.statusCode != 401) {
+      handler.next(err);
+      return;
+    }
 
-    if (_isRefreshing) { _queue.add((options: err.requestOptions, handler: handler)); return; }
+    if (_isRefreshing) {
+      _queue.add((options: err.requestOptions, handler: handler));
+      return;
+    }
     _isRefreshing = true;
 
     try {
       final refresh = await _storage.refreshToken;
-      if (refresh == null) { await _storage.clear(); handler.next(err); return; }
+      if (refresh == null) {
+        await _storage.clear();
+        await _sessionRole.clear();
+        handler.next(err);
+        return;
+      }
 
       final freshDio = Dio(BaseOptions(baseUrl: err.requestOptions.baseUrl));
-      final res      = await freshDio.post(ApiEndpoints.refresh, data: {'refresh_token': refresh});
-      final newAccess  = res.data['access_token']  as String;
+      final res = await freshDio.post(
+        ApiEndpoints.refresh,
+        data: {'refresh_token': refresh},
+      );
+      final newAccess = res.data['access_token'] as String;
       final newRefresh = res.data['refresh_token'] as String? ?? refresh;
 
       await _storage.saveTokens(access: newAccess, refresh: newRefresh);
@@ -42,6 +67,7 @@ class AuthInterceptor extends Interceptor {
       }
     } catch (_) {
       await _storage.clear();
+      await _sessionRole.clear();
       handler.next(err);
     } finally {
       _isRefreshing = false;

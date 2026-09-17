@@ -98,7 +98,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerLazySingleton<GoogleAuthService>(() => GoogleAuthService(sl()));
 
   // ── Network ────────────────────────────────────────────────────────────────
-  sl.registerSingleton<AuthInterceptor>(AuthInterceptor(sl()));
+  sl.registerSingleton<AuthInterceptor>(
+    AuthInterceptor(sl<SecureStorage>(), sl<SessionRole>()),
+  );
   sl.registerSingleton<RetryInterceptor>(RetryInterceptor());
   sl.registerSingleton<ConnectivityInterceptor>(ConnectivityInterceptor(sl()));
   sl.registerSingleton<Dio>(buildDioClient(config, sl(), sl(), sl()));
