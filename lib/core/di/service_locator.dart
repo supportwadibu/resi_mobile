@@ -40,6 +40,9 @@ import 'package:resi_africa/features/reservation/business_logic/add_reservation_
 import 'package:resi_africa/features/reservation/business_logic/reservation_cubit.dart';
 import 'package:resi_africa/features/reservation/data/datasources/reservation_local_store.dart';
 import 'package:resi_africa/features/reservation/data/repositories/reservation_repository.dart';
+import 'package:resi_africa/features/gerant/business_logic/gerant_list_cubit.dart';
+import 'package:resi_africa/features/gerant/business_logic/gerant_scope_cubit.dart';
+import 'package:resi_africa/features/gerant/data/repositories/gerant_admin_repository.dart';
 import 'package:resi_africa/features/gerant/data/repositories/gerant_repository.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
@@ -136,6 +139,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerLazySingleton(
     () => GerantRepository(sl<Dio>(), sl<SessionRole>()),
   );
+  // Sans `SessionRole` : les routes `/proprio/managers` n'ont pas d'équivalent
+  // sous le préfixe du gérant, qui ne gère pas de gérants.
+  sl.registerLazySingleton(() => GerantAdminRepository(sl<Dio>()));
   sl.registerLazySingleton(() => FeedbackRepository(sl<Dio>()));
   sl.registerLazySingleton(() => RapportRepository(sl<Dio>()));
 
@@ -208,6 +214,14 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => ResidenceCubit(sl<ResidenceRepository>()));
   sl.registerFactory(
     () => ResidenceDetailCubit(
+      sl<ResidenceRepository>(),
+      sl<PropertyRepository>(),
+    ),
+  );
+  sl.registerFactory(() => GerantListCubit(sl<GerantAdminRepository>()));
+  sl.registerFactory(
+    () => GerantScopeCubit(
+      sl<GerantAdminRepository>(),
       sl<ResidenceRepository>(),
       sl<PropertyRepository>(),
     ),
