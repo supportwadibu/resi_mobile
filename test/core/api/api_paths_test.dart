@@ -19,18 +19,4 @@ void main() {
       expect(basePathForRole(''), '/api/v1/proprio');
     });
   });
-
-  group('isOwnerOnlyPath', () {
-    test('l’abonnement est fermé au gérant', () {
-      expect(isOwnerOnlyPath('/api/v1/proprio/subscription'), isTrue);
-    });
-
-    test('le dépôt de photos est fermé au gérant', () {
-      expect(isOwnerOnlyPath('/api/v1/proprio/properties/images'), isTrue);
-    });
-
-    test('une route gérant ne l’est pas', () {
-      expect(isOwnerOnlyPath('/api/v1/gerant/bookings'), isFalse);
-    });
-  });
 }

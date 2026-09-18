@@ -30,6 +30,41 @@ List<String> actionsForRole(String role, List<String> keys) =>
 List<String> featuresForRole(String role, List<String> keys) =>
     _keep(role, keys, _managerHiddenFeatures);
 
+/// Gestes fermés au gérant **à l'intérieur** d'un écran qui lui reste ouvert.
+///
+/// Retirer une entrée de la grille ferme un écran entier ; ici l'écran est
+/// délibérément conservé et seul le geste disparaît. Sans ce filtre le gérant
+/// voyait le bouton du propriétaire et n'obtenait, à l'appui, qu'une
+/// redirection muette, un 404 ou un 403 — un refus après coup, là où la
+/// conception veut une absence.
+///
+/// Ce que chaque clé ferme, et pourquoi le serveur la refuse :
+///
+/// - `residence_create`, `residence_edit`, `residence_delete`,
+///   `residence_attach_unit` : `/gerant/residences` n'expose qu'un `GET`.
+///   Le regroupement lui sert d'affichage, jamais d'objet qu'il façonne.
+/// - `property_publish` : la mise en ligne n'a pas d'équivalent gérant, et le
+///   repository vise `/proprio/...` en dur — l'appui répondait 403.
+/// - `expense_common_charge` : une charge commune de résidence n'a pas de
+///   `property_id`, et `POST /gerant/expenses` l'exige (422 `property_required`).
+///   Elle porte en outre sur des logements hors de son périmètre et entre dans
+///   le net du propriétaire, que le gérant ne voit pas.
+const _managerHiddenGestures = <String>{
+  'residence_create',
+  'residence_edit',
+  'residence_delete',
+  'residence_attach_unit',
+  'property_publish',
+  'expense_common_charge',
+};
+
+/// Vrai quand ce rôle peut voir ce geste. Un widget interroge cette fonction
+/// pour ne pas construire le bouton, jamais pour le construire désactivé.
+bool isGestureAllowed(String role, String gesture) {
+  if (role != 'gerant') return true;
+  return !_managerHiddenGestures.contains(gesture);
+}
+
 /// Écrans réservés au propriétaire.
 ///
 /// Le routeur racine est plat : une route reste atteignable par navigation

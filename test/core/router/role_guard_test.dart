@@ -39,6 +39,36 @@ void main() {
     });
   });
 
+  group('isGestureAllowed', () {
+    test('le gérant ne façonne pas une résidence', () {
+      // `/gerant/residences` n'expose qu'un `GET`.
+      expect(isGestureAllowed('gerant', 'residence_create'), isFalse);
+      expect(isGestureAllowed('gerant', 'residence_edit'), isFalse);
+      expect(isGestureAllowed('gerant', 'residence_delete'), isFalse);
+      expect(isGestureAllowed('gerant', 'residence_attach_unit'), isFalse);
+    });
+
+    test('le gérant ne met pas d’annonce en ligne', () {
+      expect(isGestureAllowed('gerant', 'property_publish'), isFalse);
+    });
+
+    test('le gérant n’impute pas de charge commune', () {
+      expect(isGestureAllowed('gerant', 'expense_common_charge'), isFalse);
+    });
+
+    test('le propriétaire garde tous ses gestes', () {
+      expect(isGestureAllowed('proprio', 'residence_create'), isTrue);
+      expect(isGestureAllowed('proprio', 'property_publish'), isTrue);
+      expect(isGestureAllowed('proprio', 'expense_common_charge'), isTrue);
+    });
+
+    test('un geste inconnu reste ouvert', () {
+      // La règle nomme ce qu'elle ferme : un geste neuf n'est pas fermé par
+      // inadvertance, et ne disparaît qu'une fois inscrit ici.
+      expect(isGestureAllowed('gerant', 'booking_check_out'), isTrue);
+    });
+  });
+
   group('isRouteAllowed', () {
     test('le gérant n’atteint pas la création de logement', () {
       expect(isRouteAllowed('gerant', 'AddPropertyRoute'), isFalse);

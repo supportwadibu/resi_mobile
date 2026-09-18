@@ -10,18 +10,18 @@ String basePathForRole(String role) {
   return role == 'gerant' ? '/api/v1/gerant' : '/api/v1/proprio';
 }
 
-/// Chemins qui n'ont aucun équivalent gérant.
-///
-/// Ils ne sont pas seulement absents de sa navigation : le serveur les refuse.
-/// Les reconnaître permet d'afficher un message juste plutôt qu'un 403 nu.
-const _ownerOnlySegments = <String>[
-  '/subscription',
-  '/properties/images',
-  '/reports',
-  '/managers',
-];
-
-bool isOwnerOnlyPath(String path) {
-  if (!path.contains('/proprio')) return false;
-  return _ownerOnlySegments.any(path.contains);
-}
+// `isOwnerOnlyPath` vivait ici : elle reconnaissait un chemin propriétaire pour
+// expliquer un 403 plutôt que de le laisser nu. Elle a été retirée, sans
+// appelant depuis son écriture, pour deux raisons.
+//
+// La première est qu'elle n'a plus d'objet : un geste fermé au gérant ne lui est
+// plus présenté, donc aucun appel ne part plus vers un chemin qu'il n'a pas —
+// voir `_managerHiddenGestures` dans `core/router/role_guard.dart`. Un message
+// posé après le refus arrive de toute façon trop tard : la conception veut une
+// absence, pas une explication.
+//
+// La seconde est qu'elle formait un second endroit où se décide ce qu'un rôle
+// atteint, concurrent du `role_guard` et déjà en retard sur lui — sa liste
+// ignorait `/properties/stats`, `/bookings/stats`, `/profile` et `/feedbacks`.
+// Deux règles de périmètre finissent par se contredire ; celle qui ne servait
+// à rien part.
