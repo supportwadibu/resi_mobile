@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 import '../../session/session_role.dart';
+import '../../storage/app_database.dart';
 import '../../storage/secure_storage.dart';
 import '../api_endpoints.dart';
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._storage, this._sessionRole);
+  AuthInterceptor(this._storage, this._sessionRole, this._database);
   final SecureStorage _storage;
 
   /// Purgé avec les jetons : une session perdue ici ne repasse pas par
@@ -12,6 +13,16 @@ class AuthInterceptor extends Interceptor {
   /// par `restore()` au redémarrage — la file hors ligne posterait alors sur
   /// `/api/v1/gerant/*` sans session.
   final SessionRole _sessionRole;
+
+  /// Seuls les **caches** sont purgés ici, jamais la file d'envoi.
+  ///
+  /// Une session perdue sur ce chemin est une expiration subie, pas une
+  /// déconnexion : elle survient d'elle-même après une nuit d'inactivité ou
+  /// une coupure réseau prolongée — le contexte même pour lequel la file
+  /// existe. `pending_bookings` porte alors de l'argent encaissé en espèces
+  /// au comptoir : le détruire ici le perdrait sans trace. Voir
+  /// [AppDatabase.clearCaches].
+  final AppDatabase _database;
 
   bool _isRefreshing = false;
   final List<({RequestOptions options, ErrorInterceptorHandler handler})>
@@ -45,6 +56,7 @@ class AuthInterceptor extends Interceptor {
       if (refresh == null) {
         await _storage.clear();
         await _sessionRole.clear();
+        await _database.clearCaches();
         handler.next(err);
         return;
       }
@@ -68,6 +80,7 @@ class AuthInterceptor extends Interceptor {
     } catch (_) {
       await _storage.clear();
       await _sessionRole.clear();
+      await _database.clearCaches();
       handler.next(err);
     } finally {
       _isRefreshing = false;

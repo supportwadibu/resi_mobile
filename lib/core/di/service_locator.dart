@@ -101,9 +101,14 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerLazySingleton<GoogleAuthService>(() => GoogleAuthService(sl()));
 
+  // Enregistrée avant l'intercepteur et `AuthService`, qui purgent tous deux
+  // la base locale à la perte de session. Une seule instance : c'est celle
+  // que `ReservationLocalStore` ouvre déjà.
+  sl.registerSingleton<AppDatabase>(AppDatabase.instance);
+
   // ── Network ────────────────────────────────────────────────────────────────
   sl.registerSingleton<AuthInterceptor>(
-    AuthInterceptor(sl<SecureStorage>(), sl<SessionRole>()),
+    AuthInterceptor(sl<SecureStorage>(), sl<SessionRole>(), sl<AppDatabase>()),
   );
   sl.registerSingleton<RetryInterceptor>(RetryInterceptor());
   sl.registerSingleton<ConnectivityInterceptor>(ConnectivityInterceptor(sl()));
@@ -125,7 +130,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerLazySingleton(
     () => ClientsRepository(sl<Dio>(), sl<SessionRole>()),
   );
-  sl.registerLazySingleton(() => ReservationLocalStore(AppDatabase.instance));
+  sl.registerLazySingleton(() => ReservationLocalStore(sl<AppDatabase>()));
   sl.registerLazySingleton(
     () => ExpenseRepository(sl<Dio>(), sl<SessionRole>()),
   );
@@ -152,6 +157,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
       sl<SecureStorage>(),
       sl<GoogleAuthService>(),
       sl<SessionRole>(),
+      sl<AppDatabase>(),
     ),
   );
   sl.registerLazySingleton<PropertyManagerService>(

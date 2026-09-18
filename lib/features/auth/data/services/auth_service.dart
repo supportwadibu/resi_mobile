@@ -1,4 +1,5 @@
 import '../../../../core/session/session_role.dart';
+import '../../../../core/storage/app_database.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../models/auth_model.dart';
 import '../models/register_init_model.dart';
@@ -12,6 +13,7 @@ class AuthService {
     this._storage,
     this._google,
     this._sessionRole,
+    this._database,
   );
 
   final AuthRepository _repository;
@@ -23,6 +25,11 @@ class AuthService {
   /// gérant qui survivrait ferait appeler `/gerant/*` par le propriétaire qui
   /// se connecte ensuite.
   final SessionRole _sessionRole;
+
+  /// Injectée plutôt que prise sur `AppDatabase.instance` : la purge de la
+  /// base locale est le point que la déconnexion doit garantir, et un
+  /// singleton pris en dur la rendrait invérifiable.
+  final AppDatabase _database;
 
   Future<AuthModel> login(String email, String password) async {
     final auth = await _repository.login(email, password);
@@ -75,9 +82,19 @@ class AuthService {
         await _repository.logout(refresh);
       }
     } finally {
+      // Les jetons d'abord : si la purge de la base échoue — disque plein,
+      // fichier verrouillé —, la session est déjà close et l'appareil ne
+      // rouvre pas la porte. L'inverse laisserait un jeton valide derrière
+      // une exception.
       await _storage.clear();
       await _sessionRole.clear();
       await _google.signOut();
+
+      // Purge complète, file d'envoi comprise : la déconnexion est un acte
+      // volontaire, donc le moment convenu pour tout effacer. Le carnet
+      // clients — pièces d'identité comprises — ne doit pas rester lisible
+      // par la personne qui prend l'appareil ensuite.
+      await _database.clear();
     }
   }
 

@@ -199,21 +199,48 @@ class AppDatabase {
     }
   }
 
+  /// Tables jetables : leur contenu se reconstruit d'un appel réseau.
+  static const _cacheTables = [
+    'cached_properties',
+    'cached_clients',
+    'cached_bookings',
+  ];
+
+  /// Tables de la file hors ligne, à ne vider qu'à la déconnexion.
+  ///
+  /// `pending_clients` suit `pending_bookings` : la clé étrangère les lie, et
+  /// garder les clients sans leurs réservations n'aurait aucun sens.
+  static const _queueTables = ['pending_bookings', 'pending_clients'];
+
   /// Vide les caches et la file — à la déconnexion.
   ///
   /// Les données d'un propriétaire ne doivent pas rester lisibles par le
   /// suivant sur le même appareil.
   Future<void> clear() async {
+    await _deleteFrom([..._cacheTables, ..._queueTables]);
+  }
+
+  /// Vide les seuls caches — à l'expiration subie d'une session.
+  ///
+  /// L'asymétrie avec [clear] est délibérée. Un jeton expire tout seul, après
+  /// une nuit d'inactivité ou une coupure réseau prolongée — c'est-à-dire
+  /// dans le contexte même pour lequel la file existe. `pending_bookings`
+  /// porte alors des réservations encaissées en espèces au comptoir et pas
+  /// encore parvenues au serveur : les détruire là perdrait de l'argent réel
+  /// et sans trace, le gérant ayant la liasse en caisse et plus rien nulle
+  /// part. La fuite de données qu'on ferme ici ne vaut pas ce prix.
+  ///
+  /// Les caches, eux, ne coûtent rien à perdre : les purger referme l'accès
+  /// au carnet clients — pièces d'identité comprises — sans rien détruire.
+  Future<void> clearCaches() async {
+    await _deleteFrom(_cacheTables);
+  }
+
+  Future<void> _deleteFrom(List<String> tables) async {
     final db = await database;
     final batch = db.batch();
 
-    for (final table in const [
-      'cached_properties',
-      'cached_clients',
-      'cached_bookings',
-      'pending_bookings',
-      'pending_clients',
-    ]) {
+    for (final table in tables) {
       batch.delete(table);
     }
 
