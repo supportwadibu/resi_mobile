@@ -241,9 +241,9 @@ class _AddGerantViewState extends State<_AddGerantView> {
         password: _passwordController.text,
         email: email.isEmpty ? null : email,
         phone: phone,
-        // Ordonnée pour que deux sélections identiques produisent la même
-        // requête.
-        propertyIds: selection.toList()..sort(),
+        // Transmise telle quelle : `scopePayload` l'ordonne et la nomme au
+        // moment de sérialiser.
+        propertyIds: selection,
       ),
     );
 

@@ -68,6 +68,20 @@ class GerantAccountModel {
   }
 }
 
+/// Charge utile du périmètre envoyée au serveur.
+///
+/// Toujours une liste de logements, ordonnée pour que deux sélections
+/// identiques produisent la même requête. Le serveur ignore les résidences :
+/// « affecter une résidence entière » n'existe que dans l'interface.
+///
+/// **Seul endroit où la clé `property_ids` est écrite.** Les deux chemins de
+/// production — création et remplacement du périmètre — passent par ici : la
+/// composer à la main en plus laisserait les tests verts si l'une des deux
+/// venait à être renommée.
+Map<String, dynamic> scopePayload(Set<String> selection) {
+  return {'property_ids': selection.toList()..sort()};
+}
+
 /// Charge utile de création d'un gérant : compte et périmètre en une requête.
 class CreateGerantPayload {
   const CreateGerantPayload({
@@ -75,7 +89,7 @@ class CreateGerantPayload {
     required this.password,
     this.email,
     this.phone,
-    this.propertyIds = const [],
+    this.propertyIds = const {},
   });
 
   final String fullName;
@@ -86,7 +100,10 @@ class CreateGerantPayload {
 
   final String? email;
   final String? phone;
-  final List<String> propertyIds;
+
+  /// Un ensemble, et non une liste : la sélection de l'écran en est un, et le
+  /// serveur refuse les doublons (`distinct`).
+  final Set<String> propertyIds;
 
   Map<String, dynamic> toJson() => {
     'full_name': fullName.trim(),
@@ -98,7 +115,7 @@ class CreateGerantPayload {
     if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
     // Toujours présent, même vide : le serveur attend la clé, et un gérant
     // ouvert sans logement est un cas légitime.
-    'property_ids': propertyIds,
+    ...scopePayload(propertyIds),
   };
 }
 

@@ -65,8 +65,13 @@ class GerantCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.alternate_email_rounded,
+                        // `contact` rend l'e-mail ou le téléphone : l'icône
+                        // suit, sans quoi un gérant inscrit par téléphone voit
+                        // son numéro précédé d'une arobase.
+                        Icon(
+                          gerant.email != null
+                              ? Icons.alternate_email_rounded
+                              : Icons.phone_outlined,
                           size: 12,
                           color: AppColors.textSecondary,
                         ),

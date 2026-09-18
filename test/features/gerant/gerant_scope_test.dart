@@ -51,6 +51,7 @@ void main() {
   });
 
   _dixLogementsDontSix();
+  _valeurDeLaCase();
 }
 
 /// Cas réel : une résidence de 10 logements dont 6 seulement sont confiés.
@@ -102,6 +103,45 @@ void _dixLogementsDontSix() {
       toggleProperty(confies, 'p-9');
 
       expect(confies, avant);
+    });
+  });
+}
+
+/// Case à cocher d'une résidence : le tiret de l'état mixte n'apparaît que sur
+/// une valeur **nulle**.
+///
+/// Flutter ne dessine le tiret que si `value == null`, même avec
+/// `tristate: true`. Un `bool` rendait six logements sur dix visuellement
+/// identiques à zéro sur dix.
+void _valeurDeLaCase() {
+  group('valeur de la case d’une résidence', () {
+    test('aucun logement confié : case vide', () {
+      expect(residenceCheckboxValue(checkedCount: 0, totalCount: 10), isFalse);
+    });
+
+    test('tous confiés : case cochée', () {
+      expect(residenceCheckboxValue(checkedCount: 10, totalCount: 10), isTrue);
+    });
+
+    test('six sur dix : null, seule valeur qui dessine le tiret', () {
+      // Le cas que le propriétaire rencontre vraiment. `false` ici le rendrait
+      // indiscernable d'une résidence dont rien n'est confié.
+      expect(residenceCheckboxValue(checkedCount: 6, totalCount: 10), isNull);
+    });
+
+    test('un seul sur dix reste mixte', () {
+      expect(residenceCheckboxValue(checkedCount: 1, totalCount: 10), isNull);
+    });
+
+    test('neuf sur dix reste mixte', () {
+      // Borne haute : il s'en faut d'un, la case ne doit pas paraître pleine.
+      expect(residenceCheckboxValue(checkedCount: 9, totalCount: 10), isNull);
+    });
+
+    test('résidence sans logement : case vide, jamais de tiret', () {
+      // Rien à confier : un tiret y suggérerait une sélection partielle qui
+      // n'existe pas.
+      expect(residenceCheckboxValue(checkedCount: 0, totalCount: 0), isFalse);
     });
   });
 }

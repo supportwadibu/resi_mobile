@@ -93,16 +93,20 @@ class GerantAdminRepository {
 
   /// Remplace le périmètre entier — `PUT`, jamais un ajout.
   ///
-  /// [propertyIds] est la liste voulue au complet : les logements absents sont
+  /// [selection] est le périmètre voulu au complet : les logements absents sont
   /// retirés. Envoyer le seul ajout retirerait tous les autres en silence.
+  ///
+  /// La charge utile passe par `scopePayload`, seul endroit où la clé
+  /// `property_ids` est écrite : la composer ici en plus laisserait les tests
+  /// verts si l'une des deux venait à être renommée.
   Future<GerantAccountModel> replaceProperties(
     String id,
-    List<String> propertyIds,
+    Set<String> selection,
   ) {
     return _guard(() async {
       final response = await _dio.put(
         ApiEndpoints.proprioManagerProperties(id),
-        data: {'property_ids': propertyIds},
+        data: scopePayload(selection),
       );
       return _one(response);
     });

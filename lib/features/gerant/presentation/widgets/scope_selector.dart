@@ -105,7 +105,10 @@ class _ResidenceTileState extends State<_ResidenceTile> {
   Widget build(BuildContext context) {
     final ids = widget.group.residence.propertyIds;
     final checkedCount = ids.where(widget.selection.contains).length;
-    final all = checkedCount == ids.length && ids.isNotEmpty;
+    final checkboxValue = residenceCheckboxValue(
+      checkedCount: checkedCount,
+      totalCount: ids.length,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -126,9 +129,12 @@ class _ResidenceTileState extends State<_ResidenceTile> {
                   // que confier tout un immeuble ne demande pas d'abord de
                   // l'ouvrir.
                   Checkbox(
-                    value: all,
-                    // Indéterminé quand une partie seulement est confiée : le
-                    // cas courant, six logements sur dix.
+                    // `null` — et non `false` — quand une partie seulement est
+                    // confiée : Flutter ne dessine le tiret de l'état mixte que
+                    // sur une valeur nulle. Un `bool` rendait six logements sur
+                    // dix visuellement identiques à zéro sur dix, soit
+                    // exactement le cas que le propriétaire rencontre.
+                    value: checkboxValue,
                     tristate: true,
                     onChanged: (_) =>
                         widget.onToggleResidence(widget.group.residence),

@@ -8,6 +8,12 @@ import 'gerant_scope_state.dart';
 
 export 'gerant_scope_state.dart';
 
+// `scope_payload` vit avec le modèle : c'est de la sérialisation, et le
+// repository doit pouvoir l'appeler sans que la couche `data` dépende de
+// `business_logic`. Réexportée ici pour que les appelants du cubit — écrans et
+// tests — la trouvent là où ils la cherchent.
+export '../data/models/gerant_account_model.dart' show scopePayload;
+
 /// Une résidence et les logements qu'elle regroupe, tels que l'écran les plie
 /// et les déplie.
 ///
@@ -49,13 +55,22 @@ Set<String> toggleProperty(Set<String> selection, String propertyId) {
       : (next..add(propertyId));
 }
 
-/// Charge utile envoyée au serveur.
+/// Valeur de la case à cocher d'une résidence : cochée, vide, ou **mixte**.
 ///
-/// Toujours une liste de logements, ordonnée pour que deux sélections
-/// identiques produisent la même requête. Le serveur ignore les résidences :
-/// « affecter une résidence entière » n'existe que dans cette interface.
-Map<String, dynamic> scopePayload(Set<String> selection) {
-  return {'property_ids': selection.toList()..sort()};
+/// Rend `null` sur une résidence partiellement confiée, et non `false` :
+/// Flutter ne dessine le tiret de l'état mixte que si `value == null`, même
+/// avec `tristate: true`. Rendre un `bool` faisait afficher six logements sur
+/// dix comme une case vide, indiscernable de zéro sur dix — soit précisément le
+/// cas que le propriétaire rencontre.
+///
+/// Une résidence sans logement vaut `false` : il n'y a rien à confier, et un
+/// tiret y suggérerait une sélection partielle inexistante.
+bool? residenceCheckboxValue({
+  required int checkedCount,
+  required int totalCount,
+}) {
+  if (totalCount == 0 || checkedCount == 0) return false;
+  return checkedCount == totalCount ? true : null;
 }
 
 /// Périmètre confié à un gérant : ce qu'il voit, et rien d'autre.
@@ -177,7 +192,9 @@ class GerantScopeCubit extends Cubit<GerantScopeState> {
     emit(current.copyWith(isSaving: true));
 
     try {
-      await _gerants.replaceProperties(gerantId, current.selection.toList()..sort());
+      // La sélection part telle quelle : c'est `scopePayload`, dans le
+      // repository, qui l'ordonne et la nomme.
+      await _gerants.replaceProperties(gerantId, current.selection);
       if (!isClosed) emit(current.copyWith(isSaving: false));
       return null;
     } on AppFailure catch (f) {
