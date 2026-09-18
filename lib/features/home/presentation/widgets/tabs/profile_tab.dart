@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/config/app_config.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
+import 'package:resi_africa/core/session/session_role.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/utils/country_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
@@ -115,6 +116,15 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({required this.profile});
 
   final OwnerProfileModel profile;
+
+  /// Rôle de la session, `proprio` par défaut.
+  ///
+  /// Lu par `isRegistered` plutôt qu'en accès direct : cet écran se monte dans
+  /// des tests de widget qui ne câblent pas le conteneur, et y lever ferait
+  /// échouer des tests qui ne portent pas sur le rôle. Le repli sur `proprio`
+  /// n'ouvre rien : le garde de route refuse le gérant de toute façon.
+  String _currentRole() =>
+      sl.isRegistered<SessionRole>() ? sl<SessionRole>().value : 'proprio';
 
   /// Localisation résumée sous le nom : « Cocody · Abidjan ».
   ///
@@ -245,6 +255,15 @@ class _ProfileContent extends StatelessWidget {
                     }
                   },
                 ),
+                // Réservée au propriétaire : le gérant n'ouvre pas de compte
+                // gérant, et le garde de route ferme déjà l'écran. L'entrée
+                // disparaît pour qu'il ne bute pas sur une redirection.
+                if (_currentRole() != 'gerant')
+                  _SettingsItem(
+                    icon: FontAwesomeIcons.userGear,
+                    label: 'Mes gérants',
+                    onTap: () => context.router.push(const GerantListRoute()),
+                  ),
                 _SettingsItem(
                   icon: FontAwesomeIcons.bell,
                   label: 'Notifications',

@@ -32,6 +32,11 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ResidenceRoute.page),
     AutoRoute(page: ResidenceDetailRoute.page),
     AutoRoute(page: AddResidenceRoute.page, guards: [_ownerOnly]),
+    // Gestion des gérants : fermée au gérant lui-même, qui n'en ouvre pas.
+    // `role_guard.dart` nommait déjà ces trois routes avant qu'elles existent.
+    AutoRoute(page: GerantListRoute.page, guards: [_ownerOnly]),
+    AutoRoute(page: AddGerantRoute.page, guards: [_ownerOnly]),
+    AutoRoute(page: GerantScopeRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ExpenseRoute.page),
     AutoRoute(page: AddExpenseRoute.page),
     AutoRoute(page: DetailsReservationRoute.page),
