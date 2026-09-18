@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:resi_africa/core/router/app_router.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/router/role_guard.dart';
 
@@ -35,6 +36,28 @@ void main() {
         GerantScopeRoute.name,
       ]) {
         expect(isRouteAllowed('proprio', route), isTrue);
+      }
+    });
+
+    test('les trois routes portent effectivement un garde', () {
+      // La règle de `role_guard.dart` ne protège que les routes auxquelles le
+      // routeur attache le garde. Nommer la route dans `_ownerOnlyRoutes` sans
+      // écrire `guards: [_ownerOnly]` laisse la porte ouverte, et rien à la
+      // compilation ne le signale : c'est le seul test qui le voie.
+      final routes = {
+        for (final route in AppRouter().routes) route.name: route.guards,
+      };
+
+      for (final name in [
+        GerantListRoute.name,
+        AddGerantRoute.name,
+        GerantScopeRoute.name,
+      ]) {
+        expect(
+          routes[name],
+          isNotEmpty,
+          reason: '$name doit porter guards: [_ownerOnly]',
+        );
       }
     });
 
