@@ -99,7 +99,13 @@ abstract final class ApiEndpoints {
   /// Sans paramètre de période, contrairement au relevé financier : l'écran
   /// montre le mois en cours, et laisser le cadrage au client ferait diverger
   /// les compteurs et le bloc revenus affichés côte à côte.
-  static const String proprioBookingStats = '$_v1/proprio/bookings/stats';
+  ///
+  /// Le serveur cloisonne ces compteurs sur les logements de l'appelant, taux
+  /// d'occupation compris : le gérant en lit les siens, et non ceux du parc.
+  /// Le chemin propriétaire écrit en dur rendait ici un 403 au gérant, qui
+  /// perdait des compteurs auxquels il a droit.
+  static String bookingStats(String role) =>
+      '${basePathForRole(role)}/bookings/stats';
 
   /// Clôture d'un séjour : enregistre la sortie et cumule le montant sur la
   /// fiche du client.

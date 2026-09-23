@@ -16,6 +16,20 @@ void main() {
       );
     });
 
+    test('les compteurs de réservations suivent le rôle', () {
+      // Écrits en dur sur le chemin propriétaire, ils rendaient un 403 au
+      // gérant, que le cubit avalait : les compteurs disparaissaient de son
+      // onglet Réservations au lieu d'afficher ses chiffres.
+      expect(
+        ApiEndpoints.bookingStats('gerant'),
+        '/api/v1/gerant/bookings/stats',
+      );
+      expect(
+        ApiEndpoints.bookingStats('proprio'),
+        '/api/v1/proprio/bookings/stats',
+      );
+    });
+
     test('le carnet clients suit le rôle', () {
       expect(ApiEndpoints.clients('gerant'), '/api/v1/gerant/clients');
     });

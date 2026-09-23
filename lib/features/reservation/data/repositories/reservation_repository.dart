@@ -82,7 +82,7 @@ class ReservationRepository {
   /// cours, revenu du mois rapporté au précédent.
   Future<BookingStatsModel> getStats() async {
     try {
-      final response = await _dio.get(ApiEndpoints.proprioBookingStats);
+      final response = await _dio.get(ApiEndpoints.bookingStats(_role.value));
       final data = (response.data as Map<String, dynamic>)['data'];
       return BookingStatsModel.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
