@@ -42,6 +42,65 @@ class PropertyRepository {
     }
   }
 
+  /// Une page de biens, avec son bloc `meta`.
+  ///
+  /// L'API plafonne `per_page` à 100 et retombe à 20 quand il est absent :
+  /// le paramètre est donc toujours transmis, faute de quoi le serveur
+  /// tronque silencieusement la liste sans que la réponse ne le signale
+  /// autrement que par `meta`.
+  Future<PropertyPage> getPropertyPage({
+    String? residenceId,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.properties(_role.value),
+        queryParameters: {
+          if (residenceId != null && residenceId.isNotEmpty)
+            'residence_id': residenceId,
+          'page': page,
+          'per_page': perPage,
+        },
+      );
+      return PropertyPage.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Tous les biens du propriétaire, pages comprises.
+  ///
+  /// Sert aux sélecteurs — celui du périmètre d'un gérant en particulier —,
+  /// qui doivent proposer l'ensemble du parc : sur la seule première page, le
+  /// 21e logement d'un propriétaire restait invisible, donc impossible à
+  /// confier. Les pages sont parcourues en série, comme pour les résidences et
+  /// les dépenses : les lancer toutes d'un coup exposerait à une limitation de
+  /// débit.
+  ///
+  /// Une page vide interrompt aussi la boucle : un `meta` qui annoncerait
+  /// toujours une page suivante ferait tourner l'appelant sans fin.
+  Future<List<PropertyModel>> getAllProperties({String? residenceId}) async {
+    final all = <PropertyModel>[];
+    var page = 1;
+
+    while (true) {
+      final result = await getPropertyPage(
+        residenceId: residenceId,
+        page: page,
+        perPage: 100,
+      );
+
+      all.addAll(result.items);
+      if (!result.hasMore || result.items.isEmpty) break;
+      page++;
+    }
+
+    return all;
+  }
+
   /// Dépose les photos et retourne leurs URLs publiques, dans l'ordre.
   ///
   /// Appelé avant [create] : le serveur attend des URLs dans `media.images`,
@@ -147,4 +206,40 @@ class PropertyRepository {
 
   /// Sépare les segments d'un chemin, indifféremment des conventions de l'OS.
   static final RegExp _separator = RegExp(r'[/\\]');
+}
+
+/// Une page de biens, avec son bloc `meta`.
+///
+/// Calquée sur `ResidencePage` : l'API sert le même `meta` aux deux listes.
+class PropertyPage {
+  const PropertyPage({
+    required this.items,
+    required this.total,
+    required this.currentPage,
+    required this.lastPage,
+  });
+
+  final List<PropertyModel> items;
+  final int total;
+  final int currentPage;
+  final int lastPage;
+
+  bool get hasMore => currentPage < lastPage;
+
+  /// Les replis couvrent une réponse sans `meta` : la liste est alors tenue
+  /// pour complète, ce qui vaut mieux qu'une boucle sur une page unique.
+  factory PropertyPage.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as List<dynamic>? ?? const [];
+    final meta = json['meta'] as Map<String, dynamic>? ?? const {};
+
+    return PropertyPage(
+      items: [
+        for (final item in data)
+          PropertyModel.fromJson(item as Map<String, dynamic>),
+      ],
+      total: (meta['total'] as num?)?.toInt() ?? data.length,
+      currentPage: (meta['currentPage'] as num?)?.toInt() ?? 1,
+      lastPage: (meta['lastPage'] as num?)?.toInt() ?? 1,
+    );
+  }
 }

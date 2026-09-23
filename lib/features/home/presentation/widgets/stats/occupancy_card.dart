@@ -2,7 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class OccupancyCard extends StatelessWidget {
-  const OccupancyCard({super.key});
+  const OccupancyCard({
+    super.key,
+    required this.occupancyRate,
+    this.rented,
+    this.available,
+  });
+
+  /// Taux d'occupation de la période, en fraction de 0 à 1 — l'échelle servie
+  /// par `taux_occupation`, convertie ici à l'affichage.
+  final double occupancyRate;
+
+  /// Unités occupées et unités publiées encore libres, à l'instant présent —
+  /// ces deux compteurs ne dépendent pas de la période du taux.
+  ///
+  /// Nuls chez le gérant : ils viennent de `/proprio/properties/stats`, fermée
+  /// à son rôle. La ligne disparaît alors, plutôt que d'afficher deux zéros
+  /// qui se liraient comme un parc vide.
+  final int? rented;
+  final int? available;
 
   @override
   Widget build(BuildContext context) {
@@ -27,22 +45,24 @@ class OccupancyCard extends StatelessWidget {
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  '78%',
-                  style: TextStyle(
+                Text(
+                  '${(occupancyRate * 100).round()}%',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: const [
-                    OccupancyStat(label: 'Unités louées', value: '14'),
-                    SizedBox(width: 24),
-                    OccupancyStat(label: 'Disponibles', value: '4'),
-                  ],
-                ),
+                if (rented != null && available != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      OccupancyStat(label: 'Unités louées', value: '$rented'),
+                      const SizedBox(width: 24),
+                      OccupancyStat(label: 'Disponibles', value: '$available'),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

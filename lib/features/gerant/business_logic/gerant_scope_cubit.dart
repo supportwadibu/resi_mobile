@@ -96,7 +96,7 @@ class GerantScopeCubit extends Cubit<GerantScopeState> {
       // Lancés ensemble : les trois appels sont indépendants, et les enchaîner
       // triplerait l'attente sur les connexions lentes du terrain.
       final residencesFuture = _residences.getAllResidences();
-      final propertiesFuture = _properties.getPropertyList();
+      final propertiesFuture = _properties.getAllProperties();
       final gerantFuture = gerantId == null
           ? Future.value(null)
           : _gerants.get(gerantId);
