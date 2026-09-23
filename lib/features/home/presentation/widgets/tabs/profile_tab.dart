@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/config/app_config.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
+import 'package:resi_africa/core/router/role_guard.dart';
 import 'package:resi_africa/core/session/session_role.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/utils/country_helper.dart';
@@ -13,6 +14,7 @@ import 'package:resi_africa/features/auth/business_logic/owner_profile_cubit.dar
 import 'package:resi_africa/features/auth/business_logic/owner_profile_state.dart';
 import 'package:resi_africa/features/auth/data/models/owner_profile_model.dart';
 import 'package:resi_africa/features/auth/data/services/auth_service.dart';
+import 'package:resi_africa/features/gerant/data/models/gerant_account_model.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/skeletons/profile_skeleton.dart';
 
@@ -80,6 +82,14 @@ class ProfileView extends StatelessWidget {
                 if (state is OwnerProfileLoading ||
                     state is OwnerProfileInitial) {
                   return const ProfileSkeleton();
+                }
+
+                // Branche distincte, et non un `_ProfileContent` aux champs
+                // nuls : c'est le type du state qui interdit qu'un dossier de
+                // validation ou une pièce d'identité atteigne l'écran du
+                // gérant, `GerantAccountModel` n'en portant aucun.
+                if (state is ManagerProfileReady) {
+                  return _ManagerProfileContent(account: state.account);
                 }
 
                 final profile = switch (state) {
@@ -241,20 +251,24 @@ class _ProfileContent extends StatelessWidget {
             const SizedBox(height: 12),
             _SettingsGroup(
               items: [
-                _SettingsItem(
-                  icon: FontAwesomeIcons.penToSquare,
-                  label: 'Modifier mes informations',
-                  onTap: () async {
-                    await context.router.push(
-                      PropertyManagerProfileRoute(),
-                    );
-                    // Le dossier a pu changer pendant l'édition : on relit
-                    // plutôt que d'afficher l'état d'avant.
-                    if (context.mounted) {
-                      await context.read<OwnerProfileCubit>().load();
-                    }
-                  },
-                ),
+                // L'écran d'édition est le formulaire du dossier propriétaire,
+                // que `OwnerRouteGuard` ferme au gérant : l'entrée disparaît
+                // pour qu'il ne bute pas sur une redirection muette.
+                if (isGestureAllowed(_currentRole(), 'profile_edit'))
+                  _SettingsItem(
+                    icon: FontAwesomeIcons.penToSquare,
+                    label: 'Modifier mes informations',
+                    onTap: () async {
+                      await context.router.push(
+                        PropertyManagerProfileRoute(),
+                      );
+                      // Le dossier a pu changer pendant l'édition : on relit
+                      // plutôt que d'afficher l'état d'avant.
+                      if (context.mounted) {
+                        await context.read<OwnerProfileCubit>().load();
+                      }
+                    },
+                  ),
                 // Réservée au propriétaire : le gérant n'ouvre pas de compte
                 // gérant, et le garde de route ferme déjà l'écran. L'entrée
                 // disparaît pour qu'il ne bute pas sur une redirection.
@@ -323,36 +337,313 @@ class _ProfileContent extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Se déconnecter'),
-        content: const Text('Voulez-vous vraiment quitter votre session ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Annuler'),
+}
+
+/// Confirme puis ferme la session.
+///
+/// Hors des deux contenus qui l'appellent, et non recopiée dans chacun : la
+/// déconnexion purge la base locale, et un second exemplaire finirait par en
+/// oublier une part le jour où la purge s'étoffe.
+Future<void> _confirmLogout(BuildContext context) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Se déconnecter'),
+      content: const Text('Voulez-vous vraiment quitter votre session ?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Annuler'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text(
+            'Se déconnecter',
+            style: TextStyle(color: AppColors.error),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'Se déconnecter',
-              style: TextStyle(color: AppColors.error),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  // La purge locale prime : même si l'appel serveur échoue, la session ne
+  // doit pas survivre à une déconnexion demandée.
+  await sl<AuthService>().logout();
+  if (!context.mounted) return;
+
+  await context.router.replaceAll([const LoginRoute()]);
+}
+
+// ─────────────────────────────────────────
+// Profil du gérant
+// ─────────────────────────────────────────
+
+/// Corps de l'écran pour un gérant.
+///
+/// Écrit à part et non greffé sur `_ProfileContent` : ce que le gérant n'a pas
+/// — dossier de validation, pièce d'identité, adresse, ville — n'est pas une
+/// donnée manquante mais une notion sans objet pour lui. Les blocs
+/// correspondants disparaissent au lieu d'afficher du vide, qui se lirait
+/// comme un dossier à compléter alors qu'aucune route ne le lui permettrait.
+class _ManagerProfileContent extends StatelessWidget {
+  const _ManagerProfileContent({required this.account});
+
+  final GerantAccountModel account;
+
+  @override
+  Widget build(BuildContext context) {
+    // Mêmes règles que chez le propriétaire : seules les informations
+    // réellement renseignées sont listées. Le serveur garantit qu'au moins une
+    // des deux coordonnées existe, jamais les deux.
+    final items = <_InfoItem>[
+      if (account.fullName.trim().isNotEmpty)
+        _InfoItem(
+          icon: FontAwesomeIcons.user,
+          label: 'Nom complet',
+          value: account.fullName,
+        ),
+      if (account.email != null)
+        _InfoItem(
+          icon: FontAwesomeIcons.envelope,
+          label: 'Email',
+          value: account.email!,
+        ),
+      if (account.phone != null)
+        _InfoItem(
+          icon: FontAwesomeIcons.phone,
+          label: 'Téléphone',
+          value: account.phone!,
+        ),
+    ];
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<OwnerProfileCubit>().load(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ManagerHeader(account: account),
+            const SizedBox(height: 20),
+
+            _ManagerStatusCard(account: account),
+            const SizedBox(height: 24),
+
+            if (items.isNotEmpty) ...[
+              // `PATCH /gerant/profile` n'accepte ni l'e-mail ni le téléphone :
+              // rien à l'écran ne doit laisser croire au gérant qu'il peut les
+              // corriger, d'où l'absence de toute entrée d'édition plus bas.
+              const _SectionTitle(title: 'Mes informations'),
+              const SizedBox(height: 12),
+              _InfoGroup(items: items),
+              const SizedBox(height: 24),
+            ],
+
+            const _SectionTitle(title: 'Paramètres'),
+            const SizedBox(height: 12),
+            _SettingsGroup(
+              items: [
+                _SettingsItem(
+                  icon: FontAwesomeIcons.bell,
+                  label: 'Notifications',
+                  onTap: () {},
+                  trailing: _NotificationToggle(),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+            const _SectionTitle(title: 'Assistance'),
+            const SizedBox(height: 12),
+            _SettingsGroup(
+              items: [
+                _SettingsItem(
+                  icon: FontAwesomeIcons.headset,
+                  label: 'Aide & support',
+                  onTap: () => context.router.push(
+                    SupportChatRoute(
+                      visitorName: account.fullName,
+                      visitorEmail: account.email,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            const _SectionTitle(title: 'Compte'),
+            const SizedBox(height: 12),
+            _SettingsGroup(
+              items: [
+                _SettingsItem(
+                  icon: FontAwesomeIcons.rightFromBracket,
+                  label: 'Se déconnecter',
+                  onTap: () => _confirmLogout(context),
+                  color: AppColors.error,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// En-tête du gérant : initiales, nom, périmètre confié.
+///
+/// Le sous-titre annonce le nombre de logements plutôt qu'une ville, que le
+/// compte ne porte pas. Zéro logement s'y écrit en toutes lettres : c'est un
+/// fait servi par `property_ids`, non un relevé manquant — et un gérant sans
+/// périmètre doit comprendre pourquoi ses écrans sont vides.
+class _ManagerHeader extends StatelessWidget {
+  const _ManagerHeader({required this.account});
+
+  final GerantAccountModel account;
+
+  /// Deux lettres au plus, le compte gérant ne portant pas d'avatar.
+  String get _initials {
+    final words = account.fullName.trim().split(RegExp(r'\s+'))
+      ..removeWhere((w) => w.isEmpty);
+    if (words.isEmpty) return '?';
+    if (words.length == 1) return words.first[0].toUpperCase();
+    return (words.first[0] + words.last[0]).toUpperCase();
+  }
+
+  String get _subtitle {
+    final count = account.propertiesCount;
+    if (count == 0) return 'Gérant · aucun logement confié';
+    return 'Gérant · $count logement${count > 1 ? 's' : ''}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Center(
+            child: Text(
+              _initials,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                account.fullName.trim().isEmpty
+                    ? 'Sans nom'
+                    : account.fullName,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _subtitle,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, color: AppColors.grey500),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// État du compte gérant, sans bouton d'action.
+///
+/// Remplace le bandeau du dossier de validation, qui n'a pas d'objet ici : le
+/// gérant ne dépose rien. `is_active` croise l'état du compte et celui de
+/// l'affectation — c'est le propriétaire qui les rétablit, d'où l'absence de
+/// « Compléter » : lui proposer une action qu'il ne peut pas mener serait pire
+/// que l'information seule.
+class _ManagerStatusCard extends StatelessWidget {
+  const _ManagerStatusCard({required this.account});
+
+  final GerantAccountModel account;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = account.isActive;
+    final color = active ? AppColors.success : AppColors.error;
+    final background = active ? AppColors.successBg : AppColors.errorBg;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: FaIcon(
+              active
+                  ? FontAwesomeIcons.circleCheck
+                  : FontAwesomeIcons.circleExclamation,
+              color: color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  active ? 'Compte actif' : 'Compte suspendu',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  active
+                      ? 'Vous gérez les logements qui vous sont confiés.'
+                      : 'Contactez le propriétaire pour retrouver l’accès.',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
-
-    if (confirmed != true || !context.mounted) return;
-
-    // La purge locale prime : même si l'appel serveur échoue, la session ne
-    // doit pas survivre à une déconnexion demandée.
-    await sl<AuthService>().logout();
-    if (!context.mounted) return;
-
-    await context.router.replaceAll([const LoginRoute()]);
   }
 }
 

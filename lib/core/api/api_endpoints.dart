@@ -22,6 +22,17 @@ abstract final class ApiEndpoints {
   /// suite de l'inscription. `GET` pour relire, `POST` (multipart) pour déposer.
   static const String proprioProfile = '$_v1/proprio/profile';
 
+  /// Compte du gérant connecté. `GET` pour relire, `PATCH` pour changer son nom
+  /// ou son mot de passe.
+  ///
+  /// Chemin fixe et non dérivé du rôle, contrairement aux listes : la route
+  /// rend un `ManagerDto` — nom, coordonnées, périmètre, état du compte —,
+  /// d'une forme sans rapport avec le dossier de validation servi par
+  /// `proprioProfile`. Les réunir derrière un `profile(role)` laisserait croire
+  /// à deux variantes d'une même ressource, et un modèle unique lirait à vide
+  /// les champs que l'autre ne porte pas.
+  static const String gerantProfile = '$_v1/gerant/profile';
+
   static const String homes = '/homes';
 
   /// Annonces servies par l'appelant — son parc entier pour le propriétaire,

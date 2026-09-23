@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/services/property_manager_service.dart';
 
@@ -22,7 +23,27 @@ class _ProfileCompletionBannerState extends State<ProfileCompletionBanner> {
   @override
   void initState() {
     super.initState();
-    _submitted = sl<PropertyManagerService>().isProfileSubmitted();
+    _submitted = _load();
+  }
+
+  /// Rôle de la session, `proprio` par défaut.
+  ///
+  /// Lu par `isRegistered` plutôt qu'en accès direct : ce bandeau est monté par
+  /// `HomeScreen`, qui se monte dans des tests de widget ne câblant pas le
+  /// conteneur.
+  String _currentRole() =>
+      sl.isRegistered<SessionRole>() ? sl<SessionRole>().value : 'proprio';
+
+  /// Le dossier de validation est-il déposé ?
+  ///
+  /// Court-circuité pour le gérant : le dossier est une notion propriétaire,
+  /// `GET /proprio/profile` lui répond 403, et le bandeau l'inviterait à
+  /// déposer une pièce d'identité qu'aucune route n'accepterait de lui. Le 403
+  /// se repliait déjà sur `null` — le bandeau restait donc masqué —, mais
+  /// chaque ouverture de l'accueil lui coûtait un appel voué à l'échec.
+  Future<bool?> _load() async {
+    if (_currentRole() == 'gerant') return true;
+    return sl<PropertyManagerService>().isProfileSubmitted();
   }
 
   Future<void> _openProfile() async {
@@ -30,7 +51,7 @@ class _ProfileCompletionBannerState extends State<ProfileCompletionBanner> {
 
     if (!mounted) return;
     setState(() {
-      _submitted = sl<PropertyManagerService>().isProfileSubmitted();
+      _submitted = _load();
     });
   }
 

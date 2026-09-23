@@ -188,7 +188,16 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(
     () => AuthCubit(sl<AuthService>(), sl<PropertyManagerService>()),
   );
-  sl.registerFactory(() => OwnerProfileCubit(sl<PropertyManagerService>()));
+  sl.registerFactory(
+    () => OwnerProfileCubit(
+      sl<PropertyManagerService>(),
+      sl<GerantRepository>(),
+      // Lu à chaque chargement et non figé à l'enregistrement : le cubit est
+      // une fabrique, mais le rôle change à la reconnexion sans que le
+      // conteneur soit reconstruit.
+      () => sl<SessionRole>().value,
+    ),
+  );
   sl.registerFactory(
     () => PropertyCubit(
       sl<PropertyRepository>(),

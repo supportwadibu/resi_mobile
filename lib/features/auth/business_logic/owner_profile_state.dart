@@ -1,3 +1,4 @@
+import '../../gerant/data/models/gerant_account_model.dart';
 import '../data/models/owner_profile_model.dart';
 
 /// États de l'écran de finalisation d'inscription.
@@ -31,6 +32,26 @@ final class OwnerProfileSubmitting extends OwnerProfileState {
 final class OwnerProfileSubmitted extends OwnerProfileState {
   const OwnerProfileSubmitted(this.profile);
   final OwnerProfileModel profile;
+}
+
+/// Compte du gérant connecté.
+///
+/// Type distinct et non un `OwnerProfileReady` dont les champs manquants
+/// seraient nuls : ce que le gérant n'a pas — pièce d'identité, adresse, ville,
+/// statut de validation — n'est pas un dossier incomplet mais une notion qui ne
+/// le concerne pas. `OwnerProfileModel` les porte tous en optionnels, et l'y
+/// couler laisserait l'écran juger son dossier « à compléter » et lui proposer
+/// de déposer une pièce d'identité qu'aucune route n'accepterait de lui.
+///
+/// La séparation des types est ce qui garantit qu'aucun oubli d'affichage ne
+/// puisse lui montrer un bloc propriétaire vide.
+final class ManagerProfileReady extends OwnerProfileState {
+  const ManagerProfileReady(this.account);
+
+  /// Nom, coordonnées, périmètre et état du compte, servis par
+  /// `GET /gerant/profile`. Les coordonnées y sont en lecture seule : seul le
+  /// propriétaire qui a ouvert le compte les modifie.
+  final GerantAccountModel account;
 }
 
 final class OwnerProfileError extends OwnerProfileState {

@@ -49,6 +49,13 @@ List<String> featuresForRole(String role, List<String> keys) =>
 ///   `property_id`, et `POST /gerant/expenses` l'exige (422 `property_required`).
 ///   Elle porte en outre sur des logements hors de son périmètre et entre dans
 ///   le net du propriétaire, que le gérant ne voit pas.
+/// - `profile_edit` : l'édition du profil passe par
+///   `PropertyManagerProfileRoute`, que `_ownerOnlyRoutes` ferme déjà. Le
+///   bouton menait donc à une redirection muette. `PATCH /gerant/profile`
+///   existe, mais n'accepte que le nom et le mot de passe — pas les
+///   coordonnées ni le périmètre, qui relèvent du propriétaire qui a ouvert le
+///   compte. Le formulaire propriétaire, qui exige une pièce d'identité, ne
+///   peut donc pas lui servir.
 const _managerHiddenGestures = <String>{
   'residence_create',
   'residence_edit',
@@ -56,6 +63,7 @@ const _managerHiddenGestures = <String>{
   'residence_attach_unit',
   'property_publish',
   'expense_common_charge',
+  'profile_edit',
 };
 
 /// Vrai quand ce rôle peut voir ce geste. Un widget interroge cette fonction
