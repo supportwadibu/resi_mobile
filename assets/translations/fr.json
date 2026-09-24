@@ -35,5 +35,51 @@
       "one": "1 en attente de reseau",
       "other": "{} en attente de reseau"
     }
+  },
+  "feedback": {
+    "sheet_title": "Votre avis",
+    "sheet_subtitle": "Aidez-nous a ameliorer l'application",
+    "type_label": "De quoi s'agit-il ?",
+    "types": {
+      "suggestion": "Suggestion",
+      "bug": "Probleme",
+      "amelioration": "Amelioration",
+      "autre": "Autre"
+    },
+    "title_label": "Titre",
+    "title_hint": "Resumez en quelques mots",
+    "title_too_short": "Donnez un titre d'au moins 3 caracteres.",
+    "message_label": "Votre message",
+    "message_hint": "Decrivez votre idee ou le probleme rencontre",
+    "message_too_short": "Detaillez un peu plus : 10 caracteres minimum.",
+    "submit": "Envoyer",
+    "success": "Merci, votre avis a bien ete transmis."
+  },
+  "stay_checkout": {
+    "action": "Terminer le sejour",
+    "extend": "Prolonger",
+    "extend_alone": "Prolonger le sejour",
+    "confirm_title": "Le client a-t-il utilise tout son sejour ?",
+    "confirm_body": "Oui : le sejour passe en termine, dates et montant inchanges. Non : la sortie et le montant sont ramenes a l'usage reel, l'ecart est rembourse.",
+    "success": "Sejour termine",
+    "answer_full": "Oui, sejour complet",
+    "answer_early": "Non, depart anticipe",
+    "early_title": "Depart anticipe",
+    "early_body": "Tout jour entame reste du. Le montant propose est calcule au prorata de ce que le client a regle.",
+    "early_departure": "Sortie reelle",
+    "early_days": "Jours factures",
+    "early_days_value": "{billed} sur {planned}",
+    "early_paid": "Montant regle",
+    "early_amount": "Montant retenu",
+    "early_amount_hint": "Propose : {amount}",
+    "early_amount_too_high": "Ne peut pas depasser le montant regle.",
+    "early_refund": "A rembourser",
+    "early_confirm": "Cloturer le sejour",
+    "early_success": "Sejour cloture, remboursement enregistre",
+    "planned_amount": "Montant initial",
+    "refunded": "Rembourse"
+  },
+  "finance": {
+    "refunds": "Remboursements (deja deduits du CA)"
   }
 }

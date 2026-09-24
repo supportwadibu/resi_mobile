@@ -30,6 +30,27 @@ class PhoneHelper {
     return parsed.international;
   }
 
+  /// Met un identifiant de connexion sous la forme retenue en base.
+  ///
+  /// Les comptes sont enregistrés avec un numéro déjà mis en forme
+  /// internationale — `AddGerantScreen` et `PropertyManagerProfileScreen`
+  /// appellent tous deux [toE164] avant l'envoi. Or l'écran de connexion n'a
+  /// qu'un champ « e-mail ou téléphone », sans indicatif : un gérant y tape
+  /// son numéro national, et l'API cherche par égalité stricte. `0102030405`
+  /// ne trouvait donc pas le compte enregistré sous `+2250102030405`, et
+  /// répondait « Identifiants invalides » sur des données pourtant exactes.
+  ///
+  /// Une adresse e-mail est rendue telle quelle : la reconnaissance se fait
+  /// sur `@`, comme côté serveur. Un numéro que la bibliothèque ne sait pas
+  /// lire est lui aussi rendu inchangé — mieux vaut laisser l'API refuser que
+  /// transformer une saisie en une autre.
+  static String normalizeLoginIdentifier(String input, String iso2) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty || trimmed.contains('@')) return trimmed;
+
+    return toE164(trimmed, iso2) ?? trimmed;
+  }
+
   static String toNational(String? e164, String iso2) {
     final raw = e164?.trim() ?? '';
     if (raw.isEmpty) return '';

@@ -9,8 +9,7 @@ import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/skeletons/profile_skeleton.dart';
 
 /// Cubit piloté par le test : évite le service locator et le réseau.
-class _FakeCubit extends Cubit<OwnerProfileState>
-    implements OwnerProfileCubit {
+class _FakeCubit extends Cubit<OwnerProfileState> implements OwnerProfileCubit {
   _FakeCubit(super.initialState);
 
   @override
@@ -133,10 +132,7 @@ void main() {
 
     testWidgets('accepte un pays stocké sous son nom anglais', (tester) async {
       // Dossiers déposés avant que le client ne stocke le code ISO2.
-      await _pump(
-        tester,
-        OwnerProfileReady(_profile(country: 'Ivory Coast')),
-      );
+      await _pump(tester, OwnerProfileReady(_profile(country: 'Ivory Coast')));
 
       expect(
         find.text('Propriétaire · Abidjan, Côte d\'Ivoire'),
@@ -185,9 +181,7 @@ void main() {
     testWidgets('un dossier à déposer propose de le compléter', (tester) async {
       await _pump(
         tester,
-        OwnerProfileReady(
-          _profile(ownerStatus: 'pending', isSubmitted: false),
-        ),
+        OwnerProfileReady(_profile(ownerStatus: 'pending', isSubmitted: false)),
       );
 
       expect(find.text('Dossier à compléter'), findsOneWidget);

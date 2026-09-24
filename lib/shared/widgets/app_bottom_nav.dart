@@ -56,9 +56,7 @@ class AppBottomNav extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.65),
                       borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: Colors.black.withOpacity(0.08),
-                      ),
+                      border: Border.all(color: Colors.black.withOpacity(0.08)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -102,9 +100,7 @@ class AppBottomNav extends StatelessWidget {
                           ? AppColors.primary.withOpacity(0.9)
                           : Colors.white.withOpacity(0.65),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.black.withOpacity(0.08),
-                      ),
+                      border: Border.all(color: Colors.black.withOpacity(0.08)),
                     ),
                     child: AnimatedRotation(
                       turns: isMenuOpen ? 0.125 : 0,

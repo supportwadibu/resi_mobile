@@ -1,17 +1,22 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/features/clients/data/models/client_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../data/models/clients_fake_data.dart';
+
+import '../../business_logic/client_detail_cubit.dart';
+import '../../business_logic/client_detail_state.dart';
 import '../widgets/client_action_button.dart';
 import '../widgets/client_avatar.dart';
 import '../widgets/client_status_badge.dart';
 import '../widgets/detail_info_row.dart';
 import '../widgets/reservation_history_card.dart';
+import 'edit_client_screen.dart';
 
 @RoutePage()
 class ClientDetailScreen extends StatelessWidget {
@@ -26,8 +31,24 @@ class ClientDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reservations = ClientsFakeData.reservationsByClient[client.id] ?? [];
+    return BlocProvider(
+      // La fiche venue de la liste s'affiche sans attendre, puis est remplacée
+      // par celle du serveur : le propriétaire doit pouvoir appeler son client
+      // avant la fin du chargement.
+      create: (_) =>
+          ClientDetailCubit(sl())..load(client.id, known: client),
+      child: _ClientDetailView(onArchiveToggle: onArchiveToggle),
+    );
+  }
+}
 
+class _ClientDetailView extends StatelessWidget {
+  const _ClientDetailView({this.onArchiveToggle});
+
+  final VoidCallback? onArchiveToggle;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -39,45 +60,185 @@ class ClientDetailScreen extends StatelessWidget {
           style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
         ),
         centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _ClientHeader(client: client),
-            const SizedBox(height: 16),
-
-            // Actions rapides
-            _QuickActions(client: client, onArchiveToggle: onArchiveToggle),
-            const SizedBox(height: 16),
-
-            // Infos
-            _InfoCard(client: client),
-            const SizedBox(height: 16),
-
-            // Stats
-            _StatsCard(client: client),
-            const SizedBox(height: 16),
-
-            // Historique
-            if (reservations.isNotEmpty) ...[
-              Text(
-                'Historique des réservations',
-                style: AppTextStyles.sectionTitle,
-              ),
-              const SizedBox(height: 10),
-              ...reservations.map(
-                (r) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ReservationHistoryCard(reservation: r),
+        actions: [
+          BlocBuilder<ClientDetailCubit, ClientDetailState>(
+            builder: (context, state) {
+              if (state is! ClientDetailLoaded) return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.edit_rounded, size: 20),
+                tooltip: 'Modifier',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => EditClientScreen(
+                      client: state.client,
+                      cubit: context.read<ClientDetailCubit>(),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              );
+            },
+          ),
+        ],
+      ),
+      body: BlocBuilder<ClientDetailCubit, ClientDetailState>(
+        builder: (context, state) {
+          return switch (state) {
+            ClientDetailInitial() || ClientDetailLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            ClientDetailError(:final message) => _ErrorView(message: message),
+            ClientDetailLoaded() => _LoadedView(
+              state: state,
+              onArchiveToggle: onArchiveToggle,
+            ),
+          };
+        },
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 24),
+class _LoadedView extends StatelessWidget {
+  const _LoadedView({required this.state, this.onArchiveToggle});
+
+  final ClientDetailLoaded state;
+  final VoidCallback? onArchiveToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final client = state.client;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ClientHeader(client: client),
+          const SizedBox(height: 16),
+
+          _QuickActions(client: client, onArchiveToggle: onArchiveToggle),
+          const SizedBox(height: 16),
+
+          _InfoCard(client: client),
+          const SizedBox(height: 16),
+
+          _StatsCard(client: client),
+          const SizedBox(height: 16),
+
+          Text('Historique des réservations', style: AppTextStyles.sectionTitle),
+          const SizedBox(height: 10),
+          _History(state: state),
+
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+/// Historique des séjours : chargement, échec rattrapable, ou liste.
+class _History extends StatelessWidget {
+  const _History({required this.state});
+
+  final ClientDetailLoaded state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isHistoryLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (state.historyError != null) {
+      return _HistoryError(
+        message: state.historyError!,
+        onRetry: () => context.read<ClientDetailCubit>().retryHistory(
+          state.client.id,
+        ),
+      );
+    }
+
+    if (state.reservations.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.event_busy_rounded,
+              size: 28,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 8),
+            Text('Aucun séjour enregistré', style: AppTextStyles.labelMedium),
           ],
+        ),
+      );
+    }
+
+    return Column(
+      children: state.reservations
+          .map(
+            (reservation) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ReservationHistoryCard(reservation: reservation),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _HistoryError extends StatelessWidget {
+  const _HistoryError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.labelMedium,
+          ),
+          const SizedBox(height: 10),
+          TextButton(onPressed: onRetry, child: const Text('Réessayer')),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.labelMedium,
         ),
       ),
     );
@@ -125,7 +286,7 @@ class _QuickActions extends StatelessWidget {
   }
 
   Future<void> _whatsapp(String number) async {
-    final uri = Uri.parse('https://wa.me/$number');
+    final uri = Uri.parse('https://wa.me/225$number');
     if (await canLaunchUrl(uri)) launchUrl(uri);
   }
 
@@ -148,8 +309,6 @@ class _QuickActions extends StatelessWidget {
             icon: Icons.chat_rounded,
             label: 'WhatsApp',
             color: Colors.black,
-            // À défaut de numéro WhatsApp distinct, le téléphone fait foi :
-            // en Côte d'Ivoire c'est presque toujours le même.
             onTap: () => _whatsapp(client.whatsapp ?? client.phone),
           ),
         ),

@@ -98,21 +98,21 @@ class AddExpenseCubit extends Cubit<AddExpenseState> {
             clearNote: clearNote,
           )
         : movesToProperty
-            ? UpdateExpensePayload.toProperty(
-                propertyId,
-                category: changedCategory,
-                amount: changedAmount,
-                spentAt: changedSpentAt,
-                note: changedNote,
-                clearNote: clearNote,
-              )
-            : UpdateExpensePayload(
-                category: changedCategory,
-                amount: changedAmount,
-                spentAt: changedSpentAt,
-                note: changedNote,
-                clearNote: clearNote,
-              );
+        ? UpdateExpensePayload.toProperty(
+            propertyId,
+            category: changedCategory,
+            amount: changedAmount,
+            spentAt: changedSpentAt,
+            note: changedNote,
+            clearNote: clearNote,
+          )
+        : UpdateExpensePayload(
+            category: changedCategory,
+            amount: changedAmount,
+            spentAt: changedSpentAt,
+            note: changedNote,
+            clearNote: clearNote,
+          );
 
     if (payload.isEmpty) {
       // Rien n'a changé : inutile d'appeler l'API, mais l'écran doit se fermer

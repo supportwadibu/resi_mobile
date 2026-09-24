@@ -1,7 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
@@ -11,10 +10,6 @@ import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/filter_bottom_sheet.dart';
 import 'package:resi_africa/shared/widgets/property_card.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
-import '../../../../../core/error/failures.dart';
-import '../../../../residence/data/models/residence_model.dart';
-import '../../../../residence/data/repositories/residence_repository.dart';
-import '../../../../residence/presentation/widgets/attach_residence_sheet.dart';
 
 /// Onglet « Mes biens » : les annonces du propriétaire connecté.
 class PropertyTab extends StatelessWidget {
@@ -22,10 +17,8 @@ class PropertyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<PropertyCubit>()..load(),
-      child: const _PropertyTabView(),
-    );
+    // Le cubit vient de l'écran d'accueil, partagé avec l'onglet du même parc.
+    return const _PropertyTabView();
   }
 }
 
@@ -42,7 +35,18 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
   /// Relance la liste au retour de l'écran de dépôt, pour que l'annonce
   /// tout juste créée y figure sans que l'utilisateur ait à rafraîchir.
   Future<void> _openAddProperty() async {
-    await context.router.push(const AddPropertyRoute());
+    await context.router.push(AddPropertyRoute());
+    if (mounted) context.read<PropertyCubit>().load();
+  }
+
+  /// Ouvre la liste des résidences.
+  ///
+  /// Doublon assumé de la carte de l'onglet « Statistiques » : les résidences
+  /// se gèrent en même temps que le parc, et non en consultant des chiffres.
+  /// La liste des biens est rechargée au retour, un rattachement ou une
+  /// suppression de résidence ayant pu y changer le nom affiché.
+  Future<void> _openResidences() async {
+    await context.router.push(const ResidenceRoute());
     if (mounted) context.read<PropertyCubit>().load();
   }
 
@@ -70,6 +74,17 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
                   ),
                 ),
                 const Spacer(),
+                // Icône seule : le titre et le bouton d'ajout remplissent déjà
+                // la ligne, et un second libellé la ferait déborder sur les
+                // petits écrans.
+                IconButton(
+                  onPressed: _openResidences,
+                  icon: const Icon(Icons.apartment_outlined, size: 22),
+                  color: AppColors.black,
+                  tooltip: 'Mes résidences',
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 4),
                 AppButton(
                   onPressed: _openAddProperty,
                   label: 'Ajouter un bien',
@@ -216,9 +231,7 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
         data: propertyCardData(items[i]),
         isListMode: false,
         onTap: () => _openDetail(items[i]),
-        onLongPress: () => _attachResidence(items[i]),
         onDelete: () => _confirmDelete(items[i]),
-        onShare: () {},
       ),
     );
   }
@@ -233,66 +246,19 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
         data: propertyCardData(items[i]),
         isListMode: true,
         onTap: () => _openDetail(items[i]),
-        onLongPress: () => _attachResidence(items[i]),
         onDelete: () => _confirmDelete(items[i]),
-        onShare: () {},
       ),
     );
   }
 
-  /// Ouvre la fiche, puis recharge : le bien a pu y être modifié.
+  /// Ouvre la fiche du bien, puis recharge la liste.
+  ///
+  /// Le détail porte la modification, la publication et le rattachement à une
+  /// résidence : le nom, le tarif ou la visibilité affichés ici ont pu changer
+  /// pendant la consultation.
   Future<void> _openDetail(PropertyModel property) async {
     await context.router.push(PropertyDetailRoute(property: property));
     if (mounted) context.read<PropertyCubit>().load();
-  }
-
-  /// Rattache le bien à une résidence, ou l’en détache.
-  ///
-  /// Appui long plutôt qu’un bouton : l’action est occasionnelle, et la carte
-  /// est déjà dense. Les résidences sont lues à l’ouverture, la feuille devant
-  /// proposer la liste à jour.
-  Future<void> _attachResidence(PropertyModel property) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final repository = sl<ResidenceRepository>();
-
-    List<ResidenceModel> residences;
-    try {
-      residences = await repository.getAllResidences();
-    } on AppFailure catch (f) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
-      return;
-    }
-
-    if (!mounted) return;
-
-    final result = await showModalBottomSheet<AttachResidenceResult>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => AttachResidenceSheet(
-        residences: residences,
-        propertyTitle: property.title,
-        currentResidenceId: property.residenceId,
-        currentUnitLabel: property.unitLabel,
-      ),
-    );
-
-    if (result == null || !mounted) return;
-
-    try {
-      await repository.attachToResidence(
-        property.id,
-        residenceId: result.residenceId,
-        unitLabel: result.unitLabel,
-        copyAddress: result.copyAddress,
-      );
-      if (mounted) context.read<PropertyCubit>().load();
-    } on AppFailure catch (f) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
-    }
   }
 
   void _confirmDelete(PropertyModel property) {
@@ -320,7 +286,6 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
   }
 }
 
-/// Aucune annonce déposée : l'action utile est mise en avant.
 class _EmptyView extends StatelessWidget {
   const _EmptyView({required this.onAdd});
 
@@ -364,7 +329,6 @@ class _EmptyView extends StatelessWidget {
   }
 }
 
-/// Échec de chargement : le message du serveur, et une seconde tentative.
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
 

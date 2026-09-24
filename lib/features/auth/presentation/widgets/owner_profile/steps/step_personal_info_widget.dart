@@ -90,9 +90,7 @@ class StepPersonalInfoWidget extends StatelessWidget {
             const SizedBox(height: 24),
           ],
 
-          if (profile != null) ...[
-            ?_buildStatusNotice(profile!),
-          ],
+          if (profile != null) ...[?_buildStatusNotice(profile!)],
 
           const Text(
             'Qui êtes-vous ?',
@@ -176,8 +174,7 @@ class StepPersonalInfoWidget extends StatelessWidget {
         color: AppColors.error,
         background: AppColors.errorBg,
         message:
-            profile.rejectionReason == null ||
-                profile.rejectionReason!.isEmpty
+            profile.rejectionReason == null || profile.rejectionReason!.isEmpty
             ? 'Votre dossier a été refusé. Corrigez-le et renvoyez-le.'
             : 'Dossier refusé : ${profile.rejectionReason}',
       ),
@@ -201,7 +198,8 @@ class StepPersonalInfoWidget extends StatelessWidget {
         icon: FontAwesomeIcons.circleCheck,
         color: AppColors.success,
         background: AppColors.successBg,
-        message: 'Votre dossier est validé. Vos informations restent modifiables.',
+        message:
+            'Votre dossier est validé. Vos informations restent modifiables.',
       ),
       _ => null,
     };

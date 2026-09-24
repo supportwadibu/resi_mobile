@@ -1,5 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
@@ -9,6 +11,8 @@ import '../../../../core/router/app_router.gr.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../business_logic/create_property_cubit.dart';
 import '../../business_logic/create_property_state.dart';
+import '../../business_logic/edit_property_cubit.dart';
+import '../../business_logic/edit_property_state.dart';
 import '../../data/models/property_model.dart';
 import '../widgets/add_property/steps/step_amenities_widget.dart';
 import '../widgets/add_property/steps/step_details_widget.dart';
@@ -18,28 +22,91 @@ import '../widgets/add_property/steps/step_location_widget.dart';
 import '../widgets/add_property/steps/step_pricing_widget.dart';
 import '../widgets/add_property/steps/step_type_widget.dart';
 
+/// Assistant de dépôt d'une annonce, et de modification d'une annonce déposée.
+///
+/// Un seul écran pour les deux parcours : les sept étapes et leurs règles de
+/// validation sont identiques, et les dupliquer les laisserait diverger — un
+/// champ durci à la création resterait permissif à la modification.
 @RoutePage()
 class AddPropertyScreen extends StatelessWidget {
-  const AddPropertyScreen({super.key});
+  const AddPropertyScreen({super.key, this.property});
+
+  /// Annonce à modifier. `null` pour un dépôt.
+  final PropertyModel? property;
 
   @override
   Widget build(BuildContext context) {
+    final existing = property;
+
+    if (existing == null) {
+      return BlocProvider(
+        create: (_) => sl<CreatePropertyCubit>(),
+        child: const AddPropertyView(),
+      );
+    }
+
     return BlocProvider(
-      create: (_) => sl<CreatePropertyCubit>(),
-      child: const _AddPropertyView(),
+      create: (_) => sl<EditPropertyCubit>(),
+      child: AddPropertyView(property: existing),
     );
   }
 }
 
-class _AddPropertyView extends StatefulWidget {
-  const _AddPropertyView();
+/// Corps de l'assistant, le cubit déjà fourni au-dessus.
+///
+/// Exposé pour que les tests montent le formulaire avec leur propre cubit,
+/// sans passer par le service locator ni le réseau.
+@visibleForTesting
+class AddPropertyView extends StatefulWidget {
+  const AddPropertyView({super.key, this.property});
+
+  final PropertyModel? property;
 
   @override
-  State<_AddPropertyView> createState() => _AddPropertyViewState();
+  State<AddPropertyView> createState() => _AddPropertyViewState();
 }
 
-class _AddPropertyViewState extends State<_AddPropertyView> {
-  int _currentStep = 0;
+class _AddPropertyViewState extends State<AddPropertyView> {
+  /// Étape affichée, ou [_summaryStep] pour le sommaire.
+  ///
+  /// La création démarre sur la première étape — il n'y a rien à survoler
+  /// d'un dossier vide ; la modification démarre sur le sommaire, où l'on
+  /// vient corriger une section précise plutôt que tout reparcourir.
+  late int _currentStep = _isEditing ? _summaryStep : 0;
+
+  /// Écran de sommaire, hors de la numérotation des étapes.
+  static const int _summaryStep = -1;
+
+  /// Sections retouchées mais pas encore envoyées.
+  ///
+  /// Sert au repère visuel de la grille : sans lui, rien ne distingue une
+  /// section déjà corrigée d'une section intacte, et il faudrait les rouvrir
+  /// une à une pour s'en assurer.
+  final Set<int> _touched = {};
+
+  bool get _isSummary => _currentStep == _summaryStep;
+
+  /// La sortie est actée : enregistrement réussi, ou abandon confirmé.
+  ///
+  /// Nécessaire en plus de [_touched] : `canPop` est lu par le `Navigator` au
+  /// moment même de la demande de fermeture, alors qu'un `setState` ne prend
+  /// effet qu'au frame suivant. Vider [_touched] juste avant `maybePop` laissait
+  /// donc le garde encore armé, la fermeture était refusée, et l'écran restait
+  /// là — loader éteint, sans issue.
+  bool _leaving = false;
+
+  bool get _hasPendingChanges => _touched.isNotEmpty;
+
+  /// Le garde ne s'oppose plus à la fermeture quand celle-ci est déjà arbitrée.
+  bool get _blocksPop => _hasPendingChanges && !_leaving;
+
+  /// Annonce d'origine en modification, `null` en création.
+  ///
+  /// Sert de référence au calcul des écarts : seuls les champs réellement
+  /// changés sont transmis.
+  PropertyModel? get _original => widget.property;
+
+  bool get _isEditing => _original != null;
 
   static const _stepTitles = [
     'Type de bien',
@@ -49,6 +116,17 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
     'Commodités',
     'Photos',
     'Tarification',
+  ];
+
+  /// Une icône par section, dans l'ordre de [_stepTitles].
+  static const _stepIcons = [
+    Icons.villa_outlined,
+    Icons.edit_outlined,
+    Icons.location_on_outlined,
+    Icons.straighten,
+    Icons.checklist_rounded,
+    Icons.photo_library_outlined,
+    Icons.payments_outlined,
   ];
 
   // ── Étape 1 : type
@@ -83,15 +161,60 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
   double _dailyPrice = 0;
   List<PriceTier> _priceTiers = const [];
 
+  @override
+  void initState() {
+    super.initState();
+
+    final property = _original;
+    if (property == null) return;
+
+    // En modification, l'état part de la fiche enregistrée : chaque étape
+    // s'ouvre déjà remplie, et ce qui n'est pas retouché reste identique.
+    _propertyType = property.propertyType;
+    _title = property.title;
+    _description = property.description;
+    _street = property.address.street;
+    _city = property.address.city;
+    _latitude = property.address.latitude;
+    _longitude = property.address.longitude;
+    _surfaceArea = property.details.surfaceArea;
+    _bedrooms = property.details.bedrooms;
+    _bathrooms = property.details.bathrooms;
+    _livingRooms = property.details.livingRooms;
+    _kitchens = property.details.kitchens;
+    _parkingSpaces = property.details.parkingSpaces;
+    _furnishing = property.details.furnishing;
+    _amenities = {...property.amenities};
+    // Copie modifiable : l'étape Photos réordonne et retire en place.
+    _images = [...property.images];
+    _dailyPrice = property.pricing.dailyPrice;
+    _priceTiers = [...property.pricing.priceTiers];
+  }
+
   bool get _isLastStep => _currentStep == _stepTitles.length - 1;
   bool get _isFirstStep => _currentStep == 0;
 
-  /// Message bloquant pour l'étape courante, ou `null` si elle est complète.
+  /// Le bouton secondaire n'a rien à proposer : sur le sommaire, l'en-tête
+  /// porte déjà la sortie ; à la première étape d'un dépôt, il n'y a pas
+  /// d'étape précédente.
+  bool get _hidesSecondaryAction => _isSummary || (_isFirstStep && !_isEditing);
+
+  String? _validateCurrentStep() => _validateStep(_currentStep);
+
+  /// Première section qui ne tient pas ses règles, ou `null` si tout est bon.
+  int? _firstInvalidStep() {
+    for (var step = 0; step < _stepTitles.length; step++) {
+      if (_validateStep(step) != null) return step;
+    }
+    return null;
+  }
+
+  /// Message bloquant pour [step], ou `null` si la section est complète.
   ///
   /// Les règles reprennent celles du validateur serveur : mieux vaut un refus
   /// immédiat et situé qu'une erreur 422 après huit étapes.
-  String? _validateCurrentStep() {
-    return switch (_currentStep) {
+  String? _validateStep(int step) {
+    return switch (step) {
       0 when _propertyType == null => 'Choisissez un type de bien.',
       1 when _title.trim().length < 3 =>
         'Le nom du bien doit faire au moins 3 caractères.',
@@ -108,9 +231,34 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
   }
 
   void _next() {
+    if (_isSummary) {
+      // Les sections s'ouvrent librement : une fiche peut arriver ici avec une
+      // règle non tenue sans qu'aucune étape n'ait été traversée. On vérifie
+      // l'ensemble, et on ouvre la section fautive plutôt que d'essuyer un 422
+      // qui ne dirait pas où corriger.
+      final invalid = _firstInvalidStep();
+      if (invalid != null) {
+        setState(() => _currentStep = invalid);
+        _showMessage(_validateCurrentStep()!);
+        return;
+      }
+      _submit();
+      return;
+    }
+
     final error = _validateCurrentStep();
     if (error != null) {
       _showMessage(error);
+      return;
+    }
+
+    // En modification, valider une section rend la main au sommaire : on est
+    // venu corriger un point précis, pas dérouler les six suivants.
+    if (_isEditing) {
+      setState(() {
+        _touched.add(_currentStep);
+        _currentStep = _summaryStep;
+      });
       return;
     }
 
@@ -121,7 +269,21 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
     setState(() => _currentStep++);
   }
 
-  void _back() {
+  Future<void> _back() async {
+    if (_isSummary) {
+      if (!await _confirmDiscard() || !mounted) return;
+
+      await _leave();
+      return;
+    }
+
+    // Quitter une section sans la valider abandonne ce qu'on vient d'y taper :
+    // le retour au sommaire passe donc par la même confirmation que la sortie.
+    if (_isEditing) {
+      setState(() => _currentStep = _summaryStep);
+      return;
+    }
+
     if (_isFirstStep) {
       context.router.maybePop();
       return;
@@ -129,32 +291,193 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
     setState(() => _currentStep--);
   }
 
+  /// Ouvre une section depuis le sommaire.
+  void _openStep(int step) => setState(() => _currentStep = step);
+
+  /// État de la section, tel qu'il s'affiche sous son titre dans la grille.
+  ///
+  /// Donne la valeur qui identifie la section d'un coup d'œil, pour repérer
+  /// celle à corriger sans avoir à toutes les ouvrir.
+  String _stepSummary(int step) {
+    return switch (step) {
+      0 => _propertyType?.label ?? 'Non renseigné',
+      1 => _title.trim().isEmpty ? 'Sans titre' : _title.trim(),
+      2 => switch ([
+        _city.trim(),
+        _street.trim(),
+      ].where((p) => p.isNotEmpty).join(' · ')) {
+        '' => 'Non renseignée',
+        final location => location,
+      },
+      3 => _detailsSummary(),
+      4 => switch (_amenities.length) {
+        0 => 'Aucune',
+        1 => '1 commodité',
+        final count => '$count commodités',
+      },
+      5 => switch (_images.length) {
+        0 => 'Aucune photo',
+        1 => '1 photo',
+        final count => '$count photos',
+      },
+      6 => _pricingSummary(),
+      _ => '',
+    };
+  }
+
+  /// « 4 ch · 2 sdb · 180 m² » — seules les valeurs renseignées apparaissent.
+  String _detailsSummary() {
+    final parts = [
+      '$_bedrooms ch',
+      '$_bathrooms sdb',
+      if (_surfaceArea != null && _surfaceArea! > 0)
+        '${_surfaceArea!.toInt()} m²',
+    ];
+    return parts.join(' · ');
+  }
+
+  String _pricingSummary() {
+    if (_dailyPrice <= 0) return 'Tarif à définir';
+
+    final price = CurrencyFormatter.fcfa(_dailyPrice.round());
+    if (_priceTiers.isEmpty) return '$price / jour';
+    return '$price / jour · ${_priceTiers.length} palier'
+        '${_priceTiers.length > 1 ? 's' : ''}';
+  }
+
+  /// Ferme l'assistant, en rendant [result] à l'écran appelant.
+  ///
+  /// Désarme le garde de [PopScope] avant de demander la fermeture : `canPop`
+  /// est lu par le `Navigator` au moment de la demande, quand un `setState`
+  /// n'aurait pris effet qu'au frame suivant.
+  ///
+  /// Le `setState` puis l'attente du frame ne sont pas une précaution de
+  /// style : `PopScope.canPop` n'est relu qu'à la reconstruction du widget.
+  /// Basculer [_leaving] sans reconstruire laissait le `Navigator` sur la
+  /// valeur du frame précédent — il refusait la fermeture, ouvrait la
+  /// confirmation d'abandon, et l'écran restait là, son loader éteint.
+  ///
+  /// L'appelant garantit par ailleurs que plus aucune route n'est empilée
+  /// par-dessus l'assistant : `Navigator.maybePop` agit sur le sommet de la
+  /// pile, et une confirmation encore présente absorberait la fermeture.
+  Future<void> _leave([PropertyModel? result]) async {
+    setState(() => _leaving = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
+    await context.router.maybePop(result);
+  }
+
+  /// Demande confirmation avant de perdre des sections déjà retouchées.
+  ///
+  /// Le regroupement des modifications a ce revers : tant qu'on n'a pas
+  /// enregistré, tout le travail tient dans l'écran et disparaîtrait sans un
+  /// mot.
+  /// Rend la main une fois le dialog **sorti de la pile**, et non dès le choix :
+  /// l'appelant enchaîne sur une fermeture d'écran, et `Navigator.maybePop`
+  /// viserait la confirmation encore en cours d'animation plutôt que
+  /// l'assistant.
+  Future<bool> _confirmDiscard() async {
+    if (!_hasPendingChanges) return true;
+
+    // Résolu au retrait effectif de la route du dialog, une fois son animation
+    // de sortie terminée.
+    late final Future<void> dismissed;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        dismissed = ModalRoute.of(dialogContext)!.completed;
+        return AlertDialog(
+        title: const Text('Abandonner les modifications ?'),
+        content: Text(
+          _touched.length == 1
+              ? 'Une section a été modifiée sans être enregistrée.'
+              : '${_touched.length} sections ont été modifiées sans être '
+                    'enregistrées.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Continuer l’édition'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Abandonner'),
+          ),
+        ],
+        );
+      },
+    );
+
+    if (confirmed != true) return false;
+
+    await dismissed;
+    return mounted;
+  }
+
+  // ── Saisie composée, partagée par les deux parcours
+
+  PropertyAddress get _address => PropertyAddress(
+    street: _street.trim(),
+    city: _city.trim(),
+    // L'adresse enregistrée porte un pays et un code postal que le formulaire
+    // ne présente pas : les reprendre évite qu'un enregistrement les efface.
+    country: _original?.address.country,
+    postalCode: _original?.address.postalCode,
+    latitude: _latitude,
+    longitude: _longitude,
+  );
+
+  PropertyDetails get _details => PropertyDetails(
+    surfaceArea: _surfaceArea,
+    bedrooms: _bedrooms,
+    bathrooms: _bathrooms,
+    livingRooms: _livingRooms,
+    kitchens: _kitchens,
+    parkingSpaces: _parkingSpaces,
+    // Mêmes raisons que pour l'adresse : ces trois champs existent côté API
+    // mais n'ont pas d'étape dédiée.
+    floorNumber: _original?.details.floorNumber,
+    totalFloors: _original?.details.totalFloors,
+    yearBuilt: _original?.details.yearBuilt,
+    furnishing: _furnishing,
+  );
+
+  PropertyPricing get _pricing => PropertyPricing(
+    dailyPrice: _dailyPrice,
+    priceTiers: _priceTiers,
+    minimumStayDays: _original?.pricing.minimumStayDays,
+    maximumStayDays: _original?.pricing.maximumStayDays,
+  );
+
   void _submit() {
+    final original = _original;
+    if (original != null) {
+      context.read<EditPropertyCubit>().submit(
+        original: original,
+        title: _title.trim(),
+        description: _description.trim(),
+        propertyType: _propertyType!,
+        address: _address,
+        details: _details,
+        amenities: _amenities,
+        images: _images,
+        pricing: _pricing,
+      );
+      return;
+    }
+
     context.read<CreatePropertyCubit>().submit(
       title: _title.trim(),
       description: _description.trim(),
       propertyType: _propertyType!,
-      address: PropertyAddress(
-        street: _street.trim(),
-        city: _city.trim(),
-        latitude: _latitude,
-        longitude: _longitude,
-      ),
-      details: PropertyDetails(
-        surfaceArea: _surfaceArea,
-        bedrooms: _bedrooms,
-        bathrooms: _bathrooms,
-        livingRooms: _livingRooms,
-        kitchens: _kitchens,
-        parkingSpaces: _parkingSpaces,
-        furnishing: _furnishing,
-      ),
+      address: _address,
+      details: _details,
       amenities: _amenities,
       imagePaths: _images,
-      pricing: PropertyPricing(
-        dailyPrice: _dailyPrice,
-        priceTiers: _priceTiers,
-      ),
+      pricing: _pricing,
       // `available_from` reste exigé par l'API. L'étape « Conditions » ayant
       // disparu, le bien est réputé disponible dès son dépôt.
       availableFrom: DateTime.now(),
@@ -162,13 +485,15 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.error(message, context: context);
   }
 
   @override
   Widget build(BuildContext context) {
+    return _isEditing ? _buildEditing() : _buildCreating();
+  }
+
+  Widget _buildCreating() {
     return BlocConsumer<CreatePropertyCubit, CreatePropertyState>(
       listener: (context, state) {
         switch (state) {
@@ -188,8 +513,7 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
                 onPrimaryAction: router.maybePop,
                 // Un nouvel assistant, vierge, à la place de l'écran de
                 // succès : la pile ne s'allonge pas d'un dépôt à l'autre.
-                onSecondaryAction: () =>
-                    router.replace(const AddPropertyRoute()),
+                onSecondaryAction: () => router.replace(AddPropertyRoute()),
               ),
             );
           case CreatePropertyFailure(:final message):
@@ -198,62 +522,170 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
             break;
         }
       },
-      builder: (context, state) {
-        final isBusy =
+      builder: (context, state) => _scaffold(
+        isBusy:
             state is CreatePropertyUploadingImages ||
-            state is CreatePropertySubmitting;
-
-        return Scaffold(
-          backgroundColor: AppColors.white,
-          body: SafeArea(
-            child: AbsorbPointer(
-              absorbing: isBusy,
-              child: Column(
-                children: [
-                  AppStepHeader(
-                    title: _stepTitles[_currentStep],
-                    onBack: _back,
-                    currentStep: _currentStep,
-                    totalSteps: _stepTitles.length,
-                  ),
-
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-                      child: _buildStep(),
-                    ),
-                  ),
-
-                  AppBottomActionBar(
-                    primaryLabel: _primaryLabel(state),
-                    onPrimary: _next,
-                    primaryIcon: AppButtonIcon.material(
-                      _isLastStep
-                          ? Icons.check_rounded
-                          : Icons.arrow_forward_rounded,
-                    ),
-                    secondaryLabel: _isFirstStep ? null : 'Retour',
-                    onSecondary: _isFirstStep ? null : _back,
-                    secondaryIcon: AppButtonIcon.material(
-                      Icons.arrow_back_rounded,
-                    ),
-                    isLoading: isBusy,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+            state is CreatePropertySubmitting,
+        primaryLabel: switch (state) {
+          CreatePropertyUploadingImages() => 'Envoi des photos...',
+          CreatePropertySubmitting() => 'Enregistrement...',
+          _ => _isLastStep ? 'Enregistrer le bien' : 'Suivant',
+        },
+      ),
     );
   }
 
-  String _primaryLabel(CreatePropertyState state) {
-    if (state is CreatePropertyUploadingImages) {
-      return 'Envoi des photos...';
-    }
-    if (state is CreatePropertySubmitting) return 'Enregistrement...';
-    return _isLastStep ? 'Enregistrer le bien' : 'Suivant';
+  Widget _buildEditing() {
+    return BlocConsumer<EditPropertyCubit, EditPropertyState>(
+      listener: (context, state) {
+        switch (state) {
+          case EditPropertySuccess(:final property, :final unchanged):
+            // Pas d'écran de succès ici, contrairement au dépôt : la fiche
+            // modifiée est déjà derrière, et la renvoyer permet au détail de
+            // s'actualiser sans relire l'API.
+            _leave(property);
+            AppToast.success(
+              unchanged
+                  ? 'Aucune modification à enregistrer.'
+                  : 'Les modifications ont été enregistrées.',
+              context: context,
+            );
+          case EditPropertyFailure(:final message):
+            _showMessage(message);
+          default:
+            break;
+        }
+      },
+      builder: (context, state) => _scaffold(
+        isBusy:
+            state is EditPropertyUploadingImages ||
+            state is EditPropertySubmitting,
+        primaryLabel: switch (state) {
+          EditPropertyUploadingImages() => 'Envoi des photos...',
+          EditPropertySubmitting() => 'Enregistrement...',
+          // Depuis une section, l'action valide la section et ramène au
+          // sommaire — elle n'enregistre pas encore.
+          _ when !_isSummary => 'Valider cette section',
+          _ => 'Enregistrer les modifications',
+        },
+      ),
+    );
+  }
+
+  Widget _scaffold({required bool isBusy, required String primaryLabel}) {
+    return PopScope(
+      // Le geste de retour système contourne la barre d'action : sans ce
+      // garde, il emporterait les sections modifiées sans un mot.
+      canPop: !_blocksPop,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!await _confirmDiscard() || !mounted) return;
+
+        await _leave();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: AbsorbPointer(
+            absorbing: isBusy,
+            child: Column(
+              children: [
+                AppStepHeader(
+                  title: _isSummary
+                      ? 'Modifier le bien'
+                      : _stepTitles[_currentStep],
+                  onBack: _back,
+                  // Pas de progression sur le sommaire : les sections s'y
+                  // abordent dans l'ordre qu'on veut, il n'y a pas de « 3/7 ».
+                  currentStep: _isSummary ? null : _currentStep,
+                  totalSteps: _isSummary ? null : _stepTitles.length,
+                ),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                    child: _isSummary ? _buildSummary() : _buildStep(),
+                  ),
+                ),
+
+                AppBottomActionBar(
+                  primaryLabel: primaryLabel,
+                  onPrimary: _next,
+                  primaryIcon: AppButtonIcon.material(
+                    // En modification, chaque section se conclut par une
+                    // validation, jamais par un « suivant » : il n'y a pas de
+                    // section d'après.
+                    _isSummary || _isEditing || _isLastStep
+                        ? Icons.check_rounded
+                        : Icons.arrow_forward_rounded,
+                  ),
+                  // Sur le sommaire, la flèche de l'en-tête suffit à sortir :
+                  // un second bouton « Retour » au même endroit que
+                  // « Enregistrer » invite à l'appui malheureux.
+                  secondaryLabel: _hidesSecondaryAction ? null : 'Retour',
+                  onSecondary: _hidesSecondaryAction ? null : _back,
+                  secondaryIcon: AppButtonIcon.material(
+                    Icons.arrow_back_rounded,
+                  ),
+                  isLoading: isBusy,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Sommaire des sections, en grille.
+  Widget _buildSummary() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Que souhaitez-vous modifier ?',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _hasPendingChanges
+              ? 'Enregistrez pour appliquer vos modifications.'
+              : 'Touchez une section pour la corriger.',
+          style: TextStyle(
+            fontSize: 12,
+            color: _hasPendingChanges
+                ? AppColors.warning
+                : AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            // Les tuiles portent trois lignes de texte : plus hautes que
+            // larges, sinon le résumé serait tronqué.
+            childAspectRatio: 1.15,
+          ),
+          itemCount: _stepTitles.length,
+          itemBuilder: (_, index) => _SummaryTile(
+            icon: _stepIcons[index],
+            title: _stepTitles[index],
+            summary: _stepSummary(index),
+            isTouched: _touched.contains(index),
+            onTap: () => _openStep(index),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildStep() {
@@ -310,5 +742,112 @@ class _AddPropertyViewState extends State<_AddPropertyView> {
       ),
       _ => const SizedBox.shrink(),
     };
+  }
+}
+
+/// Tuile du sommaire : une section du formulaire et son état courant.
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.icon,
+    required this.title,
+    required this.summary,
+    required this.isTouched,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+
+  /// Valeur actuelle de la section, résumée en une ligne.
+  final String summary;
+
+  /// Section retouchée, en attente d'enregistrement.
+  final bool isTouched;
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isTouched ? AppColors.warning : AppColors.primary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isTouched
+                ? AppColors.warning.withValues(alpha: 0.05)
+                : AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isTouched
+                  ? AppColors.warning.withValues(alpha: 0.4)
+                  : AppColors.grey200,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(icon, size: 18, color: accent),
+                  ),
+                  const Spacer(),
+                  if (isTouched)
+                    // Pastille plutôt qu'un mot : elle se repère au balayage,
+                    // et la tuile n'a pas la place d'une étiquette.
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.warning,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  else
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: AppColors.grey400,
+                    ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

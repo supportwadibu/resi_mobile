@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
 
 class KpiRow extends StatelessWidget {
-  const KpiRow({super.key});
+  const KpiRow({super.key, required this.entrees, required this.sorties});
+
+  /// Chiffre d'affaires brut de la période.
+  final double entrees;
+
+  /// Dépenses engagées sur la même période.
+  final double sorties;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const [
+      children: [
         Expanded(
           child: KpiCard(
             label: 'Entrées',
-            value: '1 260 840 F',
+            value: CurrencyFormatter.fcfa(entrees),
             icon: FontAwesomeIcons.arrowTrendUp,
-            color: Color(0xFF14A985),
+            color: const Color(0xFF14A985),
           ),
         ),
-        SizedBox(width: 12),
+        const SizedBox(width: 12),
         Expanded(
           child: KpiCard(
             label: 'Sorties',
-            value: '342 000 F',
+            value: CurrencyFormatter.fcfa(sorties),
             icon: FontAwesomeIcons.arrowTrendDown,
-            color: Color(0xFFEF4444),
+            color: const Color(0xFFEF4444),
           ),
         ),
       ],

@@ -5,12 +5,27 @@ import 'package:flutter/material.dart';
 /// Le code part à l'API, le libellé et l'icône restent côté client : traduire
 /// côté serveur imposerait de redéployer pour corriger un intitulé.
 enum ExpenseCategory {
-  electricity('electricity', 'Électricité', Icons.bolt_outlined, Color(0xFFF39C12)),
+  electricity(
+    'electricity',
+    'Électricité',
+    Icons.bolt_outlined,
+    Color(0xFFF39C12),
+  ),
   water('water', 'Eau / SODECI', Icons.water_drop_outlined, Color(0xFF3498DB)),
   internet('internet', 'Internet', Icons.wifi, Color(0xFF1ABC9C)),
   tv('tv', 'Canal+ / TV', Icons.tv_outlined, Color(0xFF34495E)),
-  cleaning('cleaning', 'Ménage', Icons.cleaning_services_outlined, Color(0xFF2ECC71)),
-  maintenance('maintenance', 'Maintenance', Icons.handyman_outlined, Color(0xFF9B59B6)),
+  cleaning(
+    'cleaning',
+    'Ménage',
+    Icons.cleaning_services_outlined,
+    Color(0xFF2ECC71),
+  ),
+  maintenance(
+    'maintenance',
+    'Maintenance',
+    Icons.handyman_outlined,
+    Color(0xFF9B59B6),
+  ),
   taxes('taxes', 'Taxes', Icons.receipt_long_outlined, Color(0xFFE74C3C)),
   other('other', 'Autre', Icons.more_horiz, Color(0xFF95A5A6));
 
@@ -285,8 +300,10 @@ class UpdateExpensePayload {
     if (category != null) 'category': category!.code,
     if (amount != null) 'amount': amount,
     if (spentAt != null) 'spent_at': formatApiDate(spentAt!),
-    if (clearNote) 'note': null
-    else if (note != null && note!.trim().isNotEmpty) 'note': note!.trim(),
+    if (clearNote)
+      'note': null
+    else if (note != null && note!.trim().isNotEmpty)
+      'note': note!.trim(),
   };
 
   bool get isEmpty => toJson().isEmpty;

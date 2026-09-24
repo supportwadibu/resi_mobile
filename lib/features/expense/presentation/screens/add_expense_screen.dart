@@ -1,10 +1,15 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/router/role_guard.dart';
+import '../../../../core/session/session_role.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../../property/business_logic/property_state.dart';
 import '../../../residence/business_logic/residence_cubit.dart';
@@ -71,6 +76,20 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   ExpenseModel? get _original => widget.expense;
   bool get _isEditing => _original != null;
 
+  /// Une charge commune de résidence est-elle offerte à ce rôle ?
+  ///
+  /// `POST /gerant/expenses` exige un `property_id` et répond 422
+  /// `property_required` sans lui : une charge commune n'est rattachée à aucun
+  /// logement, porte sur la résidence entière — y compris des logements hors du
+  /// périmètre du gérant — et entre dans le net du propriétaire, que le gérant
+  /// ne voit pas. Le choix disparaît donc plutôt que d'échouer à l'envoi.
+  ///
+  /// Le rôle se lit sur la session, comme partout ailleurs dans le projet.
+  late final bool _canChargeCommon = isGestureAllowed(
+    sl<SessionRole>().value,
+    'expense_common_charge',
+  );
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +101,10 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     _noteController = TextEditingController(text: original?.note ?? '');
     _propertyId = original?.propertyId;
     _residenceId = original?.residenceId;
-    _isCommonCharge = original?.isCommonCharge ?? false;
+    // Le rôle prime sur la dépense relue : le gérant n'ayant pas le type
+    // commun, l'écran ne peut pas s'ouvrir dessus — il présenterait un
+    // sélecteur de résidence sans le choix qui l'explique.
+    _isCommonCharge = _canChargeCommon && (original?.isCommonCharge ?? false);
     _category = original?.category;
     _spentAt = original?.spentAt ?? DateTime.now();
   }
@@ -145,9 +167,7 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.error(message, context: context);
   }
 
   Future<void> _pickDate() async {
@@ -160,9 +180,9 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
-            primary: Colors.black,
-            onPrimary: Colors.white,
-            onSurface: Colors.black,
+            primary: AppColors.black,
+            onPrimary: AppColors.white,
+            onSurface: AppColors.textPrimary,
           ),
         ),
         child: child!,
@@ -190,13 +210,13 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
         final isBusy = state is AddExpenseSubmitting;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
 
           body: SafeArea(
             child: AbsorbPointer(
               absorbing: isBusy,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -206,32 +226,36 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
                           : 'Nouvelle dépense',
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 28),
 
-                    const Text("Type de dépense"),
-                    const SizedBox(height: 10),
-                    _chargeKindPicker(),
-
-                    const SizedBox(height: 24),
-
-                    Text(
-                      _isCommonCharge
-                          ? "Sélectionner la résidence"
-                          : "Sélectionner le logement",
-                    ),
-                    const SizedBox(height: 10),
-                    if (_isCommonCharge) _residenceTargetPicker() else _residencePicker(),
-
-                    const SizedBox(height: 24),
-
-                    const Text("Montant de la dépense (Fcfa)"),
-                    const SizedBox(height: 10),
+                    // Le montant ouvre la saisie : c'est la donnée que le
+                    // propriétaire a en tête en arrivant sur l'écran, et la
+                    // placer au troisième rang l'obligeait à parcourir deux
+                    // sélecteurs avant de la poser.
                     AmountField(controller: _amountController),
 
+                    const SizedBox(height: 28),
+
+                    if (_canChargeCommon) ...[
+                      const _FieldLabel('Type de dépense'),
+                      _chargeKindPicker(),
+
+                      const SizedBox(height: 24),
+                    ],
+
+                    _FieldLabel(
+                      _isCommonCharge
+                          ? 'Résidence concernée'
+                          : 'Logement concerné',
+                    ),
+                    if (_isCommonCharge)
+                      _residenceTargetPicker()
+                    else
+                      _residencePicker(),
+
                     const SizedBox(height: 24),
 
-                    const Text("Catégorie"),
-                    const SizedBox(height: 12),
+                    const _FieldLabel('Catégorie'),
                     CategoryGrid(
                       categories: ExpenseCategory.values,
                       selected: _category,
@@ -241,26 +265,31 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
 
                     const SizedBox(height: 24),
 
-                    const Text("Date"),
-                    const SizedBox(height: 10),
+                    const _FieldLabel('Date'),
                     DatePickerField(
-                      date: DateFormat('dd MMMM yyyy', 'fr').format(_spentAt),
+                      date: DateFormat('d MMMM yyyy', 'fr').format(_spentAt),
                       onTap: _pickDate,
                     ),
 
                     const SizedBox(height: 24),
 
-                    const Text("Note (facultatif)"),
-                    const SizedBox(height: 10),
+                    const _FieldLabel('Note', isOptional: true),
                     TextField(
                       controller: _noteController,
                       maxLength: 500,
                       maxLines: 2,
+                      style: AppTextStyles.valueSmall,
                       inputFormatters: [LengthLimitingTextInputFormatter(500)],
                       decoration: InputDecoration(
                         hintText: 'Ex : facture de janvier',
+                        hintStyle: AppTextStyles.labelMedium,
+                        // Le compteur de caractères double le libellé
+                        // « facultatif » et alourdit la section pour une
+                        // limite qu'une note courte n'approche jamais.
+                        counterText: '',
                         filled: true,
-                        fillColor: const Color(0xffF5F5FA),
+                        fillColor: AppColors.background,
+                        contentPadding: const EdgeInsets.all(16),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -268,10 +297,11 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
 
                     SaveExpenseButton(
                       onPressed: isBusy ? null : _submit,
+                      isBusy: isBusy,
                       label: switch ((isBusy, _isEditing)) {
                         (true, _) => 'Enregistrement...',
                         (false, true) => 'Enregistrer les modifications',
@@ -294,23 +324,74 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   /// logement, et présenter les deux sélecteurs ensemble laisserait croire
   /// qu’on peut renseigner les deux — ce que le serveur refuse.
   Widget _chargeKindPicker() {
-    return SegmentedButton<bool>(
-      segments: const [
-        ButtonSegment(
-          value: false,
-          label: Text('Un logement'),
-          icon: Icon(Icons.meeting_room_outlined, size: 18),
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _chargeKindOption(
+            label: 'Un logement',
+            icon: Icons.meeting_room_outlined,
+            isCommon: false,
+          ),
+          _chargeKindOption(
+            label: 'Partie commune',
+            icon: Icons.apartment_outlined,
+            isCommon: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chargeKindOption({
+    required String label,
+    required IconData icon,
+    required bool isCommon,
+  }) {
+    final selected = _isCommonCharge == isCommon;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _isCommonCharge = isCommon),
+        // Toute la moitié reste tactile, y compris l'espace autour du texte.
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 17,
+                color: selected
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.valueSmall.copyWith(
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        ButtonSegment(
-          value: true,
-          label: Text('Partie commune'),
-          icon: Icon(Icons.apartment_outlined, size: 18),
-        ),
-      ],
-      selected: {_isCommonCharge},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) =>
-          setState(() => _isCommonCharge = selection.first),
+      ),
     );
   }
 
@@ -321,30 +402,12 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   Widget _residenceTargetPicker() {
     return BlocBuilder<ResidenceCubit, ResidenceState>(
       builder: (context, state) => switch (state) {
-        ResidenceLoading() || ResidenceInitial() => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Chargement de vos résidences...',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
+        ResidenceLoading() || ResidenceInitial() => const _PickerLoading(
+          'Chargement de vos résidences...',
         ),
-        ResidenceError(:final message) => Text(
-          message,
-          style: const TextStyle(fontSize: 12, color: Colors.red),
-        ),
-        ResidenceLoaded(:final items) when items.isEmpty => Text(
+        ResidenceError(:final message) => _PickerNotice(message, isError: true),
+        ResidenceLoaded(:final items) when items.isEmpty => const _PickerNotice(
           'Créez d’abord une résidence pour y imputer une charge commune.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
         ResidenceLoaded(:final items) => ResidenceDropdown(
           hint: 'Choisir une résidence',
@@ -366,30 +429,11 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   Widget _residencePicker() {
     return BlocBuilder<PropertyCubit, PropertyState>(
       builder: (context, state) => switch (state) {
-        PropertyLoading() || PropertyInitial() => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Chargement de vos biens...',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-        PropertyError(:final message) => Text(
-          message,
-          style: const TextStyle(fontSize: 12, color: Colors.red),
-        ),
-        PropertyLoaded(:final items) when items.isEmpty => Text(
+        PropertyLoading() ||
+        PropertyInitial() => const _PickerLoading('Chargement de vos biens...'),
+        PropertyError(:final message) => _PickerNotice(message, isError: true),
+        PropertyLoaded(:final items) when items.isEmpty => const _PickerNotice(
           'Enregistrez d’abord un bien pour pouvoir y imputer une dépense.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
         PropertyLoaded(:final items) => ResidenceDropdown(
           // Le bien d'une dépense en cours d'édition peut avoir été supprimé :
@@ -403,6 +447,88 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
           onChanged: (value) => setState(() => _propertyId = value),
         ),
       },
+    );
+  }
+}
+
+/// Libellé d'un champ de la saisie.
+///
+/// Porte son propre espacement bas : réparti dans l'écran, il variait d'un
+/// champ à l'autre (10 ici, 12 là) sans que rien ne le justifie.
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text, {this.isOptional = false});
+
+  final String text;
+
+  /// Champ facultatif, signalé à côté du libellé plutôt que dans une
+  /// parenthèse du texte : la mention est une information de saisie, pas une
+  /// partie du nom du champ.
+  final bool isOptional;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Text(text, style: AppTextStyles.sectionTitle.copyWith(fontSize: 13)),
+          if (isOptional) ...[
+            const SizedBox(width: 6),
+            Text('facultatif', style: AppTextStyles.labelSmall),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Attente du chargement d'un sélecteur.
+class _PickerLoading extends StatelessWidget {
+  const _PickerLoading(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 15,
+            height: 15,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+          Text(message, style: AppTextStyles.labelMedium),
+        ],
+      ),
+    );
+  }
+}
+
+/// Message tenant la place d'un sélecteur qui n'a rien à proposer.
+class _PickerNotice extends StatelessWidget {
+  const _PickerNotice(this.message, {this.isError = false});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isError ? AppColors.errorBg : AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        message,
+        style: AppTextStyles.labelMedium.copyWith(
+          color: isError ? AppColors.error : AppColors.textSecondary,
+        ),
+      ),
     );
   }
 }

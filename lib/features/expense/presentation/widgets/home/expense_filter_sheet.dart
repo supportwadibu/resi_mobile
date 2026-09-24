@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../property/data/models/property_model.dart';
 import '../../../business_logic/expense_state.dart';
 import '../../../data/models/expense_model.dart';
@@ -28,7 +30,7 @@ class ExpenseFilterSheet extends StatefulWidget {
     return showModalBottomSheet<ExpenseFilters>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -61,9 +63,9 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
-            primary: Colors.black,
-            onPrimary: Colors.white,
-            onSurface: Colors.black,
+            primary: AppColors.black,
+            onPrimary: AppColors.white,
+            onSurface: AppColors.textPrimary,
           ),
         ),
         child: child!,
@@ -97,20 +99,20 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: AppColors.grey200,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               'Filtrer les dépenses',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
             ),
             const SizedBox(height: 20),
 
-            const Text('Bien', style: TextStyle(fontSize: 13)),
+            Text('Bien', style: AppTextStyles.labelMedium),
             const SizedBox(height: 8),
             _PropertyChips(
               properties: widget.properties,
@@ -120,7 +122,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
 
             const SizedBox(height: 20),
 
-            const Text('Catégorie', style: TextStyle(fontSize: 13)),
+            Text('Catégorie', style: AppTextStyles.labelMedium),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -141,7 +143,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
 
             const SizedBox(height: 20),
 
-            const Text('Période', style: TextStyle(fontSize: 13)),
+            Text('Période', style: AppTextStyles.labelMedium),
             const SizedBox(height: 8),
             InkWell(
               onTap: _pickRange,
@@ -152,15 +154,15 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xffF5F5FA),
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.calendar_today_outlined,
-                      size: 18,
-                      color: Colors.grey,
+                      size: 17,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -168,7 +170,9 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                         _from != null && _to != null
                             ? '${_dateFormat.format(_from!)} → ${_dateFormat.format(_to!)}'
                             : 'Toutes les dates',
-                        style: const TextStyle(fontSize: 13),
+                        style: _from != null && _to != null
+                            ? AppTextStyles.valueSmall
+                            : AppTextStyles.labelMedium,
                       ),
                     ),
                     if (_from != null || _to != null)
@@ -177,7 +181,11 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                           _from = null;
                           _to = null;
                         }),
-                        child: const Icon(Icons.close, size: 18),
+                        child: const Icon(
+                          Icons.close,
+                          size: 17,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                   ],
                 ),
@@ -193,12 +201,17 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                     onPressed: () =>
                         Navigator.pop(context, const ExpenseFilters()),
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: const BorderSide(color: AppColors.grey200),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text('Réinitialiser'),
+                    child: Text(
+                      'Réinitialiser',
+                      style: AppTextStyles.valueSmall,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -214,15 +227,18 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                      backgroundColor: AppColors.black,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Appliquer',
-                      style: TextStyle(color: Colors.white),
+                      style: AppTextStyles.valueSmall.copyWith(
+                        color: AppColors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -250,10 +266,7 @@ class _PropertyChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (properties.isEmpty) {
-      return Text(
-        'Aucun bien enregistré',
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-      );
+      return Text('Aucun bien enregistré', style: AppTextStyles.labelMedium);
     }
 
     return Wrap(
@@ -291,15 +304,15 @@ class _Chip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? Colors.black : const Color(0xffF5F5FA),
+          color: selected ? AppColors.black : AppColors.background,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.labelSmall.copyWith(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: selected ? Colors.white : const Color(0xff1D2452),
+            color: selected ? AppColors.white : AppColors.textPrimary,
           ),
         ),
       ),

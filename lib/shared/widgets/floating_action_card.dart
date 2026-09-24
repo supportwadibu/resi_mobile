@@ -102,7 +102,7 @@ class _FeatureButton extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),  
+                ),
                 const SizedBox(width: 12),
                 Text(
                   feature.label,

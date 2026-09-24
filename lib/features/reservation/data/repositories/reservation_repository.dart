@@ -5,6 +5,7 @@ import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../models/booking_stats_model.dart';
+import '../models/early_check_out_quote.dart';
 import '../models/occupied_period_model.dart';
 import '../models/reservation_model.dart';
 
@@ -139,12 +140,68 @@ class ReservationRepository {
     }
   }
 
-  /// Clôture un séjour : enregistre la sortie et cumule le montant sur la
-  /// fiche du client.
+  /// Clôture un séjour mené à terme : le serveur consigne la sortie réelle
+  /// sans toucher à la période facturée, qui porte la répartition du revenu.
+  ///
+  /// Sans corps, comme avant le départ anticipé : le serveur lit une clôture
+  /// sans corps comme un séjour complet.
+  ///
+  /// Un 422 signale un séjour pas encore commencé : il s'annule, il ne se
+  /// clôture pas.
   Future<ReservationModel> checkOut(String id) async {
     try {
       final response = await _dio.patch(
         ApiEndpoints.bookingCheckOut(_role.value, id),
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Chiffre un départ anticipé à [at] sans rien enregistrer.
+  ///
+  /// Un 422 signale une heure de sortie refusée — antérieure à l'entrée, dans
+  /// le futur, ou pas avant la fin prévue.
+  Future<EarlyCheckOutQuote> previewEarlyCheckOut(
+    String id, {
+    required DateTime at,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.bookingCheckOutPreview(_role.value, id),
+        queryParameters: {'at': at.toUtc().toIso8601String()},
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return EarlyCheckOutQuote.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Clôture un séjour écourté : le serveur ramène la période et le montant à
+  /// l'usage réel et consigne l'écart comme remboursé.
+  ///
+  /// [finalAmount] est le montant retenu ; à défaut, le serveur applique son
+  /// prorata. Il ne peut dépasser le montant réglé.
+  Future<ReservationModel> checkOutEarly(
+    String id, {
+    required DateTime actualCheckOutAt,
+    num? finalAmount,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.bookingCheckOut(_role.value, id),
+        data: {
+          'full_stay': false,
+          'actual_check_out_at': actualCheckOutAt.toUtc().toIso8601String(),
+          'final_amount': ?finalAmount,
+        },
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);

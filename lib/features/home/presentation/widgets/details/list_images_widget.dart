@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 
 /// Bandeau de vignettes d'une annonce.
 ///
@@ -38,20 +40,22 @@ class ListImagesWidget extends StatelessWidget {
 
           return GestureDetector(
             onTap: onTap == null ? null : () => onTap!(index),
+            // La vignette retenue se détache par un liseré *et* par une marge
+            // qui l'isole : la seule couleur de bordure se voyait mal sur les
+            // photos sombres, qui la mangent.
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.all(isSelected ? 3 : 0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : Colors.transparent,
+                  color: isSelected ? AppColors.black : Colors.transparent,
                   width: 2,
                 ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: _thumbnail(displayImages[index]),
+                borderRadius: BorderRadius.circular(isSelected ? 11 : 14),
+                child: _thumbnail(displayImages[index], isSelected ? 50 : 56),
               ),
             ),
           );
@@ -60,31 +64,45 @@ class ListImagesWidget extends StatelessWidget {
     );
   }
 
-  Widget _thumbnail(String source) {
+  /// [size] : côté de l'image, réduit sur la vignette retenue pour que la
+  /// marge qui l'isole ne déborde pas de la hauteur du bandeau.
+  Widget _thumbnail(String source, double size) {
     if (source.startsWith('http')) {
-      return Image.network(
-        source,
-        width: 60,
-        height: 60,
+      return CachedNetworkImage(
+        imageUrl: source,
+        width: size,
+        height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-        loadingBuilder: (context, child, progress) =>
-            progress == null ? child : _placeholder(),
+        placeholder: (_, _) => _loading(size),
+        // Distinct du chargement : une photo injoignable garde l'icône de
+        // repli, là où l'animation tournerait sans fin.
+        errorWidget: (_, _, _) => _placeholder(size),
       );
     }
 
     return Image.asset(
       source,
-      width: 60,
-      height: 60,
+      width: size,
+      height: size,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _placeholder(),
+      errorBuilder: (_, _, _) => _placeholder(size),
     );
   }
 
-  Widget _placeholder() => Container(
-    width: 60,
-    height: 60,
+  /// Vignette en cours de téléchargement.
+  ///
+  /// Le loader est dimensionné sur la vignette : à sa taille par défaut, il
+  /// déborderait largement d'un carré de 56 pixels.
+  Widget _loading(double size) => Container(
+    width: size,
+    height: size,
+    color: AppColors.grey200,
+    child: Center(child: AppLoader(size: size * 0.6)),
+  );
+
+  Widget _placeholder(double size) => Container(
+    width: size,
+    height: size,
     color: AppColors.grey200,
     child: Icon(Icons.image_outlined, size: 20, color: AppColors.grey400),
   );

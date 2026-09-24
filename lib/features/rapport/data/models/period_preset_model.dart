@@ -14,3 +14,19 @@ extension PeriodPresetExt on PeriodPreset {
     }
   }
 }
+
+/// Valeur attendue par l'API pour le champ `period` du corps de la requête.
+extension PeriodPresetApiExt on PeriodPreset {
+  String get apiValue {
+    switch (this) {
+      case PeriodPreset.thisMonth:
+        return 'this_month';
+      case PeriodPreset.lastMonth:
+        return 'last_month';
+      case PeriodPreset.thisYear:
+        return 'this_year';
+      case PeriodPreset.custom:
+        return 'custom';
+    }
+  }
+}

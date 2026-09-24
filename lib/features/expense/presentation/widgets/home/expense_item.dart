@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 
@@ -15,61 +17,53 @@ class ExpenseItem extends StatelessWidget {
     this.showChevron = false,
   });
 
-  static final _dateFormat = DateFormat('d MMMM y', 'fr');
+  /// Jour seul : le mois et l'année sont portés par l'en-tête du groupe, les
+  /// répéter sur chaque ligne noierait la date utile.
+  static final _dayFormat = DateFormat('d MMM', 'fr');
 
   @override
   Widget build(BuildContext context) {
     final category = expense.category;
-    // Le bien peut avoir été supprimé depuis la saisie : la dépense reste,
-    // mais son rattachement n'est plus résoluble.
-    final propertyLabel = expense.property?.title ?? 'Bien supprimé';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.divider),
+      ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: category.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(category.icon, size: 18, color: category.color),
+            child: Icon(category.icon, size: 19, color: category.color),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(category.label, style: AppTextStyles.valueSmall),
+                const SizedBox(height: 3),
                 Text(
-                  category.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  propertyLabel,
+                  expense.targetLabel,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _dateFormat.format(expense.spentAt),
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                  style: AppTextStyles.labelSmall,
                 ),
                 if (expense.note case final note?
                     when note.trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(
                     note,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 11,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textLight,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -77,18 +71,28 @@ class ExpenseItem extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            CurrencyFormatter.format(expense.amount),
-            style: const TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.format(expense.amount),
+                style: AppTextStyles.valueSmall.copyWith(color: AppColors.red),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                _dayFormat.format(expense.spentAt),
+                style: AppTextStyles.labelSmall,
+              ),
+            ],
           ),
           if (showChevron) ...[
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            const SizedBox(width: 2),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: AppColors.textLight,
+            ),
           ],
         ],
       ),

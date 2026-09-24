@@ -249,10 +249,9 @@ void main() {
       // doit pas effacer une saisie.
       final store = _SpyStore();
 
-      await _service(store).handleFailureForTest(
-        _booking(),
-        AppFailure.forbidden(),
-      );
+      await _service(
+        store,
+      ).handleFailureForTest(_booking(), AppFailure.forbidden());
 
       expect(store.dequeued, isEmpty);
     });
@@ -260,10 +259,9 @@ void main() {
     test('une panne reseau laisse la saisie en attente', () async {
       final store = _SpyStore();
 
-      await _service(store).handleFailureForTest(
-        _booking(),
-        AppFailure.noInternet(),
-      );
+      await _service(
+        store,
+      ).handleFailureForTest(_booking(), AppFailure.noInternet());
 
       expect(store.dequeued, isEmpty);
       expect(store.marked['req-1'], PendingSyncStatus.pending);

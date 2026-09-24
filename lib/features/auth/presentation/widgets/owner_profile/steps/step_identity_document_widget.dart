@@ -105,9 +105,7 @@ class StepIdentityDocumentWidget extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: documentType == type
-                    ? AppColors.black
-                    : AppColors.white,
+                color: documentType == type ? AppColors.black : AppColors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: documentType == type

@@ -14,6 +14,7 @@ import '../widgets/create/date_time_field.dart';
 import '../widgets/create/property_selector.dart';
 import '../widgets/create/reservation_document_picker.dart';
 import '../widgets/create/reservation_section_title.dart';
+import '../widgets/create/stay_tier_hints.dart';
 import '../widgets/create/stay_type_picker.dart';
 
 /// Enregistrement d'une réservation prise au comptoir.
@@ -139,6 +140,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   onSelected: (property) => cubit.setProperty(
                     property.id,
                     dailyPrice: property.pricing.dailyPrice,
+                    priceTiers: property.pricing.priceTiers,
                   ),
                 ),
 
@@ -148,6 +150,10 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   selected: state.stayType,
                   dailyPrice: state.dailyPrice,
                   onSelected: cubit.setStayType,
+                ),
+                StayTierHints(
+                  tiers: state.priceTiers,
+                  activeDiscountPercent: state.discountPercent,
                 ),
 
                 const SizedBox(height: 24),
@@ -197,8 +203,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 const SizedBox(height: 28),
                 _SubmitButton(
                   enabled: state.isValid,
-                  isSubmitting:
-                      state.status == AddReservationStatus.submitting,
+                  isSubmitting: state.status == AddReservationStatus.submitting,
                   label: isCheckIn
                       ? 'Enregistrer le check-in'
                       : 'Enregistrer la réservation',
@@ -247,7 +252,8 @@ class _AddReservationViewState extends State<_AddReservationView> {
         buttonText: 'Retour à l’accueil',
         secondaryButtonText: 'Nouvelle réservation',
         onPrimaryAction: () => router.replaceAll([const HomeRoute()]),
-        onSecondaryAction: () => router.replace(AddReservationRoute(mode: mode)),
+        onSecondaryAction: () =>
+            router.replace(AddReservationRoute(mode: mode)),
       ),
     );
   }
@@ -277,6 +283,23 @@ class _AmountSummary extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Le détail n'apparaît que lorsqu'un palier joue : sans lui, le
+          // montant attendu semblerait ne pas suivre le tarif affiché.
+          if (state.discountPercent > 0) ...[
+            _Row(
+              label: '${state.daysCount} j × ${_money(state.unitPrice)} F',
+              value: state.fullAmount,
+            ),
+            const SizedBox(height: 8),
+            // Montant positif, le libellé portant le signe : `_money` groupe
+            // les milliers sur les chiffres seuls et décalerait l'espace sur
+            // un nombre négatif.
+            _Row(
+              label: 'Remise durée (−${state.discountPercent} %)',
+              value: state.fullAmount - state.expectedAmount,
+            ),
+            const Divider(height: 20, color: AppColors.divider),
+          ],
           _Row(label: 'Montant attendu', value: state.expectedAmount),
           if (state.receivedAmount != null &&
               state.receivedAmount != state.expectedAmount) ...[
@@ -296,11 +319,7 @@ class _AmountSummary extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({
-    required this.label,
-    required this.value,
-    this.strong = false,
-  });
+  const _Row({required this.label, required this.value, this.strong = false});
 
   final String label;
   final double value;

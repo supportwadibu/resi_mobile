@@ -22,19 +22,15 @@ class AppRadius {
   static BorderRadius get imageRadius => BorderRadius.circular(md);
   static BorderRadius get avatarRadius => BorderRadius.circular(full);
 
-  static BorderRadius topOnly(double radius) => BorderRadius.vertical(
-        top: Radius.circular(radius),
-      );
+  static BorderRadius topOnly(double radius) =>
+      BorderRadius.vertical(top: Radius.circular(radius));
 
-  static BorderRadius bottomOnly(double radius) => BorderRadius.vertical(
-        bottom: Radius.circular(radius),
-      );
+  static BorderRadius bottomOnly(double radius) =>
+      BorderRadius.vertical(bottom: Radius.circular(radius));
 
-  static BorderRadius leftOnly(double radius) => BorderRadius.horizontal(
-        left: Radius.circular(radius),
-      );
+  static BorderRadius leftOnly(double radius) =>
+      BorderRadius.horizontal(left: Radius.circular(radius));
 
-  static BorderRadius rightOnly(double radius) => BorderRadius.horizontal(
-        right: Radius.circular(radius),
-      );
+  static BorderRadius rightOnly(double radius) =>
+      BorderRadius.horizontal(right: Radius.circular(radius));
 }

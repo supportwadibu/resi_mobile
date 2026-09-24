@@ -1,4 +1,5 @@
 import '../../clients/data/models/client_model.dart';
+import '../../property/data/models/property_model.dart';
 import '../data/models/reservation_model.dart';
 
 /// Mode d'enregistrement, choisi à l'ouverture du formulaire.
@@ -42,6 +43,7 @@ class AddReservationState {
     this.documentBackPath,
     this.propertyId,
     this.dailyPrice = 0,
+    this.priceTiers = const [],
     this.stayType = StayType.fullDay,
     this.checkInAt,
     this.checkOutAt,
@@ -71,6 +73,13 @@ class AddReservationState {
   /// Tarif journalier du bien choisi, pour calculer le montant attendu sans
   /// attendre le serveur.
   final double dailyPrice;
+
+  /// Grille de remises par durée du bien choisi.
+  ///
+  /// Vide pour un bien enregistré avant les paliers, comme pour un bien qui
+  /// n'en accorde aucun : le tarif plein s'applique alors quelle que soit la
+  /// durée.
+  final List<PriceTier> priceTiers;
 
   final StayType stayType;
   final DateTime? checkInAt;
@@ -117,8 +126,37 @@ class AddReservationState {
     return hours <= 0 ? 1 : (hours / 24).ceil().clamp(1, 3650);
   }
 
-  /// Montant attendu selon la grille du bien, avant négociation.
-  double get expectedAmount => (unitPrice * daysCount).roundToDouble();
+  /// Remise de durée applicable au séjour saisi, en pourcentage.
+  ///
+  /// Reprend `resolveDiscountPercent` du serveur : le palier retenu est le plus
+  /// avantageux atteint, et non le dernier déclaré — la grille d'un bien
+  /// enregistré avant sa normalisation peut être désordonnée.
+  ///
+  /// Les séjours infra-journaliers en sont exclus : ils valent un jour, quand
+  /// le palier le plus court admis par le serveur en couvre deux.
+  int get discountPercent {
+    if (stayType != StayType.fullDay || priceTiers.isEmpty) return 0;
+
+    var best = 0;
+    for (final tier in priceTiers) {
+      if (daysCount >= tier.minDays && tier.discountPercent > best) {
+        best = tier.discountPercent;
+      }
+    }
+
+    return best.clamp(0, 100);
+  }
+
+  /// Montant attendu selon la grille du bien, remise de durée comprise, avant
+  /// négociation.
+  ///
+  /// L'arrondi au franc reproduit celui du serveur : sans lui, l'écran
+  /// annoncerait au comptoir un montant que la facture ne confirmerait pas.
+  double get expectedAmount =>
+      (unitPrice * daysCount * (1 - discountPercent / 100)).roundToDouble();
+
+  /// Montant avant remise de durée, pour montrer ce que le palier fait gagner.
+  double get fullAmount => (unitPrice * daysCount).roundToDouble();
 
   /// Montant qui sera enregistré : le prix négocié s'il est saisi, le montant
   /// attendu sinon.
@@ -157,6 +195,7 @@ class AddReservationState {
     bool clearDocumentBack = false,
     String? propertyId,
     double? dailyPrice,
+    List<PriceTier>? priceTiers,
     StayType? stayType,
     DateTime? checkInAt,
     DateTime? checkOutAt,
@@ -189,6 +228,7 @@ class AddReservationState {
           : (documentBackPath ?? this.documentBackPath),
       propertyId: propertyId ?? this.propertyId,
       dailyPrice: dailyPrice ?? this.dailyPrice,
+      priceTiers: priceTiers ?? this.priceTiers,
       stayType: stayType ?? this.stayType,
       checkInAt: checkInAt ?? this.checkInAt,
       checkOutAt: checkOutAt ?? this.checkOutAt,

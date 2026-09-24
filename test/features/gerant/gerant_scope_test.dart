@@ -40,7 +40,9 @@ void main() {
       // résidences. « Résidence entière » est un geste d'interface.
       final payload = scopePayload(const {'p-2', 'p-1'});
 
-      expect(payload, {'property_ids': ['p-1', 'p-2']});
+      expect(payload, {
+        'property_ids': ['p-1', 'p-2'],
+      });
     });
 
     test('un périmètre vide reste transmissible', () {

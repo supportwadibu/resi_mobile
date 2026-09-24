@@ -35,5 +35,51 @@
       "one": "1 waiting for network",
       "other": "{} waiting for network"
     }
+  },
+  "feedback": {
+    "sheet_title": "Your feedback",
+    "sheet_subtitle": "Help us improve the app",
+    "type_label": "What is it about?",
+    "types": {
+      "suggestion": "Suggestion",
+      "bug": "Issue",
+      "amelioration": "Improvement",
+      "autre": "Other"
+    },
+    "title_label": "Title",
+    "title_hint": "Sum it up in a few words",
+    "title_too_short": "Enter a title of at least 3 characters.",
+    "message_label": "Your message",
+    "message_hint": "Describe your idea or the issue you ran into",
+    "message_too_short": "Please add a bit more: 10 characters minimum.",
+    "submit": "Send",
+    "success": "Thank you, your feedback has been sent."
+  },
+  "stay_checkout": {
+    "action": "End stay",
+    "extend": "Extend",
+    "extend_alone": "Extend stay",
+    "confirm_title": "Did the guest use the full stay?",
+    "confirm_body": "Yes: the stay is marked as completed, dates and amount unchanged. No: check-out and amount are brought back to actual use, the difference is refunded.",
+    "success": "Stay ended",
+    "answer_full": "Yes, full stay",
+    "answer_early": "No, left early",
+    "early_title": "Early check-out",
+    "early_body": "Every started day is due. The suggested amount is prorated on what the guest paid.",
+    "early_departure": "Actual check-out",
+    "early_days": "Billed days",
+    "early_days_value": "{billed} of {planned}",
+    "early_paid": "Amount paid",
+    "early_amount": "Amount kept",
+    "early_amount_hint": "Suggested: {amount}",
+    "early_amount_too_high": "Cannot exceed the amount paid.",
+    "early_refund": "To refund",
+    "early_confirm": "Close the stay",
+    "early_success": "Stay closed, refund recorded",
+    "planned_amount": "Initial amount",
+    "refunded": "Refunded"
+  },
+  "finance": {
+    "refunds": "Refunds (already deducted from revenue)"
   }
 }

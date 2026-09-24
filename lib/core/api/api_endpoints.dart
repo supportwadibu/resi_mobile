@@ -107,10 +107,14 @@ abstract final class ApiEndpoints {
   static String bookingStats(String role) =>
       '${basePathForRole(role)}/bookings/stats';
 
-  /// Clôture d'un séjour : enregistre la sortie et cumule le montant sur la
-  /// fiche du client.
+  /// Clôture d'un séjour, mené à terme ou écourté par un départ anticipé.
   static String bookingCheckOut(String role, String id) =>
       '${basePathForRole(role)}/bookings/$id/check-out';
+
+  /// Chiffrage d'un départ anticipé, sans écriture : jours facturés, prorata
+  /// proposé et remboursement.
+  static String bookingCheckOutPreview(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/check-out/preview';
 
   /// Prolongation d’un séjour comptoir : repousse la sortie et réajuste le
   /// montant. Un 409 est un conflit de période à arbitrer, pas une panne.

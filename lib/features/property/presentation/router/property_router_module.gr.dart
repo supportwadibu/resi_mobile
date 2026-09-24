@@ -24,18 +24,51 @@ import 'package:resi_africa/features/property/presentation/screens/success_scree
 
 /// generated route for
 /// [_i1.AddPropertyScreen]
-class AddPropertyRoute extends _i5.PageRouteInfo<void> {
-  const AddPropertyRoute({List<_i5.PageRouteInfo>? children})
-    : super(AddPropertyRoute.name, initialChildren: children);
+class AddPropertyRoute extends _i5.PageRouteInfo<AddPropertyRouteArgs> {
+  AddPropertyRoute({
+    _i6.Key? key,
+    _i7.PropertyModel? property,
+    List<_i5.PageRouteInfo>? children,
+  }) : super(
+         AddPropertyRoute.name,
+         args: AddPropertyRouteArgs(key: key, property: property),
+         initialChildren: children,
+       );
 
   static const String name = 'AddPropertyRoute';
 
   static _i5.PageInfo page = _i5.PageInfo(
     name,
     builder: (data) {
-      return const _i1.AddPropertyScreen();
+      final args = data.argsAs<AddPropertyRouteArgs>(
+        orElse: () => const AddPropertyRouteArgs(),
+      );
+      return _i1.AddPropertyScreen(key: args.key, property: args.property);
     },
   );
+}
+
+class AddPropertyRouteArgs {
+  const AddPropertyRouteArgs({this.key, this.property});
+
+  final _i6.Key? key;
+
+  final _i7.PropertyModel? property;
+
+  @override
+  String toString() {
+    return 'AddPropertyRouteArgs{key: $key, property: $property}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AddPropertyRouteArgs) return false;
+    return key == other.key && property == other.property;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ property.hashCode;
 }
 
 /// generated route for

@@ -23,6 +23,8 @@ import 'package:resi_africa/features/rapport/data/repositories/rapport_repositor
 import 'package:resi_africa/features/expense/business_logic/expense_cubit.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_extension_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/early_check_out_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/stay_check_out_cubit.dart';
 import 'package:resi_africa/features/home/business_logic/home_stats_cubit.dart';
 import 'package:resi_africa/features/residence/business_logic/residence_cubit.dart';
 import 'package:resi_africa/features/residence/business_logic/residence_detail_cubit.dart';
@@ -209,6 +211,8 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => EditPropertyCubit(sl<PropertyRepository>()));
   sl.registerFactory(() => ReservationCubit(sl<ReservationRepository>()));
   sl.registerFactory(() => StayExtensionCubit(sl<ReservationRepository>()));
+  sl.registerFactory(() => StayCheckOutCubit(sl<ReservationRepository>()));
+  sl.registerFactory(() => EarlyCheckOutCubit(sl<ReservationRepository>()));
   sl.registerFactory(
     () => ClientsCubit(sl<ClientsRepository>(), sl<ReservationLocalStore>()),
   );

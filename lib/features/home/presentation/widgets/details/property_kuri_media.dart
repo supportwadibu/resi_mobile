@@ -34,10 +34,7 @@ class PropertyKuriMedia extends StatelessWidget {
               children: [
                 const Text(
                   'Kuri Médias',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -11,7 +11,10 @@ void main() {
       // code est donc le seul moyen de dire lequel des deux refus s'est
       // produit.
       final contact = translateGerantFailure(
-        AppFailure.validation(errors: const {}, code: 'manager_contact_required'),
+        AppFailure.validation(
+          errors: const {},
+          code: 'manager_contact_required',
+        ),
       );
       final notOwned = translateGerantFailure(
         AppFailure.validation(errors: const {}, code: 'property_not_owned'),
@@ -33,7 +36,10 @@ void main() {
         ),
       );
 
-      expect(failure.userMessage, 'Un compte existe déjà avec ces coordonnées.');
+      expect(
+        failure.userMessage,
+        'Un compte existe déjà avec ces coordonnées.',
+      );
       expect(failure.statusCode, 409);
     });
 

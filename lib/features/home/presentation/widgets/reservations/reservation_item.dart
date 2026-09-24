@@ -1,21 +1,33 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:intl/intl.dart';
 import '../../../../../core/router/app_router.gr.dart';
 import '../../../../reservation/data/models/reservation_model.dart';
 
 /// Carte d'une réservation reçue sur un bien du propriétaire.
 class ReservationItem extends StatelessWidget {
-  const ReservationItem({super.key, required this.reservation});
+  const ReservationItem({super.key, required this.reservation, this.onChanged});
+
   final ReservationModel reservation;
+
+  /// Appelé quand la fiche signale que le séjour a changé — une prolongation.
+  ///
+  /// La carte porte une copie de la réservation : sans ce signal, elle
+  /// afficherait les dates d’avant jusqu’au prochain rechargement complet.
+  final VoidCallback? onChanged;
 
   @override
   Widget build(BuildContext context) {
     final property = reservation.property;
 
     return GestureDetector(
-      onTap: () {
-        context.router.push(DetailsReservationRoute(reservation: reservation));
+      onTap: () async {
+        final changed = await context.router.push<bool>(
+          DetailsReservationRoute(reservation: reservation),
+        );
+        if (changed == true) onChanged?.call();
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -157,16 +169,24 @@ class _Thumbnail extends StatelessWidget {
 
     if (source == null || source.isEmpty) return _placeholder();
 
-    return Image.network(
-      source,
+    return CachedNetworkImage(
+      imageUrl: source,
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _placeholder(),
-      loadingBuilder: (context, child, progress) =>
-          progress == null ? child : _placeholder(),
+      placeholder: (_, _) => _loading(),
+      // Distinct du chargement : une photo injoignable garde l'icône de repli,
+      // là où l'animation tournerait sans fin.
+      errorWidget: (_, _, _) => _placeholder(),
     );
   }
+
+  Widget _loading() => Container(
+    width: 64,
+    height: 64,
+    color: Colors.grey.shade200,
+    child: const Center(child: AppLoader(size: 32)),
+  );
 
   Widget _placeholder() => Container(
     width: 64,

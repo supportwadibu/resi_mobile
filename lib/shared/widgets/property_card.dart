@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Projette une annonce sur le format attendu par [PropertyCard].
@@ -49,11 +51,6 @@ class PropertyData {
   final String? image;
 }
 
-/// Vignette d'un bien, quelle que soit la provenance de l'image.
-///
-/// Les annonces réelles portent des URLs Cloudinary tandis que les visuels de
-/// démonstration sont empaquetés dans l'application : les deux passent par ce
-/// widget, qui choisit le chargeur d'après le préfixe.
 class _PropertyThumbnail extends StatelessWidget {
   const _PropertyThumbnail({required this.image, this.width, this.height});
 
@@ -70,15 +67,15 @@ class _PropertyThumbnail extends StatelessWidget {
     }
 
     if (source.startsWith('http')) {
-      return Image.network(
-        source,
+      return CachedNetworkImage(
+        imageUrl: source,
         width: width,
         height: height,
         fit: BoxFit.cover,
-        // Une URL périmée ou un réseau coupé ne doit pas casser la liste.
-        errorBuilder: (_, _, _) => _placeholder(),
-        loadingBuilder: (context, child, progress) =>
-            progress == null ? child : _placeholder(),
+        placeholder: (_, _) => _loading(),
+        // Une URL périmée ou un réseau coupé ne doit pas casser la liste, et
+        // se distingue du chargement : l'icône de repli, pas une animation.
+        errorWidget: (_, _, _) => _placeholder(),
       );
     }
 
@@ -90,6 +87,17 @@ class _PropertyThumbnail extends StatelessWidget {
       errorBuilder: (_, _, _) => _placeholder(),
     );
   }
+
+  /// Photo en cours de téléchargement.
+  ///
+  /// Taille fixe : en mode grille la vignette vaut `double.infinity`, dont on
+  /// ne peut pas déduire celle du loader.
+  Widget _loading() => Container(
+    width: width,
+    height: height,
+    color: AppColors.grey200,
+    child: const Center(child: AppLoader(size: 40)),
+  );
 
   Widget _placeholder() => Container(
     width: width,
@@ -106,20 +114,15 @@ class PropertyCard extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.onDelete,
-    this.onShare,
     this.isListMode = false, // ← nouveau
   });
 
   final PropertyData data;
   final VoidCallback? onTap;
 
-  /// Actions secondaires du bien — le rattachement à une résidence.
-  ///
-  /// Optionnel : les appelants qui ne le fournissent pas gardent le
-  /// comportement d’origine.
   final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
-  final VoidCallback? onShare;
+
   final bool isListMode;
 
   @override
@@ -171,7 +174,7 @@ class PropertyCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            _NameRow(name: data.name, onShare: onShare),
+            _NameRow(name: data.name),
             const SizedBox(height: 4),
             _RatingRow(rating: data.rating, location: data.location),
           ],
@@ -232,7 +235,7 @@ class PropertyCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _NameRow(name: data.name, onShare: onShare),
+                  _NameRow(name: data.name),
                   const SizedBox(height: 6),
                   _RatingRow(rating: data.rating, location: data.location),
                 ],
@@ -286,35 +289,20 @@ class _PriceBadge extends StatelessWidget {
 }
 
 class _NameRow extends StatelessWidget {
-  const _NameRow({required this.name, this.onShare});
+  const _NameRow({required this.name});
   final String name;
-  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: AppColors.black,
-            ),
-          ),
-        ),
-        if (onShare != null)
-          _CardIconButton(
-            icon: Icons.ios_share_rounded,
-            color: AppColors.grey500,
-            onTap: onShare!,
-            size: 30,
-            iconSize: 14,
-          ),
-      ],
+    return Text(
+      name,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
+        color: AppColors.black,
+      ),
     );
   }
 }

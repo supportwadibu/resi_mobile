@@ -26,6 +26,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'resi_local.db';
+
   /// Version du schéma local.
   ///
   /// 2 — `cached_properties` porte le libellé de l’unité et le nom de sa

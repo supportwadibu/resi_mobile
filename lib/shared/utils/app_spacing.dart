@@ -1,5 +1,5 @@
 /// Constantes d'espacement pour maintenir une cohérence UI dans l'application.
-/// 
+///
 /// Utilisation:
 /// ```dart
 /// SizedBox(height: AppSpacing.md)
@@ -49,4 +49,3 @@ class AppSpacing {
   static const double dialogPadding = 24.0;
   static const double dialogContentSpacing = 16.0;
 }
-

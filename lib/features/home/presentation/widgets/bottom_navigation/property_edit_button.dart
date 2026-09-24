@@ -12,7 +12,7 @@ class PropertyEditButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppButton(
       label: 'Modifier ce bien',
-      onPressed: () {},
+      onPressed: onPressed,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
       fontSize: 14,
       backgroundColor: AppColors.black,

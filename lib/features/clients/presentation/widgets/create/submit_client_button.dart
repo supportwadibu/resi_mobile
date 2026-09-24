@@ -7,11 +7,16 @@ class SubmitClientButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
+  /// Le défaut porte l'enregistrement d'un nouveau client ; l'édition d'une
+  /// fiche existante le remplace.
+  final String label;
+
   const SubmitClientButton({
     super.key,
     required this.isLoading,
     required this.enabled,
     required this.onTap,
+    this.label = 'Enregistrer le client',
   });
 
   @override
@@ -38,7 +43,7 @@ class SubmitClientButton extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    'Enregistrer le client',
+                    label,
                     style: AppTextStyles.sectionTitle.copyWith(
                       color: Colors.white,
                     ),

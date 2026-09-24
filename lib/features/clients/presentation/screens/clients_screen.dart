@@ -50,7 +50,13 @@ class _ClientsView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
-              onTap: () => context.router.push(AddClientRoute()),
+              // La liste est relue au retour : sans cela, le client tout juste
+              // enregistré n'y figurerait pas.
+              onTap: () async {
+                final cubit = context.read<ClientsCubit>();
+                await context.router.push(const AddClientRoute());
+                await cubit.load();
+              },
               child: Container(
                 width: 36,
                 height: 36,

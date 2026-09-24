@@ -81,7 +81,10 @@ class LocationService {
   ///
   /// Un échec réseau n'est pas remonté : le pré-remplissage est un confort,
   /// et son absence ne doit pas interrompre le dépôt de l'annonce.
-  Future<ResolvedAddress> resolveAddress(double latitude, double longitude) async {
+  Future<ResolvedAddress> resolveAddress(
+    double latitude,
+    double longitude,
+  ) async {
     try {
       final response = await _client.get<Map<String, dynamic>>(
         '/reverse',
@@ -120,7 +123,7 @@ class LocationService {
 
     final parts = [
       ?address['house_number']?.toString(),
-      if (road != null) road,
+      ?road,
       if (quarter != null && quarter != road) quarter,
     ];
 
@@ -131,14 +134,10 @@ class LocationService {
   ///
   /// Le champ `city` est absent de nombreuses réponses en Afrique de l'Ouest ;
   /// `town` et `village` prennent alors le relais.
-  static String? _city(Map<String, dynamic> address) => _firstOf(address, const [
-    'city',
-    'town',
-    'village',
-    'municipality',
-    'county',
-    'state',
-  ]);
+  static String? _city(Map<String, dynamic> address) => _firstOf(
+    address,
+    const ['city', 'town', 'village', 'municipality', 'county', 'state'],
+  );
 
   /// Première clé renseignée et non vide, dans l'ordre de préférence donné.
   static String? _firstOf(Map<String, dynamic> address, List<String> keys) {

@@ -21,7 +21,9 @@ OwnerProfileModel _profile({
 
 Future<void> _pump(WidgetTester tester, OwnerProfileModel profile) async {
   await tester.pumpWidget(
-    MaterialApp(home: Scaffold(body: OwnerProfileHeader(profile: profile))),
+    MaterialApp(
+      home: Scaffold(body: OwnerProfileHeader(profile: profile)),
+    ),
   );
   await tester.pump();
 }
@@ -79,18 +81,12 @@ void main() {
     });
 
     testWidgets('dossier validé', (tester) async {
-      await _pump(
-        tester,
-        _profile(ownerStatus: 'active', isSubmitted: true),
-      );
+      await _pump(tester, _profile(ownerStatus: 'active', isSubmitted: true));
       expect(find.text('Dossier validé'), findsOneWidget);
     });
 
     testWidgets('dossier refusé', (tester) async {
-      await _pump(
-        tester,
-        _profile(ownerStatus: 'rejected', isSubmitted: true),
-      );
+      await _pump(tester, _profile(ownerStatus: 'rejected', isSubmitted: true));
       expect(find.text('Dossier refusé'), findsOneWidget);
     });
 

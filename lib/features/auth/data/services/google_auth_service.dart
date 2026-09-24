@@ -96,7 +96,8 @@ class GoogleAuthService {
 
   Future<void> signOut() => _googleSignIn.signOut();
 
-  Future<GoogleSignInAccount?> getCurrentUser() => _googleSignIn.signInSilently();
+  Future<GoogleSignInAccount?> getCurrentUser() =>
+      _googleSignIn.signInSilently();
 
   PropertyManagerModel createPropertyManagerFromGoogle(
     GoogleSignInAccount googleUser,

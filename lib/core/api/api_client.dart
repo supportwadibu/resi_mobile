@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/connectivity_interceptor.dart';
+import 'interceptors/redacting_log_interceptor.dart';
 import 'interceptors/retry_interceptor.dart';
 
 Dio buildDioClient(
@@ -29,14 +30,10 @@ Dio buildDioClient(
     connectivity,
     auth,
     retry,
-    if (config.enableLogging)
-      PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        error: true,
-        compact: false,
-      ),
+    // En dernier : il voit ainsi la requête telle qu'elle part réellement,
+    // en-tête d'authentification et rejeu compris. Muet en production, et les
+    // mots de passe, jetons et OTP y sont masqués.
+    if (kDebugMode && config.enableLogging) const RedactingLogInterceptor(),
   ]);
 
   return dio;

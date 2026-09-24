@@ -84,7 +84,11 @@ class _GroupSkeleton extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const LoadingShimmer(height: 11, width: 70, radius: 4),
+                          const LoadingShimmer(
+                            height: 11,
+                            width: 70,
+                            radius: 4,
+                          ),
                           const SizedBox(height: 6),
                           const LoadingShimmer(height: 13, radius: 4),
                         ],

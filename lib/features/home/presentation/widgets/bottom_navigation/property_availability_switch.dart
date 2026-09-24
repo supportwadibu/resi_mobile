@@ -49,7 +49,7 @@ class PropertyAvailabilitySwitch extends StatelessWidget {
           Switch(
             value: isAvailable,
             onChanged: onChanged,
-            activeColor: const Color(0xFF4CAF50),
+            activeThumbColor: const Color(0xFF4CAF50),
             inactiveThumbColor: const Color(0xFFEF5350),
             activeTrackColor: const Color(0xFFA5D6A7),
             inactiveTrackColor: const Color(0xFFFFCDD2),

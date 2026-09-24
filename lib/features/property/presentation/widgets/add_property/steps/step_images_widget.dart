@@ -1,14 +1,19 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 
 /// Photos de l'annonce.
 ///
-/// [images] contient des chemins de fichiers de l'appareil : ils sont déposés
-/// sur le serveur au moment de l'envoi, qui retourne les URLs publiques.
+/// [images] mêle deux natures d'entrée, indistinctes à l'écran : des chemins
+/// de fichiers de l'appareil, déposés au moment de l'envoi, et — en
+/// modification — les URLs des photos déjà hébergées. Seules les premières
+/// sont envoyées ; l'ordre de la liste, lui, fait foi des deux côtés, la
+/// première photo servant de couverture.
 class StepImagesWidget extends StatelessWidget {
   const StepImagesWidget({
     super.key,
@@ -35,11 +40,7 @@ class StepImagesWidget extends StatelessWidget {
     onChanged(updated);
 
     if (picked.length > remaining && context.mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('$maxImages photos au maximum.')),
-        );
+      AppToast.warning('$maxImages photos au maximum.', context: context);
     }
   }
 
@@ -114,14 +115,7 @@ class StepImagesWidget extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  // Une image choisie via `ImagePicker` est un fichier de
-                  // l'appareil, jamais un asset empaqueté.
-                  child: Image.file(
-                    File(images[i]),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
+                  child: _Thumbnail(source: images[i]),
                 ),
                 Positioned(
                   top: 6,
@@ -132,7 +126,7 @@ class StepImagesWidget extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: AppColors.black.withOpacity(0.6),
+                        color: AppColors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -171,6 +165,47 @@ class StepImagesWidget extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Vignette d'une photo, qu'elle soit déjà hébergée ou encore sur l'appareil.
+///
+/// Les deux cohabitent dans la grille dès qu'on modifie une annonce : une URL
+/// passée à `Image.file` afficherait une tuile cassée.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.source});
+
+  final String source;
+
+  bool get _isHosted =>
+      source.startsWith('http://') || source.startsWith('https://');
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isHosted) {
+      return CachedNetworkImage(
+        imageUrl: source,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (_, _) => Container(color: AppColors.surface),
+        errorWidget: (_, _, _) => Container(
+          color: AppColors.surface,
+          child: const Icon(
+            Icons.broken_image_outlined,
+            size: 20,
+            color: AppColors.grey500,
+          ),
+        ),
+      );
+    }
+
+    return Image.file(
+      File(source),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
     );
   }
 }

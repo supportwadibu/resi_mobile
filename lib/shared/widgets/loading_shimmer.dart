@@ -88,10 +88,6 @@ class _SlidingGradient extends GradientTransform {
   Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
     // De -1 à +1 fois la largeur : le balayage entre par la gauche et sort
     // entièrement par la droite avant de recommencer.
-    return Matrix4.translationValues(
-      bounds.width * (progress * 2 - 1),
-      0,
-      0,
-    );
+    return Matrix4.translationValues(bounds.width * (progress * 2 - 1), 0, 0);
   }
 }

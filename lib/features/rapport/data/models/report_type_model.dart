@@ -1,4 +1,8 @@
-enum ReportType { financial, performance, maintenance, reservations, fiscal }
+// `maintenance` et `fiscal` ont existé dans la maquette mais n'ont rien
+// derrière côté API : aucune donnée d'intervention ni de prestataire pour la
+// maintenance, aucun marqueur de déductibilité pour le fiscal. Retirés plutôt
+// que branchés sur des champs qui n'existent pas.
+enum ReportType { financial, performance, reservations }
 
 extension ReportTypeExt on ReportType {
   String get label {
@@ -7,12 +11,8 @@ extension ReportTypeExt on ReportType {
         return 'Bilan Financier';
       case ReportType.performance:
         return 'Performance & Occupation';
-      case ReportType.maintenance:
-        return 'État des Lieux & Maintenance';
       case ReportType.reservations:
         return 'Relevé des Réservations';
-      case ReportType.fiscal:
-        return 'Rapport Fiscal';
     }
   }
 
@@ -22,12 +22,8 @@ extension ReportTypeExt on ReportType {
         return 'Revenus vs dépenses, bénéfice net';
       case ReportType.performance:
         return 'Taux d\'occupation, RevPAR, nuitées';
-      case ReportType.maintenance:
-        return 'Interventions, coûts, prestataires';
       case ReportType.reservations:
         return 'Historique locataires, paiements';
-      case ReportType.fiscal:
-        return 'CA brut, charges déductibles';
     }
   }
 
@@ -37,12 +33,22 @@ extension ReportTypeExt on ReportType {
         return 'trending_up';
       case ReportType.performance:
         return 'bar_chart';
-      case ReportType.maintenance:
-        return 'build';
       case ReportType.reservations:
         return 'people';
-      case ReportType.fiscal:
-        return 'receipt_long';
+    }
+  }
+}
+
+/// Valeur attendue par l'API pour le champ `type` du corps de la requête.
+extension ReportTypeApiExt on ReportType {
+  String get apiValue {
+    switch (this) {
+      case ReportType.financial:
+        return 'financial';
+      case ReportType.performance:
+        return 'performance';
+      case ReportType.reservations:
+        return 'reservations';
     }
   }
 }

@@ -57,7 +57,9 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
     // Seule une étape vierge déclenche le relevé : revenir sur l'étape ne doit
     // pas écraser une adresse déjà corrigée à la main.
     if (widget.street.isEmpty && widget.city.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _useCurrentPosition());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _useCurrentPosition(),
+      );
     }
   }
 

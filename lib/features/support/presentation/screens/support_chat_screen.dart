@@ -44,9 +44,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           onPressed: () => context.router.maybePop(),
         ),
       ),
-      body: SafeArea(
-        child: _hasFailed ? _errorView() : _chatView(),
-      ),
+      body: SafeArea(child: _hasFailed ? _errorView() : _chatView()),
     );
   }
 
@@ -54,9 +52,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     return Stack(
       children: [
         InAppWebView(
-          initialUrlRequest: URLRequest(
-            url: WebUri(AppConfig.tawkChatUrl),
-          ),
+          initialUrlRequest: URLRequest(url: WebUri(AppConfig.tawkChatUrl)),
           initialSettings: InAppWebViewSettings(
             // Le widget Tawk.to est une page JavaScript : sans cela, l'écran
             // resterait blanc.

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/theme/app_text_styles.dart';
@@ -32,29 +33,16 @@ class _AddClientView extends StatelessWidget {
       listenWhen: (prev, curr) => prev.status != curr.status,
       listener: (context, state) {
         if (state.status == AddClientStatus.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Client enregistré avec succès'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+          // Sans `context` : l'écran se referme dans la foulée, et le toast
+          // doit survivre à sa disparition.
+          AppToast.success('Client enregistré avec succès');
           Navigator.pop(context);
         }
 
         if (state.status == AddClientStatus.error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage ?? 'Une erreur est survenue'),
-              backgroundColor: AppColors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+          AppToast.error(
+            state.errorMessage ?? 'Une erreur est survenue',
+            context: context,
           );
         }
       },

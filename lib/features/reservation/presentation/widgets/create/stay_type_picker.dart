@@ -28,60 +28,64 @@ class StayTypePicker extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
-        children: StayType.values.map((type) {
-          final active = type == selected;
-          final isLast = type == StayType.values.last;
+        children: StayType.values
+            .map((type) {
+              final active = type == selected;
+              final isLast = type == StayType.values.last;
 
-          return Padding(
-            padding: EdgeInsets.only(right: isLast ? 0 : 12),
-            child: GestureDetector(
-              onTap: () => onSelected(type),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: active
-                      ? AppColors.primary.withValues(alpha: 0.06)
-                      : AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: active ? AppColors.primary : AppColors.grey200,
-                    width: active ? 1.4 : 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      type.label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                        color: active
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
+              return Padding(
+                padding: EdgeInsets.only(right: isLast ? 0 : 12),
+                child: GestureDetector(
+                  onTap: () => onSelected(type),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? AppColors.primary.withValues(alpha: 0.06)
+                          : AppColors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: active ? AppColors.primary : AppColors.grey200,
+                        width: active ? 1.4 : 1,
                       ),
                     ),
-                    if (dailyPrice > 0) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _priceLabel(type),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          type.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: active
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: active
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
+                        if (dailyPrice > 0) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _priceLabel(type),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }).toList(growable: false),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }

@@ -1,9 +1,13 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../../property/business_logic/property_state.dart';
 import '../../business_logic/expense_cubit.dart';
@@ -107,21 +111,20 @@ class _ExpenseViewState extends State<_ExpenseView>
   }
 
   Future<void> _delete(ExpenseModel expense) async {
-    final messenger = ScaffoldMessenger.of(context);
     final error = await context.read<ExpenseCubit>().delete(expense.id);
 
     if (error != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(error)));
+      AppToast.error(error);
+      return;
     }
+
+    AppToast.success('Dépense supprimée');
   }
 
   /// Exporte l'ensemble des dépenses filtrées, et non la seule page affichée.
   Future<void> _export(ExpenseLoaded state) async {
     if (_isExporting) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     final filters = state.filters;
     setState(() => _isExporting = true);
 
@@ -139,11 +142,7 @@ class _ExpenseViewState extends State<_ExpenseView>
         scopeLabel: _scopeLabel(state),
       );
     } catch (e) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('L’export a échoué. Réessayez.')),
-        );
+      AppToast.error('L’export a échoué. Réessayez.');
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -169,15 +168,31 @@ class _ExpenseViewState extends State<_ExpenseView>
     return parts.isEmpty ? 'Sélection filtrée' : parts.join(' · ');
   }
 
+  /// Période couverte par les filtres, ou `null` quand aucune borne n'est
+  /// posée — le total porte alors sur tout l'historique.
+  String? _periodLabel(ExpenseFilters filters) {
+    final from = filters.from;
+    final to = filters.to;
+    if (from == null && to == null) return null;
+
+    final format = DateFormat('d MMM yyyy', 'fr');
+    if (from != null && to != null) {
+      return 'Du ${format.format(from)} au ${format.format(to)}';
+    }
+    return from != null
+        ? 'Depuis le ${format.format(from)}'
+        : 'Jusqu’au ${format.format(to!)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
 
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -187,7 +202,27 @@ class _ExpenseViewState extends State<_ExpenseView>
               child: ExpenseHeader(),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
+            // Le total ouvre l'écran : c'est le chiffre recherché, et le
+            // placer sous la liste obligeait à faire défiler tout le relevé
+            // pour le lire.
+            BlocBuilder<ExpenseCubit, ExpenseState>(
+              // Le total vient du serveur : il porte sur l'ensemble des
+              // dépenses filtrées, pas seulement sur les pages chargées.
+              builder: (context, state) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ExpenseTotal(
+                  total: state is ExpenseLoaded ? state.summary.total : 0,
+                  count: state is ExpenseLoaded ? state.summary.count : 0,
+                  periodLabel: state is ExpenseLoaded
+                      ? _periodLabel(state.filters)
+                      : null,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
 
             BlocBuilder<ExpenseCubit, ExpenseState>(
               builder: (context, state) => Padding(
@@ -208,7 +243,7 @@ class _ExpenseViewState extends State<_ExpenseView>
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
 
             Expanded(
               child: BlocBuilder<ExpenseCubit, ExpenseState>(
@@ -236,14 +271,6 @@ class _ExpenseViewState extends State<_ExpenseView>
                 },
               ),
             ),
-
-            BlocBuilder<ExpenseCubit, ExpenseState>(
-              // Le total vient du serveur : il porte sur l'ensemble des
-              // dépenses filtrées, pas seulement sur les pages chargées.
-              builder: (context, state) => ExpenseTotal(
-                total: state is ExpenseLoaded ? state.summary.total : 0,
-              ),
-            ),
           ],
         ),
       ),
@@ -264,29 +291,35 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 44,
-              color: Colors.grey.shade300,
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.receipt_long_outlined,
+                size: 26,
+                color: AppColors.textLight,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               isFiltered
                   ? 'Aucune dépense pour ces filtres'
                   : 'Aucune dépense enregistrée',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
-              ),
+              style: AppTextStyles.sectionTitle,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
+              // Un écran vide oriente vers l'action suivante plutôt que de
+              // constater le vide.
               isFiltered
                   ? 'Élargissez la période ou changez de catégorie.'
-                  : 'Ajoutez vos charges pour suivre la rentabilité de vos biens.',
+                  : 'Ajoutez vos charges pour suivre ce que vos biens vous coûtent.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: AppTextStyles.labelMedium,
             ),
           ],
         ),
@@ -309,15 +342,41 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_outlined, size: 40, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.errorBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.cloud_off_outlined,
+                size: 26,
+                color: AppColors.error,
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: AppTextStyles.labelMedium,
             ),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Réessayer')),
+            const SizedBox(height: 18),
+            OutlinedButton(
+              onPressed: onRetry,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: const BorderSide(color: AppColors.grey200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Réessayer'),
+            ),
           ],
         ),
       ),

@@ -123,42 +123,48 @@ void main() {
   });
 
   group('purge locale sur expiration subie', () {
-    test('un refresh token absent purge les caches sans toucher la file', () async {
-      // Le carnet clients — pièces d'identité comprises — ne doit pas rester
-      // lisible par la personne qui reprend l'appareil.
-      final storage = _MemorySecureStorage();
-      final database = SpyDatabase();
-      final interceptor = AuthInterceptor(
-        storage,
-        sessionRoleFixture('gerant'),
-        database,
-      );
+    test(
+      'un refresh token absent purge les caches sans toucher la file',
+      () async {
+        // Le carnet clients — pièces d'identité comprises — ne doit pas rester
+        // lisible par la personne qui reprend l'appareil.
+        final storage = _MemorySecureStorage();
+        final database = SpyDatabase();
+        final interceptor = AuthInterceptor(
+          storage,
+          sessionRoleFixture('gerant'),
+          database,
+        );
 
-      interceptor.onError(_unauthorized(), _RecordingHandler());
-      await Future<void>.delayed(Duration.zero);
+        interceptor.onError(_unauthorized(), _RecordingHandler());
+        await Future<void>.delayed(Duration.zero);
 
-      expect(database.cachesCleared, isTrue);
-      // Le point capital : `pending_bookings` porte des réservations
-      // encaissées en espèces et pas encore envoyées. Une expiration de jeton
-      // survient toute seule — après une nuit, après une coupure réseau : les
-      // détruire là perdrait de l'argent réel que rien ne retrace.
-      expect(database.clearedAll, isFalse);
-    });
+        expect(database.cachesCleared, isTrue);
+        // Le point capital : `pending_bookings` porte des réservations
+        // encaissées en espèces et pas encore envoyées. Une expiration de jeton
+        // survient toute seule — après une nuit, après une coupure réseau : les
+        // détruire là perdrait de l'argent réel que rien ne retrace.
+        expect(database.clearedAll, isFalse);
+      },
+    );
 
-    test('un rafraîchissement échoué purge les caches sans toucher la file', () async {
-      final storage = _MemorySecureStorage(refresh: 'rt-expire');
-      final database = SpyDatabase();
-      final interceptor = AuthInterceptor(
-        storage,
-        sessionRoleFixture('gerant'),
-        database,
-      );
+    test(
+      'un rafraîchissement échoué purge les caches sans toucher la file',
+      () async {
+        final storage = _MemorySecureStorage(refresh: 'rt-expire');
+        final database = SpyDatabase();
+        final interceptor = AuthInterceptor(
+          storage,
+          sessionRoleFixture('gerant'),
+          database,
+        );
 
-      interceptor.onError(_unauthorized(), _RecordingHandler());
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+        interceptor.onError(_unauthorized(), _RecordingHandler());
+        await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      expect(database.cachesCleared, isTrue);
-      expect(database.clearedAll, isFalse);
-    });
+        expect(database.cachesCleared, isTrue);
+        expect(database.clearedAll, isFalse);
+      },
+    );
   });
 }

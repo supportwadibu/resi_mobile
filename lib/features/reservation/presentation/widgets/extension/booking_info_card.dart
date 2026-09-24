@@ -26,20 +26,14 @@ class BookingInfoCard extends StatelessWidget {
         children: [
           Text(
             residence,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
 
           const SizedBox(height: 14),
 
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
               children: [
                 const TextSpan(text: 'Date d\'arrivée : '),
                 TextSpan(
@@ -57,10 +51,7 @@ class BookingInfoCard extends StatelessWidget {
 
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
               children: [
                 const TextSpan(text: 'Fin prévue : '),
                 TextSpan(

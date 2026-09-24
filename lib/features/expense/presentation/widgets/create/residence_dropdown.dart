@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_text_styles.dart';
 
 /// Bien auquel imputer la dépense.
 ///
@@ -30,10 +32,20 @@ class ResidenceDropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      hint: Text(hint ?? 'Choisir un bien'),
+      hint: Text(hint ?? 'Choisir un bien', style: AppTextStyles.labelMedium),
+      style: AppTextStyles.valueSmall,
+      icon: const Icon(
+        Icons.keyboard_arrow_down_rounded,
+        color: AppColors.textSecondary,
+      ),
+      borderRadius: BorderRadius.circular(14),
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xffF5F5FA),
+        fillColor: AppColors.background,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,

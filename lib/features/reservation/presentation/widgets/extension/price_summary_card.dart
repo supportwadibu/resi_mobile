@@ -32,7 +32,10 @@ class PriceSummaryCard extends StatelessWidget {
         children: [
           _row("Coût par jour", pricePerDay),
           const SizedBox(height: 12),
-          _row(days > 1 ? "Sous-total ($days jours)" : "Sous-total (1 jour)", subtotal),
+          _row(
+            days > 1 ? "Sous-total ($days jours)" : "Sous-total (1 jour)",
+            subtotal,
+          ),
           if (discountPercent > 0) ...[
             const SizedBox(height: 12),
             _row("Remise durée", "-$discountPercent %"),

@@ -136,48 +136,52 @@ void main() {
       expect(database.clearedAll, isTrue);
     });
 
-    test('la purge a lieu même si l’appel réseau de déconnexion échoue',
-        () async {
-      // Une révocation serveur impossible — hors réseau, API en panne — ne
-      // doit pas laisser les données du précédent utilisateur sur l'appareil.
-      final storage = _MemorySecureStorage(refresh: 'rt-valide');
-      final database = SpyDatabase();
-      final service = AuthService(
-        _StubAuthRepository(failLogout: true),
-        storage,
-        _StubGoogleAuthService(),
-        sessionRoleFixture('gerant'),
-        database,
-      );
+    test(
+      'la purge a lieu même si l’appel réseau de déconnexion échoue',
+      () async {
+        // Une révocation serveur impossible — hors réseau, API en panne — ne
+        // doit pas laisser les données du précédent utilisateur sur l'appareil.
+        final storage = _MemorySecureStorage(refresh: 'rt-valide');
+        final database = SpyDatabase();
+        final service = AuthService(
+          _StubAuthRepository(failLogout: true),
+          storage,
+          _StubGoogleAuthService(),
+          sessionRoleFixture('gerant'),
+          database,
+        );
 
-      await expectLater(service.logout(), throwsA(isA<StateError>()));
+        await expectLater(service.logout(), throwsA(isA<StateError>()));
 
-      expect(storage.cleared, isTrue);
-      expect(database.clearedAll, isTrue);
-    });
+        expect(storage.cleared, isTrue);
+        expect(database.clearedAll, isTrue);
+      },
+    );
 
-    test('une purge locale impossible ne laisse pas les jetons en place',
-        () async {
-      // L'ordre du `finally` est délibéré : les jetons partent avant la base.
-      // Si l'inverse était vrai, un disque plein ou un fichier verrouillé
-      // laisserait une session valide derrière l'exception, et l'appareil
-      // rouvrirait la porte au précédent utilisateur.
-      final storage = _MemorySecureStorage(refresh: 'rt-valide');
-      final session = sessionRoleFixture('gerant');
-      final google = _StubGoogleAuthService();
-      final service = AuthService(
-        _StubAuthRepository(),
-        storage,
-        google,
-        session,
-        SpyDatabase(throwOnClear: true),
-      );
+    test(
+      'une purge locale impossible ne laisse pas les jetons en place',
+      () async {
+        // L'ordre du `finally` est délibéré : les jetons partent avant la base.
+        // Si l'inverse était vrai, un disque plein ou un fichier verrouillé
+        // laisserait une session valide derrière l'exception, et l'appareil
+        // rouvrirait la porte au précédent utilisateur.
+        final storage = _MemorySecureStorage(refresh: 'rt-valide');
+        final session = sessionRoleFixture('gerant');
+        final google = _StubGoogleAuthService();
+        final service = AuthService(
+          _StubAuthRepository(),
+          storage,
+          google,
+          session,
+          SpyDatabase(throwOnClear: true),
+        );
 
-      await expectLater(service.logout(), throwsA(isA<StateError>()));
+        await expectLater(service.logout(), throwsA(isA<StateError>()));
 
-      expect(storage.cleared, isTrue);
-      expect(session.value, 'proprio');
-      expect(google.signedOut, isTrue);
-    });
+        expect(storage.cleared, isTrue);
+        expect(session.value, 'proprio');
+        expect(google.signedOut, isTrue);
+      },
+    );
   });
 }

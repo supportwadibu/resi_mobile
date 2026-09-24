@@ -97,7 +97,10 @@ class AppPhoneField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF5B4FCF), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF5B4FCF),
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

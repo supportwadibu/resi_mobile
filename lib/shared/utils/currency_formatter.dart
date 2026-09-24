@@ -8,4 +8,10 @@ class CurrencyFormatter {
   static String fcfa(num value) {
     return "${NumberFormat('#,###', 'fr_FR').format(value)} Fcfa";
   }
+
+  /// Suffixe abrégé, pour les surfaces où la place manque — un montant en
+  /// gros corps sur une carte, où « F CFA » déborderait la ligne.
+  static String short(num value) {
+    return "${NumberFormat('#,###', 'fr_FR').format(value)} F";
+  }
 }

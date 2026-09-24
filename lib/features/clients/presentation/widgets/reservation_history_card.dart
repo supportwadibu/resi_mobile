@@ -28,7 +28,11 @@ class ReservationHistoryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  reservation.residenceName,
+                  // Vide si le bien a été supprimé depuis : l'historique du
+                  // client reste lisible sans lui.
+                  reservation.propertyTitle.isEmpty
+                      ? 'Bien supprimé'
+                      : reservation.propertyTitle,
                   style: AppTextStyles.valueSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -60,20 +64,24 @@ class ReservationHistoryCard extends StatelessWidget {
   String _fmt(DateTime d) => DateFormat('dd MMM', 'fr_FR').format(d);
 }
 
+/// Couleur d'un statut de séjour, partagée par la pastille et le libellé.
+Color _statusColor(ReservationStatus status) {
+  switch (status) {
+    case ReservationStatus.completed:
+      return AppColors.green;
+    case ReservationStatus.inProgress:
+    case ReservationStatus.confirmed:
+      return const Color(0xFFF39C12);
+    case ReservationStatus.cancelled:
+      return AppColors.red;
+  }
+}
+
 class _StatusDot extends StatelessWidget {
   final ReservationStatus status;
   const _StatusDot({required this.status});
 
-  Color get _color {
-    switch (status) {
-      case ReservationStatus.paid:
-        return AppColors.green;
-      case ReservationStatus.pending:
-        return const Color(0xFFF39C12);
-      case ReservationStatus.cancelled:
-        return AppColors.red;
-    }
-  }
+  Color get _color => _statusColor(status);
 
   @override
   Widget build(BuildContext context) {
@@ -89,27 +97,9 @@ class _StatusLabel extends StatelessWidget {
   final ReservationStatus status;
   const _StatusLabel({required this.status});
 
-  String get _label {
-    switch (status) {
-      case ReservationStatus.paid:
-        return 'Réglé';
-      case ReservationStatus.pending:
-        return 'En attente';
-      case ReservationStatus.cancelled:
-        return 'Annulé';
-    }
-  }
+  String get _label => status.label;
 
-  Color get _color {
-    switch (status) {
-      case ReservationStatus.paid:
-        return AppColors.green;
-      case ReservationStatus.pending:
-        return const Color(0xFFF39C12);
-      case ReservationStatus.cancelled:
-        return AppColors.red;
-    }
-  }
+  Color get _color => _statusColor(status);
 
   @override
   Widget build(BuildContext context) {

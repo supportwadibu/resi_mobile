@@ -68,20 +68,24 @@ void main() {
   });
 
   group('Cohérence des données', () {
-    test('chaque ville de communes/ci.json existe dans cities/ci.json', () async {
-      // Le chaînage repose sur une correspondance exacte des libellés : une
-      // divergence orthographique rendrait les communes inatteignables.
-      final cities = await CityService.instance.citiesOf('CI');
-      final raw = await rootBundle.loadString('assets/data/communes/ci.json');
-      final keys = (jsonDecode(raw) as Map<String, dynamic>).keys;
+    test(
+      'chaque ville de communes/ci.json existe dans cities/ci.json',
+      () async {
+        // Le chaînage repose sur une correspondance exacte des libellés : une
+        // divergence orthographique rendrait les communes inatteignables.
+        final cities = await CityService.instance.citiesOf('CI');
+        final raw = await rootBundle.loadString('assets/data/communes/ci.json');
+        final keys = (jsonDecode(raw) as Map<String, dynamic>).keys;
 
-      for (final city in keys) {
-        expect(
-          cities,
-          contains(city),
-          reason: '"$city" est clé dans communes/ci.json mais absente des villes',
-        );
-      }
-    });
+        for (final city in keys) {
+          expect(
+            cities,
+            contains(city),
+            reason:
+                '"$city" est clé dans communes/ci.json mais absente des villes',
+          );
+        }
+      },
+    );
   });
 }

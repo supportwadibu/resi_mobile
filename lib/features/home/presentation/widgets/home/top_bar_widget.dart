@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
+import 'package:resi_africa/features/support/presentation/widgets/support_contact_sheet.dart';
 
 class TopBarWidget extends StatelessWidget {
   const TopBarWidget({super.key});
@@ -62,9 +63,20 @@ class TopBarWidget extends StatelessWidget {
             ],
           ),
         ),
+
         const Spacer(),
-        FaIcon(FontAwesomeIcons.headphones, size: 24),
-        const SizedBox(width: 16),
+
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => showSupportContactSheet(context),
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: FaIcon(FontAwesomeIcons.headphones, size: 24),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
         FaIcon(FontAwesomeIcons.bell, size: 24),
       ],
     );

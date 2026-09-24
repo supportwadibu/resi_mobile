@@ -43,10 +43,38 @@ class _ReservationTabView extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                const ReservationStatsRow(),
-                const SizedBox(height: 24),
+                // Les compteurs et le bloc revenus lisent le même état que la
+                // liste : servis séparément, ils pourraient afficher des
+                // chiffres qui contredisent les réservations juste en dessous.
+                BlocBuilder<ReservationCubit, ReservationState>(
+                  builder: (context, state) {
+                    final stats = state is ReservationLoaded
+                        ? state.stats
+                        : null;
 
-                const RevenueCard(),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Les quatre chiffres portent tous sur le mois en
+                        // cours : sans cet intitulé, une tuile de comptage
+                        // posée à côté d'un revenu mensuel se lit comme un
+                        // total de tous les temps.
+                        Text(
+                          'Ce mois-ci',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.grey500,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ReservationStatsRow(stats: stats),
+                        const SizedBox(height: 24),
+                        RevenueCard(revenue: stats?.revenue),
+                      ],
+                    );
+                  },
+                ),
                 const SizedBox(height: 24),
 
                 const Text(
@@ -71,7 +99,13 @@ class _ReservationTabView extends StatelessWidget {
                       ),
                     ReservationLoaded(:final items) => Column(
                       children: items
-                          .map((r) => ReservationItem(reservation: r))
+                          .map(
+                            (r) => ReservationItem(
+                              reservation: r,
+                              onChanged: () =>
+                                  context.read<ReservationCubit>().load(),
+                            ),
+                          )
                           .toList(),
                     ),
                   },

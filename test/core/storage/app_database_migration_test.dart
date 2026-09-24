@@ -79,11 +79,13 @@ void main() {
       final db = await _openV1();
       addTearDown(db.close);
 
-      await AppDatabase.instance.upgradeSchema(db, 1, AppDatabase.schemaVersion);
-
-      final columns = await db.rawQuery(
-        'PRAGMA table_info(cached_properties)',
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
       );
+
+      final columns = await db.rawQuery('PRAGMA table_info(cached_properties)');
       final names = columns.map((c) => c['name'] as String).toSet();
 
       expect(names, contains('residence_id'));
@@ -98,7 +100,11 @@ void main() {
       final db = await _openV1();
       addTearDown(db.close);
 
-      await AppDatabase.instance.upgradeSchema(db, 1, AppDatabase.schemaVersion);
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
 
       final rows = await db.query('cached_properties');
 
@@ -111,7 +117,11 @@ void main() {
       final db = await _openV1();
       addTearDown(db.close);
 
-      await AppDatabase.instance.upgradeSchema(db, 1, AppDatabase.schemaVersion);
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
 
       final row = (await db.query('cached_properties')).single;
 
@@ -128,7 +138,11 @@ void main() {
       final db = await _openV1();
       addTearDown(db.close);
 
-      await AppDatabase.instance.upgradeSchema(db, 1, AppDatabase.schemaVersion);
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
 
       final pending = await db.query('pending_bookings');
 
@@ -142,7 +156,11 @@ void main() {
       final db = await _openV1();
       addTearDown(db.close);
 
-      await AppDatabase.instance.upgradeSchema(db, 1, AppDatabase.schemaVersion);
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
 
       await db.insert('cached_properties', {
         'id': 'studio-1',
@@ -171,7 +189,11 @@ void main() {
       final db = await _openV1();
       addTearDown(db.close);
 
-      await AppDatabase.instance.upgradeSchema(db, 1, AppDatabase.schemaVersion);
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
 
       await expectLater(
         AppDatabase.instance.upgradeSchema(db, 2, AppDatabase.schemaVersion),
@@ -181,37 +203,42 @@ void main() {
   });
 
   group('Schéma neuf', () {
-    test('une base créée de zéro porte les mêmes colonnes qu’une base migrée', () async {
-      // Les deux chemins doivent converger : une divergence ferait qu'un
-      // appareil neuf et un appareil migré ne se comportent pas pareil.
-      // `onCreate` plutôt qu’un `createSchema` après ouverture : deux bases
-      // en mémoire ouvertes en parallèle partagent le même espace, et rejouer
-      // le schéma sur la seconde buterait sur les tables de la première.
-      final fresh = await databaseFactoryFfi.openDatabase(
-        inMemoryDatabasePath,
-        options: OpenDatabaseOptions(
-          version: AppDatabase.schemaVersion,
-          onCreate: (db, _) => AppDatabase.instance.createSchema(db),
-        ),
-      );
+    test(
+      'une base créée de zéro porte les mêmes colonnes qu’une base migrée',
+      () async {
+        // Les deux chemins doivent converger : une divergence ferait qu'un
+        // appareil neuf et un appareil migré ne se comportent pas pareil.
+        // `onCreate` plutôt qu’un `createSchema` après ouverture : deux bases
+        // en mémoire ouvertes en parallèle partagent le même espace, et rejouer
+        // le schéma sur la seconde buterait sur les tables de la première.
+        final fresh = await databaseFactoryFfi.openDatabase(
+          inMemoryDatabasePath,
+          options: OpenDatabaseOptions(
+            version: AppDatabase.schemaVersion,
+            onCreate: (db, _) => AppDatabase.instance.createSchema(db),
+          ),
+        );
 
-      Future<Set<String>> columnsOf(Database db) async {
-        final rows = await db.rawQuery('PRAGMA table_info(cached_properties)');
-        return rows.map((c) => c['name'] as String).toSet();
-      }
+        Future<Set<String>> columnsOf(Database db) async {
+          final rows = await db.rawQuery(
+            'PRAGMA table_info(cached_properties)',
+          );
+          return rows.map((c) => c['name'] as String).toSet();
+        }
 
-      final freshColumns = await columnsOf(fresh);
-      await fresh.close();
+        final freshColumns = await columnsOf(fresh);
+        await fresh.close();
 
-      final migrated = await _openV1();
-      addTearDown(migrated.close);
-      await AppDatabase.instance.upgradeSchema(
-        migrated,
-        1,
-        AppDatabase.schemaVersion,
-      );
+        final migrated = await _openV1();
+        addTearDown(migrated.close);
+        await AppDatabase.instance.upgradeSchema(
+          migrated,
+          1,
+          AppDatabase.schemaVersion,
+        );
 
-      expect(await columnsOf(migrated), freshColumns);
-    });
+        expect(await columnsOf(migrated), freshColumns);
+      },
+    );
   });
 }

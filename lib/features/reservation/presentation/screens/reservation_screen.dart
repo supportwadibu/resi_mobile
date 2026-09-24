@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
@@ -40,9 +41,7 @@ class _ReservationView extends StatelessWidget {
         child: BlocConsumer<ReservationCubit, ReservationState>(
           listener: (context, state) {
             if (state is ReservationError) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
+              AppToast.error(state.message, context: context);
             }
           },
           builder: (context, state) => Column(
@@ -85,7 +84,10 @@ class _ReservationList extends StatelessWidget {
         // tient dans l'écran.
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: items.length,
-        itemBuilder: (context, i) => ReservationItem(reservation: items[i]),
+        itemBuilder: (context, i) => ReservationItem(
+          reservation: items[i],
+          onChanged: () => context.read<ReservationCubit>().load(),
+        ),
       ),
     );
   }

@@ -6,7 +6,12 @@ class FinanceSummaryModel {
   final int reservations;
   final double moyenSejour;
 
+  /// Sommes rendues sur départs anticipés, déjà déduites de [caBrut] par le
+  /// serveur : à afficher, jamais à retrancher une seconde fois.
+  final double remboursements;
+
   const FinanceSummaryModel({
+    this.remboursements = 0,
     required this.caBrut,
     required this.depenses,
     required this.beneficeNet,
@@ -23,5 +28,7 @@ class FinanceSummaryModel {
         tauxOccupation: (json['taux_occupation'] as num?)?.toDouble() ?? 0,
         reservations: json['reservations'] as int? ?? 0,
         moyenSejour: (json['moyen_sejour'] as num?)?.toDouble() ?? 0,
+        // Absent des réponses d'un serveur antérieur au départ anticipé.
+        remboursements: (json['remboursements'] as num?)?.toDouble() ?? 0,
       );
 }

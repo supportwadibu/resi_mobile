@@ -8,6 +8,7 @@ import '../../../../core/error/failures.dart';
 import '../../clients/data/models/client_creation_result.dart';
 import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../property/data/models/property_model.dart';
 import '../data/datasources/reservation_local_store.dart';
 import '../data/models/occupied_period_model.dart';
 import '../data/models/reservation_model.dart';
@@ -146,11 +147,18 @@ class AddReservationCubit extends Cubit<AddReservationState> {
   // ── Séjour ────────────────────────────────────────────────────────────────
 
   /// Choisit le bien et charge ses périodes déjà réservées.
-  Future<void> setProperty(String propertyId, {required double dailyPrice}) async {
+  Future<void> setProperty(
+    String propertyId, {
+    required double dailyPrice,
+    List<PriceTier> priceTiers = const [],
+  }) async {
     emit(
       state.copyWith(
         propertyId: propertyId,
         dailyPrice: dailyPrice,
+        // Triés à l'entrée : le calcul de remise n'en dépend pas, mais l'écran
+        // les présente dans l'ordre où le propriétaire les lit.
+        priceTiers: PriceTierList.sorted(priceTiers),
         clearConflict: true,
       ),
     );
@@ -219,10 +227,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     }
 
     emit(
-      state.copyWith(
-        status: AddReservationStatus.submitting,
-        clearError: true,
-      ),
+      state.copyWith(status: AddReservationStatus.submitting, clearError: true),
     );
 
     // Sans réseau, la réservation part en file plutôt que d'échouer : au
@@ -399,9 +404,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
     if (!end.isAfter(start)) {
       emit(
-        state.copyWith(
-          occupiedConflict: 'La sortie doit être après l’entrée.',
-        ),
+        state.copyWith(occupiedConflict: 'La sortie doit être après l’entrée.'),
       );
       return;
     }

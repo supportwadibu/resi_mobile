@@ -21,7 +21,8 @@ enum ReservationStatus {
 
   /// Le séjour immobilise le bien : ni annulé, ni terminé.
   bool get isActive =>
-      this == ReservationStatus.confirmed || this == ReservationStatus.inProgress;
+      this == ReservationStatus.confirmed ||
+      this == ReservationStatus.inProgress;
 }
 
 /// Type de séjour, aligné sur `STAY_TYPES` du serveur.
@@ -145,6 +146,9 @@ class ReservationModel {
     this.expectedAmount = 0,
     this.receivedAmount = 0,
     this.depositAmount = 0,
+    this.refundedAmount = 0,
+    this.plannedTotalAmount,
+    this.plannedCheckOutAt,
   }) : _checkInAt = checkInAt,
        _checkOutAt = checkOutAt;
 
@@ -157,6 +161,7 @@ class ReservationModel {
   final ReservationStatus status;
   final DateTime startDate;
   final DateTime endDate;
+
   /// Jours d'occupation facturés (12h → 12h le lendemain = 1 jour).
   final int daysCount;
   final double totalAmount;
@@ -195,11 +200,28 @@ class ReservationModel {
   /// Acompte versé à la réservation.
   final double depositAmount;
 
+  /// Somme rendue au client sur un départ anticipé.
+  final double refundedAmount;
+
+  /// Montant et sortie vendus, présents seulement sur un séjour écourté :
+  /// [totalAmount] et [checkOutAt] portent alors l'usage réel.
+  final double? plannedTotalAmount;
+  final DateTime? plannedCheckOutAt;
+
+  /// Le séjour a été écourté par un départ anticipé.
+  bool get isEarlyCheckOut => plannedCheckOutAt != null;
+
   /// Heure d'entrée, ou la date de début pour une réservation en ligne.
   DateTime get checkInAt => _checkInAt ?? startDate;
 
   /// Heure de sortie, ou la date de fin pour une réservation en ligne.
   DateTime get checkOutAt => _checkOutAt ?? endDate;
+
+  /// Le client est entré — condition posée par le serveur à la clôture.
+  ///
+  /// Lit [checkInAt] et non [startDate] : un passage saisi pour 14 h a une date
+  /// de début dépassée dès minuit, alors que le client n'est pas encore là.
+  bool hasStarted(DateTime now) => !checkInAt.isAfter(now);
 
   /// Reste dû après l'acompte, jamais négatif.
   double get balanceDue =>
@@ -210,7 +232,9 @@ class ReservationModel {
       id: json['id'] as String,
       propertyId: json['property_id'] as String? ?? '',
       property: json['property'] is Map<String, dynamic>
-          ? ReservationProperty.fromJson(json['property'] as Map<String, dynamic>)
+          ? ReservationProperty.fromJson(
+              json['property'] as Map<String, dynamic>,
+            )
           : null,
       clientId: json['client_id'] as String? ?? '',
       status: ReservationStatus.fromCode(json['status'] as String?),
@@ -247,6 +271,11 @@ class ReservationModel {
           (json['total_amount'] as num?)?.toDouble() ??
           0,
       depositAmount: (json['deposit_amount'] as num?)?.toDouble() ?? 0,
+      // Absents tant que le séjour n'a pas été écourté, et sur les réponses
+      // d'un serveur antérieur au départ anticipé.
+      refundedAmount: (json['refunded_amount'] as num?)?.toDouble() ?? 0,
+      plannedTotalAmount: (json['planned_total_amount'] as num?)?.toDouble(),
+      plannedCheckOutAt: _date(json['planned_check_out_at']),
     );
   }
 

@@ -17,7 +17,6 @@ class ProfileCompletionBanner extends StatefulWidget {
 }
 
 class _ProfileCompletionBannerState extends State<ProfileCompletionBanner> {
-
   late Future<bool?> _submitted;
 
   @override

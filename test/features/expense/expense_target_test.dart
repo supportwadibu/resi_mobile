@@ -30,7 +30,11 @@ void main() {
         'category': 'electricity',
         'amount': 30000,
         'spent_at': '2026-09-01T00:00:00.000Z',
-        'residence': {'id': 'resi-adja', 'name': 'Resi Adja', 'city': 'Abidjan'},
+        'residence': {
+          'id': 'resi-adja',
+          'name': 'Resi Adja',
+          'city': 'Abidjan',
+        },
       });
 
       expect(expense.propertyId, isNull);
@@ -67,19 +71,22 @@ void main() {
       expect(expense.isCommonCharge, isFalse);
     });
 
-    test('une dépense antérieure aux résidences reste une charge de logement', () {
-      // Compatibilité ascendante : l'historique ne porte pas `residence_id`.
-      final expense = ExpenseModel.fromJson({
-        'id': 'exp_5',
-        'property_id': 'villa',
-        'category': 'taxes',
-        'amount': 50000,
-        'spent_at': '2026-01-01T00:00:00.000Z',
-      });
+    test(
+      'une dépense antérieure aux résidences reste une charge de logement',
+      () {
+        // Compatibilité ascendante : l'historique ne porte pas `residence_id`.
+        final expense = ExpenseModel.fromJson({
+          'id': 'exp_5',
+          'property_id': 'villa',
+          'category': 'taxes',
+          'amount': 50000,
+          'spent_at': '2026-01-01T00:00:00.000Z',
+        });
 
-      expect(expense.isCommonCharge, isFalse);
-      expect(expense.residenceId, isNull);
-    });
+        expect(expense.isCommonCharge, isFalse);
+        expect(expense.residenceId, isNull);
+      },
+    );
   });
 
   group('CreateExpensePayload', () {
@@ -152,10 +159,15 @@ void main() {
         isNull,
       );
       expect(
-        const UpdateExpensePayload(clearNote: true).toJson().containsKey('note'),
+        const UpdateExpensePayload(
+          clearNote: true,
+        ).toJson().containsKey('note'),
         isTrue,
       );
-      expect(const UpdateExpensePayload().toJson().containsKey('note'), isFalse);
+      expect(
+        const UpdateExpensePayload().toJson().containsKey('note'),
+        isFalse,
+      );
     });
   });
 }

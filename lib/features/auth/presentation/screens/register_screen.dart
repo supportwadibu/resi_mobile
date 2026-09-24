@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
@@ -32,14 +33,10 @@ class RegisterScreen extends StatelessWidget {
           if (state is AuthOtpSent) {
             // Le compte est créé mais pas encore vérifié : la session ne
             // s'ouvre qu'après la saisie du code.
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Code envoyé à ${state.target}')),
-            );
+            AppToast.info('Code envoyé à ${state.target}', context: context);
           }
           if (state is AuthError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            AppToast.error(state.message, context: context);
           }
         },
         builder: (context, state) {

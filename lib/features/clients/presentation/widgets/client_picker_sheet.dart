@@ -111,8 +111,7 @@ class _ClientPickerSheetState extends State<_ClientPickerSheet> {
             Expanded(
               child: BlocBuilder<ClientsCubit, ClientsState>(
                 builder: (context, state) => switch (state) {
-                  ClientsInitial() ||
-                  ClientsLoading() => const Center(
+                  ClientsInitial() || ClientsLoading() => const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   ClientsError(:final message) => _SheetMessage(

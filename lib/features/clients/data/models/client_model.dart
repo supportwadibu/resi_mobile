@@ -40,11 +40,7 @@ enum ClientIdDocumentType {
 
 /// Cumul des séjours d'un client, alimenté par le serveur à chaque clôture.
 class ClientStats {
-  const ClientStats({
-    this.totalStays = 0,
-    this.totalPaid = 0,
-    this.lastStayAt,
-  });
+  const ClientStats({this.totalStays = 0, this.totalPaid = 0, this.lastStayAt});
 
   final int totalStays;
   final double totalPaid;
@@ -127,6 +123,37 @@ class ClientModel {
     );
   }
 
+  ClientModel copyWith({
+    String? fullName,
+    String? phone,
+    String? whatsapp,
+    ClientIdDocumentType? idDocumentType,
+    String? idDocumentNumber,
+    bool? hasDocumentFront,
+    bool? hasDocumentBack,
+    bool? documentsComplete,
+    ClientStats? stats,
+    ClientStatus? status,
+    String? documentFrontUrl,
+    String? documentBackUrl,
+  }) {
+    return ClientModel(
+      id: id,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      whatsapp: whatsapp ?? this.whatsapp,
+      idDocumentType: idDocumentType ?? this.idDocumentType,
+      idDocumentNumber: idDocumentNumber ?? this.idDocumentNumber,
+      hasDocumentFront: hasDocumentFront ?? this.hasDocumentFront,
+      hasDocumentBack: hasDocumentBack ?? this.hasDocumentBack,
+      documentsComplete: documentsComplete ?? this.documentsComplete,
+      stats: stats ?? this.stats,
+      status: status ?? this.status,
+      documentFrontUrl: documentFrontUrl ?? this.documentFrontUrl,
+      documentBackUrl: documentBackUrl ?? this.documentBackUrl,
+    );
+  }
+
   /// Initiales affichées à défaut de photo, au plus deux lettres.
   String get avatarInitials {
     final parts = fullName
@@ -145,7 +172,9 @@ class ClientModel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ClientModel && runtimeType == other.runtimeType && id == other.id;
+      other is ClientModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

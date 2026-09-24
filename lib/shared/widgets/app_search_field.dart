@@ -23,10 +23,7 @@ class AppSearchField extends StatelessWidget {
       padding: padding,
       prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
       suffixIcon: const SizedBox.shrink(), // pas de chevron
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
 }

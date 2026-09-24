@@ -40,10 +40,7 @@ class ClientFieldGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (selected != null) {
-      return _SelectedClientCard(
-        client: selected!,
-        onChange: onClearSelection,
-      );
+      return _SelectedClientCard(client: selected!, onChange: onClearSelection);
     }
 
     return Column(

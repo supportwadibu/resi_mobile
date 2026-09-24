@@ -47,7 +47,10 @@ class ResidenceCubit extends Cubit<ResidenceState> {
     }
   }
 
-  Future<ResidenceModel?> update(String id, UpdateResidencePayload payload) async {
+  Future<ResidenceModel?> update(
+    String id,
+    UpdateResidencePayload payload,
+  ) async {
     if (payload.isEmpty) return null;
 
     final current = state;

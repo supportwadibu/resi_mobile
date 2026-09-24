@@ -20,11 +20,7 @@ class PropertyDescription extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           description,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-            height: 1.5,
-          ),
+          style: const TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
         ),
       ],
     );

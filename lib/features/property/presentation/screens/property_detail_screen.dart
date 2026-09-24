@@ -1,7 +1,16 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/router/app_router.gr.dart';
+import '../../../../core/router/role_guard.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/repositories/property_repository.dart';
 import '../../../home/presentation/widgets/bottom_navigation/property_bottom_navigation_bar.dart';
 import '../../../home/presentation/widgets/details/property_cover_image.dart';
 import '../../../home/presentation/widgets/details/property_infos_header.dart';
@@ -9,7 +18,10 @@ import '../../../home/presentation/widgets/details/property_features.dart';
 import '../../../home/presentation/widgets/details/property_description.dart';
 import '../../../home/presentation/widgets/details/property_location_section.dart';
 import '../../../home/presentation/widgets/details/property_pricing_details.dart';
+import '../../../home/presentation/widgets/details/property_residence_section.dart';
 import '../../../home/presentation/widgets/details/list_images_widget.dart';
+import '../../../residence/data/repositories/residence_repository.dart';
+import '../../../residence/presentation/widgets/attach_residence_sheet.dart';
 import '../../data/models/property_model.dart';
 
 @RoutePage()
@@ -26,11 +38,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   /// Vignette retenue par le lecteur : elle prend la place de la couverture.
   int _selectedImageIndex = 0;
 
-  PropertyModel get property => widget.property;
+  /// Fiche affichée, réévaluée après une modification ou un changement de
+  /// visibilité.
+  ///
+  /// La route transporte un instantané du bien : sans état local, l'écran
+  /// continuerait d'afficher la version d'avant l'enregistrement jusqu'au
+  /// retour complet vers la liste.
+  late PropertyModel _property = widget.property;
+
+  /// Appel de publication en cours : la bascule est verrouillée le temps que
+  /// le serveur réponde, deux appuis de suite s'annulant l'un l'autre.
+  bool _isTogglingVisibility = false;
+
+  PropertyModel get property => _property;
 
   @override
   Widget build(BuildContext context) {
     final images = property.images;
+
     final cover = images.isEmpty
         ? null
         : images[_selectedImageIndex.clamp(0, images.length - 1)];
@@ -41,7 +66,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         children: [
           CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: PropertyCoverImage(image: cover)),
+              SliverToBoxAdapter(
+                child: PropertyCoverImage(
+                  images: images,
+                  currentIndex: _selectedImageIndex,
+                  onIndexChanged: (index) =>
+                      setState(() => _selectedImageIndex = index),
+                ),
+              ),
 
               SliverPadding(
                 padding: const EdgeInsets.all(16),
@@ -68,10 +100,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       PropertyFeatures(features: _features()),
                       const SizedBox(height: 24),
 
+                      PropertyResidenceSection(
+                        residenceId: property.residenceId,
+                        unitLabel: property.unitLabel,
+                        onAttachPressed: _attachResidence,
+                      ),
+                      const SizedBox(height: 24),
+
                       PropertyLocationSection(
                         address: _fullAddress(),
-                        // Repli sur le centre d'Abidjan : la carte doit rester
-                        // lisible même sans coordonnées relevées.
                         latitude: property.address.latitude ?? 5.3364,
                         longitude: property.address.longitude ?? -3.9772,
                       ),
@@ -122,8 +159,108 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: PropertyBottomNavigationBar(onEditPressed: () {}),
+
+      bottomNavigationBar: PropertyBottomNavigationBar(
+        onEditPressed: _openEditor,
+        isPublished: property.isPublic,
+        isTogglingVisibility: _isTogglingVisibility,
+        onVisibilityChanged: _toggleVisibility,
+        // Le rôle se lit sur la session, comme partout ailleurs dans le projet.
+        canChangeVisibility: isGestureAllowed(
+          sl<SessionRole>().value,
+          'property_publish',
+        ),
+      ),
     );
+  }
+
+  Future<void> _openEditor() async {
+    final updated = await context.router.push<PropertyModel>(
+      AddPropertyRoute(property: property),
+    );
+
+    if (updated != null && mounted) setState(() => _property = updated);
+  }
+
+  /// Ouvre la feuille de rattachement à une résidence.
+  ///
+  /// La liste des résidences n'est pas chargée en amont : la feuille s'en
+  /// charge, et s'ouvre donc dès l'appui. La charger ici laissait l'écran sans
+  /// réaction le temps de la requête.
+  Future<void> _attachResidence() async {
+    final result = await AttachResidenceSheet.show(
+      context,
+      propertyTitle: property.title,
+      currentResidenceId: property.residenceId,
+      currentUnitLabel: property.unitLabel,
+    );
+
+    if (!mounted) return;
+
+    if (result is AttachResidenceCreateRequested) {
+      await context.router.push(AddResidenceRoute());
+      // La feuille se réouvre sur la liste rechargée, résidence neuve comprise.
+      if (mounted) await _attachResidence();
+      return;
+    }
+
+    if (result == null) return;
+
+    try {
+      // La fiche renvoyée porte le rattachement, et l'adresse recopiée le cas
+      // échéant : la reprendre évite d'afficher l'état d'avant l'appel.
+      final updated = await sl<ResidenceRepository>().attachToResidence(
+        property.id,
+        residenceId: result.residenceId,
+        unitLabel: result.unitLabel,
+        copyAddress: result.copyAddress,
+      );
+      if (!mounted) return;
+      setState(() => _property = updated);
+
+      AppToast.success(
+        result.residenceId == null
+            ? 'Bien détaché de sa résidence'
+            : 'Bien rattaché à la résidence',
+        context: context,
+      );
+    } on AppFailure catch (f) {
+      if (!mounted) return;
+      AppToast.error(f.userMessage, context: context);
+    }
+  }
+
+  Future<void> _toggleVisibility(bool publish) async {
+    if (_isTogglingVisibility) return;
+    setState(() => _isTogglingVisibility = true);
+
+    try {
+      final repository = sl<PropertyRepository>();
+      final updated = publish
+          ? await repository.publish(property.id)
+          : await repository.unpublish(property.id);
+
+      if (!mounted) return;
+      setState(() => _property = updated);
+
+      // Le retrait est un succès, signalé en avertissement : l'annonce cesse
+      // d'être visible, et c'est la conséquence qui compte pour le lecteur.
+      if (publish) {
+        AppToast.success('L’annonce est en ligne.', context: context);
+      } else {
+        AppToast.warning(
+          'L’annonce est retirée de la vitrine.',
+          context: context,
+        );
+      }
+    } on AppFailure catch (f) {
+      if (!mounted) return;
+      // Un 403 porte ici la marche à suivre — dossier d'identité à compléter :
+      // le message du serveur est plus utile qu'un libellé générique.
+      AppToast.error(f.userMessage, context: context);
+    } finally {
+      if (mounted) setState(() => _isTogglingVisibility = false);
+    }
   }
 
   /// Caractéristiques marquantes du bien.
@@ -190,10 +327,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   maxScale: 4.0,
                   child: Center(
                     child: image.startsWith('http')
-                        ? Image.network(
-                            image,
+                        ? CachedNetworkImage(
+                            imageUrl: image,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Icon(
+                            // Le loader est clair : le plein écran est posé
+                            // sur un fond noir.
+                            placeholder: (_, _) =>
+                                const AppLoader(size: 72, color: Colors.white),
+                            errorWidget: (_, _, _) => const Icon(
                               Icons.broken_image_outlined,
                               size: 48,
                               color: AppColors.grey400,

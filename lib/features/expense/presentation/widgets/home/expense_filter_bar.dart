@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_text_styles.dart';
 
 /// Barre d'actions de l'historique : filtres et export.
 class ExpenseFilterBar extends StatelessWidget {
@@ -31,29 +33,32 @@ class ExpenseFilterBar extends StatelessWidget {
         Expanded(
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: hasFilters ? Colors.black : const Color(0xffF5F5FA),
-                borderRadius: BorderRadius.circular(12),
+                color: hasFilters ? AppColors.black : AppColors.background,
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.filter_list_rounded,
                     size: 18,
-                    color: hasFilters ? Colors.white : const Color(0xff1D2452),
+                    color: hasFilters
+                        ? AppColors.white
+                        : AppColors.textPrimary,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     hasFilters
                         ? '$activeCount filtre${activeCount > 1 ? 's' : ''}'
                         : 'Filtrer',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.valueSmall.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: hasFilters ? Colors.white : const Color(0xff1D2452),
+                      color: hasFilters
+                          ? AppColors.white
+                          : AppColors.textPrimary,
                     ),
                   ),
                   if (onClear != null) ...[
@@ -63,7 +68,9 @@ class ExpenseFilterBar extends StatelessWidget {
                       child: Icon(
                         Icons.close,
                         size: 16,
-                        color: hasFilters ? Colors.white : Colors.grey,
+                        color: hasFilters
+                            ? AppColors.white
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -75,12 +82,14 @@ class ExpenseFilterBar extends StatelessWidget {
         const SizedBox(width: 10),
         InkWell(
           onTap: isExporting ? null : onExport,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xffF5F5FA),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: isExporting
                 ? const SizedBox(
@@ -89,12 +98,12 @@ class ExpenseFilterBar extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Icon(
-                    Icons.picture_as_pdf_outlined,
-                    size: 18,
-                    // Grisé quand l'export n'a rien à produire.
+                    Icons.ios_share_outlined,
+                    size: 19,
+                    // Estompé quand l'export n'a rien à produire.
                     color: onExport == null
-                        ? Colors.grey.shade400
-                        : const Color(0xff1D2452),
+                        ? AppColors.textLight
+                        : AppColors.textPrimary,
                   ),
           ),
         ),

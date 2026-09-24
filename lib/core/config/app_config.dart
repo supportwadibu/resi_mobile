@@ -19,15 +19,6 @@ class AppConfig {
         '985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com',
   );
 
-  /// Identifiants du widget de chat Tawk.to.
-  ///
-  /// Relevés dans le tableau de bord Tawk.to, sous *Administration >
-  /// Chat Widget* : l'URL directe s'y lit
-  /// `https://tawk.to/chat/<propertyId>/<widgetId>`.
-  ///
-  /// Ce ne sont pas des secrets — ils voyagent dans la page publique du
-  /// widget — mais ils restent surchargeables au build pour distinguer un
-  /// canal de test d'un canal de production.
   static const String tawkPropertyId = String.fromEnvironment(
     'TAWK_PROPERTY_ID',
   );
@@ -37,19 +28,42 @@ class AppConfig {
     defaultValue: 'default',
   );
 
-  /// Le support n'est proposé que si le widget est réellement configuré :
-  /// une page de chat vide vaut moins qu'une entrée absente.
   static bool get isSupportChatEnabled => tawkPropertyId.isNotEmpty;
 
   static String get tawkChatUrl =>
       'https://tawk.to/chat/$tawkPropertyId/$tawkWidgetId';
+
+  static const String supportPhone = String.fromEnvironment(
+    '2250757780335',
+    defaultValue: '2250757780335',
+  );
+
+  static const String supportWhatsApp = String.fromEnvironment(
+    '2250566511641',
+    defaultValue: "2250566511641",
+  );
+
+  static const String supportEmail = String.fromEnvironment(
+    'SUPPORT_EMAIL',
+    defaultValue: 'support@resi.africa',
+  );
+
+  static const String supportWebsite = String.fromEnvironment(
+    'SUPPORT_WEBSITE',
+    defaultValue: 'https://resi.africa',
+  );
+
+  static const String supportHours = String.fromEnvironment(
+    'SUPPORT_HOURS',
+    defaultValue: 'Lun – Sam, 8h – 20h',
+  );
 
   bool get isProduction => flavor == AppFlavor.prod;
   bool get isDevelopment => flavor == AppFlavor.dev;
 
   static const String _devApiUrl = String.fromEnvironment(
     'DEV_API_URL',
-    defaultValue: 'https://resi-api.onrender.com',
+    defaultValue: 'https://api-resi-africa.onrender.com',
   );
 
   static const dev = AppConfig(
@@ -59,16 +73,18 @@ class AppConfig {
     enableLogging: true,
   );
 
+  /// Staging ne journalise pas : son `baseUrl` est celui de la production, et
+  /// un build distribué à des testeurs imprimerait les jetons et les fiches
+  /// clients réels dans une console lisible par quiconque tient l'appareil.
   static const staging = AppConfig(
     flavor: AppFlavor.staging,
-    baseUrl: 'https://resi-api.onrender.com',
+    baseUrl: 'https://api-resi-africa.onrender.com',
     appName: 'App (Staging)',
-    enableLogging: true,
   );
 
   static const prod = AppConfig(
     flavor: AppFlavor.prod,
-    baseUrl: 'https://resi-api.onrender.com',
+    baseUrl: 'https://api-resi-africa.onrender.com',
     appName: 'App',
   );
 }

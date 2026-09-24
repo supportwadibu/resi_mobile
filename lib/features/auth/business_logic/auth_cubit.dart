@@ -9,10 +9,8 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthService _service;
   final PropertyManagerService _propertyManagerService;
 
-  AuthCubit(
-    this._service,
-    this._propertyManagerService,
-  ) : super(const AuthInitial());
+  AuthCubit(this._service, this._propertyManagerService)
+    : super(const AuthInitial());
 
   Future<void> login(String email, String password) async {
     emit(const AuthLoading());

@@ -49,7 +49,7 @@ class PropertyAvailabilitySwitchCompact extends StatelessWidget {
           Switch(
             value: isAvailable,
             onChanged: onChanged,
-            activeColor: const Color(0xFF4CAF50),
+            activeThumbColor: const Color(0xFF4CAF50),
             inactiveThumbColor: const Color(0xFFEF5350),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),

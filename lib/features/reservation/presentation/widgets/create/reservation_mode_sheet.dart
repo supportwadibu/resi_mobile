@@ -130,11 +130,7 @@ class _ModeCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: AppColors.grey500,
-            ),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.grey500),
           ],
         ),
       ),

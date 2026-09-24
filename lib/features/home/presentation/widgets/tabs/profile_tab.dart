@@ -2,7 +2,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/config/app_config.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/router/role_guard.dart';
@@ -15,6 +14,7 @@ import 'package:resi_africa/features/auth/business_logic/owner_profile_state.dar
 import 'package:resi_africa/features/auth/data/models/owner_profile_model.dart';
 import 'package:resi_africa/features/auth/data/services/auth_service.dart';
 import 'package:resi_africa/features/gerant/data/models/gerant_account_model.dart';
+import 'package:resi_africa/features/support/presentation/widgets/support_contact_sheet.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/skeletons/profile_skeleton.dart';
 
@@ -30,7 +30,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-
 
 @visibleForTesting
 class ProfileView extends StatelessWidget {
@@ -231,10 +230,7 @@ class _ProfileContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ProfileHeader(
-              profile: profile,
-              locationSummary: _locationSummary,
-            ),
+            _ProfileHeader(profile: profile, locationSummary: _locationSummary),
             const SizedBox(height: 20),
 
             _StatusCard(profile: profile),
@@ -259,9 +255,7 @@ class _ProfileContent extends StatelessWidget {
                     icon: FontAwesomeIcons.penToSquare,
                     label: 'Modifier mes informations',
                     onTap: () async {
-                      await context.router.push(
-                        PropertyManagerProfileRoute(),
-                      );
+                      await context.router.push(PropertyManagerProfileRoute());
                       // Le dossier a pu changer pendant l'édition : on relit
                       // plutôt que d'afficher l'état d'avant.
                       if (context.mounted) {
@@ -287,22 +281,21 @@ class _ProfileContent extends StatelessWidget {
               ],
             ),
 
-            // L'entrée disparaît si aucun identifiant Tawk.to n'est fourni au
-            // build : mieux vaut pas de support qu'un écran de chat vide.
-            if (AppConfig.isSupportChatEnabled) ...[
-              const SizedBox(height: 24),
-              const _SectionTitle(title: 'Assistance'),
-              const SizedBox(height: 12),
-              _SettingsGroup(
-                items: [
-                  _SettingsItem(
-                    icon: FontAwesomeIcons.headset,
-                    label: 'Aide & support',
-                    onTap: () => _openSupport(context, profile),
-                  ),
-                ],
-              ),
-            ],
+            // L'entrée ne dépend plus de Tawk.to : la feuille propose aussi le
+            // téléphone, WhatsApp et le courriel, qui restent joignables même
+            // sans widget de chat configuré au build.
+            const SizedBox(height: 24),
+            const _SectionTitle(title: 'Assistance'),
+            const SizedBox(height: 12),
+            _SettingsGroup(
+              items: [
+                _SettingsItem(
+                  icon: FontAwesomeIcons.headset,
+                  label: 'Aide & support',
+                  onTap: () => _openSupport(context, profile),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 24),
 
@@ -324,19 +317,17 @@ class _ProfileContent extends StatelessWidget {
     );
   }
 
-  /// Ouvre le chat d'assistance, le visiteur déjà identifié.
+  /// Propose les canaux d'assistance, le visiteur déjà identifié.
   ///
   /// Le support voit ainsi qui écrit sans avoir à le demander, et peut
   /// rattacher la conversation au dossier du propriétaire.
   void _openSupport(BuildContext context, OwnerProfileModel profile) {
-    context.router.push(
-      SupportChatRoute(
-        visitorName: profile.fullName,
-        visitorEmail: profile.email,
-      ),
+    showSupportContactSheet(
+      context,
+      visitorName: profile.fullName,
+      visitorEmail: profile.email,
     );
   }
-
 }
 
 /// Confirme puis ferme la session.
@@ -433,9 +424,10 @@ class _ManagerProfileContent extends StatelessWidget {
             const SizedBox(height: 24),
 
             if (items.isNotEmpty) ...[
-              // `PATCH /gerant/profile` n'accepte ni l'e-mail ni le téléphone :
-              // rien à l'écran ne doit laisser croire au gérant qu'il peut les
-              // corriger, d'où l'absence de toute entrée d'édition plus bas.
+              // « Communiquées par le propriétaire » plutôt que
+              // « Informations personnelles » : `PATCH /gerant/profile`
+              // n'accepte ni l'e-mail ni le téléphone, et rien à l'écran ne
+              // doit laisser croire au gérant qu'il peut les corriger.
               const _SectionTitle(title: 'Mes informations'),
               const SizedBox(height: 12),
               _InfoGroup(items: items),
@@ -463,11 +455,10 @@ class _ManagerProfileContent extends StatelessWidget {
                 _SettingsItem(
                   icon: FontAwesomeIcons.headset,
                   label: 'Aide & support',
-                  onTap: () => context.router.push(
-                    SupportChatRoute(
-                      visitorName: account.fullName,
-                      visitorEmail: account.email,
-                    ),
+                  onTap: () => showSupportContactSheet(
+                    context,
+                    visitorName: account.fullName,
+                    visitorEmail: account.email,
                   ),
                 ),
               ],
@@ -698,9 +689,7 @@ class _ProfileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                profile.fullName.trim().isEmpty
-                    ? 'Sans nom'
-                    : profile.fullName,
+                profile.fullName.trim().isEmpty ? 'Sans nom' : profile.fullName,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 17,
@@ -712,10 +701,7 @@ class _ProfileHeader extends StatelessWidget {
               Text(
                 subtitle,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.grey500,
-                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.grey500),
               ),
             ],
           ),
@@ -749,7 +735,8 @@ class _StatusCard extends StatelessWidget {
 
   final OwnerProfileModel profile;
 
-  ({Color color, Color background, FaIconData icon, String message}) get _style {
+  ({Color color, Color background, FaIconData icon, String message})
+  get _style {
     if (profile.isValidated) {
       return (
         color: AppColors.success,
@@ -1094,7 +1081,7 @@ class _NotificationToggleState extends State<_NotificationToggle> {
     return Switch(
       value: _enabled,
       onChanged: (v) => setState(() => _enabled = v),
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
     );
   }
 }

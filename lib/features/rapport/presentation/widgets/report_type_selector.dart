@@ -16,9 +16,7 @@ class ReportTypeSelector extends StatelessWidget {
   static const _icons = {
     ReportType.financial: Icons.trending_up_rounded,
     ReportType.performance: Icons.bar_chart_rounded,
-    ReportType.maintenance: Icons.build_rounded,
     ReportType.reservations: Icons.people_alt_rounded,
-    ReportType.fiscal: Icons.receipt_long_rounded,
   };
 
   @override

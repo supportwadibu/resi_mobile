@@ -17,6 +17,18 @@ class FinanceCubit extends Cubit<FinanceState> {
 
   String? get residenceId => _residenceId;
 
+  DateTime? _from;
+  DateTime? _to;
+
+  /// Bornes du relevé affiché.
+  ///
+  /// Exposées pour que l'écran annonce la période exacte des chiffres : les
+  /// recalculer de son côté les ferait diverger d'un jour à l'autre, et le
+  /// même `ca_brut` se lit très différemment selon la fenêtre — d'où la
+  /// confusion avec l'onglet Statistiques, qui n'affiche qu'un mois.
+  DateTime? get from => _from;
+  DateTime? get to => _to;
+
   /// Charge la situation financière.
   ///
   /// Sans bornes, l'exercice porte sur les douze derniers mois : le taux
@@ -26,11 +38,15 @@ class FinanceCubit extends Cubit<FinanceState> {
 
     final now = DateTime.now();
     final start = from ?? DateTime(now.year - 1, now.month, now.day);
+    final end = to ?? now;
+
+    _from = start;
+    _to = end;
 
     try {
       final overview = await _repository.getOverview(
         from: start,
-        to: to ?? now,
+        to: end,
         residenceId: _residenceId,
       );
       if (!isClosed) emit(FinanceLoaded(overview));
@@ -39,10 +55,6 @@ class FinanceCubit extends Cubit<FinanceState> {
     }
   }
 
-  /// Restreint le relevé à une résidence, ou lève la restriction avec `null`.
-  ///
-  /// Le rechargement est immédiat : le filtre n'a pas d'existence propre à
-  /// l'écran, seuls les chiffres qu'il produit en ont une.
   Future<void> filterByResidence(String? residenceId) async {
     if (_residenceId == residenceId) return;
 

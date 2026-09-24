@@ -5,14 +5,8 @@ import 'package:resi_africa/core/theme/app_text_styles.dart';
 class FinanceAppBar extends StatelessWidget implements PreferredSizeWidget {
   const FinanceAppBar({super.key, this.onFilterTap, this.scopeLabel});
 
-  /// Ouvre le choix du périmètre. Sans lui, l’entrée reste décorative.
   final VoidCallback? onFilterTap;
 
-  /// Résidence retenue, affichée à la place du mot « Filtres ».
-  ///
-  /// Le périmètre doit se lire sans ouvrir la feuille : un relevé restreint et
-  /// un relevé complet n’ont pas les mêmes chiffres, et rien d’autre à l’écran
-  /// ne dit lequel on regarde.
   final String? scopeLabel;
 
   @override
@@ -44,8 +38,6 @@ class FinanceAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const SizedBox(width: 4),
                 ConstrainedBox(
-                  // Le nom d’une résidence peut être long : il est tronqué
-                  // plutôt que de pousser le titre hors de l’écran.
                   constraints: const BoxConstraints(maxWidth: 110),
                   child: Text(
                     scopeLabel ?? 'Filtres',

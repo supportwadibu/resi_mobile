@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
@@ -240,9 +241,7 @@ class _PropertyManagerProfileViewState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.error(message, context: context);
   }
 
   void _continue() {
@@ -265,8 +264,9 @@ class _PropertyManagerProfileViewState
             });
           case OwnerProfileSubmitted(:final profile):
             setState(() => _profile = profile);
-            _showMessage(
+            AppToast.success(
               'Dossier transmis. Vous serez informé de sa validation.',
+              context: context,
             );
             _continue();
           case OwnerProfileError(:final profile, :final message):
