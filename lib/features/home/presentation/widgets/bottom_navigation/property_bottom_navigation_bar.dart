@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'property_edit_button.dart';
-import 'property_visibility_switch.dart';
+// import 'property_visibility_switch.dart';
 
 class PropertyBottomNavigationBar extends StatelessWidget {
   const PropertyBottomNavigationBar({
@@ -49,14 +49,14 @@ class PropertyBottomNavigationBar extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (canChangeVisibility) ...[
-                PropertyVisibilitySwitch(
-                  isPublished: isPublished,
-                  isBusy: isTogglingVisibility,
-                  onChanged: onVisibilityChanged,
-                ),
-                const SizedBox(height: 12),
-              ],
+              // if (canChangeVisibility) ...[
+              //   PropertyVisibilitySwitch(
+              //     isPublished: isPublished,
+              //     isBusy: isTogglingVisibility,
+              //     onChanged: onVisibilityChanged,
+              //   ),
+              //   const SizedBox(height: 12),
+              // ],
               Row(
                 children: [
                   Expanded(child: PropertyEditButton(onPressed: onEditPressed)),

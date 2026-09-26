@@ -2,9 +2,15 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/config/app_config.dart';
 import 'core/di/service_locator.dart';
+import 'core/router/app_router.gr.dart';
+import 'core/session/session_role.dart';
+import 'features/subscription/business_logic/plan_cubit.dart';
+import 'features/subscription/business_logic/plan_state.dart';
+import 'features/subscription/data/models/plan_access.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class App extends StatefulWidget {
   const App({super.key, required this.config});
@@ -14,8 +20,42 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends State<App> with WidgetsBindingObserver {
   final _router = sl<AppRouter>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Un abonnement peut expirer ou être payé pendant que l'application dort :
+  /// l'accès est relu à chaque retour au premier plan.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) sl<PlanCubit>().refresh();
+  }
+
+  /// Compte devenu inactif : l'écran des forfaits remplace l'application.
+  ///
+  /// Écouté ici, au-dessus de toutes les routes, parce que le refus peut
+  /// survenir sur n'importe quel écran. Sans effet s'il est déjà affiché.
+  /// Un gérant n'a rien à faire au forfait 3 000 F : tout son espace relève
+  /// du forfait complet, et chaque écran lui opposerait un refus.
+  static bool _isLockedOut(PlanAccess access) =>
+      access == PlanAccess.inactive ||
+      (access == PlanAccess.basic && sl<SessionRole>().value == 'gerant');
+
+  void _onPlanChanged(BuildContext context, PlanState state) {
+    if (_router.current.name == SubscriptionPlansRoute.name) return;
+    _router.replaceAll([SubscriptionPlansRoute(blocking: true)]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +73,12 @@ class _AppState extends State<App> {
       // rafraîchir des données modifiées entre-temps.
       routerConfig: _router.config(
         navigatorObservers: () => [AutoRouteObserver()],
+      ),
+      builder: (context, child) => BlocListener<PlanCubit, PlanState>(
+        bloc: sl<PlanCubit>(),
+        listenWhen: (_, current) => _isLockedOut(current.access),
+        listener: _onPlanChanged,
+        child: child ?? const SizedBox.shrink(),
       ),
     );
   }

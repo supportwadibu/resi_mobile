@@ -32,7 +32,10 @@ class AppDatabase {
   /// 2 — `cached_properties` porte le libellé de l’unité et le nom de sa
   /// résidence, pour que la saisie comptoir hors ligne affiche
   /// « Resi Adja › Studio 1 » et non le seul titre de l’annonce.
-  static const _version = 2;
+  ///
+  /// 3 — `pending_bookings` porte l’apporteur d’affaire, pour qu’une
+  /// réservation saisie hors ligne le transmette à la synchronisation.
+  static const _version = 3;
 
   /// Version courante du schéma, lue par les tests de migration.
   @visibleForTesting
@@ -155,6 +158,8 @@ class AppDatabase {
         last_error         TEXT,
         attempts           INTEGER NOT NULL DEFAULT 0,
         created_at         INTEGER NOT NULL,
+        referrer_name      TEXT,
+        referrer_phone     TEXT,
         FOREIGN KEY (local_client_id)
           REFERENCES pending_clients (local_id)
           ON DELETE CASCADE
@@ -196,6 +201,17 @@ class AppDatabase {
       );
       await db.execute(
         'ALTER TABLE cached_properties ADD COLUMN unit_label TEXT',
+      );
+    }
+
+    if (from < 3) {
+      // Même règle : la file porte de l’argent encaissé, elle ne se recrée
+      // pas. Les saisies déjà en file valent `NULL`, sans apporteur.
+      await db.execute(
+        'ALTER TABLE pending_bookings ADD COLUMN referrer_name TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE pending_bookings ADD COLUMN referrer_phone TEXT',
       );
     }
   }

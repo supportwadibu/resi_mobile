@@ -4,14 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../clients/presentation/widgets/client_picker_sheet.dart';
+import '../../../clients/presentation/widgets/create/id_scan_button.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../business_logic/add_reservation_cubit.dart';
 import '../../business_logic/add_reservation_state.dart';
 import '../widgets/create/client_field_group.dart';
 import '../widgets/create/date_time_field.dart';
 import '../widgets/create/property_selector.dart';
+import '../widgets/create/referrer_fields.dart';
+import '../../../subscription/presentation/widgets/plan_gate.dart';
 import '../widgets/create/reservation_document_picker.dart';
 import '../widgets/create/reservation_section_title.dart';
 import '../widgets/create/stay_tier_hints.dart';
@@ -106,7 +110,9 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   phoneController: _phoneController,
                   onNameChanged: cubit.setFullName,
                   onPhoneChanged: cubit.setPhone,
-                  onPickFromBook: () => _pickClient(cubit),
+                  onPickFromBook: hasFullPlan()
+                      ? () => _pickClient(cubit)
+                      : null,
                   onClearSelection: cubit.clearSelectedClient,
                   duplicate: state.duplicateClient,
                   isLookingUp: state.isLookingUpPhone,
@@ -125,6 +131,18 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   const ReservationSectionTitle(
                     title: 'Pièce d’identité (facultative)',
                   ),
+                  // La saisie hors ligne garde la photo et le nom lus ; le
+                  // numéro de pièce, lui, ne voyage pas dans la file et se
+                  // complète depuis la fiche client.
+                  IdScanButton(
+                    onScanned: (path, result) {
+                      cubit.applyIdScan(path, result);
+                      if (result != null) {
+                        _nameController.text = result.fullName;
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   ReservationDocumentPicker(
                     frontPath: state.documentFrontPath,
                     backPath: state.documentBackPath,
@@ -193,6 +211,14 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   controller: _depositController,
                   hint: 'Acompte versé (facultatif)',
                   onChanged: (v) => cubit.setDepositAmount(_parse(v) ?? 0),
+                ),
+
+                const SizedBox(height: 24),
+                ReservationSectionTitle(title: 'referrer.section'.tr()),
+                ReferrerFields(
+                  state: state,
+                  onNameChanged: cubit.setReferrerName,
+                  onPhoneChanged: cubit.setReferrerPhone,
                 ),
 
                 if (state.errorMessage != null) ...[

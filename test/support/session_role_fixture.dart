@@ -9,6 +9,16 @@ import 'package:resi_africa/features/auth/data/models/property_manager_model.dar
 /// été réellement écrit sur le disque, et pas seulement l'état en mémoire.
 class MemoryLocalStorage implements LocalStorage {
   String? role;
+  String? planAccess;
+
+  @override
+  Future<void> savePlanAccess(String code) async => planAccess = code;
+
+  @override
+  String? getPlanAccess() => planAccess;
+
+  @override
+  Future<void> clearPlanAccess() async => planAccess = null;
 
   @override
   Future<void> saveRole(String value) async => role = value;

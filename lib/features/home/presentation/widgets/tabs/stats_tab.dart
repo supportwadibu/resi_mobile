@@ -8,6 +8,7 @@ import 'package:resi_africa/features/home/presentation/widgets/stats/occupancy_c
 import 'package:resi_africa/features/home/presentation/widgets/stats/stats_header.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_state.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_gate.dart';
 
 class StatsTab extends StatelessWidget {
   const StatsTab({super.key});
@@ -15,7 +16,13 @@ class StatsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => sl<DashboardCubit>()..load(),
+      // Pas de chargement au forfait 3 000 F : l'API refuserait les trois
+      // appels, et les chiffres ne s'affichent pas.
+      create: (_) {
+        final cubit = sl<DashboardCubit>();
+        if (hasFullPlan()) cubit.load();
+        return cubit;
+      },
       child: const _StatsView(),
     );
   }
@@ -40,9 +47,16 @@ class _StatsView extends StatelessWidget {
                 // L'en-tête reste monté pendant le chargement : le filtre de
                 // période doit rester actionnable, sinon un relevé vide sur la
                 // fenêtre choisie enfermerait le propriétaire dedans.
-                const _Header(),
-                const SizedBox(height: 20),
-                _Indicators(state: state),
+                PlanGate(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _Header(),
+                      const SizedBox(height: 20),
+                      _Indicators(state: state),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24),
                 const Text(
                   'Gestion',

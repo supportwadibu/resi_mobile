@@ -221,6 +221,15 @@ class _Content extends StatelessWidget {
                 valueStyle: AppTextStyles.valueMedium,
               ),
             ],
+            // Même règle : sans apporteur sur la période, pas de carte.
+            if (summary.commissions > 0) ...[
+              const SizedBox(height: 12),
+              FinanceSummaryCard(
+                label: 'finance.commissions'.tr(),
+                amount: summary.commissions,
+                valueStyle: AppTextStyles.valueMedium,
+              ),
+            ],
             const SizedBox(height: 24),
             Container(
               width: double.infinity,

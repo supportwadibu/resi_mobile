@@ -98,6 +98,22 @@ class ReservationClient {
   }
 }
 
+/// Apporteur d'affaire : la personne qui a amené le client, commissionnée sur
+/// le séjour. Saisie libre, sans compte.
+class ReservationReferrer {
+  const ReservationReferrer({required this.name, this.phone});
+
+  final String name;
+  final String? phone;
+
+  factory ReservationReferrer.fromJson(Map<String, dynamic> json) {
+    return ReservationReferrer(
+      name: json['name'] as String? ?? '',
+      phone: json['phone'] as String?,
+    );
+  }
+}
+
 /// Résumé du bien réservé, joint par le serveur à la liste.
 class ReservationProperty {
   const ReservationProperty({
@@ -149,6 +165,9 @@ class ReservationModel {
     this.refundedAmount = 0,
     this.plannedTotalAmount,
     this.plannedCheckOutAt,
+    this.referrer,
+    this.referrerCommissionRate = 0,
+    this.referrerCommissionAmount = 0,
   }) : _checkInAt = checkInAt,
        _checkOutAt = checkOutAt;
 
@@ -207,6 +226,16 @@ class ReservationModel {
   /// [totalAmount] et [checkOutAt] portent alors l'usage réel.
   final double? plannedTotalAmount;
   final DateTime? plannedCheckOutAt;
+
+  /// Apporteur d'affaire, `null` sans apporteur.
+  final ReservationReferrer? referrer;
+
+  /// Taux figé à la réservation, entre 0 et 1.
+  final double referrerCommissionRate;
+
+  /// Commission due à l'apporteur, recalculée par le serveur quand le montant
+  /// du séjour change.
+  final double referrerCommissionAmount;
 
   /// Le séjour a été écourté par un départ anticipé.
   bool get isEarlyCheckOut => plannedCheckOutAt != null;
@@ -276,6 +305,16 @@ class ReservationModel {
       refundedAmount: (json['refunded_amount'] as num?)?.toDouble() ?? 0,
       plannedTotalAmount: (json['planned_total_amount'] as num?)?.toDouble(),
       plannedCheckOutAt: _date(json['planned_check_out_at']),
+      // Absents de l'historique et d'un serveur antérieur aux apporteurs.
+      referrer: json['referrer'] is Map<String, dynamic>
+          ? ReservationReferrer.fromJson(
+              json['referrer'] as Map<String, dynamic>,
+            )
+          : null,
+      referrerCommissionRate:
+          (json['referrer_commission_rate'] as num?)?.toDouble() ?? 0,
+      referrerCommissionAmount:
+          (json['referrer_commission_amount'] as num?)?.toDouble() ?? 0,
     );
   }
 

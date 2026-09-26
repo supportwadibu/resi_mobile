@@ -6,6 +6,14 @@ import '../../../../../core/di/service_locator.dart';
 import '../../../../../core/router/app_router.gr.dart';
 import '../../../../../core/router/role_guard.dart';
 import '../../../../../core/session/session_role.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../subscription/business_logic/plan_cubit.dart';
+import '../../../../subscription/business_logic/plan_state.dart';
+import '../../../../subscription/presentation/widgets/plan_gate.dart';
+
+/// Entrées réservées au forfait 5 000 F. Les résidences restent ouvertes :
+/// leur enregistrement fait partie du forfait 3 000 F.
+const _fullPlanActions = <String>{'expenses', 'finance', 'reports', 'clients'};
 
 class ActionGrid extends StatelessWidget {
   const ActionGrid({super.key});
@@ -57,26 +65,44 @@ class ActionGrid extends StatelessWidget {
     final visible = actionsForRole(role, _actions.map((a) => a.key).toList());
     final actions = _actions.where((a) => visible.contains(a.key)).toList();
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.4,
-      children: actions.map((a) => ActionCard(action: a)).toList(),
+    return BlocBuilder<PlanCubit, PlanState>(
+      bloc: sl<PlanCubit>(),
+      builder: (context, plan) => GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.4,
+        children: actions
+            .map(
+              (a) => ActionCard(
+                action: a,
+                locked: !plan.access.isFull && _fullPlanActions.contains(a.key),
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 }
 
 class ActionCard extends StatelessWidget {
-  const ActionCard({super.key, required this.action});
+  const ActionCard({super.key, required this.action, this.locked = false});
   final StatsAction action;
+
+  /// Réservée au forfait 5 000 F : l'appui explique le verrou au lieu d'ouvrir
+  /// un écran que l'API refuserait.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (locked) {
+          showLockedFeatureSheet(context);
+          return;
+        }
         if (action.route != null) {
           context.pushRoute(action.route!);
         } else {
@@ -100,13 +126,24 @@ class ActionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: action.color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: FaIcon(action.icon, size: 16, color: action.color),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: action.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: FaIcon(action.icon, size: 16, color: action.color),
+                ),
+                if (locked)
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              ],
             ),
             Text(
               action.label,

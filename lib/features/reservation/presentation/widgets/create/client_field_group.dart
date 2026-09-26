@@ -15,7 +15,7 @@ class ClientFieldGroup extends StatelessWidget {
     required this.phoneController,
     required this.onNameChanged,
     required this.onPhoneChanged,
-    required this.onPickFromBook,
+    this.onPickFromBook,
     required this.onClearSelection,
     required this.duplicate,
     required this.onUseDuplicate,
@@ -29,7 +29,10 @@ class ClientFieldGroup extends StatelessWidget {
   final TextEditingController phoneController;
   final ValueChanged<String> onNameChanged;
   final ValueChanged<String> onPhoneChanged;
-  final VoidCallback onPickFromBook;
+
+  /// `null` : le carnet n'est pas consultable — forfait 3 000 F. Le bouton
+  /// disparaît, et la recherche par numéro retrouve encore un habitué.
+  final VoidCallback? onPickFromBook;
   final VoidCallback onClearSelection;
 
   final ClientModel? duplicate;
@@ -46,22 +49,23 @@ class ClientFieldGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: onPickFromBook,
-            icon: const Icon(Icons.contacts_outlined, size: 16),
-            label: const Text(
-              'Choisir un client',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              visualDensity: VisualDensity.compact,
+        if (onPickFromBook != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onPickFromBook,
+              icon: const Icon(Icons.contacts_outlined, size: 16),
+              label: const Text(
+                'Choisir un client',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                visualDensity: VisualDensity.compact,
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 4),
         _Field(
           controller: nameController,

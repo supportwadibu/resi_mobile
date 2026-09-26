@@ -80,6 +80,75 @@
     "refunded": "Refunded"
   },
   "finance": {
-    "refunds": "Refunds (already deducted from revenue)"
+    "refunds": "Refunds (already deducted from revenue)",
+    "commissions": "Referrer commissions"
+  },
+  "subscription": {
+    "title": "Plans",
+    "inactive_title": "Your subscription is inactive",
+    "inactive_body": "Subscribe to a plan to keep using RESI.",
+    "upgrade_title": "Upgrade to the full plan",
+    "upgrade_body": "Statistics, PDF documents, client book and records, expenses, managers and WhatsApp invoices.",
+    "renew_body": "Your subscription ends in {} day(s). Renew it to avoid any interruption.",
+    "current": "Current plan",
+    "per_period": "{} / {} days",
+    "pay": "Pay with Wave",
+    "verify": "I paid, check",
+    "waiting": "Complete the payment in Wave, then come back here.",
+    "paid": "Payment received: your plan is active.",
+    "failed": "The payment did not go through. You can try again.",
+    "wave_unavailable": "Unable to open Wave on this phone.",
+    "continue": "Continue",
+    "empty": "No plan is available at the moment.",
+    "includes_basic": "Residences and units\nBookings, at the counter and offline\nClient registration\nBusiness referrers",
+    "includes_full": "Everything in the 3,000 F plan\nStatistics and occupancy rate\nPDF reports and WhatsApp invoices\nClient book and records, ID documents\nExpenses and managers\nUpcoming features",
+    "gerant_title": "Access suspended",
+    "gerant_body": "The subscription of the owner you work for is inactive or does not cover this area. Please contact them.",
+    "logout": "Log out"
+  },
+  "locked": {
+    "title": "Available with the 5,000 F plan",
+    "body": "This feature is part of the full plan.",
+    "see_plans": "See plans"
+  },
+  "referrer": {
+    "section": "Business referrer (optional)",
+    "name_hint": "Referrer name",
+    "phone_hint": "Referrer phone (optional)",
+    "commission": "Referrer commission ({} %)",
+    "label": "Referrer"
+  },
+  "invoice": {
+    "send": "Send the invoice",
+    "title": "INVOICE",
+    "number": "No. {}",
+    "issued": "Issued on {}",
+    "client": "Client",
+    "lodging": "Unit",
+    "check_in": "Check-in",
+    "check_out": "Check-out",
+    "duration": "Duration",
+    "daily_price": "Daily rate",
+    "discount": "Discount",
+    "total": "Total",
+    "deposit": "Deposit paid",
+    "refunded": "Refunded",
+    "balance": "Balance due",
+    "thanks": "Thank you for your stay.",
+    "error": "Unable to generate the invoice."
+  },
+  "ocr": {
+    "scan": "Scan the ID (back)",
+    "scanning": "Reading the ID…",
+    "found": "ID read: please check the details.",
+    "not_found": "No machine-readable zone (MRZ) found. Please enter the details manually.",
+    "hint": "Photograph the back, with the bottom character strip clearly visible."
+  },
+  "client_documents": {
+    "title": "ID document",
+    "front": "Front",
+    "back": "Back",
+    "missing": "Not provided",
+    "unavailable": "Image unavailable"
   }
 }

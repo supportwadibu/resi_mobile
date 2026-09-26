@@ -18,6 +18,18 @@ abstract final class ApiEndpoints {
   /// statut du dossier de validation).
   static const String proprioSubscription = '$_v1/proprio/subscription';
 
+  /// Forfaits proposés à la souscription, du moins cher au plus cher.
+  static const String proprioPlans = '$_v1/proprio/plans';
+
+  /// Lance le paiement Wave d'un forfait ; renvoie le lien de paiement.
+  static const String proprioSubscriptionCheckout =
+      '$_v1/proprio/subscription/checkout';
+
+  /// Constate l'issue d'un paiement au retour de Wave, sans attendre le
+  /// webhook : le serveur relit la session chez Wave.
+  static String proprioSubscriptionConfirm(String reference) =>
+      '$_v1/proprio/subscription/checkout/$reference/confirm';
+
   /// Dossier de validation : coordonnées et pièces d'identité déposées à la
   /// suite de l'inscription. `GET` pour relire, `POST` (multipart) pour déposer.
   static const String proprioProfile = '$_v1/proprio/profile';

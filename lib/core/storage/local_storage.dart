@@ -9,6 +9,7 @@ class LocalStorage {
 
   static const String _propertyManagerKey = 'property_manager';
   static const String _sessionRoleKey = 'session_role';
+  static const String _planAccessKey = 'plan_access';
 
   Future<void> saveRole(String role) async {
     await _prefs.setString(_sessionRoleKey, role);
@@ -20,6 +21,18 @@ class LocalStorage {
 
   Future<void> clearRole() async {
     await _prefs.remove(_sessionRoleKey);
+  }
+
+  /// Dernier palier connu, pour que l'écran sache quoi verrouiller au
+  /// démarrage hors ligne, avant toute réponse de l'API.
+  Future<void> savePlanAccess(String code) async {
+    await _prefs.setString(_planAccessKey, code);
+  }
+
+  String? getPlanAccess() => _prefs.getString(_planAccessKey);
+
+  Future<void> clearPlanAccess() async {
+    await _prefs.remove(_planAccessKey);
   }
 
   Future<void> savePropertyManager(PropertyManagerModel manager) async {

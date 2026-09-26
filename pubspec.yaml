@@ -2,7 +2,7 @@ name: resi_africa
 description: "A new Flutter project."
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.2+2
 
 environment:
   sdk: ^3.10.1
@@ -42,16 +42,13 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.5
   uuid: ^4.5.1
-  # Ouvre dans le lecteur PDF du téléphone le rapport reçu en binaire depuis
-  # l'API : `url_launcher` ne sait ouvrir qu'un lien, pas un fichier local.
   open_filex: ^4.7.0
-  # Cache disque des photos d'annonce : les visuels Cloudinary sont lourds et
-  # relus à chaque ouverture de fiche, sur des forfaits data comptés.
   cached_network_image: ^3.4.1
-  # Version de l'application, jointe aux avis envoyés à l'équipe : un bug
-  # signalé sans savoir sur quelle version il se produit n'est pas reproductible.
-  # Contrainte alignée sur celle de `geolocator`, qui tire déjà ce paquet.
   package_info_plus: ^10.2.1
+  # Lecture de la bande MRZ de la pièce d’identité, sur l’appareil : gratuite,
+  # et disponible hors ligne — la saisie au comptoir doit l’être aussi. Un
+  # service d’OCR distant coûterait par appel et échouerait sans réseau.
+  google_mlkit_text_recognition: ^0.16.0
 
 dev_dependencies:
   flutter_test:

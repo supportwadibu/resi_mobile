@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -14,6 +15,8 @@ import 'package:resi_africa/features/auth/business_logic/owner_profile_state.dar
 import 'package:resi_africa/features/auth/data/models/owner_profile_model.dart';
 import 'package:resi_africa/features/auth/data/services/auth_service.dart';
 import 'package:resi_africa/features/gerant/data/models/gerant_account_model.dart';
+import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_gate.dart';
 import 'package:resi_africa/features/support/presentation/widgets/support_contact_sheet.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/skeletons/profile_skeleton.dart';
@@ -270,7 +273,19 @@ class _ProfileContent extends StatelessWidget {
                   _SettingsItem(
                     icon: FontAwesomeIcons.userGear,
                     label: 'Mes gérants',
-                    onTap: () => context.router.push(const GerantListRoute()),
+                    onTap: () {
+                      if (ensureFullPlan(context)) {
+                        context.router.push(const GerantListRoute());
+                      }
+                    },
+                  ),
+                // Le gérant ne souscrit pas : c'est l'abonnement de son
+                // propriétaire qui compte.
+                if (_currentRole() != 'gerant')
+                  _SettingsItem(
+                    icon: FontAwesomeIcons.crown,
+                    label: 'subscription.title'.tr(),
+                    onTap: () => context.router.push(SubscriptionPlansRoute()),
                   ),
                 _SettingsItem(
                   icon: FontAwesomeIcons.bell,
@@ -362,6 +377,9 @@ Future<void> _confirmLogout(BuildContext context) async {
   // La purge locale prime : même si l'appel serveur échoue, la session ne
   // doit pas survivre à une déconnexion demandée.
   await sl<AuthService>().logout();
+  // Le palier appartient à la session : le compte suivant ne doit pas hériter
+  // des verrous — ou de l'accès — du précédent.
+  await sl<PlanCubit>().clear();
   if (!context.mounted) return;
 
   await context.router.replaceAll([const LoginRoute()]);
@@ -540,9 +558,7 @@ class _ManagerHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                account.fullName.trim().isEmpty
-                    ? 'Sans nom'
-                    : account.fullName,
+                account.fullName.trim().isEmpty ? 'Sans nom' : account.fullName,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 17,

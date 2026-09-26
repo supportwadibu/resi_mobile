@@ -14,6 +14,7 @@ class SubscriptionStatusModel {
     this.ownerStatus,
     this.status,
     this.endDate,
+    this.planAccess,
   });
 
   /// L'abonnement en cours est un essai gratuit.
@@ -44,6 +45,11 @@ class SubscriptionStatusModel {
 
   final DateTime? endDate;
 
+  /// Palier ouvert : `full` (5 000 F), `basic` (3 000 F), ou `null` pour un
+  /// compte inactif. Absent d'un serveur antérieur aux forfaits, qui ne
+  /// bloquait rien : le repli est alors l'accès complet.
+  final String? planAccess;
+
   /// Le compte a été suspendu faute de validation dans les temps.
   bool get isSuspended => ownerStatus == 'suspended';
 
@@ -62,6 +68,9 @@ class SubscriptionStatusModel {
       ownerStatus: json['owner_status'] as String?,
       status: subscription?['status'] as String?,
       endDate: endDate == null ? null : DateTime.tryParse(endDate),
+      planAccess: json.containsKey('plan_access')
+          ? json['plan_access'] as String?
+          : 'full',
     );
   }
 }

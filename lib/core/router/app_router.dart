@@ -20,6 +20,8 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: LoginRoute.page),
     AutoRoute(page: RegisterRoute.page),
     AutoRoute(page: TrialWelcomeRoute.page),
+    // Ouverte à un compte inactif : c'est par elle qu'il redevient actif.
+    AutoRoute(page: SubscriptionPlansRoute.page),
     AutoRoute(page: HomeRoute.page),
     AutoRoute(page: PropertyDetailRoute.page),
     AutoRoute(page: AllReviewsRoute.page),

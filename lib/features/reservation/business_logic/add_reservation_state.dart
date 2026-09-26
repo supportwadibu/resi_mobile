@@ -56,6 +56,10 @@ class AddReservationState {
     this.duplicateClient,
     this.isLookingUpPhone = false,
     this.occupiedConflict,
+    this.referrerName = '',
+    this.referrerPhone = '',
+    this.idDocumentType,
+    this.idDocumentNumber,
   });
 
   final ReservationMode mode;
@@ -67,6 +71,11 @@ class AddReservationState {
   final String phone;
   final String? documentFrontPath;
   final String? documentBackPath;
+
+  /// Pièce lue par l'OCR. Non lus, ces champs se complètent plus tard depuis
+  /// la fiche client.
+  final ClientIdDocumentType? idDocumentType;
+  final String? idDocumentNumber;
 
   final String? propertyId;
 
@@ -104,6 +113,21 @@ class AddReservationState {
 
   /// Réservation qui empiète sur les dates saisies, détectée avant l'envoi.
   final String? occupiedConflict;
+
+  /// Apporteur d'affaire, facultatif. Vide = pas d'apporteur.
+  final String referrerName;
+  final String referrerPhone;
+
+  /// Taux annoncé au comptoir. Le serveur applique et fige le sien : celui-ci
+  /// ne sert qu'à afficher la commission avant l'envoi.
+  static const referrerCommissionRate = 0.10;
+
+  bool get hasReferrer => referrerName.trim().length >= 2;
+
+  /// Commission annoncée, arrondie au franc comme le fait le serveur.
+  double get referrerCommission => hasReferrer
+      ? (effectiveAmount * referrerCommissionRate).roundToDouble()
+      : 0;
 
   /// Tarif d'une unité du type de séjour choisi.
   ///
@@ -212,6 +236,10 @@ class AddReservationState {
     bool? isLookingUpPhone,
     String? occupiedConflict,
     bool clearConflict = false,
+    String? referrerName,
+    String? referrerPhone,
+    ClientIdDocumentType? idDocumentType,
+    String? idDocumentNumber,
   }) {
     return AddReservationState(
       mode: mode ?? this.mode,
@@ -247,6 +275,10 @@ class AddReservationState {
       occupiedConflict: clearConflict
           ? null
           : (occupiedConflict ?? this.occupiedConflict),
+      referrerName: referrerName ?? this.referrerName,
+      referrerPhone: referrerPhone ?? this.referrerPhone,
+      idDocumentType: idDocumentType ?? this.idDocumentType,
+      idDocumentNumber: idDocumentNumber ?? this.idDocumentNumber,
     );
   }
 }

@@ -80,6 +80,75 @@
     "refunded": "Rembourse"
   },
   "finance": {
-    "refunds": "Remboursements (deja deduits du CA)"
+    "refunds": "Remboursements (deja deduits du CA)",
+    "commissions": "Commissions apporteurs"
+  },
+  "subscription": {
+    "title": "Forfaits",
+    "inactive_title": "Votre abonnement est inactif",
+    "inactive_body": "Souscrivez un forfait pour continuer à utiliser RESI.",
+    "upgrade_title": "Passez au forfait complet",
+    "upgrade_body": "Statistiques, documents PDF, carnet et fiches clients, dépenses, gérants et factures WhatsApp.",
+    "renew_body": "Votre abonnement se termine dans {} jour(s). Renouvelez-le pour ne pas être interrompu.",
+    "current": "Forfait actuel",
+    "per_period": "{} / {} jours",
+    "pay": "Payer avec Wave",
+    "verify": "J'ai payé, vérifier",
+    "waiting": "Finalisez le paiement dans Wave, puis revenez ici.",
+    "paid": "Paiement reçu : votre forfait est actif.",
+    "failed": "Le paiement n'a pas abouti. Vous pouvez réessayer.",
+    "wave_unavailable": "Impossible d'ouvrir Wave sur ce téléphone.",
+    "continue": "Continuer",
+    "empty": "Aucun forfait n'est proposé pour le moment.",
+    "includes_basic": "Résidences et logements\nRéservations, au comptoir comme hors ligne\nEnregistrement des clients\nApporteurs d'affaire",
+    "includes_full": "Tout le forfait 3 000 F\nStatistiques et taux d'occupation\nRapports PDF et factures WhatsApp\nCarnet et fiches clients, pièces d'identité\nDépenses et gérants\nLes fonctions à venir",
+    "gerant_title": "Accès suspendu",
+    "gerant_body": "L'abonnement du propriétaire pour qui vous travaillez est inactif ou ne couvre pas cet espace. Contactez-le.",
+    "logout": "Se déconnecter"
+  },
+  "locked": {
+    "title": "Réservé au forfait 5 000 F",
+    "body": "Cette fonction fait partie du forfait complet.",
+    "see_plans": "Voir les forfaits"
+  },
+  "referrer": {
+    "section": "Apporteur d'affaire (facultatif)",
+    "name_hint": "Nom de l'apporteur",
+    "phone_hint": "Téléphone de l'apporteur (facultatif)",
+    "commission": "Commission apporteur ({} %)",
+    "label": "Apporteur"
+  },
+  "invoice": {
+    "send": "Envoyer la facture",
+    "title": "FACTURE",
+    "number": "N° {}",
+    "issued": "Émise le {}",
+    "client": "Client",
+    "lodging": "Logement",
+    "check_in": "Entrée",
+    "check_out": "Sortie",
+    "duration": "Durée",
+    "daily_price": "Prix journalier",
+    "discount": "Remise",
+    "total": "Total",
+    "deposit": "Acompte versé",
+    "refunded": "Remboursé",
+    "balance": "Reste dû",
+    "thanks": "Merci de votre séjour.",
+    "error": "Impossible de générer la facture."
+  },
+  "ocr": {
+    "scan": "Scanner la pièce (verso)",
+    "scanning": "Lecture de la pièce…",
+    "found": "Pièce lue : vérifiez les informations.",
+    "not_found": "Aucune bande de lecture (MRZ) reconnue. Saisissez les informations à la main.",
+    "hint": "Photographiez le verso, la bande de caractères du bas bien visible."
+  },
+  "client_documents": {
+    "title": "Pièce d'identité",
+    "front": "Recto",
+    "back": "Verso",
+    "missing": "Non déposée",
+    "unavailable": "Image indisponible"
   }
 }

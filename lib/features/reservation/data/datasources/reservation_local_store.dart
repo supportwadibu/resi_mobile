@@ -26,6 +26,8 @@ class PendingBooking {
     this.syncStatus = PendingSyncStatus.pending,
     this.lastError,
     this.attempts = 0,
+    this.referrerName,
+    this.referrerPhone,
   });
 
   /// Identifiant tiré sur l'appareil, qui rend l'envoi idempotent.
@@ -50,6 +52,11 @@ class PendingBooking {
   final int attempts;
   final DateTime createdAt;
 
+  /// Apporteur d'affaire. La commission n'est pas stockée : le serveur la
+  /// calcule et la fige à la réception.
+  final String? referrerName;
+  final String? referrerPhone;
+
   factory PendingBooking.fromRow(Map<String, Object?> row) {
     return PendingBooking(
       clientRequestId: row['client_request_id'] as String,
@@ -69,6 +76,10 @@ class PendingBooking {
       lastError: row['last_error'] as String?,
       attempts: (row['attempts'] as int?) ?? 0,
       createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
+      // Colonnes ajoutées en version 3 du schéma : `NULL` sur les saisies
+      // mises en file avant, c'est-à-dire sans apporteur.
+      referrerName: row['referrer_name'] as String?,
+      referrerPhone: row['referrer_phone'] as String?,
     );
   }
 }
@@ -405,6 +416,8 @@ class ReservationLocalStore {
         'is_check_in': booking.isCheckIn ? 1 : 0,
         'sync_status': booking.syncStatus.code,
         'created_at': booking.createdAt.millisecondsSinceEpoch,
+        'referrer_name': booking.referrerName,
+        'referrer_phone': booking.referrerPhone,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   }

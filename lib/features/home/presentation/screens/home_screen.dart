@@ -13,6 +13,8 @@ import '../../../auth/presentation/widgets/profile_completion_banner.dart';
 import '../../../reservation/presentation/widgets/create/reservation_mode_sheet.dart';
 import '../../../../shared/widgets/app_bottom_nav.dart';
 import '../../../../shared/widgets/floating_action_card.dart';
+import '../../../subscription/business_logic/plan_cubit.dart';
+import '../../../subscription/presentation/widgets/plan_gate.dart';
 import '../widgets/tabs/home_tab.dart';
 import '../widgets/tabs/property_tab.dart';
 import '../widgets/tabs/reservation_tab.dart';
@@ -90,6 +92,10 @@ class _HomeScreenState extends State<HomeScreen>
       begin: const Offset(0, 0.15),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _menuCtrl, curve: Curves.easeOutCubic));
+
+    // L'accueil est la porte d'entrée après la connexion : l'accès y est relu,
+    // et un compte inactif est aussitôt redirigé par l'écoute de `App`.
+    sl<PlanCubit>().refresh();
   }
 
   @override
@@ -128,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen>
           context.router.push(AddReservationRoute(mode: mode));
         }
       case 'add_expense':
+        if (!ensureFullPlan(context)) return;
         // Attendu, puis les chiffres relus : une dépense change le bénéfice
         // net affiché sur l'accueil, qui reste monté sous la pile.
         await context.router.push(AddExpenseRoute());
@@ -161,9 +168,7 @@ class _HomeScreenState extends State<HomeScreen>
                       // dans l'`IndexedStack`, et un cubit local ne serait
                       // jamais rechargé après l'ajout d'un bien ou d'une
                       // dépense.
-                      BlocProvider(
-                        create: (_) => sl<HomeStatsCubit>()..load(),
-                      ),
+                      BlocProvider(create: (_) => sl<HomeStatsCubit>()..load()),
                     ],
                     child: _HomeTabs(
                       key: _tabsKey,

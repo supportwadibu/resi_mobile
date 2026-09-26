@@ -8,6 +8,7 @@ import '../../../../core/error/failures.dart';
 import '../../clients/data/models/client_creation_result.dart';
 import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../clients/data/services/mrz_parser.dart';
 import '../../property/data/models/property_model.dart';
 import '../data/datasources/reservation_local_store.dart';
 import '../data/models/occupied_period_model.dart';
@@ -144,6 +145,22 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         : state.copyWith(documentBackPath: path),
   );
 
+  /// Reprend la lecture de la pièce : la photo devient la face arrière, et ce
+  /// que la MRZ a livré préremplit le client.
+  ///
+  /// Le nom lu remplace la saisie : le propriétaire vient de scanner la pièce
+  /// du client présent, c'est la source la plus sûre qu'il ait.
+  void applyIdScan(String imagePath, MrzResult? result) {
+    emit(
+      state.copyWith(
+        documentBackPath: imagePath,
+        fullName: result?.fullName,
+        idDocumentType: result?.documentType,
+        idDocumentNumber: result?.documentNumber,
+      ),
+    );
+  }
+
   // ── Séjour ────────────────────────────────────────────────────────────────
 
   /// Choisit le bien et charge ses périodes déjà réservées.
@@ -218,6 +235,12 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
   void setMessage(String value) => emit(state.copyWith(message: value));
 
+  void setReferrerName(String value) =>
+      emit(state.copyWith(referrerName: value));
+
+  void setReferrerPhone(String value) =>
+      emit(state.copyWith(referrerPhone: value));
+
   // ── Envoi ─────────────────────────────────────────────────────────────────
 
   /// Enregistre la réservation, en créant le client au passage si besoin.
@@ -253,6 +276,8 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         message: state.message,
         isCheckIn: state.mode == ReservationMode.checkIn,
         clientRequestId: _requestId,
+        referrerName: state.hasReferrer ? state.referrerName : null,
+        referrerPhone: state.hasReferrer ? state.referrerPhone : null,
       );
 
       if (!isClosed) {
@@ -303,6 +328,11 @@ class AddReservationCubit extends Cubit<AddReservationState> {
           message: state.message,
           isCheckIn: state.mode == ReservationMode.checkIn,
           createdAt: DateTime.now(),
+          referrerName: state.hasReferrer ? state.referrerName.trim() : null,
+          referrerPhone:
+              state.hasReferrer && state.referrerPhone.trim().isNotEmpty
+              ? state.referrerPhone.trim()
+              : null,
         ),
         newClient: localClientId == null
             ? null
@@ -372,6 +402,8 @@ class AddReservationCubit extends Cubit<AddReservationState> {
       phone: state.phone.trim(),
       documentFrontPath: state.documentFrontPath,
       documentBackPath: state.documentBackPath,
+      idDocumentType: state.idDocumentType,
+      idDocumentNumber: state.idDocumentNumber,
     );
 
     final client = created.client;

@@ -56,6 +56,13 @@ FailureDisposition classifyFailure(AppFailure failure) {
     return FailureDisposition.rejected;
   }
 
+  // Abonnement échu pendant la coupure : la saisie reste en file. Le refus
+  // cessera dès que le propriétaire aura payé, et l'en sortir comme conflit
+  // lui ferait arbitrer une réservation que rien n'oppose à une autre.
+  if (failure.isSubscriptionRequired || failure.isPlanUpgradeRequired) {
+    return FailureDisposition.retry;
+  }
+
   // Passé ce point, plus rien n'est rejouable en l'état : un chevauchement
   // (409) comme un refus de forme ou de droits (4xx) passent en « conflit »,
   // seul état qui remonte la saisie au propriétaire pour arbitrage.
@@ -277,6 +284,8 @@ class SyncService {
         // au premier essai, le serveur renvoie la réservation déjà créée au
         // lieu d'en produire une seconde.
         clientRequestId: booking.clientRequestId,
+        referrerName: booking.referrerName,
+        referrerPhone: booking.referrerPhone,
       );
 
       await _store.dequeue(booking.clientRequestId);

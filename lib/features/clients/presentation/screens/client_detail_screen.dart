@@ -15,6 +15,7 @@ import '../widgets/client_action_button.dart';
 import '../widgets/client_avatar.dart';
 import '../widgets/client_status_badge.dart';
 import '../widgets/detail_info_row.dart';
+import '../widgets/identity_documents_card.dart';
 import '../widgets/reservation_history_card.dart';
 import 'edit_client_screen.dart';
 
@@ -35,8 +36,7 @@ class ClientDetailScreen extends StatelessWidget {
       // La fiche venue de la liste s'affiche sans attendre, puis est remplacée
       // par celle du serveur : le propriétaire doit pouvoir appeler son client
       // avant la fin du chargement.
-      create: (_) =>
-          ClientDetailCubit(sl())..load(client.id, known: client),
+      create: (_) => ClientDetailCubit(sl())..load(client.id, known: client),
       child: _ClientDetailView(onArchiveToggle: onArchiveToggle),
     );
   }
@@ -122,10 +122,16 @@ class _LoadedView extends StatelessWidget {
           _InfoCard(client: client),
           const SizedBox(height: 16),
 
+          IdentityDocumentsCard(client: client),
+          const SizedBox(height: 16),
+
           _StatsCard(client: client),
           const SizedBox(height: 16),
 
-          Text('Historique des réservations', style: AppTextStyles.sectionTitle),
+          Text(
+            'Historique des réservations',
+            style: AppTextStyles.sectionTitle,
+          ),
           const SizedBox(height: 10),
           _History(state: state),
 
@@ -154,9 +160,8 @@ class _History extends StatelessWidget {
     if (state.historyError != null) {
       return _HistoryError(
         message: state.historyError!,
-        onRetry: () => context.read<ClientDetailCubit>().retryHistory(
-          state.client.id,
-        ),
+        onRetry: () =>
+            context.read<ClientDetailCubit>().retryHistory(state.client.id),
       );
     }
 

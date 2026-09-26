@@ -76,6 +76,12 @@ class AppFailure implements Exception {
   /// trancher : il est destiné à l'utilisateur et peut être reformulé.
   final String? code;
 
+  /// Compte inactif : aucun abonnement en cours, il faut souscrire un forfait.
+  bool get isSubscriptionRequired => code == 'subscription_required';
+
+  /// Fonction réservée au forfait 5 000 F, refusée au forfait 3 000 F.
+  bool get isPlanUpgradeRequired => code == 'plan_upgrade_required';
+
   factory AppFailure.fromDio(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionError:
@@ -165,16 +171,16 @@ class AppFailure implements Exception {
     String? message,
     String? businessCode,
   }) => AppFailure._(
-        // Un conflit n'est pas une panne : le serveur a compris la demande et
-        // la refuse pour une raison métier, que l'appelant doit pouvoir
-        // présenter telle quelle.
-        userMessage: code == 409
-            ? (message ?? 'Cette periode est deja reservee.')
-            : 'Erreur serveur. Reessayez plus tard.',
-        debugMessage: 'HTTP $code - $message',
-        statusCode: code,
-        code: businessCode,
-      );
+    // Un conflit n'est pas une panne : le serveur a compris la demande et
+    // la refuse pour une raison métier, que l'appelant doit pouvoir
+    // présenter telle quelle.
+    userMessage: code == 409
+        ? (message ?? 'Cette periode est deja reservee.')
+        : 'Erreur serveur. Reessayez plus tard.',
+    debugMessage: 'HTTP $code - $message',
+    statusCode: code,
+    code: businessCode,
+  );
 
   /// Refus de validation du serveur.
   ///

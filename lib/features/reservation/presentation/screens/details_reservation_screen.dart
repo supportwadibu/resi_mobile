@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
@@ -10,6 +11,9 @@ import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/storage/local_storage.dart';
+import '../../../subscription/presentation/widgets/plan_gate.dart';
+import '../../data/services/invoice_pdf_service.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../clients/presentation/screens/client_detail_screen.dart';
 import '../../business_logic/stay_check_out_cubit.dart';
@@ -186,6 +190,30 @@ class DetailsReservationScreen extends StatelessWidget {
     }
   }
 
+  /// Génère la facture et ouvre la feuille de partage, où le propriétaire
+  /// choisit WhatsApp et son client.
+  ///
+  /// Réservée au forfait 5 000 F : c'est un document PDF.
+  Future<void> _sendInvoice(BuildContext context) async {
+    if (!ensureFullPlan(context)) return;
+
+    // Le dossier du propriétaire, mis en cache à la connexion, sert d'en-tête.
+    // Absent — un gérant, un cache vidé —, la facture part sans émetteur
+    // plutôt que de ne pas partir.
+    final owner = await sl<LocalStorage>().getPropertyManager();
+
+    try {
+      await const InvoicePdfService().share(
+        reservation: reservation,
+        issuer: owner == null
+            ? null
+            : InvoiceIssuer(name: owner.name, phone: owner.phoneNumber),
+      );
+    } catch (_) {
+      AppToast.error('invoice.error'.tr());
+    }
+  }
+
   /// Date longue : « 12 mai 2026 ».
   static String _longDate(DateTime date) =>
       DateFormat('d MMMM y', 'fr').format(date);
@@ -281,6 +309,26 @@ class DetailsReservationScreen extends StatelessWidget {
                 '- ${formatAmount(reservation.discountAmount)}',
               ),
             ],
+            // Commission due à l'apporteur, au taux figé à la réservation et
+            // recalculée par le serveur quand le montant du séjour change.
+            if (reservation.referrer case final referrer?) ...[
+              const SizedBox(height: 20),
+              _buildDetailRow(
+                'referrer.label'.tr(),
+                referrer.phone == null || referrer.phone!.isEmpty
+                    ? referrer.name
+                    : '${referrer.name} · ${referrer.phone}',
+              ),
+              const SizedBox(height: 20),
+              _buildDetailRow(
+                'referrer.commission'.tr(
+                  args: [
+                    '${(reservation.referrerCommissionRate * 100).round()}',
+                  ],
+                ),
+                formatAmount(reservation.referrerCommissionAmount),
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -305,7 +353,31 @@ class DetailsReservationScreen extends StatelessWidget {
               const SizedBox(height: 12),
               _ClientSummary(
                 client: client,
-                onOpenFile: () => _openClientFile(context, client.id),
+                // La fiche client relève du forfait 5 000 F.
+                onOpenFile: () {
+                  if (ensureFullPlan(context)) {
+                    _openClientFile(context, client.id);
+                  }
+                },
+              ),
+            ],
+
+            // Un séjour annulé n'a rien à facturer.
+            if (reservation.status != ReservationStatus.cancelled) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _sendInvoice(context),
+                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 18),
+                  label: Text('invoice.send'.tr()),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               ),
             ],
 

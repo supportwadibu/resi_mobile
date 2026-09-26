@@ -50,12 +50,17 @@ import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
 import 'package:resi_africa/features/stats/data/repositories/property_stats_repository.dart';
+import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
+import 'package:resi_africa/features/subscription/business_logic/subscription_plans_cubit.dart';
+import 'package:resi_africa/features/subscription/data/repositories/subscription_repository.dart';
 
 import '../api/api_client.dart';
 import '../storage/app_database.dart';
 import '../sync/sync_service.dart';
 import '../api/interceptors/auth_interceptor.dart';
 import '../api/interceptors/connectivity_interceptor.dart';
+import '../api/interceptors/plan_interceptor.dart';
+import '../api/plan_signals.dart';
 import '../api/interceptors/retry_interceptor.dart';
 import '../config/app_config.dart';
 import '../router/app_router.dart';
@@ -114,7 +119,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerSingleton<RetryInterceptor>(RetryInterceptor());
   sl.registerSingleton<ConnectivityInterceptor>(ConnectivityInterceptor(sl()));
-  sl.registerSingleton<Dio>(buildDioClient(config, sl(), sl(), sl()));
+  sl.registerSingleton<PlanSignals>(PlanSignals());
+  sl.registerSingleton<PlanInterceptor>(PlanInterceptor(sl()));
+  sl.registerSingleton<Dio>(buildDioClient(config, sl(), sl(), sl(), sl()));
 
   // ── Router ─────────────────────────────────────────────────────────────────
   sl.registerSingleton<AppRouter>(AppRouter());
@@ -274,5 +281,21 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerFactory(
     () => ReportFormCubit(sl<RapportRepository>(), sl<ResidenceRepository>()),
+  );
+
+  // ── Abonnement ─────────────────────────────────────────────────────────────
+  sl.registerLazySingleton(() => SubscriptionRepository(sl<Dio>()));
+  // Singleton : les verrous posés dans toute l'application lisent le même
+  // palier, et les refus de l'API doivent l'atteindre où qu'ils surviennent.
+  sl.registerLazySingleton(
+    () => PlanCubit(
+      sl<AuthService>(),
+      sl<LocalStorage>(),
+      sl<SessionRole>(),
+      sl<PlanSignals>(),
+    ),
+  );
+  sl.registerFactory(
+    () => SubscriptionPlansCubit(sl<SubscriptionRepository>(), sl<PlanCubit>()),
   );
 }

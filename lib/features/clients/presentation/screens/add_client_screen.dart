@@ -6,6 +6,9 @@ import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/theme/app_text_styles.dart';
 import '../../business_logic/add_client_cubit.dart';
 import '../../business_logic/add_client_state.dart';
+import '../../data/repositories/clients_repository.dart';
+import 'package:resi_africa/core/di/service_locator.dart';
+import '../widgets/create/id_scan_button.dart';
 import '../widgets/create/client_text_field.dart';
 import '../widgets/create/form_section_label.dart';
 import '../widgets/create/identity_document_picker.dart';
@@ -18,14 +21,28 @@ class AddClientScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => AddClientCubit(),
+      create: (_) => AddClientCubit(sl<ClientsRepository>()),
       child: const _AddClientView(),
     );
   }
 }
 
-class _AddClientView extends StatelessWidget {
+class _AddClientView extends StatefulWidget {
   const _AddClientView();
+
+  @override
+  State<_AddClientView> createState() => _AddClientViewState();
+}
+
+class _AddClientViewState extends State<_AddClientView> {
+  /// Tenu ici pour que le nom lu sur la pièce apparaisse dans le champ.
+  final _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +52,11 @@ class _AddClientView extends StatelessWidget {
         if (state.status == AddClientStatus.success) {
           // Sans `context` : l'écran se referme dans la foulée, et le toast
           // doit survivre à sa disparition.
-          AppToast.success('Client enregistré avec succès');
+          AppToast.success(
+            state.alreadyExisted
+                ? 'Ce client était déjà au carnet'
+                : 'Client enregistré avec succès',
+          );
           Navigator.pop(context);
         }
 
@@ -85,6 +106,7 @@ class _AddClientView extends StatelessWidget {
                 children: [
                   const FormSectionLabel(text: 'Nom complet'),
                   ClientTextField(
+                    controller: _nameController,
                     hint: 'Ex : Mohamed Traoré',
                     prefixIcon: Icons.person_rounded,
                     onChanged: cubit.setFullName,
@@ -105,11 +127,31 @@ class _AddClientView extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   const FormSectionLabel(text: "Pièce d'identité"),
+                  IdScanButton(
+                    onScanned: (path, result) {
+                      cubit.applyIdScan(path, result);
+                      if (result != null) {
+                        _nameController.text = result.fullName;
+                      }
+                    },
+                  ),
+                  if (state.idDocumentNumber case final number?) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      [
+                        state.idDocumentType?.label,
+                        number,
+                      ].whereType<String>().join(' · '),
+                      style: AppTextStyles.labelMedium,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  // Pièces facultatives : aucun manque n'est signalé comme une
+                  // erreur, la fiche se complète plus tard.
                   IdentityDocumentPicker(
                     documents: state.documents,
                     onAdd: cubit.setDocument,
                     onRemove: cubit.removeDocument,
-                    showError: submitted,
                   ),
                   const SizedBox(height: 32),
                 ],

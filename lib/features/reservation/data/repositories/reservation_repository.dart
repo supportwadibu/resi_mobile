@@ -110,6 +110,8 @@ class ReservationRepository {
     String? message,
     bool isCheckIn = false,
     String? clientRequestId,
+    String? referrerName,
+    String? referrerPhone,
   }) async {
     try {
       final response = await _dio.post(
@@ -128,6 +130,14 @@ class ReservationRepository {
           if (message != null && message.isNotEmpty) 'message': message,
           'is_check_in': isCheckIn,
           'client_request_id': ?clientRequestId,
+          // La commission est calculée par le serveur, au taux en vigueur :
+          // l'appareil n'envoie que l'identité de l'apporteur.
+          if (referrerName != null && referrerName.trim().isNotEmpty)
+            'referrer': {
+              'name': referrerName.trim(),
+              if (referrerPhone != null && referrerPhone.trim().isNotEmpty)
+                'phone': referrerPhone.trim(),
+            },
         },
       );
 

@@ -10,8 +10,13 @@ class FinanceSummaryModel {
   /// serveur : à afficher, jamais à retrancher une seconde fois.
   final double remboursements;
 
+  /// Commissions dues aux apporteurs d'affaire, déjà retranchées de
+  /// [beneficeNet] par le serveur.
+  final double commissions;
+
   const FinanceSummaryModel({
     this.remboursements = 0,
+    this.commissions = 0,
     required this.caBrut,
     required this.depenses,
     required this.beneficeNet,
@@ -30,5 +35,7 @@ class FinanceSummaryModel {
         moyenSejour: (json['moyen_sejour'] as num?)?.toDouble() ?? 0,
         // Absent des réponses d'un serveur antérieur au départ anticipé.
         remboursements: (json['remboursements'] as num?)?.toDouble() ?? 0,
+        // Absent des réponses d'un serveur antérieur aux apporteurs.
+        commissions: (json['commissions'] as num?)?.toDouble() ?? 0,
       );
 }

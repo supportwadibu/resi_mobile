@@ -3,6 +3,7 @@ import '../home/header_propertys_widget.dart';
 import '../home/property_grid_widget.dart';
 import '../home/stats_row_widget.dart';
 import '../home/top_bar_widget.dart';
+import '../../../../subscription/presentation/widgets/plan_gate.dart';
 
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key, this.onSeeAllProperties});
@@ -18,7 +19,12 @@ class HomeTab extends StatelessWidget {
         children: [
           const TopBarWidget(),
           const SizedBox(height: 28),
-          const StatsRowWidget(),
+          // Parc, séjours du mois et bénéfice sont des statistiques : forfait
+          // complet seulement.
+          const PlanGate(
+            locked: LockedFeatureBanner(),
+            child: StatsRowWidget(),
+          ),
           const SizedBox(height: 32),
           HeaderPropertyWidget(onSeeAll: onSeeAllProperties),
           const SizedBox(height: 16),

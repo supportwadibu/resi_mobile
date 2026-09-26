@@ -183,9 +183,9 @@ void main() {
       expect(row['unit_label'], 'Studio 1');
     });
 
-    test('une base déjà en version 2 n’est pas migrée deux fois', () async {
-      // `ALTER TABLE ADD COLUMN` échoue sur une colonne existante : sans le
-      // garde `from < 2`, une seconde exécution lèverait.
+    test('une base déjà à jour n’est pas migrée deux fois', () async {
+      // `ALTER TABLE ADD COLUMN` échoue sur une colonne existante : sans les
+      // gardes `from < n`, une seconde exécution lèverait.
       final db = await _openV1();
       addTearDown(db.close);
 
@@ -196,9 +196,49 @@ void main() {
       );
 
       await expectLater(
-        AppDatabase.instance.upgradeSchema(db, 2, AppDatabase.schemaVersion),
+        AppDatabase.instance.upgradeSchema(
+          db,
+          AppDatabase.schemaVersion,
+          AppDatabase.schemaVersion,
+        ),
         completes,
       );
+    });
+  });
+
+  group('Migration → v3', () {
+    test('la file garde ses saisies et reçoit l’apporteur', () async {
+      final db = await _openV1();
+      addTearDown(db.close);
+
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
+
+      // La saisie mise en file avant la migration est intacte, sans apporteur.
+      final before = (await db.query('pending_bookings')).single;
+      expect(before['client_request_id'], 'req-1');
+      expect(before['referrer_name'], isNull);
+
+      await db.insert('pending_bookings', {
+        'client_request_id': 'req-2',
+        'property_id': 'villa',
+        'stay_type': 'full_day',
+        'check_in_at': 2000,
+        'created_at': 2000,
+        'referrer_name': 'Koffi',
+        'referrer_phone': '0700000000',
+      });
+
+      final after = (await db.query(
+        'pending_bookings',
+        where: 'client_request_id = ?',
+        whereArgs: ['req-2'],
+      )).single;
+      expect(after['referrer_name'], 'Koffi');
+      expect(after['referrer_phone'], '0700000000');
     });
   });
 
@@ -219,11 +259,14 @@ void main() {
           ),
         );
 
+        // Les deux tables que les migrations font évoluer.
         Future<Set<String>> columnsOf(Database db) async {
-          final rows = await db.rawQuery(
-            'PRAGMA table_info(cached_properties)',
-          );
-          return rows.map((c) => c['name'] as String).toSet();
+          final columns = <String>{};
+          for (final table in ['cached_properties', 'pending_bookings']) {
+            final rows = await db.rawQuery('PRAGMA table_info($table)');
+            columns.addAll(rows.map((c) => '$table.${c['name']}'));
+          }
+          return columns;
         }
 
         final freshColumns = await columnsOf(fresh);
