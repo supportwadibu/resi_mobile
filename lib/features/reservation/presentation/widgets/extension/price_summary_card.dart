@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
+/// Coût de la prolongation : tarif, sous-total, remise et total.
 class PriceSummaryCard extends StatelessWidget {
   final String pricePerDay;
 
@@ -22,50 +25,44 @@ class PriceSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xffF4F4F8),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return AppCard(
       child: Column(
         children: [
-          _row("Coût par jour", pricePerDay),
-          const SizedBox(height: 12),
+          _row(context, 'Coût par jour', pricePerDay),
+          const SizedBox(height: 8),
           _row(
-            days > 1 ? "Sous-total ($days jours)" : "Sous-total (1 jour)",
+            context,
+            days > 1 ? 'Sous-total ($days jours)' : 'Sous-total (1 jour)',
             subtotal,
           ),
           if (discountPercent > 0) ...[
-            const SizedBox(height: 12),
-            _row("Remise durée", "-$discountPercent %"),
+            const SizedBox(height: 8),
+            _row(context, 'Remise durée', '-$discountPercent %'),
           ],
-          const Divider(height: 28),
-          _row("Total à payer", total, isTotal: true),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Text(
+                'Total à payer',
+                style: context.text.titleSmall!.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(total, style: context.text.figure),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _row(String title, String value, {bool isTotal = false}) {
+  Widget _row(BuildContext context, String title, String value) {
     return Row(
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: isTotal ? const Color(0xff252B5C) : Colors.grey,
-            fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
+        Text(title, style: context.mutedText),
         const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            color: isTotal ? const Color(0xff34C759) : const Color(0xff252B5C),
-            fontWeight: FontWeight.bold,
-            fontSize: isTotal ? 26 : 14,
-          ),
-        ),
+        Text(value, style: context.text.amount),
       ],
     );
   }

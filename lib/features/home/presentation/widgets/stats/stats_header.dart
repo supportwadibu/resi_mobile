@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
 
 class StatsHeader extends StatelessWidget {
   const StatsHeader({
@@ -46,60 +48,36 @@ class StatsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Text(
-            _label,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Période', style: context.text.bodySmall),
+              Text(
+                _label,
+                style: context.text.titleMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
-        GestureDetector(
-          onTap: () async {
-            final DateTimeRange? picked = await showDateRangePicker(
+        AppButton(
+          label: 'Changer',
+          icon: LucideIcons.calendarRange,
+          variant: AppButtonVariant.secondary,
+          size: AppButtonSize.sm,
+          onPressed: () async {
+            // Le calendrier prend le thème de l'application, clair ou
+            // sombre : aucune surcharge de couleurs ici.
+            final picked = await showDateRangePicker(
               context: context,
               firstDate: DateTime(2020),
               lastDate: DateTime(2030),
               initialDateRange: DateTimeRange(start: from, end: to),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: AppColors.primary,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
             );
             if (picked != null) onPeriodPicked(picked);
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: const [
-                Icon(
-                  Icons.calendar_month_outlined,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                SizedBox(width: 6),
-                Text(
-                  'Filtrer',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );

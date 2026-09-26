@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../../../../core/di/service_locator.dart';
 import '../../../../../core/router/app_router.gr.dart';
@@ -11,47 +14,57 @@ import '../../../../subscription/business_logic/plan_cubit.dart';
 import '../../../../subscription/business_logic/plan_state.dart';
 import '../../../../subscription/presentation/widgets/plan_gate.dart';
 
-/// Entrées réservées au forfait 5 000 F. Les résidences restent ouvertes :
-/// leur enregistrement fait partie du forfait 3 000 F.
-const _fullPlanActions = <String>{'expenses', 'finance', 'reports', 'clients'};
+import '../../../../subscription/presentation/widgets/plan_style.dart';
 
+/// Entrées réservées au forfait Premium, et la fonction que chacune ouvre.
+/// Les résidences restent ouvertes : leur enregistrement fait partie de Pro.
+const _premiumActions = <String, PremiumFeature>{
+  'expenses': PremiumFeature.expenses,
+  'finance': PremiumFeature.finance,
+  'reports': PremiumFeature.reports,
+  'clients': PremiumFeature.clients,
+};
+
+/// Accès aux écrans de gestion, en liste : chaque entrée porte l'icône de sa
+/// section et une ligne d'explication. Une grille de pavés colorés faisait
+/// d'une simple navigation une série de statistiques.
 class ActionGrid extends StatelessWidget {
   const ActionGrid({super.key});
 
   static const _actions = [
     StatsAction(
       key: 'expenses',
-      icon: FontAwesomeIcons.moneyBillWave,
-      label: 'Gestion des dépenses',
-      color: Color(0xFFF59E0B),
+      icon: AppSectionIcons.expenses,
+      label: 'Dépenses',
+      description: 'Charges par bien et par catégorie',
       route: ExpenseRoute(),
     ),
     StatsAction(
       key: 'finance',
-      icon: FontAwesomeIcons.scaleBalanced,
-      label: 'Gestion financière',
-      color: Color(0xFF3322AC),
+      icon: LucideIcons.scale,
+      label: 'Finances',
+      description: 'Revenus, charges et bénéfice',
       route: FinanceRoute(),
     ),
     StatsAction(
       key: 'reports',
-      icon: FontAwesomeIcons.fileInvoice,
+      icon: AppSectionIcons.reports,
       label: 'Rapports PDF',
-      color: Color(0xFFEF4444),
+      description: 'Relevés à partager ou imprimer',
       route: ReportRoute(),
     ),
     StatsAction(
       key: 'clients',
-      icon: FontAwesomeIcons.users,
-      label: 'Gestion des clients',
-      color: Color(0xFF0EA5E9),
+      icon: AppSectionIcons.clients,
+      label: 'Clients',
+      description: 'Carnet et historique des séjours',
       route: ClientsRoute(),
     ),
     StatsAction(
       key: 'residences',
-      icon: FontAwesomeIcons.building,
-      label: 'Mes résidences',
-      color: Color(0xFF10B981),
+      icon: AppSectionIcons.residences,
+      label: 'Résidences',
+      description: 'Regrouper les logements d\'un immeuble',
       route: ResidenceRoute(),
     ),
   ];
@@ -67,40 +80,43 @@ class ActionGrid extends StatelessWidget {
 
     return BlocBuilder<PlanCubit, PlanState>(
       bloc: sl<PlanCubit>(),
-      builder: (context, plan) => GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.4,
-        children: actions
-            .map(
-              (a) => ActionCard(
-                action: a,
-                locked: !plan.access.isFull && _fullPlanActions.contains(a.key),
+      builder: (context, plan) => AppCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            for (var i = 0; i < actions.length; i++) ...[
+              if (i > 0) const Divider(height: 1),
+              ActionCard(
+                action: actions[i],
+                locked: plan.access.isFull ? null : _premiumActions[actions[i].key],
               ),
-            )
-            .toList(),
+            ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class ActionCard extends StatelessWidget {
-  const ActionCard({super.key, required this.action, this.locked = false});
+  const ActionCard({super.key, required this.action, this.locked});
   final StatsAction action;
 
-  /// Réservée au forfait 5 000 F : l'appui explique le verrou au lieu d'ouvrir
-  /// un écran que l'API refuserait.
-  final bool locked;
+  /// Fonction Premium que l'entrée ouvre, `null` si elle est accessible :
+  /// l'appui explique alors le verrou au lieu d'ouvrir un écran que l'API
+  /// refuserait.
+  final PremiumFeature? locked;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppSheetAction(
+      icon: action.icon,
+      label: action.label,
+      description: action.description,
+      trailing: locked != null ? const PremiumBadge() : null,
       onTap: () {
-        if (locked) {
-          showLockedFeatureSheet(context);
+        if (locked case final feature?) {
+          showLockedFeatureSheet(context, feature);
           return;
         }
         if (action.route != null) {
@@ -109,51 +125,6 @@ class ActionCard extends StatelessWidget {
           AppToast.info('Bientôt disponible', context: context);
         }
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: action.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: FaIcon(action.icon, size: 16, color: action.color),
-                ),
-                if (locked)
-                  Icon(
-                    Icons.lock_outline_rounded,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              ],
-            ),
-            Text(
-              action.label,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -163,7 +134,7 @@ class StatsAction {
     required this.key,
     required this.icon,
     required this.label,
-    required this.color,
+    required this.description,
     this.route,
   });
 
@@ -171,8 +142,8 @@ class StatsAction {
   /// filtrage par rôle regarde.
   final String key;
 
-  final FaIconData icon;
+  final IconData icon;
   final String label;
-  final Color color;
+  final String description;
   final PageRouteInfo? route;
 }

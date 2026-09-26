@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:resi_africa/core/theme/theme_controller.dart';
 import 'package:resi_africa/firebase_options.dart';
 import 'package:resi_africa/features/auth/business_logic/auth_cubit.dart';
 import 'package:resi_africa/features/auth/business_logic/owner_profile_cubit.dart';
@@ -88,6 +89,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerSingleton<SharedPreferences>(sharedPreferences);
   sl.registerSingleton<LocalStorage>(LocalStorage(sl()));
+  sl.registerSingleton<ThemeController>(ThemeController(sl()));
 
   // Enregistré avant les repositories : ils le reçoivent en dépendance, et le
   // rôle doit être connu avant le premier appel d'API.

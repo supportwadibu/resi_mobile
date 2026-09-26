@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter/services.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 /// Caractéristiques du bien : surface, pièces et ameublement.
@@ -70,14 +73,7 @@ class _StepDetailsWidgetState extends State<StepDetailsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Décrivez votre bien',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
+        Text('Décrivez votre bien', style: context.text.titleMedium),
         const SizedBox(height: 20),
 
         AppTextField(
@@ -88,102 +84,64 @@ class _StepDetailsWidgetState extends State<StepDetailsWidget> {
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
           ],
-          prefixIcon: const Icon(Icons.straighten, size: 18),
+          prefixIcon: const Icon(LucideIcons.ruler, size: 16),
           // Un champ vidé repasse à `null` : la clé sera omise de la requête,
           // là où un `0` aurait été refusé par le validateur.
           onChanged: (value) => widget.onSurfaceChanged(double.tryParse(value)),
         ),
 
         const SizedBox(height: 24),
-        const Text(
-          'Composition',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
+        Text('Composition', style: context.text.titleMedium),
         const SizedBox(height: 12),
 
         _CounterRow(
           label: 'Chambres',
-          icon: Icons.bed_outlined,
+          icon: LucideIcons.bed,
           value: widget.bedrooms,
           onChanged: widget.onBedroomsChanged,
         ),
         _CounterRow(
           label: 'Salles de bain',
-          icon: Icons.bathtub_outlined,
+          icon: LucideIcons.bath,
           value: widget.bathrooms,
           onChanged: widget.onBathroomsChanged,
         ),
         _CounterRow(
           label: 'Salons',
-          icon: Icons.weekend_outlined,
+          icon: LucideIcons.sofa,
           value: widget.livingRooms,
           onChanged: widget.onLivingRoomsChanged,
         ),
         _CounterRow(
           label: 'Cuisines',
-          icon: Icons.kitchen_outlined,
+          icon: LucideIcons.refrigerator,
           value: widget.kitchens,
           onChanged: widget.onKitchensChanged,
         ),
         _CounterRow(
           label: 'Places de parking',
-          icon: Icons.local_parking_outlined,
+          icon: LucideIcons.squareParking,
           value: widget.parkingSpaces,
           onChanged: widget.onParkingChanged,
         ),
 
         const SizedBox(height: 24),
-        const Text(
-          'Ameublement',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
+        Text('Ameublement', style: context.text.titleMedium),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            for (final option in Furnishing.values) ...[
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => widget.onFurnishingChanged(option),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: widget.furnishing == option
-                          ? AppColors.black
-                          : AppColors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: widget.furnishing == option
-                            ? AppColors.black
-                            : AppColors.grey200,
-                        width: widget.furnishing == option ? 2 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      option.label,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: widget.furnishing == option
-                            ? AppColors.white
-                            : AppColors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              if (option != Furnishing.values.last) const SizedBox(width: 8),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<Furnishing>(
+            showSelectedIcon: false,
+            // L'ameublement reste facultatif : rien n'est coché d'office.
+            emptySelectionAllowed: true,
+            segments: [
+              for (final option in Furnishing.values)
+                ButtonSegment(value: option, label: Text(option.label)),
             ],
-          ],
+            selected: {?widget.furnishing},
+            onSelectionChanged: (s) =>
+                widget.onFurnishingChanged(s.isEmpty ? null : s.first),
+          ),
         ),
       ],
     );
@@ -210,16 +168,11 @@ class _CounterRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.primary),
+          Icon(icon, size: 16, color: context.tokens.muted),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 14, color: AppColors.black),
-            ),
-          ),
+          Expanded(child: Text(label, style: context.text.bodyMedium)),
           _StepButton(
-            icon: Icons.remove,
+            icon: LucideIcons.minus,
             // Un décompte négatif n'a pas de sens, et l'API le refuse.
             onTap: value > 0 ? () => onChanged(value - 1) : null,
           ),
@@ -228,14 +181,13 @@ class _CounterRow extends StatelessWidget {
             child: Text(
               '$value',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black,
-              ),
+              style: context.text.titleMedium,
             ),
           ),
-          _StepButton(icon: Icons.add, onTap: () => onChanged(value + 1)),
+          _StepButton(
+            icon: LucideIcons.plus,
+            onTap: () => onChanged(value + 1),
+          ),
         ],
       ),
     );
@@ -250,23 +202,11 @@ class _StepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: enabled ? AppColors.black : AppColors.grey400,
-        ),
-      ),
+    return AppIconButton(
+      icon: icon,
+      label: icon == LucideIcons.plus ? 'Ajouter' : 'Retirer',
+      bordered: true,
+      onPressed: onTap,
     );
   }
 }

@@ -19,7 +19,12 @@ final class PlanUnknown extends PlanState {
 }
 
 final class PlanKnown extends PlanState {
-  const PlanKnown(this._access, {this.daysRemaining, this.isTrial = false});
+  const PlanKnown(
+    this._access, {
+    this.daysRemaining,
+    this.isTrial = false,
+    this.endDate,
+  });
 
   final PlanAccess _access;
 
@@ -30,4 +35,7 @@ final class PlanKnown extends PlanState {
   /// de l'API, qui ne le disent pas.
   final int? daysRemaining;
   final bool isTrial;
+
+  /// Échéance de la période en cours ; `null` dans les mêmes cas.
+  final DateTime? endDate;
 }

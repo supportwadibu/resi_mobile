@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_badge.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 import '../../../../data/models/property_model.dart';
@@ -71,28 +77,21 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Définissez votre tarif',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
+        Text('Définissez votre tarif', style: context.text.titleMedium),
         const SizedBox(height: 20),
 
         _PricingCard(
-          icon: FontAwesomeIcons.calendarDay,
+          icon: LucideIcons.calendarDays,
           title: 'Tarif par jour',
           subtitle: 'De l’arrivée à la même heure le lendemain',
-          color: AppColors.primary,
+          color: context.tokens.primary,
           child: AppTextField(
             label: 'Prix / jour (FCFA)',
             hint: 'Ex: 15000',
             controller: _dailyCtrl,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            prefixIcon: const Icon(Icons.payments_outlined, size: 18),
+            prefixIcon: const Icon(LucideIcons.banknote, size: 18),
             onChanged: (v) => setState(() {
               widget.onDailyChanged(double.tryParse(v) ?? 0);
             }),
@@ -108,35 +107,24 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Réductions par durée',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
-                  ),
+                  Text('Réductions par durée', style: context.text.titleMedium),
                   const SizedBox(height: 2),
                   Text(
                     'Facultatif · modifiable à tout moment',
-                    style: TextStyle(fontSize: 12, color: AppColors.grey500),
+                    style: context.text.bodySmall,
                   ),
                 ],
               ),
             ),
             if (tiers.isNotEmpty)
-              TextButton.icon(
+              AppButton(
                 // Désactivé plutôt que masqué : la remise maximale est
                 // atteinte, et disparaître laisserait croire à un bug.
                 onPressed: canAdd ? _addTier : null,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Palier'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  disabledForegroundColor: AppColors.grey400,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  visualDensity: VisualDensity.compact,
-                ),
+                icon: LucideIcons.plus,
+                label: 'Palier',
+                variant: AppButtonVariant.secondary,
+                size: AppButtonSize.sm,
               ),
           ],
         ),
@@ -174,31 +162,13 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
 
         const SizedBox(height: 12),
 
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.info.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            children: [
-              const FaIcon(
-                FontAwesomeIcons.circleInfo,
-                size: 16,
-                color: AppColors.info,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Un séjour est facturé au prix par jour. Si sa durée atteint '
-                  'un palier, la remise correspondante s’applique à tout le '
-                  'séjour — la plus avantageuse en cas de chevauchement.',
-                  style: TextStyle(fontSize: 12, color: AppColors.info),
-                ),
-              ),
-            ],
-          ),
+        const AppCallout(
+          icon: LucideIcons.info,
+          tone: AppAccent.blue,
+          message:
+              'Un séjour est facturé au prix par jour. Si sa durée atteint '
+              'un palier, la remise correspondante s’applique à tout le '
+              'séjour — la plus avantageuse en cas de chevauchement.',
         ),
       ],
     );
@@ -217,58 +187,29 @@ class _EmptyTiers extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onAdd,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.25),
+    return AppCard(
+      onTap: onAdd,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          children: [
+            const IconChip(icon: LucideIcons.percent),
+            const SizedBox(height: 10),
+            Text(
+              'Ajouter un palier de remise',
+              style: context.text.titleSmall!.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.percent_rounded,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Ajouter un palier de remise',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                'Encourage les séjours longs. Sans palier, le prix par jour '
-                's’applique quelle que soit la durée.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
+            const SizedBox(height: 3),
+            Text(
+              'Encourage les séjours longs. Sans palier, le prix par jour '
+              's’applique quelle que soit la durée.',
+              textAlign: TextAlign.center,
+              style: context.text.bodySmall,
+            ),
+          ],
         ),
       ),
     );
@@ -316,16 +257,16 @@ class _TierRow extends StatelessWidget {
     final total = effective * tier.minDays;
     final saved = dailyPrice * tier.minDays - total;
 
-    final accent = isIneffective ? AppColors.warning : AppColors.primary;
+    // Palier sans effet : ambre, comme tout ce qui attend une correction.
+    final tone = isIneffective ? AppAccent.amber : AppAccent.neutral;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: context.tokens.surface,
         border: Border.all(
           color: isIneffective
-              ? AppColors.warning.withValues(alpha: 0.45)
-              : AppColors.grey200,
+              ? context.tokens.accentAmber
+              : context.tokens.border,
         ),
       ),
       child: Column(
@@ -335,42 +276,25 @@ class _TierRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 6, 0),
             child: Row(
               children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${rank + 1}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: accent,
-                      ),
-                    ),
-                  ),
-                ),
+                AppBadge(label: '${rank + 1}', tone: tone),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Dès ${tier.minDays} jours',
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: context.text.titleSmall!.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
-                _DiscountBadge(percent: tier.discountPercent, color: accent),
-                IconButton(
+                AppBadge(
+                  label: '−${tier.discountPercent} %',
+                  tone: isIneffective ? AppAccent.amber : AppAccent.green,
+                ),
+                AppIconButton(
+                  icon: LucideIcons.trash2,
+                  label: 'Supprimer ce palier',
+                  danger: true,
                   onPressed: onRemove,
-                  icon: const Icon(Icons.delete_outline, size: 19),
-                  color: AppColors.grey500,
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'Supprimer ce palier',
                 ),
               ],
             ),
@@ -432,10 +356,8 @@ class _TierRow extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(13),
-                ),
+                color: context.tokens.background,
+                border: Border(top: BorderSide(color: context.tokens.border)),
               ),
               child: Row(
                 children: [
@@ -455,7 +377,7 @@ class _TierRow extends StatelessWidget {
                     child: _Figure(
                       label: 'Le client économise',
                       value: CurrencyFormatter.fcfa(saved.round()),
-                      color: AppColors.success,
+                      color: context.tokens.accentGreen,
                     ),
                   ),
                 ],
@@ -470,20 +392,18 @@ class _TierRow extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
+                  Icon(
+                    LucideIcons.triangleAlert,
                     size: 15,
-                    color: AppColors.warning,
+                    color: context.tokens.accentAmber,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Sans effet : un palier plus court accorde déjà autant. '
                       'Augmentez la remise ou supprimez ce palier.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.warning,
-                        height: 1.3,
+                      style: context.text.bodySmall!.copyWith(
+                        color: context.tokens.accentAmber,
                       ),
                     ),
                   ),
@@ -491,33 +411,6 @@ class _TierRow extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// Pastille de remise, lue d'un coup d'œil dans la liste.
-class _DiscountBadge extends StatelessWidget {
-  const _DiscountBadge({required this.percent, required this.color});
-
-  final int percent;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        '−$percent %',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
       ),
     );
   }
@@ -541,17 +434,16 @@ class _Figure extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 10, color: AppColors.grey500),
+          style: context.text.bodySmall,
         ),
         const SizedBox(height: 2),
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12,
+          style: context.text.labelMedium!.copyWith(
+            color: color ?? context.tokens.foreground,
             fontWeight: FontWeight.w600,
-            color: color ?? AppColors.textPrimary,
           ),
         ),
       ],
@@ -588,27 +480,20 @@ class _StaySimulator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.grey200),
+        color: context.tokens.surface,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const FaIcon(
-                FontAwesomeIcons.receipt,
-                size: 13,
-                color: AppColors.textSecondary,
-              ),
+              Icon(LucideIcons.receipt, size: 13, color: context.tokens.muted),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Ce que paiera le client',
-                style: TextStyle(
-                  fontSize: 13,
+                style: context.text.titleSmall!.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -644,10 +529,8 @@ class _SimulatorRow extends StatelessWidget {
             width: 62,
             child: Text(
               '$days jours',
-              style: const TextStyle(
-                fontSize: 12,
+              style: context.text.labelMedium!.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -659,30 +542,28 @@ class _SimulatorRow extends StatelessWidget {
                         CurrencyFormatter.fcfa(full.round()),
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.grey500,
+                          color: context.tokens.muted,
                           decoration: TextDecoration.lineThrough,
-                          decorationColor: AppColors.grey500,
+                          decorationColor: context.tokens.muted,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(
-                        Icons.arrow_forward,
+                      Icon(
+                        LucideIcons.arrowRight,
                         size: 11,
-                        color: AppColors.grey400,
+                        color: context.tokens.muted,
                       ),
                     ],
                   )
-                : Text(
-                    'plein tarif',
-                    style: TextStyle(fontSize: 11, color: AppColors.grey400),
-                  ),
+                : Text('plein tarif', style: context.text.bodySmall),
           ),
           Text(
             CurrencyFormatter.fcfa(total.round()),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: discount > 0 ? AppColors.success : AppColors.textPrimary,
+            style: context.text.titleSmall!.copyWith(
+              color: discount > 0
+                  ? context.tokens.accentGreen
+                  : context.tokens.foreground,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -709,29 +590,26 @@ class _Stepper extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: AppColors.grey500)),
+        Text(label, style: context.text.bodySmall),
         const SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.grey200),
+            color: context.tokens.background,
+            border: Border.all(color: context.tokens.border),
           ),
           child: Row(
             children: [
-              _RoundButton(icon: Icons.remove, onTap: onDecrement),
+              _RoundButton(icon: LucideIcons.minus, onTap: onDecrement),
               Expanded(
                 child: Text(
                   value,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                  style: context.text.titleSmall!.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              _RoundButton(icon: Icons.add, onTap: onIncrement),
+              _RoundButton(icon: LucideIcons.plus, onTap: onIncrement),
             ],
           ),
         ),
@@ -761,7 +639,6 @@ class _RoundButton extends StatelessWidget {
                 onTap!();
               }
             : null,
-        borderRadius: BorderRadius.circular(10),
         child: SizedBox(
           // 40 dp : seuil en deçà duquel la cible devient difficile à viser
           // au pouce, sur un réglage qu'on répète.
@@ -770,7 +647,7 @@ class _RoundButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 17,
-            color: enabled ? AppColors.textPrimary : AppColors.grey400,
+            color: enabled ? context.tokens.foreground : context.tokens.muted,
           ),
         ),
       ),
@@ -787,7 +664,7 @@ class _PricingCard extends StatelessWidget {
     required this.child,
   });
 
-  final FaIconData icon;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
@@ -798,24 +675,15 @@ class _PricingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.grey200),
+        color: context.tokens.surface,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(child: FaIcon(icon, size: 15, color: color)),
-              ),
+              IconChip(icon: icon),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -823,16 +691,11 @@ class _PricingCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.black,
+                      style: context.text.titleSmall!.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(fontSize: 11, color: AppColors.grey500),
-                    ),
+                    Text(subtitle, style: context.text.bodySmall),
                   ],
                 ),
               ),

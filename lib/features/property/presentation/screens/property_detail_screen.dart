@@ -1,15 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:resi_africa/shared/widgets/app_loader.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/utils/image_viewer_utils.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/router/app_router.gr.dart';
 import '../../../../core/router/role_guard.dart';
 import '../../../../core/session/session_role.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../data/repositories/property_repository.dart';
 import '../../../home/presentation/widgets/bottom_navigation/property_bottom_navigation_bar.dart';
 import '../../../home/presentation/widgets/details/property_cover_image.dart';
@@ -61,99 +61,90 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         : images[_selectedImageIndex.clamp(0, images.length - 1)];
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: PropertyCoverImage(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Stack(
+              children: [
+                PropertyCoverImage(
                   images: images,
                   currentIndex: _selectedImageIndex,
                   onIndexChanged: (index) =>
                       setState(() => _selectedImageIndex = index),
                 ),
-              ),
-
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Posés sur la photo : fond de surface et filet, pour rester
+                // lisibles sur un visuel clair comme sur un visuel sombre.
+                Positioned(
+                  top: MediaQuery.paddingOf(context).top + 8,
+                  left: 12,
+                  right: 12,
+                  child: Row(
                     children: [
-                      const SizedBox(height: 16),
-                      ListImagesWidget(
-                        images: images,
-                        selectedIndex: _selectedImageIndex,
-                        onTap: (index) =>
-                            setState(() => _selectedImageIndex = index),
+                      AppIconButton(
+                        icon: LucideIcons.chevronLeft,
+                        label: 'Retour',
+                        bordered: true,
+                        onPressed: () => context.router.maybePop(),
                       ),
-                      if (images.isNotEmpty) const SizedBox(height: 24),
-
-                      PropertyInfosHeader(
-                        name: property.title,
-                        location: property.address.city,
-                        pricePerDay: property.pricing.dailyPrice,
-                      ),
-                      const SizedBox(height: 24),
-
-                      PropertyFeatures(features: _features()),
-                      const SizedBox(height: 24),
-
-                      PropertyResidenceSection(
-                        residenceId: property.residenceId,
-                        unitLabel: property.unitLabel,
-                        onAttachPressed: _attachResidence,
-                      ),
-                      const SizedBox(height: 24),
-
-                      PropertyLocationSection(
-                        address: _fullAddress(),
-                        latitude: property.address.latitude ?? 5.3364,
-                        longitude: property.address.longitude ?? -3.9772,
-                      ),
-                      const SizedBox(height: 24),
-
-                      PropertyDescription(description: property.description),
-                      if (property.description.trim().isNotEmpty)
-                        const SizedBox(height: 24),
-
-                      PropertyPricingDetails(
-                        pricePerDay: property.pricing.dailyPrice,
-                        priceTiers: property.pricing.priceTiers,
-                      ),
-                      const SizedBox(height: 32),
+                      const Spacer(),
+                      if (cover != null)
+                        AppIconButton(
+                          icon: LucideIcons.expand,
+                          label: 'Plein écran',
+                          bordered: true,
+                          onPressed: () => ImageViewerUtils.showFullScreenImage(
+                            context,
+                            cover,
+                          ),
+                        ),
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-
-          Positioned(
-            top: 48,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            sliver: SliverList.list(
               children: [
-                _CircleButton(
-                  onTap: () => context.router.maybePop(),
-                  child: const Icon(
-                    Icons.chevron_left,
-                    size: 24,
-                    color: Colors.black,
+                ListImagesWidget(
+                  images: images,
+                  selectedIndex: _selectedImageIndex,
+                  onTap: (index) => setState(() => _selectedImageIndex = index),
+                ),
+                if (images.isNotEmpty) const SizedBox(height: 16),
+                PropertyInfosHeader(
+                  name: property.title,
+                  location: property.address.city,
+                  pricePerDay: property.pricing.dailyPrice,
+                  status: StatusBadge(
+                    label: property.status.label,
+                    tone: StatusTones.property(property.status.code),
                   ),
                 ),
-                if (cover != null)
-                  _CircleButton(
-                    onTap: () => _showFullScreenImage(context, cover),
-                    child: const FaIcon(
-                      FontAwesomeIcons.expand,
-                      size: 20,
-                      color: Colors.black,
-                    ),
-                  ),
+                const SizedBox(height: 20),
+                PropertyFeatures(features: _features()),
+                const SizedBox(height: 12),
+                PropertyResidenceSection(
+                  residenceId: property.residenceId,
+                  unitLabel: property.unitLabel,
+                  onAttachPressed: _attachResidence,
+                ),
+                const SizedBox(height: 12),
+                PropertyPricingDetails(
+                  pricePerDay: property.pricing.dailyPrice,
+                  priceTiers: property.pricing.priceTiers,
+                ),
+                const SizedBox(height: 12),
+                PropertyLocationSection(
+                  address: _fullAddress(),
+                  latitude: property.address.latitude ?? 5.3364,
+                  longitude: property.address.longitude ?? -3.9772,
+                ),
+                if (property.description.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  PropertyDescription(description: property.description),
+                ],
               ],
             ),
           ),
@@ -273,32 +264,42 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     return [
       if (details.bedrooms > 0)
         PropertyFeature(
-          icon: Icons.bed,
+          icon: LucideIcons.bed,
           label: details.bedrooms > 1 ? 'Chambres' : 'Chambre',
           count: details.bedrooms,
         ),
       if (details.bathrooms > 0)
         PropertyFeature(
-          icon: Icons.bathtub,
+          icon: LucideIcons.bath,
           label: details.bathrooms > 1 ? 'Salles de bain' : 'Salle de bain',
           count: details.bathrooms,
         ),
       if (details.livingRooms > 0)
         PropertyFeature(
-          icon: Icons.weekend,
+          icon: LucideIcons.sofa,
           label: details.livingRooms > 1 ? 'Salons' : 'Salon',
           count: details.livingRooms,
         ),
       if (details.parkingSpaces > 0)
         PropertyFeature(
-          icon: Icons.local_parking,
+          icon: LucideIcons.squareParking,
           label: 'Parking',
           count: details.parkingSpaces,
         ),
       if (property.amenities.contains(Amenity.wifi))
-        PropertyFeature(icon: Icons.wifi, label: 'Wifi', count: 1),
+        PropertyFeature(
+          icon: LucideIcons.wifi,
+          label: 'Wifi',
+          count: 1,
+          countable: false,
+        ),
       if (property.amenities.contains(Amenity.pool))
-        PropertyFeature(icon: Icons.pool, label: 'Piscine', count: 1),
+        PropertyFeature(
+          icon: LucideIcons.waves,
+          label: 'Piscine',
+          count: 1,
+          countable: false,
+        ),
     ];
   }
 
@@ -311,89 +312,5 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       if (street.isNotEmpty) street,
       if (city.isNotEmpty) city,
     ].join(', ');
-  }
-
-  void _showFullScreenImage(BuildContext context, String image) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: Stack(
-              children: [
-                InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  child: Center(
-                    child: image.startsWith('http')
-                        ? CachedNetworkImage(
-                            imageUrl: image,
-                            fit: BoxFit.contain,
-                            // Le loader est clair : le plein écran est posé
-                            // sur un fond noir.
-                            placeholder: (_, _) =>
-                                const AppLoader(size: 72, color: Colors.white),
-                            errorWidget: (_, _, _) => const Icon(
-                              Icons.broken_image_outlined,
-                              size: 48,
-                              color: AppColors.grey400,
-                            ),
-                          )
-                        : Image.asset(image, fit: BoxFit.contain),
-                  ),
-                ),
-                Positioned(
-                  top: 48,
-                  right: 20,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 24,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
-  }
-}
-
-/// Pastille translucide des actions posées sur la couverture.
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({required this.onTap, required this.child});
-
-  final VoidCallback onTap;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(11),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: child,
-      ),
-    );
   }
 }

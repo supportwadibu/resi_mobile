@@ -1,37 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
+/// Titre de l'aperçu des biens, avec l'accès à la liste complète.
 class HeaderPropertyWidget extends StatelessWidget {
   const HeaderPropertyWidget({super.key, this.onSeeAll});
 
-  /// Ouvre la liste complète. `null` laisse la flèche inactive.
+  /// Ouvre la liste complète. `null` masque l'action.
   final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Text(
-              'Mes biens',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Spacer(),
-            AppButton(
-              label: '',
-              onPressed: onSeeAll ?? () {},
-              padding: const EdgeInsets.symmetric(horizontal: 0),
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.black,
-              trailingIcon: AppButtonIcon.material(
-                Icons.arrow_forward_ios,
-                size: 12,
-              ),
-            ),
-          ],
-        ),
-      ],
+    return SectionHeading(
+      title: 'Mes biens',
+      icon: AppSectionIcons.properties,
+      actionLabel: 'Voir tout',
+      onAction: onSeeAll,
     );
   }
 }

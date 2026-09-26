@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_badge.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import '../../../../data/models/owner_profile_model.dart';
 
@@ -18,12 +21,7 @@ class OwnerProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final email = profile.email;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return AppCard(
       child: Row(
         children: [
           _Avatar(url: profile.avatarUrl, fullName: profile.fullName),
@@ -36,24 +34,17 @@ class OwnerProfileHeader extends StatelessWidget {
                 Text(
                   profile.fullName.isEmpty ? 'Sans nom' : profile.fullName,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
+                  style: context.text.titleMedium,
                 ),
                 if (email != null && email.isNotEmpty) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     email,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.grey600,
-                    ),
+                    style: context.mutedText,
                   ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 OwnerStatusBadge(profile: profile),
               ],
             ),
@@ -82,110 +73,64 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final imageUrl = url;
+    final initials = Center(
+      child: Text(_initials, style: context.text.titleLarge),
+    );
 
     return Container(
-      width: 58,
-      height: 58,
+      width: 56,
+      height: 56,
       clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: AppColors.primaryGradient,
+      decoration: BoxDecoration(
+        color: t.background,
+        border: Border.all(color: t.border),
       ),
       child: imageUrl == null || imageUrl.isEmpty
-          ? _buildInitials()
+          ? initials
           : Image.network(
               imageUrl,
               fit: BoxFit.cover,
               // L'URL est signée et temporaire : son expiration ne doit pas
               // laisser un trou à la place de l'avatar.
-              errorBuilder: (_, _, _) => _buildInitials(),
+              errorBuilder: (_, _, _) => initials,
             ),
     );
   }
-
-  Widget _buildInitials() => Center(
-    child: Text(
-      _initials,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: AppColors.white,
-      ),
-    ),
-  );
 }
 
-/// Pastille d'état du dossier de validation.
+/// Pastille d'état du dossier de validation, selon la grammaire des statuts :
+/// vert validé, bleu en vérification, ambre à déposer, rouge refusé ou
+/// suspendu.
 class OwnerStatusBadge extends StatelessWidget {
   const OwnerStatusBadge({super.key, required this.profile});
 
   final OwnerProfileModel profile;
 
-  ({Color color, Color background, FaIconData icon}) get _style {
+  ({AppAccent tone, IconData icon}) get _style {
     if (profile.isValidated) {
-      return (
-        color: AppColors.success,
-        background: AppColors.successBg,
-        icon: FontAwesomeIcons.circleCheck,
-      );
+      return (tone: AppAccent.green, icon: LucideIcons.circleCheck);
     }
     if (profile.isRejected) {
-      return (
-        color: AppColors.error,
-        background: AppColors.errorBg,
-        icon: FontAwesomeIcons.circleExclamation,
-      );
+      return (tone: AppAccent.red, icon: LucideIcons.circleAlert);
     }
     if (profile.isSuspended) {
-      return (
-        color: AppColors.error,
-        background: AppColors.errorBg,
-        icon: FontAwesomeIcons.ban,
-      );
+      return (tone: AppAccent.red, icon: LucideIcons.ban);
     }
     if (profile.isSubmitted) {
-      return (
-        color: AppColors.info,
-        background: AppColors.infoBg,
-        icon: FontAwesomeIcons.clock,
-      );
+      return (tone: AppAccent.blue, icon: LucideIcons.clock);
     }
-    return (
-      color: AppColors.warning,
-      background: AppColors.warningBg,
-      icon: FontAwesomeIcons.circleInfo,
-    );
+    return (tone: AppAccent.amber, icon: LucideIcons.info);
   }
 
   @override
   Widget build(BuildContext context) {
     final style = _style;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: style.background,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FaIcon(style.icon, size: 11, color: style.color),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              profile.statusLabel,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: style.color,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return AppBadge(
+      label: profile.statusLabel,
+      tone: style.tone,
+      icon: style.icon,
     );
   }
 }

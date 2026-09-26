@@ -1,9 +1,10 @@
-
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 
 import '../../business_logic/client_detail_cubit.dart';
@@ -125,32 +126,15 @@ class _EditClientScreenState extends State<EditClientScreen> {
     return BlocProvider.value(
       value: widget.cubit,
       child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: Text(
-            'Modifier le client',
-            style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-          ),
-          centerTitle: true,
-        ),
+        appBar: AppTopBar(title: 'Modifier le client'),
         bottomNavigationBar: BlocBuilder<ClientDetailCubit, ClientDetailState>(
           builder: (context, state) {
-            final isSaving =
-                state is ClientDetailLoaded && state.isSaving;
-            return SafeArea(
-              bottom: true,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SubmitClientButton(
-                  isLoading: isSaving,
-                  enabled: !isSaving,
-                  label: 'Enregistrer',
-                  onTap: _save,
-                ),
-              ),
+            final isSaving = state is ClientDetailLoaded && state.isSaving;
+            return SubmitClientButton(
+              isLoading: isSaving,
+              enabled: !isSaving,
+              label: 'Enregistrer',
+              onTap: _save,
             );
           },
         ),
@@ -162,7 +146,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
               const FormSectionLabel(text: 'Nom complet'),
               ClientTextField(
                 hint: 'Ex : Mohamed Traoré',
-                prefixIcon: Icons.person_rounded,
+                prefixIcon: LucideIcons.user,
                 controller: _fullName,
                 onChanged: (_) => setState(() {}),
                 errorText: _submitted && !_nameValid ? 'Nom trop court' : null,
@@ -172,7 +156,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
               const FormSectionLabel(text: 'Numéro de téléphone'),
               ClientTextField(
                 hint: 'Ex : +225 07 XX XX XX XX',
-                prefixIcon: Icons.phone_rounded,
+                prefixIcon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
                 controller: _phone,
                 onChanged: (_) => setState(() {}),
@@ -185,7 +169,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
               const FormSectionLabel(text: 'WhatsApp (facultatif)'),
               ClientTextField(
                 hint: 'Si différent du téléphone',
-                prefixIcon: Icons.chat_rounded,
+                prefixIcon: LucideIcons.messageCircle,
                 keyboardType: TextInputType.phone,
                 controller: _whatsapp,
                 onChanged: (_) => setState(() {}),
@@ -202,7 +186,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
               const FormSectionLabel(text: "Numéro de pièce"),
               ClientTextField(
                 hint: 'Ex : CI-0012345678',
-                prefixIcon: Icons.badge_rounded,
+                prefixIcon: LucideIcons.idCard,
                 controller: _documentNumber,
                 onChanged: (_) => setState(() {}),
               ),
@@ -234,10 +218,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
 }
 
 class _DocumentTypeSelector extends StatelessWidget {
-  const _DocumentTypeSelector({
-    required this.selected,
-    required this.onSelect,
-  });
+  const _DocumentTypeSelector({required this.selected, required this.onSelect});
 
   final ClientIdDocumentType? selected;
   final ValueChanged<ClientIdDocumentType> onSelect;
@@ -247,30 +228,36 @@ class _DocumentTypeSelector extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: ClientIdDocumentType.values.map((type) {
-        final isSelected = type == selected;
-        return GestureDetector(
-          onTap: () => onSelect(type),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.black
-                  : AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? AppColors.black : AppColors.divider,
+      children: ClientIdDocumentType.values
+          .map((type) {
+            final isSelected = type == selected;
+            return GestureDetector(
+              onTap: () => onSelect(type),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? context.tokens.foreground
+                      : context.tokens.surface,
+                  border: Border.all(
+                    color: isSelected
+                        ? context.tokens.foreground
+                        : context.tokens.border,
+                  ),
+                ),
+                child: Text(
+                  type.label,
+                  style: context.text.titleSmall!.copyWith(
+                    color: isSelected ? context.tokens.background : null,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              type.label,
-              style: AppTextStyles.valueSmall.copyWith(
-                color: isSelected ? AppColors.background : null,
-              ),
-            ),
-          ),
-        );
-      }).toList(growable: false),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
@@ -285,15 +272,15 @@ class _ExistingDocumentsNotice extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            Icons.check_circle_rounded,
+            LucideIcons.circleCheck,
             size: 16,
-            color: AppColors.green,
+            color: context.tokens.accentGreen,
           ),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
               'Pièces déjà déposées. En ajouter une nouvelle la remplacera.',
-              style: AppTextStyles.labelSmall,
+              style: context.text.bodySmall,
             ),
           ),
         ],

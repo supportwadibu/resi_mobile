@@ -2,17 +2,26 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import '../../../clients/presentation/widgets/client_avatar.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../subscription/presentation/widgets/plan_gate.dart';
+import '../../../subscription/presentation/widgets/plan_style.dart';
 import '../../data/services/invoice_pdf_service.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../clients/presentation/screens/client_detail_screen.dart';
@@ -60,52 +69,36 @@ class DetailsReservationScreen extends StatelessWidget {
     final fullStay = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'stay_checkout.confirm_title'.tr(),
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: Text(
-          'stay_checkout.confirm_body'.tr(),
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
-        ),
+        title: Text('stay_checkout.confirm_title'.tr()),
+        content: Text('stay_checkout.confirm_body'.tr()),
         // Trois issues : fermer la boîte sans choisir (`null`) annule, et ne
-        // doit pas valoir « non ».
+        // doit pas valoir « non ». Les deux réponses s'empilent en pleine
+        // largeur : côte à côte, leurs libellés ne tiennent pas.
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-            ),
-            child: Text(
-              'common.cancel'.tr(),
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            child: Text(
-              'stay_checkout.answer_early'.tr(),
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            child: Text(
-              'stay_checkout.answer_full'.tr(),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppButton(
+                label: 'stay_checkout.answer_full'.tr(),
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+              ),
+              const SizedBox(height: 8),
+              AppButton(
+                label: 'stay_checkout.answer_early'.tr(),
+                variant: AppButtonVariant.secondary,
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+              ),
+              const SizedBox(height: 8),
+              AppButton(
+                label: 'common.cancel'.tr(),
+                variant: AppButtonVariant.ghost,
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+            ],
           ),
         ],
       ),
@@ -162,17 +155,10 @@ class DetailsReservationScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: context.tokens.surface,
+            border: Border.all(color: context.tokens.border),
           ),
-          child: const AppLoader(size: 56),
+          child: const AppLoader(),
         ),
       ),
     );
@@ -195,7 +181,7 @@ class DetailsReservationScreen extends StatelessWidget {
   ///
   /// Réservée au forfait 5 000 F : c'est un document PDF.
   Future<void> _sendInvoice(BuildContext context) async {
-    if (!ensureFullPlan(context)) return;
+    if (!ensureFullPlan(context, PremiumFeature.invoices)) return;
 
     // Le dossier du propriétaire, mis en cache à la connexion, sert d'en-tête.
     // Absent — un gérant, un cache vidé —, la facture part sans émetteur
@@ -234,174 +220,157 @@ class DetailsReservationScreen extends StatelessWidget {
 
   Widget _buildScaffold(BuildContext context, {required bool isSubmitting}) {
     final property = reservation.property;
+    final t = context.tokens;
+
+    final stay = <DetailItem>[
+      DetailItem('Date d’entrée', _longDate(reservation.startDate)),
+      DetailItem('Date de sortie', _longDate(reservation.endDate)),
+      DetailItem('Durée', reservation.durationLabel),
+    ];
+
+    final amounts = <DetailItem>[
+      DetailItem('Montant total', formatAmount(reservation.totalAmount)),
+      // Séjour écourté : les dates et le montant ci-dessus portent l'usage
+      // réel, la vente d'origine reste lisible pour un litige.
+      if (reservation.plannedTotalAmount case final planned?)
+        DetailItem('stay_checkout.planned_amount'.tr(), formatAmount(planned)),
+      if (reservation.refundedAmount > 0)
+        DetailItem(
+          'stay_checkout.refunded'.tr(),
+          formatAmount(reservation.refundedAmount),
+        ),
+      if (reservation.discountAmount > 0)
+        DetailItem('Remise', '- ${formatAmount(reservation.discountAmount)}'),
+      // Commission due à l'apporteur, au taux figé à la réservation et
+      // recalculée par le serveur quand le montant du séjour change.
+      if (reservation.referrer case final referrer?) ...[
+        DetailItem(
+          'referrer.label'.tr(),
+          referrer.phone == null || referrer.phone!.isEmpty
+              ? referrer.name
+              : '${referrer.name} · ${referrer.phone}',
+        ),
+        DetailItem(
+          'referrer.commission'.tr(
+            args: ['${(reservation.referrerCommissionRate * 100).round()}'],
+          ),
+          formatAmount(reservation.referrerCommissionAmount),
+        ),
+      ],
+    ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Détails de réservation',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: _Cover(image: property?.image),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              property?.title ?? 'Bien supprimé',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            if (property != null && property.city.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    property.city,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: 40),
-            _buildDetailRow('Date d’entrée', _longDate(reservation.startDate)),
-            const SizedBox(height: 20),
-            _buildDetailRow('Date de sortie', _longDate(reservation.endDate)),
-            const SizedBox(height: 20),
-            _buildDetailRow('Durée', reservation.durationLabel),
-            const SizedBox(height: 20),
-            _buildDetailRow(
-              'Montant total',
-              formatAmount(reservation.totalAmount),
-            ),
-            // Séjour écourté : les dates et le montant ci-dessus portent
-            // l'usage réel, la vente d'origine reste lisible pour un litige.
-            if (reservation.plannedTotalAmount case final planned?) ...[
-              const SizedBox(height: 20),
-              _buildDetailRow(
-                'stay_checkout.planned_amount'.tr(),
-                formatAmount(planned),
-              ),
-            ],
-            if (reservation.refundedAmount > 0) ...[
-              const SizedBox(height: 20),
-              _buildDetailRow(
-                'stay_checkout.refunded'.tr(),
-                formatAmount(reservation.refundedAmount),
-              ),
-            ],
-            if (reservation.discountAmount > 0) ...[
-              const SizedBox(height: 20),
-              _buildDetailRow(
-                'Remise',
-                '- ${formatAmount(reservation.discountAmount)}',
-              ),
-            ],
-            // Commission due à l'apporteur, au taux figé à la réservation et
-            // recalculée par le serveur quand le montant du séjour change.
-            if (reservation.referrer case final referrer?) ...[
-              const SizedBox(height: 20),
-              _buildDetailRow(
-                'referrer.label'.tr(),
-                referrer.phone == null || referrer.phone!.isEmpty
-                    ? referrer.name
-                    : '${referrer.name} · ${referrer.phone}',
-              ),
-              const SizedBox(height: 20),
-              _buildDetailRow(
-                'referrer.commission'.tr(
-                  args: [
-                    '${(reservation.referrerCommissionRate * 100).round()}',
+      appBar: const AppTopBar(title: 'Réservation'),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        children: [
+          DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(border: Border.all(color: t.border)),
+            child: _Cover(image: property?.image),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      property?.title ?? 'Bien supprimé',
+                      style: context.text.headlineSmall,
+                    ),
+                    if (property != null && property.city.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(LucideIcons.mapPin, size: 14, color: t.muted),
+                          const SizedBox(width: 4),
+                          Text(property.city, style: context.mutedText),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
-                formatAmount(reservation.referrerCommissionAmount),
+              ),
+              const SizedBox(width: 12),
+              StatusBadge(
+                label: reservation.status.label,
+                tone: StatusTones.booking(reservation.status.code),
               ),
             ],
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Statut',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-                _StatusBadge(status: reservation.status),
-              ],
-            ),
+          ),
+          const SizedBox(height: 16),
+          Section(
+            title: 'Séjour',
+            icon: AppSectionIcons.bookings,
+            child: DetailList(items: stay),
+          ),
+          const SizedBox(height: 12),
+          Section(
+            title: 'Montants',
+            icon: LucideIcons.banknote,
+            child: DetailList(items: amounts),
+          ),
 
-            // Le résumé vient de `client_snapshot` : le serveur ne le joint
-            // qu'aux réservations comptoir, celles du carnet du propriétaire.
-            // Une réservation en ligne n'a pas de fiche à ouvrir.
-            if (reservation.client case final client?) ...[
-              const SizedBox(height: 32),
-              const Text(
-                'Client',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _ClientSummary(
+          // Le résumé vient de `client_snapshot` : le serveur ne le joint
+          // qu'aux réservations comptoir, celles du carnet du propriétaire.
+          // Une réservation en ligne n'a pas de fiche à ouvrir.
+          if (reservation.client case final client?) ...[
+            const SizedBox(height: 12),
+            Section(
+              title: 'Client',
+              icon: AppSectionIcons.clients,
+              child: _ClientSummary(
                 client: client,
                 // La fiche client relève du forfait 5 000 F.
                 onOpenFile: () {
-                  if (ensureFullPlan(context)) {
+                  if (ensureFullPlan(context, PremiumFeature.clients)) {
                     _openClientFile(context, client.id);
                   }
                 },
               ),
-            ],
-
-            // Un séjour annulé n'a rien à facturer.
-            if (reservation.status != ReservationStatus.cancelled) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _sendInvoice(context),
-                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 18),
-                  label: Text('invoice.send'.tr()),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-
-            if (reservation.message case final message?
-                when message.trim().isNotEmpty) ...[
-              const SizedBox(height: 32),
-              const Text(
-                'Message du client',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 20),
+            ),
           ],
-        ),
+
+          if (reservation.message case final message?
+              when message.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Section(
+              title: 'Message du client',
+              icon: AppSectionIcons.reviews,
+              child: Text(
+                message,
+                style: context.mutedText.copyWith(height: 1.5),
+              ),
+            ),
+          ],
+
+          // Un séjour annulé n'a rien à facturer.
+          if (reservation.status != ReservationStatus.cancelled) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _sendInvoice(context),
+                // Logo de marque : WhatsApp reste reconnaissable, là où une
+                // bulle générique ne dirait pas où part la facture.
+                icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('invoice.send'.tr()),
+                    if (!hasFullPlan()) ...[
+                      const SizedBox(width: 8),
+                      const PremiumBadge(),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       // Barre fixe plutôt que des boutons en fin de liste : clôture et
       // prolongation restent atteignables sans dérouler tout le détail.
@@ -409,7 +378,7 @@ class DetailsReservationScreen extends StatelessWidget {
       // `null` quand le séjour n'est plus actif : un `if` de collection ne
       // vaut que dans une liste, et n'a pas sa place sur un argument nommé.
       bottomNavigationBar: reservation.status.isActive
-          ? SafeArea(child: _buildActions(context, isSubmitting: isSubmitting))
+          ? _buildActions(context, isSubmitting: isSubmitting)
           : null,
     );
   }
@@ -432,19 +401,6 @@ class DetailsReservationScreen extends StatelessWidget {
       isLoading: isSubmitting,
     );
   }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-      ],
-    );
-  }
 }
 
 /// Identité du client, telle qu'elle était au moment de la réservation.
@@ -458,80 +414,43 @@ class _ClientSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = client.fullName.trim();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: Colors.black,
-                child: Text(
-                  // Le carnet accepte un nom en une seule partie : l'initiale
-                  // est tirée du nom entier, sans supposer un prénom.
-                  name.isEmpty ? '?' : name[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name.isEmpty ? 'Client sans nom' : name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            // Le carnet accepte un nom en une seule partie : l'initiale est
+            // tirée du nom entier, sans supposer un prénom.
+            ClientAvatar(initials: name.isEmpty ? '?' : name[0].toUpperCase()),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isEmpty ? 'Client sans nom' : name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleSmall!.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    if (client.phone.trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        client.phone,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onOpenFile,
-              icon: const Icon(Icons.person_outline, size: 18),
-              label: const Text('Voir la fiche client'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.black,
-                side: BorderSide(color: Colors.grey.shade300),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                  ),
+                  if (client.phone.trim().isNotEmpty)
+                    Text(client.phone, style: context.text.bodySmall),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        AppButton(
+          label: 'Voir la fiche client',
+          icon: LucideIcons.user,
+          variant: AppButtonVariant.secondary,
+          expand: true,
+          onPressed: onOpenFile,
+        ),
+      ],
     );
   }
 }
@@ -546,76 +465,31 @@ class _Cover extends StatelessWidget {
   Widget build(BuildContext context) {
     final source = image;
 
-    if (source == null || source.isEmpty) return _placeholder();
+    if (source == null || source.isEmpty) return _placeholder(context);
 
     return CachedNetworkImage(
       imageUrl: source,
       width: double.infinity,
       height: 200,
       fit: BoxFit.cover,
-      placeholder: (_, _) => _loading(),
+      placeholder: (_, _) => _loading(context),
       // Distinct du chargement : une photo injoignable garde l'icône de repli,
       // là où l'animation tournerait sans fin.
-      errorWidget: (_, _, _) => _placeholder(),
+      errorWidget: (_, _, _) => _placeholder(context),
     );
   }
 
-  Widget _loading() => Container(
+  Widget _loading(BuildContext context) => Container(
     width: double.infinity,
     height: 200,
-    color: Colors.grey.shade200,
-    child: const Center(child: AppLoader(size: 56)),
+    color: context.tokens.background,
+    child: const Center(child: AppLoader()),
   );
 
-  Widget _placeholder() => Container(
+  Widget _placeholder(BuildContext context) => Container(
     width: double.infinity,
     height: 200,
-    color: Colors.grey.shade200,
-    child: const Icon(Icons.image_not_supported_outlined, size: 40),
+    color: context.tokens.background,
+    child: Icon(LucideIcons.bedDouble, size: 32, color: context.tokens.muted),
   );
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-  final ReservationStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, bg, fg) = switch (status) {
-      ReservationStatus.confirmed => (
-        'Confirmée',
-        const Color(0xFFD1FAE5),
-        const Color(0xFF059669),
-      ),
-      // Le client occupe le logement : distinct de « confirmée », qui décrit
-      // un séjour encore à venir.
-      ReservationStatus.inProgress => (
-        'En cours',
-        const Color(0xFFDBEAFE),
-        const Color(0xFF2563EB),
-      ),
-      ReservationStatus.cancelled => (
-        'Annulée',
-        const Color(0xFFFEE2E2),
-        const Color(0xFFDC2626),
-      ),
-      ReservationStatus.completed => (
-        'Terminée',
-        Colors.grey.shade100,
-        Colors.grey,
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w500),
-      ),
-    );
-  }
 }

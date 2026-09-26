@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 /// Ouvre une liste d'options avec recherche incrémentale.
 ///
@@ -11,13 +14,8 @@ Future<String?> showAppOptionPicker({
   String searchHint = 'Rechercher',
   String emptyLabel = 'Aucun résultat',
 }) {
-  return showModalBottomSheet<String>(
+  return showAppSheet<String>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: AppColors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => _OptionPickerSheet(
       options: options,
       searchHint: searchHint,
@@ -57,61 +55,43 @@ class _OptionPickerSheetState extends State<_OptionPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height * 0.75,
         child: Column(
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey200,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: TextField(
                 autofocus: false,
                 onChanged: _filter,
-                style: const TextStyle(fontSize: 14),
+                style: context.text.bodyMedium,
                 decoration: InputDecoration(
                   hintText: widget.searchHint,
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  prefixIcon: const Icon(Icons.search, size: 18),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+                  prefixIcon: const Icon(LucideIcons.search, size: 16),
                 ),
               ),
             ),
+            Divider(height: 1, color: t.border),
             Expanded(
               child: _filtered.isEmpty
                   ? Center(
                       child: Text(
                         widget.emptyLabel,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.grey500,
+                        style: context.text.bodyMedium!.copyWith(
+                          color: t.muted,
                         ),
                       ),
                     )
                   : ListView.separated(
                       itemCount: _filtered.length,
-                      separatorBuilder: (_, _) =>
-                          const Divider(height: 1, color: AppColors.divider),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (_, i) => ListTile(
                         title: Text(
                           _filtered[i],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: context.text.bodyMedium,
                         ),
                         onTap: () => Navigator.of(context).pop(_filtered[i]),
                       ),

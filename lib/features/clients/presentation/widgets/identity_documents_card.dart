@@ -1,5 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/utils/image_viewer_utils.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import '../../data/models/client_model.dart';
 
@@ -16,34 +22,23 @@ class IdentityDocumentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return Section(
+      title: 'client_documents.title'.tr(),
+      icon: LucideIcons.idCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'client_documents.title'.tr(),
-            style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
           if (client.idDocumentNumber case final number?
               when number.isNotEmpty) ...[
-            const SizedBox(height: 4),
             Text(
               [
                 client.idDocumentType?.label,
                 number,
               ].whereType<String>().join(' · '),
-              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              style: context.mutedText,
             ),
+            const SizedBox(height: 12),
           ],
-          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -75,8 +70,7 @@ class _DocumentFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final t = context.tokens;
     final source = url;
 
     return Column(
@@ -84,12 +78,14 @@ class _DocumentFace extends StatelessWidget {
       children: [
         AspectRatio(
           aspectRatio: 1.58, // format ID-1 d'une carte d'identité
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(border: Border.all(color: t.border)),
             child: source == null || source.isEmpty
                 ? _Placeholder(label: 'client_documents.missing'.tr())
-                : GestureDetector(
-                    onTap: () => _openFullScreen(context, source, label),
+                : InkWell(
+                    onTap: () =>
+                        ImageViewerUtils.showFullScreenImage(context, source),
                     child: Image.network(
                       source,
                       fit: BoxFit.cover,
@@ -97,12 +93,8 @@ class _DocumentFace extends StatelessWidget {
                           progress == null
                           ? child
                           : ColoredBox(
-                              color: scheme.surfaceContainerHighest,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              color: t.background,
+                              child: const Center(child: AppLoader(size: 24)),
                             ),
                       errorBuilder: (_, _, _) => _Placeholder(
                         label: 'client_documents.unavailable'.tr(),
@@ -112,28 +104,8 @@ class _DocumentFace extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(label, style: text.labelMedium),
+        Text(label, style: context.text.bodySmall),
       ],
-    );
-  }
-
-  static void _openFullScreen(BuildContext context, String url, String label) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            title: Text(label),
-          ),
-          body: InteractiveViewer(
-            minScale: 1,
-            maxScale: 5,
-            child: Center(child: Image.network(url, fit: BoxFit.contain)),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -145,20 +117,16 @@ class _Placeholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
+    final t = context.tokens;
     return ColoredBox(
-      color: scheme.surfaceContainerHighest,
+      color: t.background,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.badge_outlined, color: scheme.onSurfaceVariant),
+            Icon(LucideIcons.idCard, color: t.muted, size: 20),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-            ),
+            Text(label, style: context.text.bodySmall),
           ],
         ),
       ),

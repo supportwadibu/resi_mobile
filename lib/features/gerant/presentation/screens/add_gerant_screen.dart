@@ -1,8 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_phone_field.dart';
@@ -80,17 +81,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Nouveau gérant',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-        ),
-        centerTitle: true,
-      ),
+      appBar: AppTopBar(title: 'Nouveau gérant'),
       body: Column(
         children: [
           Expanded(
@@ -149,16 +140,18 @@ class _AddGerantViewState extends State<_AddGerantView> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       hint: '8 caractères minimum',
-                      suffixIcon: GestureDetector(
-                        onTap: () => setState(
+                      suffixIcon: IconButton(
+                        tooltip: _obscurePassword
+                            ? 'Afficher le mot de passe'
+                            : 'Masquer le mot de passe',
+                        onPressed: () => setState(
                           () => _obscurePassword = !_obscurePassword,
                         ),
-                        child: Icon(
+                        icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 18,
-                          color: AppColors.textSecondary,
+                              ? LucideIcons.eye
+                              : LucideIcons.eyeOff,
+                          size: 16,
                         ),
                       ),
                       validator: (value) => (value ?? '').length < 8
@@ -181,6 +174,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
           ),
           AppBottomActionBar(
             primaryLabel: 'Créer le gérant',
+            primaryIcon: LucideIcons.check,
             isLoading: _isSubmitting,
             onPrimary: _isSubmitting ? null : _submit,
           ),
@@ -316,7 +310,7 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         label,
-        style: AppTextStyles.sectionTitle.copyWith(fontSize: 14),
+        style: context.text.titleMedium,
       ),
     );
   }
@@ -331,11 +325,7 @@ class _Hint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 12,
-        color: AppColors.textSecondary,
-        height: 1.5,
-      ),
+      style: context.text.bodySmall!.copyWith(height: 1.5),
     );
   }
 }

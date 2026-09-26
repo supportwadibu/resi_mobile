@@ -1,6 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
 
 import '../../../data/services/id_scan_service.dart';
 import '../../../data/services/mrz_parser.dart';
@@ -47,33 +50,19 @@ class _IdScanButtonState extends State<IdScanButton> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        OutlinedButton.icon(
-          onPressed: _scanning ? null : _scan,
-          icon: _scanning
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.document_scanner_outlined, size: 18),
-          label: Text((_scanning ? 'ocr.scanning' : 'ocr.scan').tr()),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        AppButton(
+          label: (_scanning ? 'ocr.scanning' : 'ocr.scan').tr(),
+          icon: LucideIcons.scanText,
+          variant: AppButtonVariant.secondary,
+          isLoading: _scanning,
+          expand: true,
+          onPressed: _scan,
         ),
         const SizedBox(height: 6),
-        Text(
-          'ocr.hint'.tr(),
-          style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant),
-        ),
+        Text('ocr.hint'.tr(), style: context.text.bodySmall),
       ],
     );
   }

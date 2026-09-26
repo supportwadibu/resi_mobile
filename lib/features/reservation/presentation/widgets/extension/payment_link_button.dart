@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 
+/// Barre de validation de la prolongation.
 class PaymentLinkButton extends StatelessWidget {
   /// `null` désactive le bouton — pendant l'envoi, notamment.
   final VoidCallback? onPressed;
@@ -18,35 +21,11 @@ class PaymentLinkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Text(
-                "Prolonger le séjour",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-      ),
+    return AppBottomActionBar(
+      primaryLabel: 'Prolonger le séjour',
+      primaryIcon: LucideIcons.calendarPlus,
+      isLoading: isLoading,
+      onPrimary: onPressed,
     );
   }
 }

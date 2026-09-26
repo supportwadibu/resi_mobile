@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 
 import '../../../business_logic/add_reservation_state.dart';
@@ -23,22 +25,25 @@ class ReferrerFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
           onChanged: onNameChanged,
           textCapitalization: TextCapitalization.words,
-          decoration: _decoration(context, 'referrer.name_hint'.tr()),
+          decoration: InputDecoration(
+            hintText: 'referrer.name_hint'.tr(),
+            prefixIcon: const Icon(LucideIcons.user, size: 16),
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
           onChanged: onPhoneChanged,
           keyboardType: TextInputType.phone,
-          decoration: _decoration(context, 'referrer.phone_hint'.tr()),
+          decoration: InputDecoration(
+            hintText: 'referrer.phone_hint'.tr(),
+            prefixIcon: const Icon(LucideIcons.phone, size: 16),
+          ),
         ),
         if (state.hasReferrer) ...[
           const SizedBox(height: 10),
@@ -51,36 +56,16 @@ class ReferrerFields extends StatelessWidget {
                     '${(AddReservationState.referrerCommissionRate * 100).round()}',
                   ],
                 ),
-                style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                style: context.text.bodySmall,
               ),
               Text(
                 CurrencyFormatter.short(state.referrerCommission),
-                style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: context.text.amount,
               ),
             ],
           ),
         ],
       ],
-    );
-  }
-
-  InputDecoration _decoration(BuildContext context, String hint) {
-    final scheme = Theme.of(context).colorScheme;
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: scheme.outlineVariant),
-    );
-
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: scheme.surfaceContainerLow,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: border,
-      enabledBorder: border,
-      focusedBorder: border.copyWith(
-        borderSide: BorderSide(color: scheme.primary),
-      ),
     );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 /// Catégorie de dépense, alignée sur `EXPENSE_CATEGORIES` du serveur.
 ///
@@ -8,28 +10,25 @@ enum ExpenseCategory {
   electricity(
     'electricity',
     'Électricité',
-    Icons.bolt_outlined,
-    Color(0xFFF39C12),
+    LucideIcons.zap
   ),
-  water('water', 'Eau / SODECI', Icons.water_drop_outlined, Color(0xFF3498DB)),
-  internet('internet', 'Internet', Icons.wifi, Color(0xFF1ABC9C)),
-  tv('tv', 'Canal+ / TV', Icons.tv_outlined, Color(0xFF34495E)),
+  water('water', 'Eau / SODECI', LucideIcons.droplet),
+  internet('internet', 'Internet', LucideIcons.wifi),
+  tv('tv', 'Canal+ / TV', LucideIcons.tv),
   cleaning(
     'cleaning',
     'Ménage',
-    Icons.cleaning_services_outlined,
-    Color(0xFF2ECC71),
+    LucideIcons.sprayCan
   ),
   maintenance(
     'maintenance',
     'Maintenance',
-    Icons.handyman_outlined,
-    Color(0xFF9B59B6),
+    LucideIcons.wrench
   ),
-  taxes('taxes', 'Taxes', Icons.receipt_long_outlined, Color(0xFFE74C3C)),
-  other('other', 'Autre', Icons.more_horiz, Color(0xFF95A5A6));
+  taxes('taxes', 'Taxes', LucideIcons.receiptText),
+  other('other', 'Autre', LucideIcons.ellipsis);
 
-  const ExpenseCategory(this.code, this.label, this.icon, this.color);
+  const ExpenseCategory(this.code, this.label, this.icon);
 
   final String code;
   final String label;
@@ -37,7 +36,20 @@ enum ExpenseCategory {
 
   /// Couleur de la catégorie dans l'anneau et sa légende, fixée par catégorie
   /// pour qu'un poste garde la même teinte d'un écran à l'autre.
-  final Color color;
+  ///
+  /// Tirée des jetons du mode courant plutôt que d'une teinte fixe : l'anneau
+  /// reste lisible en sombre. Huit postes pour cinq accents : les trois
+  /// derniers prennent les neutres (texte, secondaire, filet).
+  Color colorIn(ResiTokens t) => switch (this) {
+    ExpenseCategory.electricity => t.accentAmber,
+    ExpenseCategory.water => t.accentBlue,
+    ExpenseCategory.internet => t.accentViolet,
+    ExpenseCategory.tv => t.foreground,
+    ExpenseCategory.cleaning => t.accentGreen,
+    ExpenseCategory.maintenance => t.muted,
+    ExpenseCategory.taxes => t.accentRed,
+    ExpenseCategory.other => t.border,
+  };
 
   static ExpenseCategory? fromCode(String? code) {
     for (final value in ExpenseCategory.values) {

@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_option_tile.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 import '../../../../data/models/owner_profile_model.dart';
@@ -46,13 +48,9 @@ class StepIdentityDocumentWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Quelle pièce d’identité fournissez-vous ?',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black,
-            ),
+            style: context.text.titleMedium,
           ),
           const SizedBox(height: 20),
 
@@ -63,7 +61,7 @@ class StepIdentityDocumentWidget extends StatelessWidget {
             label: 'Numéro de la pièce',
             hint: 'Tel qu’inscrit sur le document',
             controller: idNumberController,
-            prefixIcon: const Icon(Icons.badge_outlined, size: 18),
+            prefixIcon: const Icon(LucideIcons.idCard, size: 16),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Ce champ est requis';
@@ -99,80 +97,25 @@ class StepIdentityDocumentWidget extends StatelessWidget {
     return Column(
       children: [
         for (final type in IdDocumentType.values) ...[
-          GestureDetector(
+          AppOptionTile(
+            icon: _iconFor(type),
+            title: type.label,
+            description: type.requiresBack
+                ? 'Recto et verso requis'
+                : 'Page de données uniquement',
+            selected: documentType == type,
             onTap: () => onDocumentTypeChanged(type),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: documentType == type ? AppColors.black : AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: documentType == type
-                      ? AppColors.black
-                      : AppColors.grey200,
-                  width: documentType == type ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  FaIcon(
-                    _iconFor(type),
-                    size: 18,
-                    color: documentType == type
-                        ? AppColors.white
-                        : AppColors.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          type.label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: documentType == type
-                                ? AppColors.white
-                                : AppColors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          type.requiresBack
-                              ? 'Recto et verso requis'
-                              : 'Page de données uniquement',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: documentType == type
-                                ? AppColors.white.withValues(alpha: 0.7)
-                                : AppColors.grey500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (documentType == type)
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.white,
-                      size: 16,
-                    ),
-                ],
-              ),
-            ),
           ),
-          if (type != IdDocumentType.values.last) const SizedBox(height: 12),
+          if (type != IdDocumentType.values.last) const SizedBox(height: 8),
         ],
       ],
     );
   }
 
-  static FaIconData _iconFor(IdDocumentType type) => switch (type) {
-    IdDocumentType.cni => FontAwesomeIcons.idCard,
-    IdDocumentType.passport => FontAwesomeIcons.passport,
-    IdDocumentType.drivingLicence => FontAwesomeIcons.idBadge,
+  static IconData _iconFor(IdDocumentType type) => switch (type) {
+    IdDocumentType.cni => LucideIcons.idCard,
+    IdDocumentType.passport => LucideIcons.bookUser,
+    IdDocumentType.drivingLicence => LucideIcons.idCard,
   };
 }
 
@@ -197,37 +140,24 @@ class _UploadField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
+        Text(title, style: context.text.titleSmall),
+        const SizedBox(height: 6),
+        Material(
+          color: t.background,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: _hasImage ? t.primary : t.border),
           ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 170,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: _hasImage
-                  ? AppColors.primary.withValues(alpha: 0.05)
-                  : AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _hasImage ? AppColors.primary : AppColors.grey200,
-                width: _hasImage ? 2 : 1,
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: _buildPreview(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              height: 170,
+              width: double.infinity,
+              child: _buildPreview(context),
             ),
           ),
         ),
@@ -235,7 +165,7 @@ class _UploadField extends StatelessWidget {
     );
   }
 
-  Widget _buildPreview() {
+  Widget _buildPreview(BuildContext context) {
     // Une image choisie via `ImagePicker` est un fichier de l'appareil, jamais
     // un asset empaqueté : `Image.file` est le seul chargeur qui sache la lire.
     if (localPath != null) {
@@ -253,37 +183,27 @@ class _UploadField extends StatelessWidget {
         width: double.infinity,
         // L'URL est signée et temporaire : son expiration ne doit pas casser
         // l'écran, l'utilisateur peut toujours redéposer le fichier.
-        errorBuilder: (_, _, _) =>
-            _placeholder('Aperçu indisponible · appuyez pour remplacer'),
+        errorBuilder: (context, _, _) => _placeholder(
+          context,
+          'Aperçu indisponible · appuyez pour remplacer',
+        ),
       );
     }
 
-    return _placeholder('Appuyez pour ajouter une photo');
+    return _placeholder(context, 'Appuyez pour ajouter une photo');
   }
 
-  Widget _placeholder(String label) {
+  Widget _placeholder(BuildContext context, String label) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const FaIcon(
-          FontAwesomeIcons.cloudArrowUp,
-          size: 28,
-          color: AppColors.grey400,
-        ),
-        const SizedBox(height: 10),
+        Icon(LucideIcons.cloudUpload, size: 24, color: context.tokens.muted),
+        const SizedBox(height: 8),
+        Text(label, textAlign: TextAlign.center, style: context.text.titleSmall),
+        const SizedBox(height: 2),
         Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
           'Photo nette, document entier visible',
-          style: TextStyle(fontSize: 12, color: AppColors.grey500),
+          style: context.text.bodySmall,
         ),
       ],
     );

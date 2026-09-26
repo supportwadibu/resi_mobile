@@ -1,30 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 
+/// Initiales d'un client, dans un carré bordé.
 class ClientAvatar extends StatelessWidget {
   final String initials;
   final double size;
 
-  const ClientAvatar({super.key, required this.initials, this.size = 44});
+  const ClientAvatar({super.key, required this.initials, this.size = 40});
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Container(
       width: size,
       height: size,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.black.withOpacity(0.12),
-        shape: BoxShape.circle,
+        color: t.background,
+        border: Border.all(color: t.border),
       ),
-      child: Center(
-        child: Text(
-          initials,
-          style: AppTextStyles.valueSmall.copyWith(
-            color: AppColors.black,
-            fontSize: size * 0.33,
-          ),
-        ),
+      child: Text(
+        initials,
+        style: context.text.titleSmall!.copyWith(fontSize: size * 0.34),
       ),
     );
   }

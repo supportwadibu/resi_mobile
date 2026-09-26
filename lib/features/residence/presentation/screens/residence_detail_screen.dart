@@ -1,9 +1,18 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/error/failures.dart';
@@ -51,40 +60,18 @@ class _ResidenceDetailView extends StatelessWidget {
     final canAttach = isGestureAllowed(role, 'residence_attach_unit');
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Résidence',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-        ),
-        centerTitle: true,
+      appBar: AppTopBar(
+        title: 'Résidence',
         actions: [
           BlocBuilder<ResidenceDetailCubit, ResidenceDetailState>(
             builder: (context, state) =>
                 state is ResidenceDetailLoaded && canEdit
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: GestureDetector(
-                      onTap: () => _edit(context),
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'Modifier',
-                          style: AppTextStyles.valueSmall.copyWith(
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ),
+                ? AppButton(
+                    label: 'Modifier',
+                    icon: LucideIcons.pencil,
+                    variant: AppButtonVariant.secondary,
+                    size: AppButtonSize.sm,
+                    onPressed: () => _edit(context),
                   )
                 : const SizedBox.shrink(),
           ),
@@ -92,10 +79,9 @@ class _ResidenceDetailView extends StatelessWidget {
       ),
       body: BlocBuilder<ResidenceDetailCubit, ResidenceDetailState>(
         builder: (context, state) => switch (state) {
-          ResidenceDetailInitial() || ResidenceDetailLoading() => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-          ResidenceDetailError(:final message) => _ErrorView(
+          ResidenceDetailInitial() ||
+          ResidenceDetailLoading() => const Center(child: AppLoader()),
+          ResidenceDetailError(:final message) => ErrorState(
             message: message,
             onRetry: () =>
                 context.read<ResidenceDetailCubit>().load(residenceId),
@@ -106,7 +92,6 @@ class _ResidenceDetailView extends StatelessWidget {
             :final unitsFailed,
           ) =>
             RefreshIndicator(
-              color: AppColors.primary,
               onRefresh: () =>
                   context.read<ResidenceDetailCubit>().load(residenceId),
               child: _Content(
@@ -198,304 +183,150 @@ class _Content extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final address = residence.address;
+    final street = address.street.trim();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        _HeaderCard(residence: residence),
-
-        if (residence.description.trim().isNotEmpty) ...[
-          const SizedBox(height: 20),
-          const _SectionTitle('Description'),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(14),
+        Row(
+          children: [
+            const IconChip(icon: AppSectionIcons.residences, size: 48),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(residence.name, style: context.text.headlineSmall),
+                  const SizedBox(height: 2),
+                  Text(
+                    street.isEmpty ? address.city : '$street, ${address.city}',
+                    maxLines: 2,
+                    style: context.mutedText,
+                  ),
+                ],
+              ),
             ),
+          ],
+        ),
+        if (residence.description.trim().isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Section(
+            title: 'Description',
+            icon: LucideIcons.alignLeft,
             child: Text(
               residence.description,
-              style: AppTextStyles.labelMedium.copyWith(height: 1.6),
+              style: context.mutedText.copyWith(height: 1.55),
             ),
           ),
         ],
-
         if (residence.amenities.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          const _SectionTitle('Parties communes'),
-          const SizedBox(height: 10),
-          _AmenitiesCard(amenities: residence.amenities),
+          const SizedBox(height: 12),
+          Section(
+            title: 'Parties communes',
+            icon: LucideIcons.listChecks,
+            child: _AmenitiesList(amenities: residence.amenities),
+          ),
         ],
-
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            _SectionTitle(
-              units.isEmpty ? 'Logements' : 'Logements · ${units.length}',
-            ),
-            const Spacer(),
+        const SizedBox(height: 12),
+        Section(
+          title: units.isEmpty ? 'Logements' : 'Logements · ${units.length}',
+          icon: AppSectionIcons.properties,
+          padding: EdgeInsets.zero,
+          actions: [
             if (onAttach != null)
-              GestureDetector(
-                onTap: onAttach,
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.add_rounded,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Rattacher',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+              AppButton(
+                label: 'Rattacher',
+                icon: LucideIcons.plus,
+                variant: AppButtonVariant.secondary,
+                size: AppButtonSize.sm,
+                onPressed: onAttach,
               ),
           ],
+          child: unitsFailed
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: AppCallout(
+                    icon: LucideIcons.circleAlert,
+                    tone: AppAccent.red,
+                    message:
+                        'Les logements n’ont pas pu être chargés. Tirez pour '
+                        'réessayer.',
+                  ),
+                )
+              : units.isEmpty
+              ? const EmptyState(
+                  icon: AppSectionIcons.properties,
+                  message:
+                      'Aucun logement rattaché. Une résidence sans logement '
+                      'n’est pas encore louable.',
+                )
+              : Column(
+                  children: [
+                    for (var i = 0; i < units.length; i++) ...[
+                      if (i > 0) const Divider(height: 1),
+                      ResidenceUnitTile(
+                        unit: units[i],
+                        onTap: () => context.router.push(
+                          PropertyDetailRoute(property: units[i]),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
         ),
-        const SizedBox(height: 10),
-
-        if (unitsFailed)
-          const _UnitsNotice(
-            'Les logements n’ont pas pu être chargés. Tirez pour réessayer.',
-            isError: true,
-          )
-        else if (units.isEmpty)
-          const _UnitsNotice(
-            'Aucun logement rattaché. Une résidence sans logement n’est pas '
-            'encore louable.',
-          )
-        else
-          for (final unit in units)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ResidenceUnitTile(
-                unit: unit,
-                onTap: () =>
-                    context.router.push(PropertyDetailRoute(property: unit)),
-              ),
-            ),
       ],
     );
   }
 }
 
-/// Nom, adresse et nombre de logements.
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.residence});
-
-  final ResidenceModel residence;
-
-  @override
-  Widget build(BuildContext context) {
-    final address = residence.address;
-    final street = address.street.trim();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.infoBg,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.apartment_rounded,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      residence.name,
-                      style: AppTextStyles.sectionTitle.copyWith(fontSize: 17),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.place_outlined,
-                          size: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            street.isEmpty
-                                ? address.city
-                                : '$street, ${address.city}',
-                            maxLines: 2,
-                            style: AppTextStyles.labelSmall,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AmenitiesCard extends StatelessWidget {
-  const _AmenitiesCard({required this.amenities});
+class _AmenitiesList extends StatelessWidget {
+  const _AmenitiesList({required this.amenities});
 
   final Set<ResidenceAmenity> amenities;
 
   static const _icons = {
-    ResidenceAmenity.pool: Icons.pool_outlined,
-    ResidenceAmenity.gym: Icons.fitness_center_outlined,
-    ResidenceAmenity.security: Icons.shield_outlined,
-    ResidenceAmenity.concierge: Icons.support_agent_outlined,
-    ResidenceAmenity.elevator: Icons.elevator_outlined,
-    ResidenceAmenity.parking: Icons.local_parking_outlined,
-    ResidenceAmenity.garden: Icons.park_outlined,
-    ResidenceAmenity.wifi: Icons.wifi_rounded,
+    ResidenceAmenity.pool: LucideIcons.waves,
+    ResidenceAmenity.gym: LucideIcons.dumbbell,
+    ResidenceAmenity.security: LucideIcons.shield,
+    ResidenceAmenity.concierge: LucideIcons.headset,
+    ResidenceAmenity.elevator: LucideIcons.arrowUpDown,
+    ResidenceAmenity.parking: LucideIcons.squareParking,
+    ResidenceAmenity.garden: LucideIcons.trees,
+    ResidenceAmenity.wifi: LucideIcons.wifi,
   };
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final amenity in amenities)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _icons[amenity] ?? Icons.check_rounded,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(amenity.label, style: AppTextStyles.labelSmall),
-                ],
-              ),
+    final t = context.tokens;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final amenity in amenities)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: t.background,
+              border: Border.all(color: t.border),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(text, style: AppTextStyles.sectionTitle.copyWith(fontSize: 13));
-  }
-}
-
-/// Message tenant la place de la liste des logements.
-class _UnitsNotice extends StatelessWidget {
-  const _UnitsNotice(this.message, {this.isError = false});
-
-  final String message;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isError ? AppColors.errorBg : AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        message,
-        style: AppTextStyles.labelMedium.copyWith(
-          height: 1.5,
-          color: isError ? AppColors.error : AppColors.textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 34,
-              color: AppColors.grey500,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.labelMedium.copyWith(height: 1.5),
-            ),
-            const SizedBox(height: 18),
-            OutlinedButton(
-              onPressed: onRetry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _icons[amenity] ?? LucideIcons.check,
+                  size: 14,
+                  color: t.muted,
                 ),
-              ),
-              child: const Text('Réessayer', style: TextStyle(fontSize: 13)),
+                const SizedBox(width: 6),
+                Text(
+                  amenity.label,
+                  style: context.text.bodySmall!.copyWith(color: t.foreground),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

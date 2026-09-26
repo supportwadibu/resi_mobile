@@ -1,11 +1,11 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/utils/country_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
@@ -284,7 +284,6 @@ class _PropertyManagerProfileViewState
           // barre d'action — pour que l'arrivée des données ne redessine pas
           // l'écran.
           return Scaffold(
-            backgroundColor: AppColors.white,
             body: SafeArea(
               child: Column(
                 children: [
@@ -311,7 +310,6 @@ class _PropertyManagerProfileViewState
         final profile = _profile;
 
         return Scaffold(
-          backgroundColor: AppColors.white,
           body: SafeArea(
             child: AbsorbPointer(
               absorbing: isSubmitting,
@@ -326,7 +324,7 @@ class _PropertyManagerProfileViewState
 
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                      padding: const EdgeInsets.all(16),
                       child: _buildStep(profile),
                     ),
                   ),
@@ -338,28 +336,18 @@ class _PropertyManagerProfileViewState
                               : 'Enregistrer')
                         : 'Suivant',
                     onPrimary: _next,
-                    primaryIcon: AppButtonIcon.material(
-                      _isLastStep
-                          ? Icons.check_rounded
-                          : Icons.arrow_forward_rounded,
-                    ),
+                    primaryIcon: _isLastStep
+                        ? LucideIcons.check
+                        : LucideIcons.arrowRight,
                     secondaryLabel: _isFirstStep ? null : 'Retour',
                     onSecondary: _isFirstStep ? null : _back,
-                    secondaryIcon: AppButtonIcon.material(
-                      Icons.arrow_back_rounded,
-                    ),
+                    secondaryIcon: LucideIcons.chevronLeft,
                     isLoading: isSubmitting,
                     footer: widget.isOnboarding
-                        ? TextButton(
+                        ? AppButton(
+                            label: 'Plus tard',
+                            variant: AppButtonVariant.ghost,
                             onPressed: isSubmitting ? null : _continue,
-                            child: const Text(
-                              'Plus tard',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.grey600,
-                              ),
-                            ),
                           )
                         : null,
                   ),

@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 
 /// Photos de l'annonce.
 ///
@@ -54,18 +55,14 @@ class StepImagesWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Ajoutez des photos de votre bien',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
+          style: context.text.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
           'Minimum 3 photos recommandées · ${images.length} ajoutée(s)',
-          style: TextStyle(fontSize: 12, color: AppColors.grey500),
+          style: context.text.bodySmall,
         ),
         const SizedBox(height: 16),
         GridView.builder(
@@ -79,33 +76,23 @@ class StepImagesWidget extends StatelessWidget {
           itemCount: images.length + 1,
           itemBuilder: (_, i) {
             if (i == images.length) {
-              return GestureDetector(
-                onTap: () => _addImages(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.grey200,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
+              return Material(
+                color: context.tokens.background,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: context.tokens.border),
+                ),
+                child: InkWell(
+                  onTap: () => _addImages(context),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      FaIcon(
-                        FontAwesomeIcons.plus,
+                      Icon(
+                        LucideIcons.imagePlus,
                         size: 20,
-                        color: AppColors.primary,
+                        color: context.tokens.muted,
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        'Ajouter',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.grey500,
-                        ),
-                      ),
+                      Text('Ajouter', style: context.text.bodySmall),
                     ],
                   ),
                 ),
@@ -113,26 +100,27 @@ class StepImagesWidget extends StatelessWidget {
             }
             return Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: _Thumbnail(source: images[i]),
-                ),
+                Positioned.fill(child: _Thumbnail(source: images[i])),
                 Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () => _removeImage(images, i),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: AppColors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(8),
+                  top: 4,
+                  right: 4,
+                  child: Tooltip(
+                    message: 'Retirer',
+                    child: Material(
+                      color: context.tokens.surface,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(color: context.tokens.border),
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 14,
-                        color: AppColors.white,
+                      child: InkWell(
+                        onTap: () => _removeImage(images, i),
+                        child: SizedBox.square(
+                          dimension: 28,
+                          child: Icon(
+                            LucideIcons.trash2,
+                            size: 14,
+                            color: context.tokens.danger,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -141,21 +129,17 @@ class StepImagesWidget extends StatelessWidget {
                   Positioned(
                     bottom: 6,
                     left: 6,
+                    // Voile fixe : l'étiquette est posée sur la photo.
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Principale',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                      color: context.tokens.overlay.withValues(alpha: 0.7),
+                      child: Text(
+                        'Couverture',
+                        style: context.text.labelMedium!.copyWith(
+                          color: context.tokens.onOverlay,
                         ),
                       ),
                     ),
@@ -189,13 +173,13 @@ class _Thumbnail extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        placeholder: (_, _) => Container(color: AppColors.surface),
+        placeholder: (_, _) => Container(color: context.tokens.background),
         errorWidget: (_, _, _) => Container(
-          color: AppColors.surface,
-          child: const Icon(
-            Icons.broken_image_outlined,
+          color: context.tokens.background,
+          child: Icon(
+            LucideIcons.imageOff,
             size: 20,
-            color: AppColors.grey500,
+            color: context.tokens.muted,
           ),
         ),
       );

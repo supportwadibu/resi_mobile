@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_picker_field.dart';
 
 /// Champ de date et d'heure qui remonte sa valeur au formulaire.
 ///
@@ -30,37 +31,15 @@ class DateTimeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = value == null ? hint : _format(value!);
-
-    return GestureDetector(
-      onTap: enabled ? () => _pick(context) : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        decoration: BoxDecoration(
-          color: enabled ? AppColors.surface : AppColors.grey200,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: value == null
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.calendar_today_outlined,
-              size: 16,
-              color: enabled ? AppColors.grey500 : AppColors.textSecondary,
-            ),
-          ],
-        ),
+    // Un champ figé (entrée d'un check-in) reste lisible mais s'estompe,
+    // comme un bouton désactivé.
+    return Opacity(
+      opacity: enabled ? 1 : 0.6,
+      child: AppPickerField(
+        value: value == null ? null : _format(value!),
+        placeholder: hint,
+        icon: LucideIcons.calendar,
+        onTap: enabled ? () => _pick(context) : null,
       ),
     );
   }

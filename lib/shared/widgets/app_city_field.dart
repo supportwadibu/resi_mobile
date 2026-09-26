@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/utils/city_service.dart';
 import 'package:resi_africa/shared/widgets/app_option_picker_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
@@ -97,7 +98,7 @@ class _AppCityFieldState extends State<AppCityField> {
         hint: 'Saisissez votre ville',
         controller: widget.controller,
         onChanged: widget.onChanged,
-        prefixIcon: const Icon(Icons.location_city_outlined, size: 18),
+        prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
         validator: widget.validator,
       );
     }
@@ -108,7 +109,7 @@ class _AppCityFieldState extends State<AppCityField> {
       controller: widget.controller,
       readOnly: true,
       onTap: _openPicker,
-      prefixIcon: const Icon(Icons.location_city_outlined, size: 18),
+      prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
       validator: widget.validator,
     );
   }

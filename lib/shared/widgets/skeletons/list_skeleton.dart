@@ -1,50 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/loading_shimmer.dart';
 
 /// Squelette d'une carte de bien en mode liste.
 ///
 /// Les dimensions reprennent celles de `PropertyCard` en `isListMode` :
-/// vignette 110×110 arrondie à 14, carte à 8 de marge intérieure et 20 de
-/// rayon. Le contenu réel se substitue au squelette sans décalage.
+/// vignette de 96, carte bordée. Le contenu réel se substitue au squelette
+/// sans décalage. Pas de fond : `ShimmerEffect` teinte tout ce qui est
+/// peint, et la carte entière clignoterait.
 class PropertyCardSkeleton extends StatelessWidget {
   const PropertyCardSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(border: Border.all(color: context.tokens.border)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LoadingShimmer(height: 110, width: 110, radius: 14),
+          const LoadingShimmer(height: 96, width: 96),
           const SizedBox(width: 12),
           Expanded(
             child: SizedBox(
               // Aligné sur la vignette : `Spacer` exigerait une hauteur bornée,
               // que la carte ne reçoit pas dans une liste à défilement.
-              height: 110,
+              height: 96,
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Nom du bien
-                    const LoadingShimmer(height: 15, radius: 4),
+                    const LoadingShimmer(height: 15),
                     const SizedBox(height: 8),
                     // Localisation, plus courte que le nom
-                    const LoadingShimmer(height: 12, width: 130, radius: 4),
+                    const LoadingShimmer(height: 12, width: 130),
                     const Spacer(),
                     // Note et prix
                     Row(
                       children: const [
-                        LoadingShimmer(height: 12, width: 60, radius: 4),
+                        LoadingShimmer(height: 12, width: 60),
                         Spacer(),
-                        LoadingShimmer(height: 20, width: 70, radius: 6),
+                        LoadingShimmer(height: 20, width: 70),
                       ],
                     ),
                   ],
@@ -120,7 +117,7 @@ class SimpleListSkeleton extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         itemCount: itemCount,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, _) => LoadingShimmer(height: itemHeight, radius: 14),
+        itemBuilder: (_, _) => LoadingShimmer(height: itemHeight),
       ),
     );
   }

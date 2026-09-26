@@ -1,8 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
@@ -33,35 +37,14 @@ class _GerantListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Mes gérants',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-        ),
-        centerTitle: true,
+      appBar: AppTopBar(
+        title: 'Mes gérants',
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () => _openForm(context),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.black,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  size: 20,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+          AppButton(
+            label: 'Ajouter',
+            icon: LucideIcons.plus,
+            size: AppButtonSize.sm,
+            onPressed: () => _openForm(context),
           ),
         ],
       ),
@@ -80,12 +63,11 @@ class _GerantListView extends StatelessWidget {
             onCreate: () => _openForm(context),
           ),
           GerantListLoaded(:final items) => RefreshIndicator(
-            color: AppColors.primary,
             onRefresh: () => context.read<GerantListCubit>().load(),
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (_, index) {
                 final gerant = items[index];
                 return GerantCard(
@@ -133,58 +115,20 @@ class _GerantListView extends StatelessWidget {
     final cubit = context.read<GerantListCubit>();
     final suspendre = gerant.isActive;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          suspendre
-              ? 'Suspendre ${gerant.fullName} ?'
-              : 'Réactiver ${gerant.fullName} ?',
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: Text(
-          suspendre
-              ? 'Il ne pourra plus se connecter. Son périmètre et les '
-                    'réservations qu’il a saisies sont conservés.'
-              : 'Il retrouvera l’accès aux logements qui lui sont confiés.',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-            ),
-            child: const Text('Annuler', style: TextStyle(fontSize: 13)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: suspendre ? AppColors.error : AppColors.success,
-            ),
-            child: Text(
-              suspendre ? 'Suspendre' : 'Réactiver',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: suspendre
+          ? 'Suspendre ${gerant.fullName} ?'
+          : 'Réactiver ${gerant.fullName} ?',
+      message: suspendre
+          ? 'Il ne pourra plus se connecter. Son périmètre et les '
+                'réservations qu’il a saisies sont conservés.'
+          : 'Il retrouvera l’accès aux logements qui lui sont confiés.',
+      confirmLabel: suspendre ? 'Suspendre' : 'Réactiver',
+      danger: suspendre,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     final error = await cubit.setStatus(gerant.id, isActive: !gerant.isActive);
     if (error != null) {
@@ -207,69 +151,16 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: AppColors.infoBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.badge_outlined,
-                size: 28,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Aucun gérant',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Un gérant encaisse les réservations et suit les dépenses des '
-              'seuls logements que vous lui confiez. Il ne voit ni vos '
-              'revenus, ni vos autres biens.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onCreate,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.black,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text(
-                'Ajouter un gérant',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: AppSectionIcons.managers,
+      title: 'Aucun gérant',
+      message:
+          'Un gérant encaisse les réservations et suit les dépenses des '
+          'seuls logements que vous lui confiez. Il ne voit ni vos '
+          'revenus, ni vos autres biens.',
+      actionLabel: 'Ajouter un gérant',
+      actionIcon: LucideIcons.plus,
+      onAction: onCreate,
     );
   }
 }

@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 
 import '../../../../clients/data/models/identity_document_model.dart';
 import '../../../../clients/presentation/widgets/create/document_source_sheet.dart';
@@ -69,62 +71,61 @@ class _DocumentSlot extends StatelessWidget {
   Widget build(BuildContext context) {
     final file = path;
 
-    return GestureDetector(
-      onTap: () => _pick(context),
-      child: Container(
-        height: 120,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: file == null ? AppColors.divider : AppColors.primary,
-          ),
-        ),
-        child: file == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.camera_alt_outlined,
-                    color: AppColors.grey500,
-                    size: 22,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+    final t = context.tokens;
+    return Material(
+      color: t.background,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: file == null ? t.border : t.primary),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _pick(context),
+        child: SizedBox(
+          height: 120,
+          child: file == null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.camera,
+                      color: context.tokens.muted,
+                      size: 22,
                     ),
-                  ),
-                ],
-              )
-            : Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.file(File(file), fit: BoxFit.cover),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: () => onChanged(null),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Colors.white,
+                    const SizedBox(height: 6),
+                    Text(label, style: context.text.bodySmall),
+                  ],
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(File(file), fit: BoxFit.cover),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Tooltip(
+                        message: 'Retirer',
+                        child: Material(
+                          color: t.surface,
+                          shape: RoundedRectangleBorder(
+                            side: BorderSide(color: t.border),
+                          ),
+                          child: InkWell(
+                            onTap: () => onChanged(null),
+                            child: SizedBox.square(
+                              dimension: 28,
+                              child: Icon(
+                                LucideIcons.trash2,
+                                size: 14,
+                                color: t.danger,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+        ),
       ),
     );
   }

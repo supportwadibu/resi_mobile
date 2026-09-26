@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/error/failures.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 
 import '../../../../residence/data/repositories/residence_repository.dart';
 
@@ -79,74 +82,37 @@ class _PropertyResidenceSectionState extends State<PropertyResidenceSection> {
     final isAttached = widget.residenceId != null;
     final unitLabel = widget.unitLabel?.trim() ?? '';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Résidence',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E2A5A),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isAttached ? Icons.apartment_rounded : Icons.home_work_outlined,
-                size: 18,
-                color: const Color(0xFF1E2A5A),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _title(isAttached),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isAttached
-                        ? (unitLabel.isEmpty
-                              ? 'Logement sans libellé'
-                              : unitLabel)
-                        : 'Non rattaché à une résidence',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: AppColors.grey500),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: widget.onAttachPressed,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                visualDensity: VisualDensity.compact,
-              ),
-              child: Text(isAttached ? 'Modifier' : 'Rattacher'),
-            ),
-          ],
+    return Section(
+      title: 'Résidence',
+      icon: AppSectionIcons.residences,
+      actions: [
+        AppButton(
+          label: isAttached ? 'Modifier' : 'Rattacher',
+          variant: AppButtonVariant.secondary,
+          size: AppButtonSize.sm,
+          onPressed: widget.onAttachPressed,
         ),
       ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _title(isAttached),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.titleSmall,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            isAttached
+                ? (unitLabel.isEmpty ? 'Logement sans libellé' : unitLabel)
+                : 'Non rattaché à une résidence',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 

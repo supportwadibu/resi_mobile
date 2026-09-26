@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_badge.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import '../../../../clients/presentation/widgets/client_avatar.dart';
 
 import '../../../../clients/data/models/client_model.dart';
 
@@ -50,23 +58,16 @@ class ClientFieldGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (onPickFromBook != null)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: AppButton(
+              label: 'Choisir au carnet',
+              icon: LucideIcons.contact,
+              variant: AppButtonVariant.secondary,
+              expand: true,
               onPressed: onPickFromBook,
-              icon: const Icon(Icons.contacts_outlined, size: 16),
-              label: const Text(
-                'Choisir un client',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                visualDensity: VisualDensity.compact,
-              ),
             ),
           ),
-        const SizedBox(height: 4),
         _Field(
           controller: nameController,
           hint: 'Nom et prénoms — ex : Mohamed Traoré',
@@ -81,12 +82,8 @@ class ClientFieldGroup extends StatelessWidget {
           onChanged: onPhoneChanged,
           suffix: isLookingUp
               ? const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+                  padding: EdgeInsets.all(10),
+                  child: AppLoader(size: 20),
                 )
               : null,
         ),
@@ -127,33 +124,8 @@ class _Field extends StatelessWidget {
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 13.5),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13,
-        ),
-        filled: true,
-        fillColor: AppColors.surface,
-        suffixIcon: suffix,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-      ),
+      style: context.text.bodyMedium,
+      decoration: InputDecoration(hintText: hint, suffixIcon: suffix),
     );
   }
 }
@@ -167,27 +139,11 @@ class _SelectedClientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-            child: Text(
-              client.avatarInitials,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
+          ClientAvatar(initials: client.avatarInitials),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -195,37 +151,26 @@ class _SelectedClientCard extends StatelessWidget {
               children: [
                 Text(
                   client.fullName,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: context.text.titleSmall!.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  client.phone,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(client.phone, style: context.text.bodySmall),
                 if (!client.documentsComplete) ...[
                   const SizedBox(height: 4),
-                  const Text(
-                    'Pièce d’identité incomplète',
-                    style: TextStyle(fontSize: 11, color: AppColors.warning),
+                  const AppBadge(
+                    label: 'Pièce d’identité incomplète',
+                    tone: AppAccent.amber,
                   ),
                 ],
               ],
             ),
           ),
-          TextButton(
+          AppButton(
+            label: 'Changer',
+            variant: AppButtonVariant.ghost,
+            size: AppButtonSize.sm,
             onPressed: onChange,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              visualDensity: VisualDensity.compact,
-            ),
-            child: const Text('Changer', style: TextStyle(fontSize: 12.5)),
           ),
         ],
       ),
@@ -247,50 +192,24 @@ class _DuplicateBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-      decoration: BoxDecoration(
-        color: AppColors.warningBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.25)),
-      ),
-      child: Row(
+    return AppCallout(
+      icon: LucideIcons.userSearch,
+      tone: AppAccent.amber,
+      title: 'Ce numéro est déjà au carnet',
+      message: client.fullName,
+      action: Row(
         children: [
-          const Icon(Icons.person_outline, size: 18, color: AppColors.warning),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textPrimary,
-                  height: 1.4,
-                ),
-                children: [
-                  const TextSpan(text: 'Ce numéro est déjà au carnet : '),
-                  TextSpan(
-                    text: client.fullName,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          TextButton(
+          AppButton(
+            label: 'Utiliser cette fiche',
+            size: AppButtonSize.sm,
             onPressed: onUse,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-            ),
-            child: const Text('Utiliser', style: TextStyle(fontSize: 12.5)),
           ),
-          IconButton(
+          const SizedBox(width: 8),
+          AppButton(
+            label: 'Nouveau client',
+            variant: AppButtonVariant.ghost,
+            size: AppButtonSize.sm,
             onPressed: onDismiss,
-            icon: const Icon(Icons.close, size: 16),
-            color: AppColors.grey500,
-            visualDensity: VisualDensity.compact,
-            tooltip: 'Créer un nouveau client',
           ),
         ],
       ),

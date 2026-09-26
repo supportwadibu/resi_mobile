@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../business_logic/clients_cubit.dart';
 import '../../business_logic/clients_state.dart';
 import '../../data/models/client_model.dart';
+import 'client_avatar.dart';
 
 /// Ouvre le carnet pour choisir un client existant.
 ///
@@ -13,13 +20,8 @@ import '../../data/models/client_model.dart';
 /// sélection. Le propriétaire qui ne trouve pas son client ferme la feuille et
 /// le saisit : c'est pourquoi l'absence de résultat n'est pas une impasse.
 Future<ClientModel?> showClientPicker(BuildContext context) {
-  return showModalBottomSheet<ClientModel>(
+  return showAppSheet<ClientModel>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: AppColors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (_) => BlocProvider(
       create: (_) => sl<ClientsCubit>()..load(),
       child: const _ClientPickerSheet(),
@@ -66,83 +68,45 @@ class _ClientPickerSheetState extends State<_ClientPickerSheet> {
         height: MediaQuery.sizeOf(context).height * 0.75,
         child: Column(
           children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey200,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
-              child: Row(
-                children: [
-                  Text(
-                    'Choisir un client',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppSheetHeader(title: 'Choisir un client'),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: TextField(
                 autofocus: false,
                 onChanged: (q) => context.read<ClientsCubit>().search(q),
-                style: const TextStyle(fontSize: 14),
-                decoration: InputDecoration(
+                style: context.text.bodyMedium,
+                decoration: const InputDecoration(
                   hintText: 'Nom ou numéro',
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  prefixIcon: const Icon(Icons.search, size: 18),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+                  prefixIcon: Icon(LucideIcons.search, size: 16),
                 ),
               ),
             ),
+            const Divider(height: 1),
             Expanded(
               child: BlocBuilder<ClientsCubit, ClientsState>(
                 builder: (context, state) => switch (state) {
-                  ClientsInitial() || ClientsLoading() => const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  ClientsError(:final message) => _SheetMessage(
-                    icon: Icons.error_outline,
-                    text: message,
+                  ClientsInitial() ||
+                  ClientsLoading() => const Center(child: AppLoader()),
+                  ClientsError(:final message) => ErrorState(
+                    message: message,
+                    onRetry: () => context.read<ClientsCubit>().load(),
                   ),
                   ClientsLoaded(items: final items) when items.isEmpty =>
-                    const _SheetMessage(
-                      icon: Icons.person_search_outlined,
-                      text:
-                          'Aucun client trouvé.\nFermez pour en enregistrer un nouveau.',
+                    const EmptyState(
+                      icon: LucideIcons.userSearch,
+                      title: 'Aucun client trouvé',
+                      message: 'Fermez pour en enregistrer un nouveau.',
                     ),
                   ClientsLoaded(:final items, :final isLoadingMore) =>
                     ListView.separated(
                       controller: _scrollController,
                       itemCount: items.length + (isLoadingMore ? 1 : 0),
-                      separatorBuilder: (_, _) =>
-                          const Divider(height: 1, color: AppColors.divider),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (_, i) {
                         if (i >= items.length) {
                           return const Padding(
                             padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            ),
+                            child: Center(child: AppLoader(size: 24)),
                           );
                         }
                         return _ClientTile(client: items[i]);
@@ -167,74 +131,21 @@ class _ClientTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: () => Navigator.of(context).pop(client),
-      leading: CircleAvatar(
-        radius: 20,
-        backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-        child: Text(
-          client.avatarInitials,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
-      title: Text(
-        client.fullName,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      subtitle: Text(
-        client.phone,
-        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-      ),
+      leading: ClientAvatar(initials: client.avatarInitials),
+      title: Text(client.fullName, style: context.text.titleSmall),
+      subtitle: Text(client.phone, style: context.text.bodySmall),
       trailing: client.documentsComplete
           ? null
           // Le dossier incomplet est signalé sans bloquer : les pièces sont
           // facultatives à l'enregistrement, et la relance se fait plus tard.
-          : const Tooltip(
+          : Tooltip(
               message: 'Pièce d’identité incomplète',
               child: Icon(
-                Icons.badge_outlined,
+                LucideIcons.idCard,
                 size: 18,
-                color: AppColors.warning,
+                color: context.tokens.accentAmber,
               ),
             ),
-    );
-  }
-}
-
-class _SheetMessage extends StatelessWidget {
-  const _SheetMessage({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: AppColors.grey500),
-            const SizedBox(height: 12),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

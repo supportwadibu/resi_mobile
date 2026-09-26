@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import '../../../data/models/finance/revenue_point_model.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
@@ -69,22 +69,21 @@ class RevenueChart extends StatelessWidget {
   const RevenueChart({super.key, required this.points});
 
   @override
-  @override
   Widget build(BuildContext context) {
     final window = buildSixMonthWindow(points);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Évolution des revenus mensuels',
-          style: AppTextStyles.sectionTitle,
-        ),
-        const SizedBox(height: 16),
         SizedBox(
           height: 170,
           child: CustomPaint(
-            painter: _ChartPainter(points: window, lastDataIndex: 3),
+            painter: _ChartPainter(
+              points: window,
+              lastDataIndex: 3,
+              tokens: context.tokens,
+              labelStyle: context.text.bodySmall!,
+            ),
             child: const SizedBox.expand(),
           ),
         ),
@@ -117,7 +116,7 @@ class _MonthLabels extends StatelessWidget {
                   child: Text(
                     points[i].month,
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.labelSmall,
+                    style: context.text.bodySmall,
                   ),
                 ),
             ],
@@ -132,7 +131,16 @@ class _ChartPainter extends CustomPainter {
   final List<RevenuePointModel> points;
   final int lastDataIndex;
 
-  const _ChartPainter({required this.points, required this.lastDataIndex});
+  /// Jetons et style du mode courant : un peintre n'a pas de `BuildContext`.
+  final ResiTokens tokens;
+  final TextStyle labelStyle;
+
+  const _ChartPainter({
+    required this.points,
+    required this.lastDataIndex,
+    required this.tokens,
+    required this.labelStyle,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -152,14 +160,14 @@ class _ChartPainter extends CustomPainter {
     // Axe Y + grille
     final labelPainter = TextPainter(textDirection: TextDirection.ltr);
     final gridPaint = Paint()
-      ..color = AppColors.chartGrid
+      ..color = tokens.border
       ..strokeWidth = 1;
 
     for (int i = 0; i <= _kDivisions; i++) {
       final y = yOf(step * i);
       labelPainter.text = TextSpan(
         text: _formatK(step * i),
-        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+        style: labelStyle,
       );
       labelPainter.layout();
       labelPainter.paint(
@@ -202,8 +210,8 @@ class _ChartPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.chartLine.withValues(alpha: 0.18),
-            AppColors.chartLine.withValues(alpha: 0),
+            tokens.accentGreen.withValues(alpha: 0.18),
+            tokens.accentGreen.withValues(alpha: 0),
           ],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
     );
@@ -211,24 +219,29 @@ class _ChartPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = AppColors.chartLine
+        ..color = tokens.accentGreen
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
+        ..strokeCap = StrokeCap.butt
+        ..strokeJoin = StrokeJoin.miter,
     );
 
-    final dotPaint = Paint()..color = AppColors.chartDot;
-    final borderPaint = Paint()..color = Colors.white;
+    // Points carrés : aucun arrondi, jusque dans les graphiques.
+    final dotPaint = Paint()..color = tokens.accentGreen;
+    final borderPaint = Paint()..color = tokens.surface;
     for (final o in offsets) {
-      canvas.drawCircle(o, 6, borderPaint);
-      canvas.drawCircle(o, 4, dotPaint);
+      canvas.drawRect(
+        Rect.fromCenter(center: o, width: 10, height: 10),
+        borderPaint,
+      );
+      canvas.drawRect(Rect.fromCenter(center: o, width: 6, height: 6), dotPaint);
     }
   }
 
   @override
   bool shouldRepaint(covariant _ChartPainter old) =>
       old.lastDataIndex != lastDataIndex ||
+      old.tokens != tokens ||
       old.points.length != points.length ||
       !listEquals(old.points, points);
 }

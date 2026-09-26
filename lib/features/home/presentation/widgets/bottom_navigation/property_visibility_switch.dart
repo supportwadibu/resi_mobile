@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 
 /// Met l'annonce en ligne, ou la retire de la vitrine.
@@ -25,67 +27,26 @@ class PropertyVisibilitySwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isPublished ? AppColors.success : AppColors.grey600;
-    final background = isPublished ? AppColors.successBg : AppColors.grey100;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isPublished
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            size: 20,
-            color: color,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isPublished ? 'En ligne' : 'Hors ligne',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  isPublished
-                      ? 'Visible par les clients'
-                      : 'Masquée dans la vitrine',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isBusy)
-            const Padding(
-              // Occupe la largeur du bouton retiré, pour que la ligne ne
+    return Stack(
+      alignment: Alignment.centerRight,
+      children: [
+        AppCallout(
+          icon: isPublished ? LucideIcons.eye : LucideIcons.eyeOff,
+          tone: isPublished ? AppAccent.green : AppAccent.neutral,
+          title: isPublished ? 'En ligne' : 'Hors ligne',
+          message: isPublished
+              ? 'Visible par les clients'
+              : 'Masquée dans la vitrine',
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: isBusy
+              // Occupe la largeur de la bascule, pour que la ligne ne
               // tressaute pas le temps de l'appel.
-              padding: EdgeInsets.symmetric(horizontal: 14),
-              child: AppLoader(size: 20),
-            )
-          else
-            Switch(
-              value: isPublished,
-              onChanged: onChanged,
-              activeThumbColor: AppColors.success,
-              activeTrackColor: AppColors.success.withValues(alpha: 0.35),
-            ),
-        ],
-      ),
+              ? const SizedBox(width: 52, child: AppLoader(size: 20))
+              : Switch(value: isPublished, onChanged: onChanged),
+        ),
+      ],
     );
   }
 }

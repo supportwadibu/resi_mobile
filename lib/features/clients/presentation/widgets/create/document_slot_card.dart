@@ -1,11 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/shared/widgets/app_badge.dart';
 import '../../../data/models/identity_document_model.dart';
 import 'document_source_sheet.dart';
 
+/// Emplacement d'une pièce (recto, verso, photo) : vide, il invite à prendre
+/// la photo ; rempli, il montre l'aperçu avec de quoi le retirer.
 class DocumentSlotCard extends StatelessWidget {
   final DocumentSlot slot;
   final IdentityDocumentModel? document;
@@ -36,26 +40,20 @@ class DocumentSlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final hasFile = document != null;
 
-    return GestureDetector(
-      onTap: () => _pick(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 165,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: hasFile
-                ? AppColors.green.withOpacity(0.5)
-                : AppColors.divider,
-            width: hasFile ? 1.5 : 1,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(13),
+    return Material(
+      color: t.background,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: hasFile ? t.primary : t.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _pick(context),
+        child: SizedBox(
+          height: 160,
+          width: double.infinity,
           child: hasFile
               ? _FilledSlot(document: document!, onRemove: onRemove)
               : _EmptySlot(slot: slot),
@@ -69,30 +67,22 @@ class _EmptySlot extends StatelessWidget {
   final DocumentSlot slot;
   const _EmptySlot({required this.slot});
 
-  IconData get _icon {
-    switch (slot) {
-      case DocumentSlot.recto:
-        return Icons.credit_card_rounded;
-      case DocumentSlot.verso:
-        return Icons.flip_rounded;
-      case DocumentSlot.photo:
-        return Icons.face_rounded;
-    }
-  }
+  IconData get _icon => switch (slot) {
+    DocumentSlot.recto => LucideIcons.creditCard,
+    DocumentSlot.verso => LucideIcons.flipHorizontal,
+    DocumentSlot.photo => LucideIcons.user,
+  };
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(_icon, size: 30, color: AppColors.textSecondary.withOpacity(0.5)),
+        Icon(_icon, size: 24, color: context.tokens.muted),
         const SizedBox(height: 8),
-        Text(
-          slot.label,
-          style: AppTextStyles.valueSmall.copyWith(fontSize: 12),
-        ),
+        Text(slot.label, style: context.text.titleSmall),
         const SizedBox(height: 2),
-        Text(slot.hint, style: AppTextStyles.labelSmall.copyWith(fontSize: 10)),
+        Text(slot.hint, style: context.text.bodySmall),
       ],
     );
   }
@@ -106,68 +96,50 @@ class _FilledSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Stack(
       fit: StackFit.expand,
       children: [
         Image.file(document.file, fit: BoxFit.cover),
-        // overlay bas
+        // Libellé sur un voile : `overlay` / `onOverlay`, identiques dans les
+        // deux modes, la photo ne changeant pas.
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            color: Colors.black.withOpacity(0.45),
+            color: t.overlay.withValues(alpha: 0.55),
             child: Text(
               document.slot.label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: Colors.white,
-                fontSize: 10,
-              ),
+              style: context.text.bodySmall!.copyWith(color: t.onOverlay),
             ),
           ),
         ),
-        // bouton supprimer
+        const Positioned(
+          top: 6,
+          left: 6,
+          child: AppBadge(
+            label: 'Ajoutée',
+            tone: AppAccent.green,
+            icon: LucideIcons.check,
+          ),
+        ),
         Positioned(
           top: 6,
           right: 6,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: AppColors.red,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                  ),
-                ],
+          child: Tooltip(
+            message: 'Retirer',
+            child: Material(
+              color: t.surface,
+              shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+              child: InkWell(
+                onTap: onRemove,
+                child: SizedBox.square(
+                  dimension: 32,
+                  child: Icon(LucideIcons.trash2, size: 14, color: t.danger),
+                ),
               ),
-              child: const Icon(
-                Icons.close_rounded,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-        // badge succès
-        Positioned(
-          top: 6,
-          left: 6,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.green,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              size: 12,
-              color: Colors.white,
             ),
           ),
         ),

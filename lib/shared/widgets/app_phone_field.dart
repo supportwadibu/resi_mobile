@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/utils/flag_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
 
@@ -31,22 +32,16 @@ class AppPhoneField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
+        Text(label, style: context.text.titleSmall),
+        const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: TextInputType.phone,
-          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          style: context.text.bodyMedium,
           inputFormatters: [
             // Chiffres et séparateurs de lisibilité uniquement : le `+` et
             // l'indicatif sont portés par le préfixe, les redoubler produirait
@@ -56,60 +51,28 @@ class AppPhoneField extends StatelessWidget {
           validator: (value) => PhoneHelper.validate(value, countryIso2),
           decoration: InputDecoration(
             hintText: PhoneHelper.hintFor(countryIso2),
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
             prefixIcon: Padding(
-              padding: const EdgeInsets.only(left: 16, right: 8),
+              padding: const EdgeInsets.only(left: 12, right: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     countryFlagLabel(countryIso2),
-                    style: const TextStyle(fontSize: 18),
+                    style: context.text.titleLarge,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '+$phoneCode',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                    style: context.text.bodyMedium!.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(width: 1, height: 20, color: AppColors.grey200),
+                  Container(width: 1, height: 20, color: t.border),
                 ],
               ),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 0),
-            filled: true,
-            fillColor: const Color(0xFFF5F5F5),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF5B4FCF),
-                width: 1.5,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1.5),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1.5),
-            ),
           ),
         ),
       ],

@@ -1,7 +1,8 @@
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_city_field.dart';
 import 'package:resi_africa/shared/widgets/app_commune_field.dart';
 import 'package:resi_africa/shared/widgets/app_country_field.dart';
@@ -78,10 +79,9 @@ class StepPersonalInfoWidget extends StatelessWidget {
           ],
 
           if (showIntro) ...[
-            const OwnerProfileNotice(
-              icon: FontAwesomeIcons.idCard,
-              color: AppColors.info,
-              background: AppColors.infoBg,
+            OwnerProfileNotice(
+              icon: LucideIcons.idCard,
+              tone: AppAccent.blue,
               message:
                   'Ces informations permettent de valider votre compte. '
                   'Sans dossier validé, votre accès sera suspendu à la fin de '
@@ -90,15 +90,11 @@ class StepPersonalInfoWidget extends StatelessWidget {
             const SizedBox(height: 24),
           ],
 
-          if (profile != null) ...[?_buildStatusNotice(profile!)],
+          if (profile != null) ...[?_buildStatusNotice(context, profile!)],
 
-          const Text(
+          Text(
             'Qui êtes-vous ?',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black,
-            ),
+            style: context.text.titleMedium,
           ),
           const SizedBox(height: 20),
 
@@ -106,18 +102,14 @@ class StepPersonalInfoWidget extends StatelessWidget {
             label: 'Nom complet',
             hint: 'Tel qu’il figure sur votre pièce d’identité',
             controller: nameController,
-            prefixIcon: const Icon(Icons.person_outline, size: 18),
+            prefixIcon: const Icon(LucideIcons.user, size: 16),
             validator: _required,
           ),
 
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Où résidez-vous ?',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.black,
-            ),
+            style: context.text.titleMedium,
           ),
           const SizedBox(height: 20),
 
@@ -147,7 +139,7 @@ class StepPersonalInfoWidget extends StatelessWidget {
             label: 'Adresse',
             hint: 'Rue, quartier...',
             controller: addressController,
-            prefixIcon: const Icon(Icons.location_on_outlined, size: 18),
+            prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
           ),
 
           const SizedBox(height: 24),
@@ -167,37 +159,33 @@ class StepPersonalInfoWidget extends StatelessWidget {
   /// Le motif de refus et l'échéance de suspension viennent du serveur : les
   /// afficher tels quels évite d'inventer une explication que l'utilisateur ne
   /// pourrait pas relier à la décision réelle.
-  Widget? _buildStatusNotice(OwnerProfileModel profile) {
+  Widget? _buildStatusNotice(BuildContext context, OwnerProfileModel profile) {
     final notice = switch (profile) {
       _ when profile.isRejected => OwnerProfileNotice(
-        icon: FontAwesomeIcons.circleExclamation,
-        color: AppColors.error,
-        background: AppColors.errorBg,
+        icon: LucideIcons.circleAlert,
+        tone: AppAccent.red,
         message:
             profile.rejectionReason == null || profile.rejectionReason!.isEmpty
             ? 'Votre dossier a été refusé. Corrigez-le et renvoyez-le.'
             : 'Dossier refusé : ${profile.rejectionReason}',
       ),
-      _ when profile.isSuspended => const OwnerProfileNotice(
-        icon: FontAwesomeIcons.ban,
-        color: AppColors.error,
-        background: AppColors.errorBg,
+      _ when profile.isSuspended => OwnerProfileNotice(
+        icon: LucideIcons.ban,
+        tone: AppAccent.red,
         message:
             'Votre compte est suspendu faute de dossier validé. '
             'Complétez-le pour retrouver l’accès à vos biens.',
       ),
-      _ when profile.isUnderReview => const OwnerProfileNotice(
-        icon: FontAwesomeIcons.clock,
-        color: AppColors.info,
-        background: AppColors.infoBg,
+      _ when profile.isUnderReview => OwnerProfileNotice(
+        icon: LucideIcons.clock,
+        tone: AppAccent.blue,
         message:
             'Votre dossier est en cours de vérification. '
             'Vous pouvez encore le corriger tant qu’il n’est pas validé.',
       ),
-      _ when profile.isValidated => const OwnerProfileNotice(
-        icon: FontAwesomeIcons.circleCheck,
-        color: AppColors.success,
-        background: AppColors.successBg,
+      _ when profile.isValidated => OwnerProfileNotice(
+        icon: LucideIcons.circleCheck,
+        tone: AppAccent.green,
         message:
             'Votre dossier est validé. Vos informations restent modifiables.',
       ),

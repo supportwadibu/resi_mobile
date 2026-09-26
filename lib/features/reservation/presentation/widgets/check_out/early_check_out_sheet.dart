@@ -1,9 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 import '../../../../../core/di/service_locator.dart';
 import '../../../../home/presentation/widgets/reservations/reservation_item.dart';
@@ -26,13 +31,8 @@ class EarlyCheckOutSheet extends StatelessWidget {
     BuildContext context,
     ReservationModel reservation,
   ) {
-    return showModalBottomSheet<ReservationModel>(
+    return showAppSheet<ReservationModel>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) => EarlyCheckOutSheet(reservation: reservation),
     );
   }
@@ -97,111 +97,66 @@ class _EarlyCheckOutFormState extends State<_EarlyCheckOutForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      // Le clavier du montant recouvrirait sinon le bouton de validation.
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: BlocConsumer<EarlyCheckOutCubit, EarlyCheckOutState>(
-        listener: _onStateChanged,
-        builder: (context, state) {
-          final quote = switch (state) {
-            EarlyCheckOutLoaded(:final quote) => quote,
-            EarlyCheckOutError(:final quote?) => quote,
-            _ => null,
-          };
-          final isSubmitting =
-              state is EarlyCheckOutLoaded && state.isSubmitting;
+    // `AppSheet` repousse le contenu au-dessus du clavier : le champ du
+    // montant ne recouvre pas le bouton de validation.
+    return BlocConsumer<EarlyCheckOutCubit, EarlyCheckOutState>(
+      listener: _onStateChanged,
+      builder: (context, state) {
+        final quote = switch (state) {
+          EarlyCheckOutLoaded(:final quote) => quote,
+          EarlyCheckOutError(:final quote?) => quote,
+          _ => null,
+        };
+        final isSubmitting = state is EarlyCheckOutLoaded && state.isSubmitting;
 
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'stay_checkout.early_title'.tr(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'stay_checkout.early_body'.tr(),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _Label('stay_checkout.early_departure'.tr()),
-                const SizedBox(height: 8),
-                DateTimeField(
-                  value: _departure,
-                  firstDate: widget.reservation.checkInAt,
+        return AppSheet(
+          title: 'stay_checkout.early_title'.tr(),
+          description: 'stay_checkout.early_body'.tr(),
+          footer: AppButton(
+            label: 'stay_checkout.early_confirm'.tr(),
+            expand: true,
+            isLoading: isSubmitting,
+            onPressed: _canSubmit(quote, isSubmitting)
+                ? () => context.read<EarlyCheckOutCubit>().submit(
+                    widget.reservation.id,
+                    _typedAmount!,
+                  )
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Label('stay_checkout.early_departure'.tr()),
+              const SizedBox(height: 8),
+              DateTimeField(
+                value: _departure,
+                firstDate: widget.reservation.checkInAt,
+                enabled: !isSubmitting,
+                onChanged: _changeDeparture,
+              ),
+              const SizedBox(height: 20),
+              if (state is EarlyCheckOutLoading)
+                const Center(child: AppLoader())
+              else if (quote != null)
+                _QuoteDetails(
+                  quote: quote,
+                  amount: _amount,
                   enabled: !isSubmitting,
-                  onChanged: _changeDeparture,
+                  onAmountChanged: () => setState(() {}),
                 ),
-                const SizedBox(height: 20),
-                if (state is EarlyCheckOutLoading)
-                  const Center(child: AppLoader(size: 48))
-                else if (quote != null)
-                  _QuoteDetails(
-                    quote: quote,
-                    amount: _amount,
-                    enabled: !isSubmitting,
-                    onAmountChanged: () => setState(() {}),
-                  ),
-                if (state case EarlyCheckOutError(:final message)) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    message,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.error,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _canSubmit(quote, isSubmitting)
-                        ? () => context.read<EarlyCheckOutCubit>().submit(
-                            widget.reservation.id,
-                            _typedAmount!,
-                          )
-                        : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: isSubmitting
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.white,
-                            ),
-                          )
-                        : Text('stay_checkout.early_confirm'.tr()),
-                  ),
+              if (state case EarlyCheckOutError(:final message)) ...[
+                const SizedBox(height: 12),
+                AppCallout(
+                  icon: LucideIcons.circleAlert,
+                  tone: AppAccent.red,
+                  message: message,
                 ),
               ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -258,7 +213,7 @@ class _QuoteDetails extends StatelessWidget {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (_) => onAmountChanged(),
-          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          style: context.text.bodyMedium,
           decoration: InputDecoration(
             suffixText: 'F',
             helperText: 'stay_checkout.early_amount_hint'.tr(
@@ -267,12 +222,6 @@ class _QuoteDetails extends StatelessWidget {
             errorText: exceeds
                 ? 'stay_checkout.early_amount_too_high'.tr()
                 : null,
-            filled: true,
-            fillColor: AppColors.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.divider),
-            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -292,14 +241,8 @@ class _Label extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      color: AppColors.textPrimary,
-    ),
-  );
+  Widget build(BuildContext context) =>
+      Text(text, style: context.text.titleSmall);
 }
 
 class _Row extends StatelessWidget {
@@ -313,17 +256,12 @@ class _Row extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      Text(
-        label,
-        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-      ),
+      Text(label, style: context.mutedText),
       Text(
         value,
-        style: TextStyle(
-          fontSize: emphasize ? 15 : 13,
-          fontWeight: FontWeight.w600,
-          color: emphasize ? AppColors.primary : AppColors.textPrimary,
-        ),
+        style: emphasize
+            ? context.text.figure.copyWith(fontSize: 18)
+            : context.text.amount,
       ),
     ],
   );

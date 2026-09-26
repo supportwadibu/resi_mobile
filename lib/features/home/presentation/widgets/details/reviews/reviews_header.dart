@@ -1,6 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'star_rating.dart';
@@ -24,18 +26,14 @@ class ReviewsHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                const Text(
+                Text(
                   '4,9',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1F2937),
-                  ),
+                  style: context.text.headlineSmall!.copyWith(color: context.tokens.foreground),
                 ),
                 const SizedBox(width: 2),
                 Text(
                   '/ 5',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: context.mutedText,
                 ),
               ],
             ),
@@ -47,7 +45,7 @@ class ReviewsHeader extends StatelessWidget {
           width: 1,
           height: 36,
           margin: const EdgeInsets.symmetric(horizontal: 12),
-          color: Colors.grey.shade300,
+          color: context.tokens.border,
         ),
 
         // Meta information
@@ -55,17 +53,13 @@ class ReviewsHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Excellent',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1F2937),
-                ),
+                style: context.text.titleSmall!.copyWith(color: context.tokens.foreground),
               ),
               Text(
                 'Basé sur 128 avis',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: context.text.bodySmall,
               ),
             ],
           ),
@@ -90,9 +84,8 @@ class ReviewsHeader extends StatelessWidget {
         label: 'Voir tous',
         variant: AppButtonVariant.secondary,
         onPressed: () => context.router.push(const AllReviewsRoute()),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        fontSize: 12,
-        trailingIcon: AppButtonIcon.fa(FontAwesomeIcons.chevronRight, size: 12),
+        size: AppButtonSize.sm,
+        trailingIcon: LucideIcons.chevronRight,
       ),
     );
   }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
+/// Caractéristiques marquantes du bien, en pastilles bordées.
 class PropertyFeatures extends StatelessWidget {
   const PropertyFeatures({super.key, required this.features});
 
@@ -8,39 +12,39 @@ class PropertyFeatures extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: features
-            .asMap()
-            .entries
-            .map(
-              (e) => Padding(
-                padding: EdgeInsets.only(left: e.key == 0 ? 0 : 12),
-                child: _buildFeatureChip(e.value),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
+    if (features.isEmpty) return const SizedBox.shrink();
+    final t = context.tokens;
 
-  Widget _buildFeatureChip(PropertyFeature feature) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    return Section(
+      title: 'Caractéristiques',
+      icon: LucideIcons.listChecks,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
         children: [
-          Icon(feature.icon, size: 18, color: Colors.black87),
-          const SizedBox(width: 8),
-          Text(
-            '${feature.count} ${feature.label}',
-            style: const TextStyle(fontSize: 13, color: Colors.black87),
-          ),
+          for (final feature in features)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: t.background,
+                border: Border.all(color: t.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(feature.icon, size: 16, color: t.muted),
+                  const SizedBox(width: 8),
+                  Text(
+                    // Un équipement (wifi, piscine) n'a pas de nombre : « 1
+                    // Wifi » ne dirait rien de plus que « Wifi ».
+                    feature.count > 1 || feature.countable
+                        ? '${feature.count} ${feature.label}'
+                        : feature.label,
+                    style: context.text.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -52,9 +56,13 @@ class PropertyFeature {
     required this.icon,
     required this.label,
     required this.count,
+    this.countable = true,
   });
 
   final IconData icon;
   final String label;
   final int count;
+
+  /// Faux pour un équipement présent ou absent, sans quantité.
+  final bool countable;
 }

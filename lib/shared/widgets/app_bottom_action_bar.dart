@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/shared/widgets/app_button.dart';
+
+import '../../core/theme/resi_tokens.dart';
+import 'app_button.dart';
 
 /// Barre d'actions ancrée en bas d'écran, hors de la zone scrollable.
 ///
@@ -16,6 +17,7 @@ class AppBottomActionBar extends StatelessWidget {
     this.onSecondary,
     this.primaryIcon,
     this.secondaryIcon,
+    this.primaryVariant = AppButtonVariant.primary,
     this.isLoading = false,
     this.footer,
   }) : assert(
@@ -31,8 +33,13 @@ class AppBottomActionBar extends StatelessWidget {
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
 
-  final AppButtonIcon? primaryIcon;
-  final AppButtonIcon? secondaryIcon;
+  /// Icône de l'action principale, placée après le libellé : elle dit où
+  /// mène l'étape (`arrowRight`, `check`).
+  final IconData? primaryIcon;
+  final IconData? secondaryIcon;
+
+  /// `danger` pour une barre dont l'action principale détruit.
+  final AppButtonVariant primaryVariant;
 
   final bool isLoading;
 
@@ -41,42 +48,50 @@ class AppBottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.white,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+    final t = context.tokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: t.surface,
+        border: Border(top: BorderSide(color: t.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (secondaryLabel != null) ...[
-                Expanded(
-                  child: AppButton(
-                    label: secondaryLabel!,
-                    onPressed: isLoading ? null : onSecondary,
-                    variant: AppButtonVariant.secondary,
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    leadingIcon: secondaryIcon,
+              Row(
+                children: [
+                  if (secondaryLabel != null) ...[
+                    Expanded(
+                      child: AppButton(
+                        label: secondaryLabel!,
+                        onPressed: isLoading ? null : onSecondary,
+                        variant: AppButtonVariant.secondary,
+                        icon: secondaryIcon,
+                        expand: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    flex: 2,
+                    child: AppButton(
+                      label: primaryLabel,
+                      onPressed: onPrimary,
+                      isLoading: isLoading,
+                      variant: primaryVariant,
+                      trailingIcon: primaryIcon,
+                      expand: true,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                flex: 2,
-                child: AppButton(
-                  label: primaryLabel,
-                  onPressed: onPrimary,
-                  isLoading: isLoading,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  trailingIcon: primaryIcon,
-                ),
+                ],
               ),
+              if (footer != null) ...[const SizedBox(height: 8), footer!],
             ],
           ),
-          if (footer != null) ...[const SizedBox(height: 8), footer!],
-        ],
+        ),
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/di/service_locator.dart';
 import '../../core/router/app_router.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/resi_tokens.dart';
 
 /// Nature du retour, qui fixe la couleur et l'icône.
 enum AppToastType { success, error, warning, info }
@@ -110,34 +112,27 @@ class _ToastViewState extends State<_ToastView>
     super.dispose();
   }
 
-  ({Color accent, Color background, IconData icon}) get _style {
+  /// Même carte que `notify` du backoffice : surface bordée, seule l'icône
+  /// porte la couleur du ton.
+  ({Color accent, IconData icon}) _style(ResiTokens t) {
     return switch (widget.type) {
       AppToastType.success => (
-        accent: AppColors.success,
-        background: AppColors.successBg,
-        icon: Icons.check_circle_outline_rounded,
+        accent: t.accentGreen,
+        icon: LucideIcons.circleCheck,
       ),
-      AppToastType.error => (
-        accent: AppColors.error,
-        background: AppColors.errorBg,
-        icon: Icons.error_outline_rounded,
-      ),
+      AppToastType.error => (accent: t.danger, icon: LucideIcons.circleAlert),
       AppToastType.warning => (
-        accent: AppColors.warning,
-        background: AppColors.warningBg,
-        icon: Icons.warning_amber_rounded,
+        accent: t.accentAmber,
+        icon: LucideIcons.triangleAlert,
       ),
-      AppToastType.info => (
-        accent: AppColors.info,
-        background: AppColors.infoBg,
-        icon: Icons.info_outline_rounded,
-      ),
+      AppToastType.info => (accent: t.accentBlue, icon: LucideIcons.info),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final style = _style;
+    final t = context.tokens;
+    final style = _style(t);
     final media = MediaQuery.of(context);
 
     return Positioned(
@@ -153,16 +148,15 @@ class _ToastViewState extends State<_ToastView>
           child: Material(
             color: Colors.transparent,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: style.background,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: style.accent.withValues(alpha: 0.35)),
+                color: t.surface,
+                border: Border.all(color: t.border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.10),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
@@ -170,7 +164,7 @@ class _ToastViewState extends State<_ToastView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(style.icon, color: style.accent, size: 20),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.message,
@@ -178,11 +172,8 @@ class _ToastViewState extends State<_ToastView>
                       // plutôt que d'étirer le bandeau sur tout l'écran.
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        height: 1.35,
+                      style: context.text.bodyMedium!.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppColors.black,
                       ),
                     ),
                   ),

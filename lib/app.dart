@@ -1,4 +1,5 @@
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'core/router/app_router.dart';
 import 'core/config/app_config.dart';
 import 'core/di/service_locator.dart';
@@ -59,6 +60,15 @@ class _AppState extends State<App> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    // L'apparence est écoutée ici, au-dessus du routeur : un choix fait dans
+    // le profil bascule toute la pile d'écrans d'un coup.
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: sl<ThemeController>(),
+      builder: (context, themeMode, _) => _buildApp(context, themeMode),
+    );
+  }
+
+  Widget _buildApp(BuildContext context, ThemeMode themeMode) {
     return MaterialApp.router(
       title: widget.config.appName,
       debugShowCheckedModeBanner: !widget.config.isProduction,
@@ -67,7 +77,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       locale: context.locale,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       // `AutoRouteObserver` : permet aux écrans d'être prévenus quand ils
       // redeviennent visibles (`AutoRouteAwareStateMixin.didPopNext`), pour
       // rafraîchir des données modifiées entre-temps.

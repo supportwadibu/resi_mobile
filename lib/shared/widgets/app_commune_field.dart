@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/utils/city_service.dart';
 import 'package:resi_africa/shared/widgets/app_option_picker_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
@@ -101,7 +102,7 @@ class _AppCommuneFieldState extends State<AppCommuneField> {
         controller: widget.controller,
         readOnly: true,
         onTap: _openPicker,
-        prefixIcon: const Icon(Icons.apartment_outlined, size: 18),
+        prefixIcon: const Icon(LucideIcons.building2, size: 18),
         validator: widget.validator,
       ),
     );

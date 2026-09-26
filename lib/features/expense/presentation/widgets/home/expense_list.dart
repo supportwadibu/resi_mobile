@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import 'expense_item.dart';
 
@@ -75,19 +79,12 @@ class ExpenseList extends StatelessWidget {
     return ListView.builder(
       controller: controller,
       itemCount: itemCount,
-      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
       itemBuilder: (_, index) {
         if (index >= groups.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
+            child: Center(child: AppLoader(size: 24)),
           );
         }
 
@@ -118,35 +115,32 @@ class _MonthSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(top: isFirst ? 4 : 24, bottom: 10),
-          child: Row(
-            children: [
-              Text(
-                group.label,
-                style: AppTextStyles.sectionTitle.copyWith(fontSize: 13),
-              ),
-              const Spacer(),
-              Text(
-                CurrencyFormatter.format(group.total),
-                style: AppTextStyles.labelSmall,
+    return Padding(
+      padding: EdgeInsets.only(top: isFirst ? 0 : 16),
+      child: Section(
+        // Le mois en titre, son sous-total à droite : chaque bloc se lit
+        // comme une section de fiche.
+        title: toBeginningOfSentenceCase(group.label),
+        actions: [
+          Text(
+            CurrencyFormatter.short(group.total),
+            style: context.text.amount,
+          ),
+        ],
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            for (var i = 0; i < group.expenses.length; i++) ...[
+              if (i > 0) const Divider(height: 1),
+              _DismissibleExpense(
+                expense: group.expenses[i],
+                onEdit: onEdit,
+                onDelete: onDelete,
               ),
             ],
-          ),
+          ],
         ),
-        for (final expense in group.expenses)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _DismissibleExpense(
-              expense: expense,
-              onEdit: onEdit,
-              onDelete: onDelete,
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -170,7 +164,6 @@ class _DismissibleExpense extends StatelessWidget {
         ? ExpenseItem(expense: expense)
         : InkWell(
             onTap: () => onEdit(expense),
-            borderRadius: BorderRadius.circular(16),
             child: ExpenseItem(expense: expense, showChevron: true),
           );
 
@@ -189,48 +182,20 @@ class _DismissibleExpense extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppColors.errorBg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(Icons.delete_outline, color: AppColors.error),
+        color: context.tokens.dangerSurface,
+        child: Icon(LucideIcons.trash2, color: context.tokens.danger),
       ),
       child: item,
     );
   }
 
-  Future<bool> _confirm(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+  Future<bool> _confirm(BuildContext context) {
+    return showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: const Text('Supprimer cette dépense ?'),
-        content: Text(
-          'Cette action est définitive.',
-          style: AppTextStyles.labelMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Annuler',
-              style: AppTextStyles.valueSmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
+      title: 'Supprimer cette dépense ?',
+      message: 'Cette action est définitive.',
+      confirmLabel: 'Supprimer',
+      danger: true,
     );
-
-    return confirmed ?? false;
   }
 }

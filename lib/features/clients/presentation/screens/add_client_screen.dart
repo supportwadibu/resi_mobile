@@ -1,9 +1,10 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import '../../business_logic/add_client_cubit.dart';
 import '../../business_logic/add_client_state.dart';
 import '../../data/repositories/clients_repository.dart';
@@ -68,30 +69,14 @@ class _AddClientViewState extends State<_AddClientView> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: Text(
-            'Nouveau client',
-            style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-          ),
-          centerTitle: true,
-        ),
+        appBar: AppTopBar(title: 'Nouveau client'),
         bottomNavigationBar: BlocBuilder<AddClientCubit, AddClientState>(
           builder: (context, state) {
             final cubit = context.read<AddClientCubit>();
-            return SafeArea(
-              bottom: true,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SubmitClientButton(
-                  isLoading: state.isLoading,
-                  enabled: state.isValid,
-                  onTap: cubit.submit,
-                ),
-              ),
+            return SubmitClientButton(
+              isLoading: state.isLoading,
+              enabled: state.isValid,
+              onTap: cubit.submit,
             );
           },
         ),
@@ -108,7 +93,7 @@ class _AddClientViewState extends State<_AddClientView> {
                   ClientTextField(
                     controller: _nameController,
                     hint: 'Ex : Mohamed Traoré',
-                    prefixIcon: Icons.person_rounded,
+                    prefixIcon: LucideIcons.user,
                     onChanged: cubit.setFullName,
                     errorText: submitted && state.fullName.trim().length < 2
                         ? 'Nom trop court'
@@ -118,7 +103,7 @@ class _AddClientViewState extends State<_AddClientView> {
                   const FormSectionLabel(text: 'Numéro de téléphone'),
                   ClientTextField(
                     hint: 'Ex : +225 07 XX XX XX XX',
-                    prefixIcon: Icons.phone_rounded,
+                    prefixIcon: LucideIcons.phone,
                     keyboardType: TextInputType.phone,
                     onChanged: cubit.setPhone,
                     errorText: submitted && state.phone.trim().length < 8
@@ -142,7 +127,7 @@ class _AddClientViewState extends State<_AddClientView> {
                         state.idDocumentType?.label,
                         number,
                       ].whereType<String>().join(' · '),
-                      style: AppTextStyles.labelMedium,
+                      style: context.mutedText,
                     ),
                   ],
                   const SizedBox(height: 12),

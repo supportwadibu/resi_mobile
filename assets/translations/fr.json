@@ -85,13 +85,7 @@
   },
   "subscription": {
     "title": "Forfaits",
-    "inactive_title": "Votre abonnement est inactif",
-    "inactive_body": "Souscrivez un forfait pour continuer à utiliser RESI.",
-    "upgrade_title": "Passez au forfait complet",
-    "upgrade_body": "Statistiques, documents PDF, carnet et fiches clients, dépenses, gérants et factures WhatsApp.",
     "renew_body": "Votre abonnement se termine dans {} jour(s). Renouvelez-le pour ne pas être interrompu.",
-    "current": "Forfait actuel",
-    "per_period": "{} / {} jours",
     "pay": "Payer avec Wave",
     "verify": "J'ai payé, vérifier",
     "waiting": "Finalisez le paiement dans Wave, puis revenez ici.",
@@ -100,16 +94,9 @@
     "wave_unavailable": "Impossible d'ouvrir Wave sur ce téléphone.",
     "continue": "Continuer",
     "empty": "Aucun forfait n'est proposé pour le moment.",
-    "includes_basic": "Résidences et logements\nRéservations, au comptoir comme hors ligne\nEnregistrement des clients\nApporteurs d'affaire",
-    "includes_full": "Tout le forfait 3 000 F\nStatistiques et taux d'occupation\nRapports PDF et factures WhatsApp\nCarnet et fiches clients, pièces d'identité\nDépenses et gérants\nLes fonctions à venir",
     "gerant_title": "Accès suspendu",
     "gerant_body": "L'abonnement du propriétaire pour qui vous travaillez est inactif ou ne couvre pas cet espace. Contactez-le.",
     "logout": "Se déconnecter"
-  },
-  "locked": {
-    "title": "Réservé au forfait 5 000 F",
-    "body": "Cette fonction fait partie du forfait complet.",
-    "see_plans": "Voir les forfaits"
   },
   "referrer": {
     "section": "Apporteur d'affaire (facultatif)",
@@ -150,5 +137,71 @@
     "back": "Verso",
     "missing": "Non déposée",
     "unavailable": "Image indisponible"
+  },
+  "plans": {
+    "trial_name": "Essai gratuit",
+    "basic_name": "Pro",
+    "full_name": "Premium",
+    "trial_tagline": "Tout RESI, offert pour démarrer",
+    "basic_tagline": "L'essentiel pour enregistrer",
+    "full_tagline": "Tout RESI, sans limite",
+    "my_plan": "Mon forfait",
+    "days_left": {
+      "one": "1 jour restant",
+      "other": "{} jours restants"
+    },
+    "until": "Jusqu'au {}",
+    "ended": "Terminé",
+    "current": "Actuel",
+    "recommended": "Recommandé",
+    "in_progress": "En cours",
+    "per_days": "/ {} jours",
+    "trial_body": "Accès complet à toutes les fonctions, sans engagement ni paiement.",
+    "trial_then": "À la fin de l’essai, choisissez Pro ou Premium pour continuer.",
+    "see_plans": "Voir les forfaits",
+    "renew": "Renouveler",
+    "choose": "Choisissez votre forfait",
+    "secure_note": "Paiement sécurisé par Wave. Aucun prélèvement automatique : vous renouvelez quand vous le souhaitez. Le changement de forfait se fait à l’échéance.",
+    "inactive_title": "Votre abonnement est terminé",
+    "inactive_body": "Choisissez un forfait pour continuer à utiliser RESI. Vos données sont conservées."
+  },
+  "premium": {
+    "badge": "Premium",
+    "title": "Disponible avec Premium",
+    "body": "{} fait partie du forfait Premium.",
+    "see_plans": "Voir les forfaits",
+    "later": "Plus tard",
+    "manager_body": "Cette fonction n’est pas incluse dans le forfait de votre propriétaire.",
+    "ok": "Compris",
+    "features": {
+      "statistics": {
+        "title": "Statistiques",
+        "body": "Suivez votre chiffre d’affaires, votre bénéfice et le taux d’occupation de vos résidences."
+      },
+      "finance": {
+        "title": "Gestion financière",
+        "body": "Revenus, dépenses, commissions et bénéfice net, résidence par résidence."
+      },
+      "reports": {
+        "title": "Rapports PDF",
+        "body": "Exportez vos rapports financiers et de performance en PDF."
+      },
+      "clients": {
+        "title": "Carnet clients",
+        "body": "Retrouvez chaque client, son historique de séjours et sa pièce d’identité."
+      },
+      "expenses": {
+        "title": "Dépenses",
+        "body": "Enregistrez vos charges et suivez ce qu’elles vous coûtent."
+      },
+      "managers": {
+        "title": "Gérants",
+        "body": "Confiez des logements à vos gérants et suivez leur activité."
+      },
+      "invoices": {
+        "title": "Factures WhatsApp",
+        "body": "Envoyez à votre client la facture de son séjour, en un geste."
+      }
+    }
   }
 }

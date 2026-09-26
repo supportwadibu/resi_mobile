@@ -15,9 +15,9 @@ class FieldSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LoadingShimmer(height: 13, width: labelWidth, radius: 4),
+        LoadingShimmer(height: 13, width: labelWidth),
         const SizedBox(height: 8),
-        const LoadingShimmer(height: 48, radius: 12),
+        const LoadingShimmer(height: 48),
       ],
     );
   }
@@ -44,18 +44,18 @@ class OwnerProfileFormSkeleton extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showIntro) ...[
-              const LoadingShimmer(height: 88, radius: 14),
+              const LoadingShimmer(height: 88),
               const SizedBox(height: 24),
             ],
 
             // Titre « Qui êtes-vous ? »
-            const LoadingShimmer(height: 15, width: 150, radius: 4),
+            const LoadingShimmer(height: 15, width: 150),
             const SizedBox(height: 20),
             const FieldSkeleton(labelWidth: 100),
 
             const SizedBox(height: 24),
             // Titre « Où résidez-vous ? »
-            const LoadingShimmer(height: 15, width: 170, radius: 4),
+            const LoadingShimmer(height: 15, width: 170),
             const SizedBox(height: 20),
             const FieldSkeleton(labelWidth: 45),
             const SizedBox(height: 16),

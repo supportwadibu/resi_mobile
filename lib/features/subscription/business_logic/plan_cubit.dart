@@ -53,6 +53,7 @@ class PlanCubit extends Cubit<PlanState> {
           PlanAccess.fromApi(status.planAccess),
           daysRemaining: status.daysRemaining,
           isTrial: status.isTrial,
+          endDate: status.endDate,
         ),
       );
     } on AppFailure {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
 import '../../../data/models/expense_category_model.dart';
 
@@ -19,8 +20,7 @@ class ExpenseLegendItem extends StatelessWidget {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: category.color,
-              shape: BoxShape.circle,
+              color: category.category.colorIn(context.tokens),
             ),
           ),
         ),
@@ -28,11 +28,11 @@ class ExpenseLegendItem extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(category.label, style: AppTextStyles.labelSmall),
+            Text(category.label, style: context.text.bodySmall),
             const SizedBox(height: 2),
             Text(
-              CurrencyFormatter.format(category.amount),
-              style: AppTextStyles.valueSmall,
+              CurrencyFormatter.short(category.amount),
+              style: context.text.amount,
             ),
           ],
         ),

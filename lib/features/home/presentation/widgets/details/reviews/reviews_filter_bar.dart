@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 class ReviewsFilterBar extends StatelessWidget {
   final List<String> filters;
@@ -24,35 +25,10 @@ class ReviewsFilterBar extends StatelessWidget {
           final filter = filters[index];
           final isSelected = filter == selectedFilter;
 
-          return FilterChip(
-            label: Text(filter),
+          return AppChoiceChip(
+            label: filter,
             selected: isSelected,
-            onSelected: (selected) {
-              if (selected) {
-                onFilterChanged(filter);
-              }
-            },
-            backgroundColor: Colors.white,
-            selectedColor: const Color(0xFFEEEDFE),
-            checkmarkColor: const Color(0xFF534AB7),
-            labelStyle: TextStyle(
-              color: isSelected
-                  ? const Color(0xFF534AB7)
-                  : Colors.grey.shade700,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-            side: BorderSide(
-              color: isSelected
-                  ? const Color(0xFF534AB7)
-                  : Colors.grey.shade300,
-            ),
-            shape: StadiumBorder(
-              side: BorderSide(
-                color: isSelected
-                    ? const Color(0xFF534AB7)
-                    : Colors.grey.shade300,
-              ),
-            ),
+            onTap: () => onFilterChanged(filter),
           );
         },
       ),

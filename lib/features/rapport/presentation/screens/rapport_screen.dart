@@ -1,10 +1,13 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import '../../business_logic/report_form_cubit.dart';
 import '../../business_logic/report_form_state.dart';
 import '../widgets/custom_date_picker.dart';
@@ -12,7 +15,6 @@ import '../widgets/generate_button.dart';
 import '../widgets/period_preset_selector.dart';
 import '../widgets/residence_selector.dart';
 import '../widgets/report_type_selector.dart';
-import '../widgets/section.dart';
 
 @RoutePage()
 class ReportScreen extends StatelessWidget {
@@ -38,35 +40,25 @@ class _ReportView extends StatelessWidget {
   /// [ResultType.done] quand aucun lecteur PDF n'est installé — sans ce
   /// contrôle, le bouton finirait son chargement sans que rien ne se passe.
   Future<void> _openReport(BuildContext context, String filePath) async {
-    final messenger = ScaffoldMessenger.of(context);
-
     final result = await OpenFilex.open(filePath);
     if (result.type == ResultType.done) return;
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          'Impossible d\'ouvrir le rapport. Installez une application capable de lire un PDF.',
-          style: AppTextStyles.valueSmall.copyWith(color: AppColors.white),
-        ),
-        backgroundColor: AppColors.error,
-      ),
+    AppToast.error(
+      'Impossible d\'ouvrir le rapport. Installez une application capable '
+      'de lire un PDF.',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Générer un rapport',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
+      appBar: const AppTopBar(title: 'Générer un rapport'),
+      bottomNavigationBar: BlocBuilder<ReportFormCubit, ReportFormState>(
+        builder: (context, state) => GenerateButton(
+          isLoading: state.isGenerating,
+          enabled: state.canGenerate,
+          onTap: context.read<ReportFormCubit>().generate,
         ),
-        centerTitle: true,
       ),
       body: BlocConsumer<ReportFormCubit, ReportFormState>(
         listener: (context, state) {
@@ -75,50 +67,41 @@ class _ReportView extends StatelessWidget {
             _openReport(context, result.filePath);
           }
           final error = state.errorMessage;
-          if (error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  error,
-                  style: AppTextStyles.valueSmall.copyWith(
-                    color: AppColors.white,
-                  ),
-                ),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
+          if (error != null) AppToast.error(error, context: context);
         },
         builder: (context, state) {
           final cubit = context.read<ReportFormCubit>();
           return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Section(
                   title: 'Type de rapport',
+                  icon: AppSectionIcons.reports,
                   child: ReportTypeSelector(
                     selected: state.selectedType,
                     onChanged: cubit.setReportType,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // Résidences
                 Section(
                   title: 'Résidences concernées',
+                  icon: AppSectionIcons.residences,
                   child: ResidenceSelector(
                     residences: state.residences,
                     selectedId: state.selectedResidenceId,
                     onChanged: cubit.setResidence,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // Période
                 Section(
                   title: 'Période',
+                  icon: LucideIcons.calendarRange,
                   child: Column(
                     children: [
                       PeriodPresetSelector(
@@ -137,15 +120,6 @@ class _ReportView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
-
-                // Bouton générer
-                GenerateButton(
-                  isLoading: state.isGenerating,
-                  enabled: state.canGenerate,
-                  onTap: cubit.generate,
-                ),
-                const SizedBox(height: 24),
               ],
             ),
           );

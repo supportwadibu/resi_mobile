@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 import '../../../../property/data/models/property_model.dart';
 
@@ -29,32 +31,20 @@ class StayTierHints extends StatelessWidget {
     if (tiers.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
+        color: context.tokens.surface,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
-                Icons.local_offer_outlined,
-                size: 15,
-                color: AppColors.textSecondary,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Remises sur la durée',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              Icon(LucideIcons.tag, size: 14, color: context.tokens.muted),
+              const SizedBox(width: 8),
+              Text('Remises sur la durée', style: context.text.bodySmall),
             ],
           ),
           const SizedBox(height: 10),
@@ -85,44 +75,39 @@ class _TierChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Le palier atteint prend le vert « acquis » de la grammaire des
+    // statuts ; les autres restent neutres.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: active
-            ? AppColors.success.withValues(alpha: 0.08)
-            : AppColors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: active ? AppColors.success : AppColors.grey200,
-          width: active ? 1.4 : 1,
-        ),
+        color: active ? context.tokens.accentGreenSoft : null,
+        border: active ? null : Border.all(color: context.tokens.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (active) ...[
-            const Icon(
-              Icons.check_circle_rounded,
-              size: 13,
-              color: AppColors.success,
+            Icon(
+              LucideIcons.circleCheck,
+              size: 12,
+              color: context.tokens.accentGreen,
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 4),
           ],
           Text(
             'dès ${tier.minDays} j',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: active ? AppColors.success : AppColors.textPrimary,
+            style: context.text.labelMedium!.copyWith(
+              color: active
+                  ? context.tokens.accentGreen
+                  : context.tokens.foreground,
             ),
           ),
           const SizedBox(width: 6),
           Text(
             '−${tier.discountPercent} %',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: active ? AppColors.success : AppColors.textSecondary,
+            style: context.text.labelMedium!.copyWith(
+              color: active ? context.tokens.accentGreen : context.tokens.muted,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

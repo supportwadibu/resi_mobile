@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 import '../../../data/models/reservation_model.dart';
 
@@ -24,69 +25,61 @@ class StayTypePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: StayType.values
-            .map((type) {
-              final active = type == selected;
-              final isLast = type == StayType.values.last;
-
-              return Padding(
-                padding: EdgeInsets.only(right: isLast ? 0 : 12),
-                child: GestureDetector(
+    final t = context.tokens;
+    // Trois options de même largeur : le tarif de chacune se compare d'un
+    // coup d'œil, sans défilement.
+    return Row(
+      children: [
+        for (final type in StayType.values) ...[
+          if (type != StayType.values.first) const SizedBox(width: 8),
+          Expanded(
+            child: Semantics(
+              selected: type == selected,
+              button: true,
+              child: Material(
+                color: type == selected ? t.background : t.surface,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(
+                    color: type == selected ? t.primary : t.border,
+                    width: type == selected ? 1.5 : 1,
+                  ),
+                ),
+                child: InkWell(
                   onTap: () => onSelected(type),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: active
-                          ? AppColors.primary.withValues(alpha: 0.06)
-                          : AppColors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: active ? AppColors.primary : AppColors.grey200,
-                        width: active ? 1.4 : 1,
-                      ),
+                      horizontal: 10,
+                      vertical: 10,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           type.label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: active
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.titleSmall!.copyWith(
+                            fontWeight: type == selected
                                 ? FontWeight.w600
                                 : FontWeight.w500,
-                            color: active
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
                           ),
                         ),
                         if (dailyPrice > 0) ...[
                           const SizedBox(height: 2),
                           Text(
                             _priceLabel(type),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: context.text.bodySmall,
                           ),
                         ],
                       ],
                     ),
                   ),
                 ),
-              );
-            })
-            .toList(growable: false),
-      ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

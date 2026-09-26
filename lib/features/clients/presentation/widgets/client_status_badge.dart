@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
 import '../../data/models/client_model.dart';
 
+/// Statut d'une fiche du carnet : actif en règle (vert), archivé hors
+/// circuit (neutre).
 class ClientStatusBadge extends StatelessWidget {
   final ClientStatus status;
 
@@ -10,23 +11,9 @@ class ClientStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = status == ClientStatus.active;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: isActive
-            ? AppColors.green.withOpacity(0.10)
-            : AppColors.textSecondary.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        isActive ? 'Actif' : 'Archivé',
-        style: AppTextStyles.labelSmall.copyWith(
-          color: isActive ? AppColors.green : AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
-          fontSize: 10,
-        ),
-      ),
+    return StatusBadge(
+      label: status.label,
+      tone: StatusTones.client(status.code),
     );
   }
 }

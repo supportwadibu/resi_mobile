@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import 'expense_model.dart';
 
 /// Poste de dépense tel que dessiné par l'anneau et sa légende.
@@ -9,12 +7,14 @@ import 'expense_model.dart';
 class ExpenseCategoryModel {
   final String label;
   final double amount;
-  final Color color;
+
+  /// Poste d'origine, qui fixe la couleur selon le mode (`colorIn`).
+  final ExpenseCategory category;
 
   const ExpenseCategoryModel({
     required this.label,
     required this.amount,
-    required this.color,
+    required this.category,
   });
 
   /// Convertit la ventilation servie par l'API en données de graphique.
@@ -24,7 +24,7 @@ class ExpenseCategoryModel {
     return ExpenseCategoryModel(
       label: breakdown.category.label,
       amount: breakdown.amount,
-      color: breakdown.category.color,
+      category: breakdown.category,
     );
   }
 

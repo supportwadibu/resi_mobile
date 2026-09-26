@@ -1,9 +1,15 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../../clients/presentation/widgets/client_picker_sheet.dart';
@@ -76,30 +82,21 @@ class _AddReservationViewState extends State<_AddReservationView> {
         final isCheckIn = state.mode == ReservationMode.checkIn;
 
         return Scaffold(
-          backgroundColor: AppColors.white,
-          appBar: AppBar(
-            backgroundColor: AppColors.white,
-            elevation: 0,
-            leading: GestureDetector(
-              onTap: () => context.router.maybePop(),
-              child: const Icon(
-                Icons.chevron_left,
-                color: AppColors.textPrimary,
-                size: 28,
-              ),
-            ),
-            title: Text(
-              isCheckIn ? 'Check-in immédiat' : 'Réservation future',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            centerTitle: true,
+          appBar: AppTopBar(
+            title: isCheckIn ? 'Check-in immédiat' : 'Réservation future',
+          ),
+          // Barre fixe : l'enregistrement reste atteignable sans dérouler un
+          // formulaire long, au comptoir, client en face.
+          bottomNavigationBar: AppBottomActionBar(
+            primaryLabel: isCheckIn
+                ? 'Enregistrer le check-in'
+                : 'Enregistrer la réservation',
+            primaryIcon: LucideIcons.check,
+            isLoading: state.status == AddReservationStatus.submitting,
+            onPrimary: state.isValid ? cubit.submit : null,
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -225,17 +222,6 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   const SizedBox(height: 16),
                   _ConflictBanner(message: state.errorMessage!),
                 ],
-
-                const SizedBox(height: 28),
-                _SubmitButton(
-                  enabled: state.isValid,
-                  isSubmitting: state.status == AddReservationStatus.submitting,
-                  label: isCheckIn
-                      ? 'Enregistrer le check-in'
-                      : 'Enregistrer la réservation',
-                  onPressed: cubit.submit,
-                ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -300,13 +286,7 @@ class _AmountSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
+    return AppCard(
       child: Column(
         children: [
           // Le détail n'apparaît que lorsqu'un palier joue : sans lui, le
@@ -324,7 +304,7 @@ class _AmountSummary extends StatelessWidget {
               label: 'Remise durée (−${state.discountPercent} %)',
               value: state.fullAmount - state.expectedAmount,
             ),
-            const Divider(height: 20, color: AppColors.divider),
+            const Divider(height: 20),
           ],
           _Row(label: 'Montant attendu', value: state.expectedAmount),
           if (state.receivedAmount != null &&
@@ -335,7 +315,7 @@ class _AmountSummary extends StatelessWidget {
           if (state.depositAmount > 0) ...[
             const SizedBox(height: 8),
             _Row(label: 'Acompte', value: state.depositAmount),
-            const Divider(height: 20, color: AppColors.divider),
+            const Divider(height: 20),
             _Row(label: 'Reste dû', value: state.balanceDue, strong: true),
           ],
         ],
@@ -358,19 +338,15 @@ class _Row extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 13,
-            color: strong ? AppColors.textPrimary : AppColors.textSecondary,
-            fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
-          ),
+          style: strong
+              ? context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600)
+              : context.mutedText,
         ),
         Text(
           '${_money(value)} F',
-          style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
-            color: strong ? AppColors.primary : AppColors.textPrimary,
-          ),
+          style: strong
+              ? context.text.figure.copyWith(fontSize: 18)
+              : context.text.amount,
         ),
       ],
     );
@@ -394,31 +370,10 @@ class _AmountField extends StatelessWidget {
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 13.5),
+      style: context.text.bodyMedium,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13,
-        ),
-        filled: true,
-        fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
+        prefixIcon: const Icon(LucideIcons.banknote, size: 16),
       ),
     );
   }
@@ -431,78 +386,10 @@ class _ConflictBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 18, color: AppColors.error),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                fontSize: 12.5,
-                color: AppColors.textPrimary,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.enabled,
-    required this.isSubmitting,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final bool enabled;
-  final bool isSubmitting;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: enabled && !isSubmitting ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          disabledBackgroundColor: AppColors.grey200,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: isSubmitting
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.white,
-                ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
+    return AppCallout(
+      icon: LucideIcons.circleAlert,
+      tone: AppAccent.red,
+      message: message,
     );
   }
 }

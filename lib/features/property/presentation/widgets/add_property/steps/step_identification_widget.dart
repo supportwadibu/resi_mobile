@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 /// Identification du bien : titre et description.
@@ -49,7 +50,7 @@ class _StepIdentificationWidgetState extends State<StepIdentificationWidget> {
           label: 'Nom du bien',
           hint: 'Ex: Villa Belvédère, Appart Cocody...',
           controller: _nameCtrl,
-          prefixIcon: const Icon(Icons.home_outlined, size: 18),
+          prefixIcon: const Icon(LucideIcons.house, size: 16),
           onChanged: widget.onTitleChanged,
         ),
         const SizedBox(height: 16),

@@ -1,9 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../../../../core/config/app_config.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Chat d'assistance Tawk.to, affiché dans l'application.
 ///
@@ -32,18 +35,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        title: const Text(
-          'Aide & support',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left, size: 28),
-          onPressed: () => context.router.maybePop(),
-        ),
-      ),
+      appBar: const AppTopBar(title: 'Aide & support'),
       body: SafeArea(child: _hasFailed ? _errorView() : _chatView()),
     );
   }
@@ -80,9 +72,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         ),
 
         if (_isLoading)
-          const ColoredBox(
-            color: AppColors.white,
-            child: Center(child: CircularProgressIndicator()),
+          ColoredBox(
+            color: context.tokens.background,
+            child: const Center(child: AppLoader()),
           ),
       ],
     );
@@ -132,56 +124,18 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   Widget _errorView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.grey400),
-            const SizedBox(height: 16),
-            const Text(
-              'Le support est injoignable',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.black,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Vérifiez votre connexion, puis réessayez.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.grey500),
-            ),
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _hasFailed = false;
-                  _isLoading = true;
-                });
-                _controller?.loadUrl(
-                  urlRequest: URLRequest(url: WebUri(AppConfig.tawkChatUrl)),
-                );
-              },
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Réessayer'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                side: const BorderSide(color: AppColors.grey200),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return ErrorState(
+      message: 'Le support est injoignable. Vérifiez votre connexion, puis '
+          'réessayez.',
+      onRetry: () {
+        setState(() {
+          _hasFailed = false;
+          _isLoading = true;
+        });
+        _controller?.loadUrl(
+          urlRequest: URLRequest(url: WebUri(AppConfig.tawkChatUrl)),
+        );
+      },
     );
   }
 }

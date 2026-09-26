@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'property_edit_button.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 // import 'property_visibility_switch.dart';
 
 class PropertyBottomNavigationBar extends StatelessWidget {
@@ -28,44 +28,15 @@ class PropertyBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.grey500.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(26),
-          topRight: Radius.circular(26),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // if (canChangeVisibility) ...[
-              //   PropertyVisibilitySwitch(
-              //     isPublished: isPublished,
-              //     isBusy: isTogglingVisibility,
-              //     onChanged: onVisibilityChanged,
-              //   ),
-              //   const SizedBox(height: 12),
-              // ],
-              Row(
-                children: [
-                  Expanded(child: PropertyEditButton(onPressed: onEditPressed)),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    // if (canChangeVisibility) : PropertyVisibilitySwitch(
+    //   isPublished: isPublished,
+    //   isBusy: isTogglingVisibility,
+    //   onChanged: onVisibilityChanged,
+    // ), posée au-dessus du bouton.
+    return AppBottomActionBar(
+      primaryLabel: 'Modifier ce bien',
+      primaryIcon: LucideIcons.pencil,
+      onPrimary: onEditPressed,
     );
   }
 }

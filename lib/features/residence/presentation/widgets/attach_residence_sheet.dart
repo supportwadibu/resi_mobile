@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_option_tile.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/error/failures.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 import 'package:resi_africa/shared/widgets/loading_shimmer.dart';
 
@@ -53,13 +61,8 @@ class AttachResidenceSheet extends StatefulWidget {
     String? currentResidenceId,
     String? currentUnitLabel,
   }) {
-    return showModalBottomSheet<AttachResidenceResult>(
+    return showAppSheet<AttachResidenceResult>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) => AttachResidenceSheet(
         propertyTitle: propertyTitle,
         currentResidenceId: currentResidenceId,
@@ -139,67 +142,26 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey200,
-                borderRadius: BorderRadius.circular(10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppSheetHeader(
+            title: 'Rattacher à une résidence',
+            description: widget.propertyTitle,
+          ),
+          Flexible(
+            child: switch ((_isLoading, _loadError)) {
+              (true, _) => const _LoadingList(),
+              (_, final String error) => ErrorState(
+                message: error,
+                onRetry: _load,
               ),
-            ),
-
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Rattacher à une résidence',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.propertyTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.grey500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Flexible(
-              child: switch ((_isLoading, _loadError)) {
-                (true, _) => const _LoadingList(),
-                (_, final String error) => _LoadErrorView(
-                  message: error,
-                  onRetry: _load,
-                ),
-                _ => _body(),
-              },
-            ),
-
-            if (_loadError == null) _actions(),
-          ],
-        ),
+              _ => _body(),
+            },
+          ),
+          if (_loadError == null) _actions(),
+        ],
       ),
     );
   }
@@ -208,31 +170,31 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
     if (_residences.isEmpty) return const _EmptyView();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // « Aucune » en tête, et non en fin de liste : c'est le choix qui
           // détache, on doit le trouver sans parcourir les résidences.
-          _ResidenceOption(
+          AppOptionTile(
             title: 'Aucune — bien autonome',
-            subtitle: 'Le bien se loue pour lui-même.',
-            icon: Icons.home_outlined,
-            isSelected: _residenceId == null,
+            description: 'Le bien se loue pour lui-même.',
+            icon: LucideIcons.house,
+            selected: _residenceId == null,
             onTap: () => setState(() => _residenceId = null),
           ),
           const SizedBox(height: 8),
 
           for (final residence in _residences) ...[
-            _ResidenceOption(
+            AppOptionTile(
               title: residence.name,
-              subtitle: switch (residence.unitsCount) {
+              description: switch (residence.unitsCount) {
                 0 => residence.address.city,
                 1 => '${residence.address.city} · 1 logement',
                 final count => '${residence.address.city} · $count logements',
               },
-              icon: Icons.apartment_rounded,
-              isSelected: _residenceId == residence.id,
+              icon: AppSectionIcons.residences,
+              selected: _residenceId == residence.id,
               onTap: () => setState(() => _residenceId = residence.id),
             ),
             const SizedBox(height: 8),
@@ -255,12 +217,12 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
               label: 'Nom du logement',
               hint: 'Ex: Studio 1',
               controller: _labelController,
-              prefixIcon: const Icon(Icons.meeting_room_outlined, size: 18),
+              prefixIcon: const Icon(LucideIcons.doorOpen, size: 16),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Distinct du titre de l’annonce.',
-              style: TextStyle(fontSize: 11, color: AppColors.grey500),
+              style: context.text.bodySmall,
             ),
             const SizedBox(height: 16),
             _CopyAddressToggle(
@@ -274,139 +236,35 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
   }
 
   Widget _actions() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.black,
-                side: const BorderSide(color: AppColors.grey200),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text(
-                'Annuler',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: _isLoading || !_canSubmit ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.black,
-                disabledBackgroundColor: AppColors.grey200,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text(
-                _residenceId == null ? 'Détacher' : 'Rattacher',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.tokens.border)),
       ),
-    );
-  }
-}
-
-/// Une résidence — ou l'absence de résidence — telle qu'on la choisit.
-class _ResidenceOption extends StatelessWidget {
-  const _ResidenceOption({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.infoBg : AppColors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.grey200,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: 'Annuler',
+                  variant: AppButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: AppButton(
+                  label: _residenceId == null ? 'Détacher' : 'Rattacher',
+                  expand: true,
+                  onPressed: _isLoading || !_canSubmit ? null : _submit,
+                ),
+              ),
+            ],
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.white : AppColors.surface,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: isSelected ? AppColors.primary : AppColors.grey500,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              size: 20,
-              color: isSelected ? AppColors.primary : AppColors.grey400,
-            ),
-          ],
         ),
       ),
     );
@@ -422,39 +280,30 @@ class _CopyAddressToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        color: context.tokens.background,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Reprendre l’adresse de la résidence',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: context.text.titleSmall,
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Remplace l’adresse actuelle du logement.',
-                  style: TextStyle(fontSize: 11, color: AppColors.grey500),
+                  style: context.text.bodySmall,
                 ),
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.white,
-            activeTrackColor: AppColors.primary,
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -469,24 +318,12 @@ class _CreateResidenceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.add_rounded, size: 18),
-        label: const Text(
-          'Nouvelle résidence',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: AppColors.grey200),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      ),
+    return AppButton(
+      label: 'Nouvelle résidence',
+      icon: LucideIcons.plus,
+      variant: AppButtonVariant.secondary,
+      expand: true,
+      onPressed: onPressed,
     );
   }
 }
@@ -503,15 +340,15 @@ class _LoadingList extends StatelessWidget {
   Widget build(BuildContext context) {
     return const ShimmerEffect(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            LoadingShimmer(height: 62, radius: 14),
+            LoadingShimmer(height: 62),
             SizedBox(height: 8),
-            LoadingShimmer(height: 62, radius: 14),
+            LoadingShimmer(height: 62),
             SizedBox(height: 8),
-            LoadingShimmer(height: 62, radius: 14),
+            LoadingShimmer(height: 62),
           ],
         ),
       ),
@@ -525,94 +362,21 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              color: AppColors.infoBg,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.apartment_rounded,
-              size: 24,
-              color: AppColors.primary,
-            ),
+          const EmptyState(
+            icon: AppSectionIcons.residences,
+            title: 'Aucune résidence pour le moment',
+            message:
+                'Une résidence regroupe plusieurs logements loués séparément, '
+                'qui partagent une adresse.',
           ),
-          const SizedBox(height: 14),
-          const Text(
-            'Aucune résidence pour le moment',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Une résidence regroupe plusieurs logements loués séparément, '
-            'qui partagent une adresse.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 18),
           _CreateResidenceButton(
             onPressed: () => Navigator.of(
               context,
             ).pop(const AttachResidenceCreateRequested()),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// La liste n'a pas pu être chargée.
-class _LoadErrorView extends StatelessWidget {
-  const _LoadErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 28, 32, 28),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.cloud_off_outlined,
-            size: 34,
-            color: AppColors.grey500,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 18),
-          OutlinedButton(
-            onPressed: onRetry,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Réessayer', style: TextStyle(fontSize: 13)),
           ),
         ],
       ),

@@ -1,5 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +14,6 @@ import '../../business_logic/stay_extension_cubit.dart';
 import '../../business_logic/stay_extension_state.dart';
 import '../../data/models/reservation_model.dart';
 import '../widgets/extension/booking_info_card.dart';
-import '../widgets/extension/extension_header.dart';
 import '../widgets/extension/night_counter.dart';
 import '../widgets/extension/payment_link_button.dart';
 import '../widgets/extension/price_summary_card.dart';
@@ -97,79 +100,47 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
         final isSubmitting = state is StayExtensionSubmitting;
 
         return Scaffold(
-          backgroundColor: Colors.white,
-
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  const ExtensionHeader(),
-
-                  const SizedBox(height: 40),
-
-                  BookingInfoCard(
-                    residence: property?.title ?? 'Bien supprimé',
-                    checkIn: _dateFormat.format(_reservation.startDate),
-                    checkOut: _dateFormat.format(_reservation.endDate),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          NightCounter(
-                            value: _extraDays,
-                            onAdd: isSubmitting
-                                ? () {}
-                                : () => setState(() => _extraDays++),
-                            onRemove: isSubmitting
-                                ? () {}
-                                : () {
-                                    if (_extraDays > 1) {
-                                      setState(() => _extraDays--);
-                                    }
-                                  },
-                          ),
-
-                          const SizedBox(height: 12),
-                          Text(
-                            'Nouveau départ : ${_dateFormat.format(_newEndDate)}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xff252B5C),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-
-                          const SizedBox(height: 30),
-
-                          PriceSummaryCard(
-                            pricePerDay: CurrencyFormatter.fcfa(
-                              _reservation.dailyPrice,
-                            ),
-                            days: _extraDays,
-                            subtotal: CurrencyFormatter.fcfa(_extensionTotal),
-                            total: CurrencyFormatter.fcfa(_extensionTotal),
-                            discountPercent:
-                                _reservation.durationDiscountPercent,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  PaymentLinkButton(
-                    isLoading: isSubmitting,
-                    onPressed: isSubmitting ? null : _submit,
-                  ),
-                ],
+          appBar: const AppTopBar(title: 'Prolonger le séjour'),
+          bottomNavigationBar: PaymentLinkButton(
+            isLoading: isSubmitting,
+            onPressed: isSubmitting ? null : _submit,
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              BookingInfoCard(
+                residence: property?.title ?? 'Bien supprimé',
+                checkIn: _dateFormat.format(_reservation.startDate),
+                checkOut: _dateFormat.format(_reservation.endDate),
               ),
-            ),
+              const SizedBox(height: 12),
+              NightCounter(
+                value: _extraDays,
+                onAdd: isSubmitting
+                    ? () {}
+                    : () => setState(() => _extraDays++),
+                onRemove: isSubmitting
+                    ? () {}
+                    : () {
+                        if (_extraDays > 1) setState(() => _extraDays--);
+                      },
+              ),
+              const SizedBox(height: 12),
+              AppCallout(
+                icon: LucideIcons.calendarCheck,
+                tone: AppAccent.blue,
+                title: 'Nouveau départ',
+                message: _dateFormat.format(_newEndDate),
+              ),
+              const SizedBox(height: 12),
+              PriceSummaryCard(
+                pricePerDay: CurrencyFormatter.fcfa(_reservation.dailyPrice),
+                days: _extraDays,
+                subtotal: CurrencyFormatter.fcfa(_extensionTotal),
+                total: CurrencyFormatter.fcfa(_extensionTotal),
+                discountPercent: _reservation.durationDiscountPercent,
+              ),
+            ],
           ),
         );
       },

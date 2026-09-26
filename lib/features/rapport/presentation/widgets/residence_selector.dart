@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 
 /// Entrée du sélecteur : un `id`/`name` suffisent à l'affichage.
 ///
@@ -31,25 +32,26 @@ class ResidenceSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        color: context.tokens.background,
+        border: Border.all(color: context.tokens.border),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedId,
           isExpanded: true,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          borderRadius: BorderRadius.circular(12),
-          style: AppTextStyles.valueSmall,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textSecondary,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          borderRadius: BorderRadius.zero,
+          dropdownColor: context.tokens.surface,
+          style: context.text.bodyMedium,
+          icon: Icon(
+            LucideIcons.chevronDown,
+            size: 16,
+            color: context.tokens.muted,
           ),
           items: residences.map((r) {
             return DropdownMenuItem(
               value: r.id,
-              child: Text(r.name, style: AppTextStyles.valueSmall),
+              child: Text(r.name, style: context.text.bodyMedium),
             );
           }).toList(),
           onChanged: (v) {

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/features/property/data/services/location_service.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 /// Localisation du bien.
@@ -139,10 +142,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
 
         if (_locationNotice != null) ...[
           const SizedBox(height: 10),
-          Text(
-            _locationNotice!,
-            style: const TextStyle(fontSize: 11, color: AppColors.grey500),
-          ),
+          Text(_locationNotice!, style: context.text.bodySmall),
         ],
 
         const SizedBox(height: 20),
@@ -151,7 +151,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
           label: 'Ville',
           hint: 'Ex: Abidjan, Bouaké, Yamoussoukro...',
           controller: _communeCtrl,
-          prefixIcon: const Icon(Icons.location_city_outlined, size: 18),
+          prefixIcon: const Icon(LucideIcons.building, size: 16),
           onChanged: widget.onCityChanged,
         ),
         const SizedBox(height: 16),
@@ -159,23 +159,19 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
           label: 'Adresse complète',
           hint: 'Ex: Rue des Jardins, Cocody...',
           controller: _addressCtrl,
-          prefixIcon: const Icon(Icons.location_on_outlined, size: 18),
+          prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
           onChanged: widget.onStreetChanged,
         ),
         const SizedBox(height: 20),
 
-        const Text(
-          'Position sur la carte',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
-        const SizedBox(height: 10),
+        Text('Position sur la carte', style: context.text.titleSmall),
+        const SizedBox(height: 6),
 
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+        DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            border: Border.all(color: context.tokens.border),
+          ),
           child: SizedBox(
             height: 220,
             child: FlutterMap(
@@ -194,12 +190,15 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
                   markers: [
                     Marker(
                       point: _markerPos,
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: AppColors.primary,
-                        size: 40,
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.topCenter,
+                      // Toujours noir : la carte garde ses couleurs claires
+                      // quel que soit le mode.
+                      child: Icon(
+                        LucideIcons.mapPin,
+                        color: context.tokens.overlay,
+                        size: 36,
                       ),
                     ),
                   ],
@@ -211,7 +210,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
         const SizedBox(height: 8),
         Text(
           'Appuyez sur la carte pour ajuster la position de votre bien',
-          style: TextStyle(fontSize: 11, color: AppColors.grey500),
+          style: context.text.bodySmall,
         ),
       ],
     );
@@ -227,30 +226,13 @@ class _CurrentPositionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.my_location, size: 18),
-        label: Text(
-          isLoading ? 'Localisation en cours...' : 'Utiliser ma position',
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: AppColors.grey200),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      ),
+    return AppButton(
+      label: isLoading ? 'Localisation en cours…' : 'Utiliser ma position',
+      icon: LucideIcons.locateFixed,
+      variant: AppButtonVariant.secondary,
+      isLoading: isLoading,
+      expand: true,
+      onPressed: onPressed,
     );
   }
 }

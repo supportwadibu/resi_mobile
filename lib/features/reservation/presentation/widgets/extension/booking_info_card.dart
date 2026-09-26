@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
+/// Rappel du séjour prolongé : bien, arrivée, fin prévue.
 class BookingInfoCard extends StatelessWidget {
   final String residence;
   final String checkIn;
@@ -14,56 +17,13 @@ class BookingInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xffF4F4F8),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            residence,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-          ),
-
-          const SizedBox(height: 14),
-
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-              children: [
-                const TextSpan(text: 'Date d\'arrivée : '),
-                TextSpan(
-                  text: checkIn,
-                  style: const TextStyle(
-                    color: Color(0xff252B5C),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-              children: [
-                const TextSpan(text: 'Fin prévue : '),
-                TextSpan(
-                  text: checkOut,
-                  style: const TextStyle(
-                    color: Color(0xff252B5C),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    return Section(
+      title: residence,
+      icon: AppSectionIcons.properties,
+      child: DetailList(
+        items: [
+          DetailItem('Date d\'arrivée', checkIn),
+          DetailItem('Fin prévue', checkOut),
         ],
       ),
     );

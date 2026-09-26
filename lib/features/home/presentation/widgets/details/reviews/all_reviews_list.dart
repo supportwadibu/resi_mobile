@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/models/review_model.dart';
 import 'review_card_large.dart';
 
@@ -14,7 +15,7 @@ class AllReviewsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reviews = _getFilteredReviews();
+    final reviews = _getFilteredReviews(context);
 
     return ListView.separated(
       shrinkWrap: true,
@@ -27,7 +28,7 @@ class AllReviewsList extends StatelessWidget {
     );
   }
 
-  List<ReviewModel> _getFilteredReviews() {
+  List<ReviewModel> _getFilteredReviews(BuildContext context) {
     List<ReviewModel> allReviews = [
       ReviewModel(
         id: '1',
@@ -35,8 +36,8 @@ class AllReviewsList extends StatelessWidget {
         initials: 'AK',
         date: 'Mai 2026',
         rating: 5,
-        avatarColor: const Color(0xFFE6F1FB),
-        textColor: const Color(0xFF185FA5),
+        avatarColor: context.tokens.accentBlueSoft,
+        textColor: context.tokens.accentBlue,
         reviewText:
             'Logement impeccable, très bien situé. L\'hôte est réactif et attentionné. Je recommande vivement.',
         cleanliness: 5,
@@ -50,8 +51,8 @@ class AllReviewsList extends StatelessWidget {
         initials: 'MB',
         date: 'Avril 2026',
         rating: 5,
-        avatarColor: const Color(0xFFEEEDFE),
-        textColor: const Color(0xFF534AB7),
+        avatarColor: context.tokens.accentVioletSoft,
+        textColor: context.tokens.accentViolet,
         reviewText:
             'Séjour parfait. Propre, confortable et calme. Le quartier est idéal pour se déplacer facilement.',
         cleanliness: 5,
@@ -65,8 +66,8 @@ class AllReviewsList extends StatelessWidget {
         initials: 'FD',
         date: 'Avril 2026',
         rating: 4,
-        avatarColor: const Color(0xFFFEF3C7),
-        textColor: const Color(0xFFD97706),
+        avatarColor: context.tokens.accentAmberSoft,
+        textColor: context.tokens.accentAmber,
         reviewText:
             'Très bon séjour dans l\'ensemble. L\'appartement est spacieux et bien équipé. Petit bémol sur l\'isolation sonore.',
         cleanliness: 4,
@@ -80,8 +81,8 @@ class AllReviewsList extends StatelessWidget {
         initials: 'JD',
         date: 'Mars 2026',
         rating: 5,
-        avatarColor: const Color(0xFFE0F2FE),
-        textColor: const Color(0xFF0284C7),
+        avatarColor: context.tokens.accentBlueSoft,
+        textColor: context.tokens.accentBlue,
         reviewText:
             'Excellent emplacement, proche de toutes commodités. L\'hôte très accueillant.',
         cleanliness: 5,
@@ -95,8 +96,8 @@ class AllReviewsList extends StatelessWidget {
         initials: 'ML',
         date: 'Mars 2026',
         rating: 4,
-        avatarColor: const Color(0xFFFCE7F3),
-        textColor: const Color(0xFFDB2777),
+        avatarColor: context.tokens.accentRedSoft,
+        textColor: context.tokens.accentRed,
         reviewText:
             'Bien situé et propre. Manque juste quelques ustensiles de cuisine supplémentaires.',
         cleanliness: 4,

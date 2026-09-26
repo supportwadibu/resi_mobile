@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
-import '../../../../../core/theme/app_colors.dart';
-import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../property/data/models/property_model.dart';
 import '../../../business_logic/expense_state.dart';
 import '../../../data/models/expense_model.dart';
@@ -27,13 +30,8 @@ class ExpenseFilterSheet extends StatefulWidget {
     required ExpenseFilters initial,
     required List<PropertyModel> properties,
   }) {
-    return showModalBottomSheet<ExpenseFilters>(
+    return showAppSheet<ExpenseFilters>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) =>
           ExpenseFilterSheet(initial: initial, properties: properties),
     );
@@ -60,16 +58,6 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
       initialDateRange: _from != null && _to != null
           ? DateTimeRange(start: _from!, end: _to!)
           : null,
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppColors.black,
-            onPrimary: AppColors.white,
-            onSurface: AppColors.textPrimary,
-          ),
-        ),
-        child: child!,
-      ),
     );
 
     if (picked != null) {
@@ -82,170 +70,109 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        20 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.grey200,
-                  borderRadius: BorderRadius.circular(2),
+    final t = context.tokens;
+    final hasRange = _from != null && _to != null;
+    return AppSheet(
+      title: 'Filtrer les dépenses',
+      footer: Row(
+        children: [
+          Expanded(
+            child: AppButton(
+              label: 'Réinitialiser',
+              variant: AppButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.pop(context, const ExpenseFilters()),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppButton(
+              label: 'Appliquer',
+              expand: true,
+              onPressed: () => Navigator.pop(
+                context,
+                ExpenseFilters(
+                  propertyId: _propertyId,
+                  category: _category,
+                  from: _from,
+                  to: _to,
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-
-            Text(
-              'Filtrer les dépenses',
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-
-            Text('Bien', style: AppTextStyles.labelMedium),
-            const SizedBox(height: 8),
-            _PropertyChips(
-              properties: widget.properties,
-              selected: _propertyId,
-              onSelected: (id) => setState(() => _propertyId = id),
-            ),
-
-            const SizedBox(height: 20),
-
-            Text('Catégorie', style: AppTextStyles.labelMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final category in ExpenseCategory.values)
-                  _Chip(
-                    label: category.label,
-                    selected: _category == category,
-                    // Retoucher le même choix l'annule : plus court qu'un
-                    // bouton « toutes catégories ».
-                    onTap: () => setState(
-                      () => _category = _category == category ? null : category,
-                    ),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Bien', style: context.text.titleSmall),
+          const SizedBox(height: 8),
+          _PropertyChips(
+            properties: widget.properties,
+            selected: _propertyId,
+            onSelected: (id) => setState(() => _propertyId = id),
+          ),
+          const SizedBox(height: 20),
+          Text('Catégorie', style: context.text.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final category in ExpenseCategory.values)
+                AppChoiceChip(
+                  label: category.label,
+                  icon: category.icon,
+                  selected: _category == category,
+                  // Retoucher le même choix l'annule : plus court qu'un
+                  // bouton « toutes catégories ».
+                  onTap: () => setState(
+                    () => _category = _category == category ? null : category,
                   ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            Text('Période', style: AppTextStyles.labelMedium),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: _pickRange,
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(14),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text('Période', style: context.text.titleSmall),
+          const SizedBox(height: 8),
+          Material(
+            color: t.background,
+            shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+            child: InkWell(
+              onTap: _pickRange,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 17,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 12),
+                    Icon(LucideIcons.calendar, size: 16, color: t.muted),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        _from != null && _to != null
+                        hasRange
                             ? '${_dateFormat.format(_from!)} → ${_dateFormat.format(_to!)}'
                             : 'Toutes les dates',
-                        style: _from != null && _to != null
-                            ? AppTextStyles.valueSmall
-                            : AppTextStyles.labelMedium,
+                        style: hasRange
+                            ? context.text.bodyMedium
+                            : context.mutedText,
                       ),
                     ),
                     if (_from != null || _to != null)
-                      GestureDetector(
+                      InkWell(
                         onTap: () => setState(() {
                           _from = null;
                           _to = null;
                         }),
-                        child: const Icon(
-                          Icons.close,
-                          size: 17,
-                          color: AppColors.textSecondary,
-                        ),
+                        child: Icon(LucideIcons.x, size: 16, color: t.muted),
                       ),
                   ],
                 ),
               ),
             ),
-
-            const SizedBox(height: 28),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () =>
-                        Navigator.pop(context, const ExpenseFilters()),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.grey200),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(
-                      'Réinitialiser',
-                      style: AppTextStyles.valueSmall,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(
-                      context,
-                      ExpenseFilters(
-                        propertyId: _propertyId,
-                        category: _category,
-                        from: _from,
-                        to: _to,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.black,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(
-                      'Appliquer',
-                      style: AppTextStyles.valueSmall.copyWith(
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -266,7 +193,7 @@ class _PropertyChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (properties.isEmpty) {
-      return Text('Aucun bien enregistré', style: AppTextStyles.labelMedium);
+      return Text('Aucun bien enregistré', style: context.mutedText);
     }
 
     return Wrap(
@@ -274,48 +201,13 @@ class _PropertyChips extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final property in properties)
-          _Chip(
+          AppChoiceChip(
             label: property.title,
             selected: selected == property.id,
             onTap: () =>
                 onSelected(selected == property.id ? null : property.id),
           ),
       ],
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.black : AppColors.background,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.labelSmall.copyWith(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: selected ? AppColors.white : AppColors.textPrimary,
-          ),
-        ),
-      ),
     );
   }
 }

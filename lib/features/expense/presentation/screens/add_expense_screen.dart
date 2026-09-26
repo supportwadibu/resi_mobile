@@ -1,6 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -8,8 +14,6 @@ import 'package:intl/intl.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/role_guard.dart';
 import '../../../../core/session/session_role.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../../property/business_logic/property_state.dart';
 import '../../../residence/business_logic/residence_cubit.dart';
@@ -17,7 +21,6 @@ import '../../../residence/business_logic/residence_state.dart';
 import '../../business_logic/add_expense_cubit.dart';
 import '../../business_logic/add_expense_state.dart';
 import '../../data/models/expense_model.dart';
-import '../widgets/create/add_expense_header.dart';
 import '../widgets/create/amount_field.dart';
 import '../widgets/create/category_grid.dart';
 import '../widgets/create/date_picker_field.dart';
@@ -177,16 +180,6 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
       firstDate: DateTime(2000),
       // Une dépense future n'a pas de sens dans un relevé de charges.
       lastDate: DateTime.now(),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppColors.black,
-            onPrimary: AppColors.white,
-            onSurface: AppColors.textPrimary,
-          ),
-        ),
-        child: child!,
-      ),
     );
 
     if (picked != null) setState(() => _spentAt = picked);
@@ -210,106 +203,70 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
         final isBusy = state is AddExpenseSubmitting;
 
         return Scaffold(
-          backgroundColor: AppColors.white,
-
-          body: SafeArea(
-            child: AbsorbPointer(
-              absorbing: isBusy,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AddExpenseHeader(
-                      title: _isEditing
-                          ? 'Modifier la dépense'
-                          : 'Nouvelle dépense',
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Le montant ouvre la saisie : c'est la donnée que le
-                    // propriétaire a en tête en arrivant sur l'écran, et la
-                    // placer au troisième rang l'obligeait à parcourir deux
-                    // sélecteurs avant de la poser.
-                    AmountField(controller: _amountController),
-
-                    const SizedBox(height: 28),
-
-                    if (_canChargeCommon) ...[
-                      const _FieldLabel('Type de dépense'),
-                      _chargeKindPicker(),
-
-                      const SizedBox(height: 24),
-                    ],
-
-                    _FieldLabel(
-                      _isCommonCharge
-                          ? 'Résidence concernée'
-                          : 'Logement concerné',
-                    ),
-                    if (_isCommonCharge)
-                      _residenceTargetPicker()
-                    else
-                      _residencePicker(),
-
-                    const SizedBox(height: 24),
-
-                    const _FieldLabel('Catégorie'),
-                    CategoryGrid(
-                      categories: ExpenseCategory.values,
-                      selected: _category,
-                      onSelected: (category) =>
-                          setState(() => _category = category),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    const _FieldLabel('Date'),
-                    DatePickerField(
-                      date: DateFormat('d MMMM yyyy', 'fr').format(_spentAt),
-                      onTap: _pickDate,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    const _FieldLabel('Note', isOptional: true),
-                    TextField(
-                      controller: _noteController,
-                      maxLength: 500,
-                      maxLines: 2,
-                      style: AppTextStyles.valueSmall,
-                      inputFormatters: [LengthLimitingTextInputFormatter(500)],
-                      decoration: InputDecoration(
-                        hintText: 'Ex : facture de janvier',
-                        hintStyle: AppTextStyles.labelMedium,
-                        // Le compteur de caractères double le libellé
-                        // « facultatif » et alourdit la section pour une
-                        // limite qu'une note courte n'approche jamais.
-                        counterText: '',
-                        filled: true,
-                        fillColor: AppColors.background,
-                        contentPadding: const EdgeInsets.all(16),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    SaveExpenseButton(
-                      onPressed: isBusy ? null : _submit,
-                      isBusy: isBusy,
-                      label: switch ((isBusy, _isEditing)) {
-                        (true, _) => 'Enregistrement...',
-                        (false, true) => 'Enregistrer les modifications',
-                        (false, false) => null,
-                      },
-                    ),
+          appBar: AppTopBar(
+            title: _isEditing ? 'Modifier la dépense' : 'Nouvelle dépense',
+          ),
+          bottomNavigationBar: SaveExpenseButton(
+            onPressed: isBusy ? null : _submit,
+            isBusy: isBusy,
+            label: _isEditing ? 'Enregistrer les modifications' : null,
+          ),
+          body: AbsorbPointer(
+            absorbing: isBusy,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Le montant ouvre la saisie : c'est la donnée que le
+                  // propriétaire a en tête en arrivant sur l'écran, et la
+                  // placer au troisième rang l'obligeait à parcourir deux
+                  // sélecteurs avant de la poser.
+                  AmountField(controller: _amountController),
+                  const SizedBox(height: 24),
+                  if (_canChargeCommon) ...[
+                    const _FieldLabel('Type de dépense'),
+                    _chargeKindPicker(),
+                    const SizedBox(height: 20),
                   ],
-                ),
+                  _FieldLabel(
+                    _isCommonCharge ? 'Résidence concernée' : 'Logement concerné',
+                  ),
+                  if (_isCommonCharge)
+                    _residenceTargetPicker()
+                  else
+                    _residencePicker(),
+                  const SizedBox(height: 20),
+                  const _FieldLabel('Catégorie'),
+                  CategoryGrid(
+                    categories: ExpenseCategory.values,
+                    selected: _category,
+                    onSelected: (category) =>
+                        setState(() => _category = category),
+                  ),
+                  const SizedBox(height: 20),
+                  const _FieldLabel('Date'),
+                  DatePickerField(
+                    date: DateFormat('d MMMM yyyy', 'fr').format(_spentAt),
+                    onTap: _pickDate,
+                  ),
+                  const SizedBox(height: 20),
+                  const _FieldLabel('Note', isOptional: true),
+                  TextField(
+                    controller: _noteController,
+                    maxLength: 500,
+                    maxLines: 2,
+                    style: context.text.bodyMedium,
+                    inputFormatters: [LengthLimitingTextInputFormatter(500)],
+                    decoration: const InputDecoration(
+                      hintText: 'Ex : facture de janvier',
+                      // Le compteur de caractères double le libellé
+                      // « facultatif » et alourdit la section pour une
+                      // limite qu'une note courte n'approche jamais.
+                      counterText: '',
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -324,73 +281,24 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   /// logement, et présenter les deux sélecteurs ensemble laisserait croire
   /// qu’on peut renseigner les deux — ce que le serveur refuse.
   Widget _chargeKindPicker() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          _chargeKindOption(
-            label: 'Un logement',
-            icon: Icons.meeting_room_outlined,
-            isCommon: false,
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<bool>(
+        showSelectedIcon: false,
+        segments: const [
+          ButtonSegment(
+            value: false,
+            icon: Icon(LucideIcons.doorOpen, size: 16),
+            label: Text('Un logement'),
           ),
-          _chargeKindOption(
-            label: 'Partie commune',
-            icon: Icons.apartment_outlined,
-            isCommon: true,
+          ButtonSegment(
+            value: true,
+            icon: Icon(LucideIcons.building2, size: 16),
+            label: Text('Partie commune'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _chargeKindOption({
-    required String label,
-    required IconData icon,
-    required bool isCommon,
-  }) {
-    final selected = _isCommonCharge == isCommon;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _isCommonCharge = isCommon),
-        // Toute la moitié reste tactile, y compris l'espace autour du texte.
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 17,
-                color: selected
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
-              ),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.valueSmall.copyWith(
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        selected: {_isCommonCharge},
+        onSelectionChanged: (s) => setState(() => _isCommonCharge = s.first),
       ),
     );
   }
@@ -468,13 +376,13 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Text(text, style: AppTextStyles.sectionTitle.copyWith(fontSize: 13)),
+          Text(text, style: context.text.titleSmall),
           if (isOptional) ...[
             const SizedBox(width: 6),
-            Text('facultatif', style: AppTextStyles.labelSmall),
+            Text('facultatif', style: context.text.bodySmall),
           ],
         ],
       ),
@@ -491,16 +399,12 @@ class _PickerLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          const SizedBox(
-            width: 15,
-            height: 15,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          const AppLoader(size: 20),
           const SizedBox(width: 10),
-          Text(message, style: AppTextStyles.labelMedium),
+          Text(message, style: context.mutedText),
         ],
       ),
     );
@@ -516,19 +420,10 @@ class _PickerNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isError ? AppColors.errorBg : AppColors.background,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        message,
-        style: AppTextStyles.labelMedium.copyWith(
-          color: isError ? AppColors.error : AppColors.textSecondary,
-        ),
-      ),
+    return AppCallout(
+      icon: isError ? LucideIcons.circleAlert : LucideIcons.info,
+      tone: isError ? AppAccent.red : AppAccent.neutral,
+      message: message,
     );
   }
 }

@@ -1,14 +1,17 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
-import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_badge.dart';
 import 'package:resi_africa/shared/widgets/app_step_header.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../business_logic/create_property_cubit.dart';
 import '../../business_logic/create_property_state.dart';
 import '../../business_logic/edit_property_cubit.dart';
@@ -120,13 +123,13 @@ class _AddPropertyViewState extends State<AddPropertyView> {
 
   /// Une icône par section, dans l'ordre de [_stepTitles].
   static const _stepIcons = [
-    Icons.villa_outlined,
-    Icons.edit_outlined,
-    Icons.location_on_outlined,
-    Icons.straighten,
-    Icons.checklist_rounded,
-    Icons.photo_library_outlined,
-    Icons.payments_outlined,
+    LucideIcons.house,
+    LucideIcons.pencil,
+    LucideIcons.mapPin,
+    LucideIcons.ruler,
+    LucideIcons.listChecks,
+    LucideIcons.images,
+    LucideIcons.banknote,
   ];
 
   // ── Étape 1 : type
@@ -389,24 +392,26 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       builder: (dialogContext) {
         dismissed = ModalRoute.of(dialogContext)!.completed;
         return AlertDialog(
-        title: const Text('Abandonner les modifications ?'),
-        content: Text(
-          _touched.length == 1
-              ? 'Une section a été modifiée sans être enregistrée.'
-              : '${_touched.length} sections ont été modifiées sans être '
-                    'enregistrées.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Continuer l’édition'),
+          title: const Text('Abandonner les modifications ?'),
+          content: Text(
+            _touched.length == 1
+                ? 'Une section a été modifiée sans être enregistrée.'
+                : '${_touched.length} sections ont été modifiées sans être '
+                      'enregistrées.',
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Abandonner'),
-          ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Continuer l’édition'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: context.tokens.danger,
+              ),
+              child: const Text('Abandonner'),
+            ),
+          ],
         );
       },
     );
@@ -584,7 +589,6 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         await _leave();
       },
       child: Scaffold(
-        backgroundColor: AppColors.white,
         body: SafeArea(
           child: AbsorbPointer(
             absorbing: isBusy,
@@ -603,7 +607,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
 
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                    padding: const EdgeInsets.all(16),
                     child: _isSummary ? _buildSummary() : _buildStep(),
                   ),
                 ),
@@ -611,22 +615,18 @@ class _AddPropertyViewState extends State<AddPropertyView> {
                 AppBottomActionBar(
                   primaryLabel: primaryLabel,
                   onPrimary: _next,
-                  primaryIcon: AppButtonIcon.material(
-                    // En modification, chaque section se conclut par une
-                    // validation, jamais par un « suivant » : il n'y a pas de
-                    // section d'après.
-                    _isSummary || _isEditing || _isLastStep
-                        ? Icons.check_rounded
-                        : Icons.arrow_forward_rounded,
-                  ),
+                  // En modification, chaque section se conclut par une
+                  // validation, jamais par un « suivant » : il n'y a pas de
+                  // section d'après.
+                  primaryIcon: _isSummary || _isEditing || _isLastStep
+                      ? LucideIcons.check
+                      : LucideIcons.arrowRight,
                   // Sur le sommaire, la flèche de l'en-tête suffit à sortir :
                   // un second bouton « Retour » au même endroit que
                   // « Enregistrer » invite à l'appui malheureux.
                   secondaryLabel: _hidesSecondaryAction ? null : 'Retour',
                   onSecondary: _hidesSecondaryAction ? null : _back,
-                  secondaryIcon: AppButtonIcon.material(
-                    Icons.arrow_back_rounded,
-                  ),
+                  secondaryIcon: LucideIcons.chevronLeft,
                   isLoading: isBusy,
                 ),
               ],
@@ -642,24 +642,16 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Que souhaitez-vous modifier ?',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
+        Text('Que souhaitez-vous modifier ?', style: context.text.titleMedium),
         const SizedBox(height: 4),
         Text(
           _hasPendingChanges
               ? 'Enregistrez pour appliquer vos modifications.'
               : 'Touchez une section pour la corriger.',
-          style: TextStyle(
-            fontSize: 12,
+          style: context.text.bodySmall!.copyWith(
             color: _hasPendingChanges
-                ? AppColors.warning
-                : AppColors.textSecondary,
+                ? context.tokens.accentAmber
+                : context.tokens.muted,
           ),
         ),
         const SizedBox(height: 16),
@@ -768,58 +760,33 @@ class _SummaryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isTouched ? AppColors.warning : AppColors.primary;
-
+    final t = context.tokens;
+    // Section retouchée : filet ambre, la couleur de ce qui attend une action
+    // — ici, l'enregistrement.
     return Material(
-      color: Colors.transparent,
+      color: t.surface,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: isTouched ? t.accentAmber : t.border),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isTouched
-                ? AppColors.warning.withValues(alpha: 0.05)
-                : AppColors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isTouched
-                  ? AppColors.warning.withValues(alpha: 0.4)
-                  : AppColors.grey200,
-            ),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Icon(icon, size: 18, color: accent),
+                  IconChip(
+                    icon: icon,
+                    accent: isTouched ? AppAccent.amber : AppAccent.neutral,
+                    size: 32,
                   ),
                   const Spacer(),
                   if (isTouched)
-                    // Pastille plutôt qu'un mot : elle se repère au balayage,
-                    // et la tuile n'a pas la place d'une étiquette.
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.warning,
-                        shape: BoxShape.circle,
-                      ),
-                    )
+                    const AppBadge(label: 'Modifiée', tone: AppAccent.amber)
                   else
-                    const Icon(
-                      Icons.chevron_right,
-                      size: 18,
-                      color: AppColors.grey400,
-                    ),
+                    Icon(LucideIcons.chevronRight, size: 16, color: t.muted),
                 ],
               ),
               const Spacer(),
@@ -827,10 +794,8 @@ class _SummaryTile extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: context.text.titleSmall!.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -838,11 +803,7 @@ class _SummaryTile extends StatelessWidget {
                 summary,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                  height: 1.3,
-                ),
+                style: context.text.bodySmall,
               ),
             ],
           ),

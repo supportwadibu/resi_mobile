@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/di/service_locator.dart';
-import '../../../../../core/theme/app_colors.dart';
 import 'package:resi_africa/features/home/presentation/widgets/stats/action_grid.dart';
 import 'package:resi_africa/features/home/presentation/widgets/stats/kpi_row.dart';
 import 'package:resi_africa/features/home/presentation/widgets/stats/occupancy_card.dart';
@@ -9,6 +8,10 @@ import 'package:resi_africa/features/home/presentation/widgets/stats/stats_heade
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_state.dart';
 import 'package:resi_africa/features/subscription/presentation/widgets/plan_gate.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_style.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 class StatsTab extends StatelessWidget {
   const StatsTab({super.key});
@@ -34,39 +37,42 @@ class _StatsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
       body: BlocBuilder<DashboardCubit, DashboardState>(
         builder: (context, state) => RefreshIndicator(
           onRefresh: () => context.read<DashboardCubit>().load(),
-          child: SingleChildScrollView(
+          child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // L'en-tête reste monté pendant le chargement : le filtre de
-                // période doit rester actionnable, sinon un relevé vide sur la
-                // fenêtre choisie enfermerait le propriétaire dedans.
-                PlanGate(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _Header(),
-                      const SizedBox(height: 20),
-                      _Indicators(state: state),
-                    ],
-                  ),
+            padding: const EdgeInsets.only(bottom: 88),
+            children: [
+              const PageHeader(title: 'Statistiques'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // L'en-tête reste monté pendant le chargement : le filtre
+                    // de période doit rester actionnable, sinon un relevé
+                    // vide sur la fenêtre choisie enfermerait le
+                    // propriétaire dedans.
+                    PlanGate(
+                      feature: PremiumFeature.statistics,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const _Header(),
+                          const SizedBox(height: 12),
+                          _Indicators(state: state),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const SectionHeading(title: 'Gestion'),
+                    const SizedBox(height: 8),
+                    const ActionGrid(),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Gestion',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                const ActionGrid(),
-                const SizedBox(height: 80),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -100,20 +106,23 @@ class _Indicators extends StatelessWidget {
     return switch (state) {
       DashboardInitial() || DashboardLoading() => const Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppLoader()),
       ),
-      DashboardError(:final message) => _ErrorView(
-        message: message,
-        onRetry: () => context.read<DashboardCubit>().load(),
+      DashboardError(:final message) => AppCard(
+        child: ErrorState(
+          message: message,
+          onRetry: () => context.read<DashboardCubit>().load(),
+        ),
       ),
       DashboardLoaded(:final overview, :final parc) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OccupancyCard(
             occupancyRate: overview.summary.tauxOccupation,
             rented: parc.rented,
             available: parc.available,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           KpiRow(
             entrees: overview.summary.caBrut,
             sorties: overview.summary.depenses,
@@ -128,9 +137,10 @@ class _Indicators extends StatelessWidget {
       // d'une route propriétaire, et deux zéros s'y liraient comme un parc
       // vide.
       DashboardManagerLoaded(:final overview) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OccupancyCard(occupancyRate: overview.occupancyRate),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           KpiRow(
             entrees: overview.grossRevenue,
             sorties: overview.expensesTotal,
@@ -138,35 +148,5 @@ class _Indicators extends StatelessWidget {
         ],
       ),
     };
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.red.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          TextButton(onPressed: onRetry, child: const Text('Réessayer')),
-        ],
-      ),
-    );
   }
 }

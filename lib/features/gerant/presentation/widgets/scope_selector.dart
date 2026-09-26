@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 
 import '../../business_logic/gerant_scope_cubit.dart';
 
@@ -43,21 +44,17 @@ class ScopeSelector extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         if (standalone.isNotEmpty) ...[
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(4, 6, 4, 10),
             child: Text(
               'Logements hors résidence',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+              style: context.text.labelMedium!.copyWith(color: context.tokens.muted, fontWeight: FontWeight.w600),
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(14),
+              color: context.tokens.surface,
+              border: Border.all(color: context.tokens.border),
             ),
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Column(
@@ -112,14 +109,13 @@ class _ResidenceTileState extends State<_ResidenceTile> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
+        color: context.tokens.surface,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(14),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
               child: Row(
@@ -138,9 +134,7 @@ class _ResidenceTileState extends State<_ResidenceTile> {
                     tristate: true,
                     onChanged: (_) =>
                         widget.onToggleResidence(widget.group.residence),
-                    activeColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
                   Expanded(
@@ -151,30 +145,30 @@ class _ResidenceTileState extends State<_ResidenceTile> {
                           widget.group.residence.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.valueSmall,
+                          style: context.text.titleSmall,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '$checkedCount confié${checkedCount > 1 ? 's' : ''} '
                           'sur ${ids.length}',
-                          style: AppTextStyles.labelSmall,
+                          style: context.text.bodySmall,
                         ),
                       ],
                     ),
                   ),
                   Icon(
                     _expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
+                        ? LucideIcons.chevronUp
+                        : LucideIcons.chevronDown,
                     size: 20,
-                    color: AppColors.textSecondary,
+                    color: context.tokens.muted,
                   ),
                 ],
               ),
             ),
           ),
           if (_expanded) ...[
-            const Divider(height: 1, color: AppColors.divider),
+            Divider(height: 1, color: context.tokens.border),
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Column(
@@ -221,9 +215,7 @@ class _PropertyRow extends StatelessWidget {
             Checkbox(
               value: checked,
               onChanged: (_) => onChanged(),
-              activeColor: AppColors.primary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
               ),
             ),
             Expanded(
@@ -231,10 +223,7 @@ class _PropertyRow extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textPrimary,
-                ),
+                style: context.text.bodyMedium,
               ),
             ),
           ],

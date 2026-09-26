@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
 
 import '../../../property/data/models/property_model.dart';
 
@@ -14,30 +17,13 @@ class ResidenceUnitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.divider),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: const Icon(
-                Icons.meeting_room_outlined,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-            ),
+            const IconChip(icon: LucideIcons.doorOpen, size: 36),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -52,59 +38,28 @@ class ResidenceUnitTile extends StatelessWidget {
                         : unit.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.valueSmall,
+                    style: context.text.titleSmall,
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
-                    CurrencyFormatter.short(unit.pricing.dailyPrice),
-                    style: AppTextStyles.labelSmall,
+                    '${CurrencyFormatter.short(unit.pricing.dailyPrice)} /jour',
+                    style: context.text.bodySmall,
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            _StatusBadge(status: unit.status),
-            const SizedBox(width: 2),
-            const Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: AppColors.textLight,
+            StatusBadge(
+              label: unit.status.label,
+              tone: StatusTones.property(unit.status.code),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 16,
+              color: context.tokens.muted,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// État du logement, coloré comme ailleurs dans l'application.
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final PropertyStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (color, background) = switch (status) {
-      PropertyStatus.published => (AppColors.success, AppColors.successBg),
-      PropertyStatus.rented ||
-      PropertyStatus.reserved => (AppColors.info, AppColors.infoBg),
-      PropertyStatus.maintenance => (AppColors.warning, AppColors.warningBg),
-      PropertyStatus.draft ||
-      PropertyStatus.inactive => (AppColors.textSecondary, AppColors.grey100),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        status.label,
-        style: AppTextStyles.labelSmall.copyWith(
-          fontWeight: FontWeight.w600,
-          color: color,
         ),
       ),
     );

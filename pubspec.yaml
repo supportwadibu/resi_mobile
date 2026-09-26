@@ -45,10 +45,10 @@ dependencies:
   open_filex: ^4.7.0
   cached_network_image: ^3.4.1
   package_info_plus: ^10.2.1
-  # Lecture de la bande MRZ de la pièce d’identité, sur l’appareil : gratuite,
-  # et disponible hors ligne — la saisie au comptoir doit l’être aussi. Un
-  # service d’OCR distant coûterait par appel et échouerait sans réseau.
   google_mlkit_text_recognition: ^0.16.0
+  # Icônes Lucide, les mêmes que celles du backoffice (`lucide-react`) : une
+  # section garde le même pictogramme sur le web et sur le téléphone.
+  lucide_icons_flutter: ^3.1.20
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +70,22 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+
+  # Geist, la police du backoffice, embarquée plutôt que chargée par
+  # `google_fonts` : la saisie au comptoir fonctionne hors réseau, police
+  # comprise. Graisses statiques — Flutter n'applique pas `FontWeight` à l'axe
+  # d'une police variable.
+  fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/geist/Geist-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/geist/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/geist/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/geist/Geist-Bold.ttf
+          weight: 700
 
   assets:
     - assets/translations/en.json

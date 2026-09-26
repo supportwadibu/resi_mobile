@@ -85,13 +85,7 @@
   },
   "subscription": {
     "title": "Plans",
-    "inactive_title": "Your subscription is inactive",
-    "inactive_body": "Subscribe to a plan to keep using RESI.",
-    "upgrade_title": "Upgrade to the full plan",
-    "upgrade_body": "Statistics, PDF documents, client book and records, expenses, managers and WhatsApp invoices.",
     "renew_body": "Your subscription ends in {} day(s). Renew it to avoid any interruption.",
-    "current": "Current plan",
-    "per_period": "{} / {} days",
     "pay": "Pay with Wave",
     "verify": "I paid, check",
     "waiting": "Complete the payment in Wave, then come back here.",
@@ -100,16 +94,9 @@
     "wave_unavailable": "Unable to open Wave on this phone.",
     "continue": "Continue",
     "empty": "No plan is available at the moment.",
-    "includes_basic": "Residences and units\nBookings, at the counter and offline\nClient registration\nBusiness referrers",
-    "includes_full": "Everything in the 3,000 F plan\nStatistics and occupancy rate\nPDF reports and WhatsApp invoices\nClient book and records, ID documents\nExpenses and managers\nUpcoming features",
     "gerant_title": "Access suspended",
     "gerant_body": "The subscription of the owner you work for is inactive or does not cover this area. Please contact them.",
     "logout": "Log out"
-  },
-  "locked": {
-    "title": "Available with the 5,000 F plan",
-    "body": "This feature is part of the full plan.",
-    "see_plans": "See plans"
   },
   "referrer": {
     "section": "Business referrer (optional)",
@@ -150,5 +137,71 @@
     "back": "Back",
     "missing": "Not provided",
     "unavailable": "Image unavailable"
+  },
+  "plans": {
+    "trial_name": "Free trial",
+    "basic_name": "Pro",
+    "full_name": "Premium",
+    "trial_tagline": "All of RESI, free to get started",
+    "basic_tagline": "The essentials to record",
+    "full_tagline": "All of RESI, no limits",
+    "my_plan": "My plan",
+    "days_left": {
+      "one": "1 day left",
+      "other": "{} days left"
+    },
+    "until": "Until {}",
+    "ended": "Ended",
+    "current": "Current",
+    "recommended": "Recommended",
+    "in_progress": "Active",
+    "per_days": "/ {} days",
+    "trial_body": "Full access to every feature, no commitment, no payment.",
+    "trial_then": "When the trial ends, choose Pro or Premium to continue.",
+    "see_plans": "See plans",
+    "renew": "Renew",
+    "choose": "Choose your plan",
+    "secure_note": "Secure payment with Wave. No automatic charge: you renew whenever you want. Plan changes take effect at the end of the period.",
+    "inactive_title": "Your subscription has ended",
+    "inactive_body": "Choose a plan to keep using RESI. Your data is kept."
+  },
+  "premium": {
+    "badge": "Premium",
+    "title": "Available with Premium",
+    "body": "{} is part of the Premium plan.",
+    "see_plans": "See plans",
+    "later": "Later",
+    "manager_body": "This feature is not included in your owner’s plan.",
+    "ok": "Got it",
+    "features": {
+      "statistics": {
+        "title": "Statistics",
+        "body": "Track your revenue, profit and the occupancy rate of your residences."
+      },
+      "finance": {
+        "title": "Financial management",
+        "body": "Income, expenses, commissions and net profit, residence by residence."
+      },
+      "reports": {
+        "title": "PDF reports",
+        "body": "Export your financial and performance reports as PDF."
+      },
+      "clients": {
+        "title": "Client book",
+        "body": "Find every client, their stay history and their ID document."
+      },
+      "expenses": {
+        "title": "Expenses",
+        "body": "Record your costs and track what they cost you."
+      },
+      "managers": {
+        "title": "Managers",
+        "body": "Assign units to your managers and follow their activity."
+      },
+      "invoices": {
+        "title": "WhatsApp invoices",
+        "body": "Send your client the invoice for their stay, in one tap."
+      }
+    }
   }
 }

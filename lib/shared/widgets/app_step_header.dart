@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/resi_tokens.dart';
+import 'app_icon_button.dart';
 
 /// Barre de titre des parcours en étapes.
 ///
-/// Remplace `AppBar` sur les écrans du flux d'enregistrement : bouton de
-/// retour carré, titre centré, et compteur d'étapes à droite. La barre de
-/// progression n'apparaît que si [totalSteps] est fourni, ce qui permet de
-/// réutiliser le même header sur un écran à page unique.
+/// Même allure qu'`AppTopBar` — retour à gauche, titre aligné à gauche,
+/// filet bas — avec le compteur d'étapes à droite et, si [totalSteps] est
+/// fourni, une jauge segmentée sous le titre.
 class AppStepHeader extends StatelessWidget {
   const AppStepHeader({
     super.key,
@@ -21,8 +24,7 @@ class AppStepHeader extends StatelessWidget {
 
   final String title;
 
-  /// Absent, le bouton de retour laisse un vide de même largeur pour que le
-  /// titre reste optiquement centré.
+  /// Absent, pas de bouton de retour : première étape d'un parcours bloquant.
   final VoidCallback? onBack;
 
   /// Index de l'étape courante, à partir de 0.
@@ -33,62 +35,55 @@ class AppStepHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              if (onBack != null)
-                GestureDetector(
-                  onTap: onBack,
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
+    final t = context.tokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: t.surface,
+        border: Border(bottom: BorderSide(color: t.border)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(onBack != null ? 4 : 16, 8, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 40,
+              child: Row(
+                children: [
+                  if (onBack != null) ...[
+                    AppIconButton(
+                      icon: LucideIcons.chevronLeft,
+                      label: 'Retour',
+                      onPressed: onBack,
                     ),
-                    child: const Icon(
-                      Icons.chevron_left,
-                      color: AppColors.black,
-                    ),
-                  ),
-                )
-              else
-                const SizedBox(width: 38, height: 38),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black,
+                    const SizedBox(width: 4),
+                  ],
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.titleLarge,
                     ),
                   ),
+                  if (_hasProgress)
+                    Text(
+                      'Étape ${currentStep! + 1} sur $totalSteps',
+                      style: context.text.bodySmall,
+                    ),
+                ],
+              ),
+            ),
+            if (_hasProgress)
+              Padding(
+                padding: EdgeInsets.only(left: onBack != null ? 12 : 0, top: 8),
+                child: AppStepProgress(
+                  total: totalSteps!,
+                  current: currentStep!,
                 ),
               ),
-              if (_hasProgress)
-                Text(
-                  '${currentStep! + 1}/$totalSteps',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.grey500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                )
-              else
-                const SizedBox(width: 38),
-            ],
-          ),
-          if (_hasProgress) ...[
-            const SizedBox(height: 14),
-            AppStepProgress(total: totalSteps!, current: currentStep!),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -107,17 +102,14 @@ class AppStepProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Row(
       children: List.generate(total, (i) {
-        final isDone = i <= current;
         return Expanded(
           child: Container(
             margin: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
             height: 4,
-            decoration: BoxDecoration(
-              color: isDone ? AppColors.primary : AppColors.grey200,
-              borderRadius: BorderRadius.circular(10),
-            ),
+            color: i <= current ? t.primary : t.border,
           ),
         );
       }),

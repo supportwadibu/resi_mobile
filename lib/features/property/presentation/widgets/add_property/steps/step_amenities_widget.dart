@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 
 /// Commodités du bien.
@@ -19,21 +20,21 @@ class StepAmenitiesWidget extends StatelessWidget {
   final Set<Amenity> selected;
   final void Function(Set<Amenity>) onChanged;
 
-  static const _icons = <Amenity, FaIconData>{
-    Amenity.wifi: FontAwesomeIcons.wifi,
-    Amenity.airConditioning: FontAwesomeIcons.snowflake,
-    Amenity.heating: FontAwesomeIcons.fire,
-    Amenity.elevator: FontAwesomeIcons.elevator,
-    Amenity.balcony: FontAwesomeIcons.doorOpen,
-    Amenity.terrace: FontAwesomeIcons.umbrellaBeach,
-    Amenity.garden: FontAwesomeIcons.tree,
-    Amenity.pool: FontAwesomeIcons.personSwimming,
-    Amenity.gym: FontAwesomeIcons.dumbbell,
-    Amenity.security: FontAwesomeIcons.shieldHalved,
-    Amenity.concierge: FontAwesomeIcons.bellConcierge,
-    Amenity.parking: FontAwesomeIcons.car,
-    Amenity.petFriendly: FontAwesomeIcons.dog,
-    Amenity.smokingAllowed: FontAwesomeIcons.smoking,
+  static const _icons = <Amenity, IconData>{
+    Amenity.wifi: LucideIcons.wifi,
+    Amenity.airConditioning: LucideIcons.snowflake,
+    Amenity.heating: LucideIcons.flame,
+    Amenity.elevator: LucideIcons.arrowUpDown,
+    Amenity.balcony: LucideIcons.doorOpen,
+    Amenity.terrace: LucideIcons.umbrella,
+    Amenity.garden: LucideIcons.treePine,
+    Amenity.pool: LucideIcons.waves,
+    Amenity.gym: LucideIcons.dumbbell,
+    Amenity.security: LucideIcons.shieldHalf,
+    Amenity.concierge: LucideIcons.conciergeBell,
+    Amenity.parking: LucideIcons.car,
+    Amenity.petFriendly: LucideIcons.dog,
+    Amenity.smokingAllowed: LucideIcons.cigarette,
   };
 
   void _toggle(Amenity amenity) {
@@ -47,71 +48,28 @@ class StepAmenitiesWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quelles commodités propose votre bien ?',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
+          style: context.text.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
           '${selected.length} sélectionnée(s)',
-          style: const TextStyle(fontSize: 12, color: AppColors.grey500),
+          style: context.text.bodySmall,
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 2.8,
-          ),
-          itemCount: Amenity.values.length,
-          itemBuilder: (_, i) {
-            final amenity = Amenity.values[i];
-            final isSelected = selected.contains(amenity);
-
-            return GestureDetector(
-              onTap: () => _toggle(amenity),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.black : AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? AppColors.black : AppColors.grey200,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    FaIcon(
-                      _icons[amenity] ?? FontAwesomeIcons.check,
-                      size: 13,
-                      color: isSelected ? AppColors.white : AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        amenity.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isSelected ? AppColors.white : AppColors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final amenity in Amenity.values)
+              AppChoiceChip(
+                label: amenity.label,
+                icon: _icons[amenity] ?? LucideIcons.check,
+                selected: selected.contains(amenity),
+                onTap: () => _toggle(amenity),
               ),
-            );
-          },
+          ],
         ),
       ],
     );

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 
+/// Ligne d'une dépense : catégorie, bien concerné, note, montant et jour.
 class ExpenseItem extends StatelessWidget {
   final ExpenseModel expense;
 
@@ -23,47 +25,45 @@ class ExpenseItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final category = expense.category;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
+          // L'icône porte la couleur de la catégorie, la même que dans
+          // l'anneau de répartition.
           Container(
-            width: 42,
-            height: 42,
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: category.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              color: t.background,
+              border: Border.all(color: t.border),
             ),
-            child: Icon(category.icon, size: 19, color: category.color),
+            child: Icon(category.icon, size: 16, color: category.colorIn(t)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(category.label, style: AppTextStyles.valueSmall),
-                const SizedBox(height: 3),
+                Text(category.label, style: context.text.titleSmall),
+                const SizedBox(height: 2),
                 Text(
                   expense.targetLabel,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.labelSmall,
+                  style: context.text.bodySmall,
                 ),
                 if (expense.note case final note?
                     when note.trim().isNotEmpty) ...[
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
                   Text(
                     note,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textLight,
+                    style: context.text.bodySmall!.copyWith(
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -71,28 +71,24 @@ class ExpenseItem extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                CurrencyFormatter.format(expense.amount),
-                style: AppTextStyles.valueSmall.copyWith(color: AppColors.red),
+                CurrencyFormatter.short(expense.amount),
+                style: context.text.amount,
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 _dayFormat.format(expense.spentAt),
-                style: AppTextStyles.labelSmall,
+                style: context.text.bodySmall,
               ),
             ],
           ),
           if (showChevron) ...[
-            const SizedBox(width: 2),
-            const Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: AppColors.textLight,
-            ),
+            const SizedBox(width: 4),
+            Icon(LucideIcons.chevronRight, size: 16, color: t.muted),
           ],
         ],
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 
 import '../../../../property/business_logic/property_cubit.dart';
 import '../../../../property/business_logic/property_state.dart';
@@ -24,44 +26,35 @@ class PropertySelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<PropertyCubit, PropertyState>(
       builder: (context, state) => switch (state) {
-        PropertyInitial() || PropertyLoading() => const _SelectorShell(
+        PropertyInitial() || PropertyLoading() => _SelectorShell(
           child: Row(
             children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              const AppLoader(size: 20),
               SizedBox(width: 12),
-              Text(
-                'Chargement des résidences…',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
+              Text('Chargement des résidences…', style: context.mutedText),
             ],
           ),
         ),
         PropertyError(:final message) => _SelectorShell(
           child: Text(
             message,
-            style: const TextStyle(fontSize: 13, color: AppColors.error),
-          ),
-        ),
-        PropertyLoaded(items: final items) when items.isEmpty =>
-          const _SelectorShell(
-            child: Text(
-              'Aucune résidence enregistrée.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: context.text.bodyMedium!.copyWith(
+              color: context.tokens.danger,
             ),
           ),
+        ),
+        PropertyLoaded(items: final items) when items.isEmpty => _SelectorShell(
+          child: Text(
+            'Aucune résidence enregistrée.',
+            style: context.mutedText,
+          ),
+        ),
         PropertyLoaded(:final items) => _SelectorShell(
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _validSelection(items),
               isExpanded: true,
-              hint: const Text(
-                'Choisir une résidence',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
+              hint: Text('Choisir une résidence', style: context.mutedText),
               items: items
                   .map(
                     (p) => DropdownMenuItem(
@@ -69,10 +62,7 @@ class PropertySelector extends StatelessWidget {
                       child: Text(
                         p.title,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: context.text.bodyMedium,
                       ),
                     ),
                   )
@@ -104,13 +94,12 @@ class _SelectorShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      constraints: const BoxConstraints(minHeight: 46),
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
+        color: context.tokens.background,
+        border: Border.all(color: context.tokens.border),
       ),
       child: child,
     );

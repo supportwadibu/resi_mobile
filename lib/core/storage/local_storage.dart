@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/data/models/property_manager_model.dart';
+import '../theme/theme_controller.dart';
 
 class LocalStorage {
   const LocalStorage(this._prefs);
@@ -56,7 +57,14 @@ class LocalStorage {
     await _prefs.remove(_propertyManagerKey);
   }
 
+  /// Efface la session, mais pas l'apparence choisie : une préférence
+  /// d'affichage n'appartient pas au compte, et l'écran de connexion qui suit
+  /// basculerait sinon de thème sous les yeux.
   Future<void> clear() async {
+    final theme = _prefs.getString(ThemeController.storageKey);
     await _prefs.clear();
+    if (theme != null) {
+      await _prefs.setString(ThemeController.storageKey, theme);
+    }
   }
 }

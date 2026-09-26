@@ -1,10 +1,13 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:resi_africa/core/config/app_config.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/shared/utils/launcher_helper.dart';
+import 'package:resi_africa/shared/widgets/app_badge.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 
 Future<void> showSupportContactSheet(
@@ -12,13 +15,8 @@ Future<void> showSupportContactSheet(
   String? visitorName,
   String? visitorEmail,
 }) {
-  return showModalBottomSheet<void>(
+  return showAppSheet<void>(
     context: context,
-    backgroundColor: AppColors.white,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (sheetContext) => _SupportContactSheet(
       visitorName: visitorName,
       visitorEmail: visitorEmail,
@@ -34,101 +32,79 @@ class _SupportContactSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.grey200,
-                    borderRadius: BorderRadius.circular(10),
+    final t = context.tokens;
+    return AppSheet(
+      title: 'Besoin d\'aide ?',
+      description: 'Choisissez comment nous joindre',
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        children: [
+          if (AppConfig.isSupportChatEnabled)
+            // Le canal le plus rapide, en tête et marqué : guider vers lui
+            // sans masquer les autres.
+            AppSheetAction(
+              icon: LucideIcons.messagesSquare,
+              label: 'Chat en direct',
+              description: 'Réponse immédiate, sans quitter l\'application',
+              trailing: const AppBadge(
+                label: 'Recommandé',
+                tone: AppAccent.green,
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.router.push(
+                  SupportChatRoute(
+                    visitorName: visitorName,
+                    visitorEmail: visitorEmail,
                   ),
-                ),
+                );
+              },
+            ),
+          AppSheetAction(
+            // Logo de marque : WhatsApp reste reconnaissable d'un coup d'œil.
+            iconWidget: FaIcon(FontAwesomeIcons.whatsapp, size: 16, color: t.muted),
+            label: 'WhatsApp',
+            description: _formatPhone(AppConfig.supportWhatsApp),
+            onTap: () => _run(
+              context,
+              () => LauncherHelper.openWhatsApp(
+                AppConfig.supportWhatsApp,
+                message: _whatsAppGreeting(),
               ),
-              const SizedBox(height: 20),
-              const _SheetHeader(),
-              const SizedBox(height: 20),
-
-              if (AppConfig.isSupportChatEnabled) ...[
-                _ChannelCard(
-                  icon: FontAwesomeIcons.solidComments,
-                  color: AppColors.gradientStart,
-                  title: 'Chat en direct',
-                  subtitle: 'Réponse immédiate, sans quitter l\'application',
-                  highlighted: true,
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.router.push(
-                      SupportChatRoute(
-                        visitorName: visitorName,
-                        visitorEmail: visitorEmail,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              _ChannelCard(
-                icon: FontAwesomeIcons.whatsapp,
-                color: AppColors.textSecondary,
-                title: 'WhatsApp',
-                subtitle: _formatPhone(AppConfig.supportWhatsApp),
-                onTap: () => _run(
-                  context,
-                  () => LauncherHelper.openWhatsApp(
-                    AppConfig.supportWhatsApp,
-                    message: _whatsAppGreeting(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _ChannelCard(
-                icon: FontAwesomeIcons.phone,
-                color: AppColors.textSecondary,
-                title: 'Appeler le support',
-                subtitle:
-                    '${_formatPhone(AppConfig.supportPhone)} · ${AppConfig.supportHours}',
-                onTap: () => _run(
-                  context,
-                  () => LauncherHelper.makeCall('+${AppConfig.supportPhone}'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _ChannelCard(
-                icon: FontAwesomeIcons.envelope,
-                color: AppColors.textSecondary,
-                title: 'Envoyer un e-mail',
-                subtitle: AppConfig.supportEmail,
-                onTap: () => _run(
-                  context,
-                  () => LauncherHelper.openUrl(
-                    'mailto:${AppConfig.supportEmail}'
-                    '?subject=${Uri.encodeComponent('Demande d\'assistance Resi')}',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _ChannelCard(
-                icon: FontAwesomeIcons.globe,
-                color: AppColors.textSecondary,
-                title: 'Site web',
-                subtitle: _formatWebsite(AppConfig.supportWebsite),
-                onTap: () => _run(
-                  context,
-                  () => LauncherHelper.openUrl(AppConfig.supportWebsite),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          AppSheetAction(
+            icon: LucideIcons.phone,
+            label: 'Appeler le support',
+            description:
+                '${_formatPhone(AppConfig.supportPhone)} · ${AppConfig.supportHours}',
+            onTap: () => _run(
+              context,
+              () => LauncherHelper.makeCall('+${AppConfig.supportPhone}'),
+            ),
+          ),
+          AppSheetAction(
+            icon: LucideIcons.mail,
+            label: 'Envoyer un e-mail',
+            description: AppConfig.supportEmail,
+            onTap: () => _run(
+              context,
+              () => LauncherHelper.openUrl(
+                'mailto:${AppConfig.supportEmail}'
+                '?subject=${Uri.encodeComponent('Demande d\'assistance Resi')}',
+              ),
+            ),
+          ),
+          AppSheetAction(
+            icon: LucideIcons.globe,
+            label: 'Site web',
+            description: _formatWebsite(AppConfig.supportWebsite),
+            onTap: () => _run(
+              context,
+              () => LauncherHelper.openUrl(AppConfig.supportWebsite),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -169,132 +145,4 @@ class _SupportContactSheet extends StatelessWidget {
   static String _formatWebsite(String url) => url
       .replaceFirst(RegExp(r'^https?://'), '')
       .replaceFirst(RegExp(r'/$'), '');
-}
-
-class _SheetHeader extends StatelessWidget {
-  const _SheetHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.black,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.support_agent_rounded,
-            size: 24,
-            color: AppColors.white,
-          ),
-        ),
-        const SizedBox(width: 14),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Besoin d\'aide ?',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Choisissez comment nous joindre',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ChannelCard extends StatelessWidget {
-  const _ChannelCard({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.highlighted = false,
-  });
-
-  final FaIconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  /// Marque le canal recommandé d'une bordure colorée, pour guider vers la
-  /// voie la plus rapide sans masquer les autres.
-  final bool highlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: highlighted
-              ? color.withValues(alpha: 0.04)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: highlighted
-                ? color.withValues(alpha: 0.35)
-                : AppColors.divider,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(child: FaIcon(icon, size: 18, color: color)),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, size: 20, color: AppColors.grey500),
-          ],
-        ),
-      ),
-    );
-  }
 }

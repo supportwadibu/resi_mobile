@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/features/home/presentation/widgets/reservations/stat_card.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/features/reservation/data/models/booking_stats_model.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
 
 class ReservationStatsRow extends StatelessWidget {
   const ReservationStatsRow({super.key, this.stats});
@@ -15,35 +17,44 @@ class ReservationStatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = this.stats;
 
-    return Row(
-      children: [
-        Expanded(
-          child: StatCard(
-            label: 'Taux occupation',
-            value: stats == null ? '—' : '${stats.occupancyPercent}%',
-            icon: FontAwesomeIcons.chartPie,
-            color: const Color(0xFF3322AC),
+    // Les séjours à venir et en cours prennent la couleur de leur statut
+    // (planifié bleu, en cours violet) : la tuile se lit comme le badge des
+    // lignes juste en dessous.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: StatTile(
+              compact: true,
+              label: 'Occupation',
+              value: stats == null ? '—' : '${stats.occupancyPercent} %',
+              icon: LucideIcons.chartPie,
+              accent: AppAccent.amber,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: 'À venir',
-            value: stats == null ? '—' : '${stats.upcoming}',
-            icon: FontAwesomeIcons.clockRotateLeft,
-            color: const Color(0xFFF59E0B),
+          const SizedBox(width: 8),
+          Expanded(
+            child: StatTile(
+              compact: true,
+              label: 'À venir',
+              value: stats == null ? '—' : '${stats.upcoming}',
+              icon: LucideIcons.calendarClock,
+              accent: StatusTone.upcoming.accent,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: 'En cours',
-            value: stats == null ? '—' : '${stats.inProgress}',
-            icon: FontAwesomeIcons.circleCheck,
-            color: const Color(0xFF14A985),
+          const SizedBox(width: 8),
+          Expanded(
+            child: StatTile(
+              compact: true,
+              label: 'En cours',
+              value: stats == null ? '—' : '${stats.inProgress}',
+              icon: LucideIcons.bedDouble,
+              accent: StatusTone.ongoing.accent,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -1,20 +1,21 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/role_guard.dart';
 import '../../../../core/session/session_role.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../business_logic/home_stats_cubit.dart';
 import '../../../auth/presentation/widgets/profile_completion_banner.dart';
 import '../../../reservation/presentation/widgets/create/reservation_mode_sheet.dart';
 import '../../../../shared/widgets/app_bottom_nav.dart';
-import '../../../../shared/widgets/floating_action_card.dart';
+import '../../../../shared/widgets/app_sheet.dart';
 import '../../../subscription/business_logic/plan_cubit.dart';
 import '../../../subscription/presentation/widgets/plan_gate.dart';
+import '../../../subscription/presentation/widgets/plan_style.dart';
 import '../widgets/tabs/home_tab.dart';
 import '../widgets/tabs/property_tab.dart';
 import '../widgets/tabs/reservation_tab.dart';
@@ -27,91 +28,76 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  int _currentIndex = 0;
+/// Création proposée par le bouton « + ».
+class _CreateAction {
+  const _CreateAction({
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.action,
+  });
 
-  bool _menuOpen = false;
+  final IconData icon;
+  final String label;
+  final String description;
+  final String action;
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
 
   /// Donne accès aux onglets pour relire les chiffres de l'accueil : le cubit
   /// qui les porte est fourni sous `build`, donc hors de portée d'ici.
   final _tabsKey = GlobalKey<_HomeTabsState>();
 
-  late final AnimationController _menuCtrl;
-  late final Animation<double> _menuScale;
-  late final Animation<double> _menuFade;
-  late final Animation<Offset> _menuSlide;
-
-  static const _features = [
-    FloatingFeature(
-      icon: FontAwesomeIcons.house,
+  /// Icônes de section : une création porte l'icône de la section qu'elle
+  /// alimente, comme partout ailleurs dans l'application.
+  static const _actions = [
+    _CreateAction(
+      icon: AppSectionIcons.properties,
       label: 'Ajouter un bien',
+      description: 'Publier un logement',
       action: 'add_property',
     ),
-    FloatingFeature(
-      icon: FontAwesomeIcons.calendarPlus,
+    _CreateAction(
+      icon: AppSectionIcons.bookings,
       label: 'Nouvelle réservation',
+      description: 'Au comptoir ou pour un client',
       action: 'add_reservation',
     ),
-    FloatingFeature(
-      icon: FontAwesomeIcons.userPlus,
+    _CreateAction(
+      icon: AppSectionIcons.clients,
       label: 'Nouveau client',
+      description: 'Ajouter une fiche au carnet',
       action: 'add_client',
     ),
-    FloatingFeature(
-      icon: FontAwesomeIcons.fileInvoiceDollar,
+    _CreateAction(
+      icon: AppSectionIcons.expenses,
       label: 'Nouvelle dépense',
+      description: 'Une charge liée à un bien',
       action: 'add_expense',
     ),
   ];
 
-  /// Créations offertes au rôle courant. Le menu, ses animations et son
-  /// ancrage ne changent pas : seule la liste rendue est plus courte.
+  /// Créations offertes au rôle courant.
   ///
   /// Le rôle se lit sur la session, comme partout ailleurs dans le projet :
   /// l'état de l'`AuthCubit` ne le porte pas, et il doit rester lisible sans
   /// reconnexion après un redémarrage.
-  List<FloatingFeature> get _visibleFeatures {
+  List<_CreateAction> get _visibleActions {
     final visible = featuresForRole(
       sl<SessionRole>().value,
-      _features.map((f) => f.action).toList(),
+      _actions.map((a) => a.action).toList(),
     );
-    return _features.where((f) => visible.contains(f.action)).toList();
+    return _actions.where((a) => visible.contains(a.action)).toList();
   }
 
   @override
   void initState() {
     super.initState();
-    _menuCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-    );
-    _menuScale = CurvedAnimation(parent: _menuCtrl, curve: Curves.easeOutBack);
-    _menuFade = CurvedAnimation(parent: _menuCtrl, curve: Curves.easeOut);
-    _menuSlide = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _menuCtrl, curve: Curves.easeOutCubic));
-
     // L'accueil est la porte d'entrée après la connexion : l'accès y est relu,
     // et un compte inactif est aussitôt redirigé par l'écoute de `App`.
     sl<PlanCubit>().refresh();
-  }
-
-  @override
-  void dispose() {
-    _menuCtrl.dispose();
-    super.dispose();
-  }
-
-  void _openMenu() {
-    setState(() => _menuOpen = true);
-    _menuCtrl.forward();
-  }
-
-  void _closeMenu() {
-    setState(() => _menuOpen = false);
-    _menuCtrl.reverse();
   }
 
   static const _propertyTabIndex = 2;
@@ -121,8 +107,29 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() => _currentIndex = _propertyTabIndex);
   }
 
+  Future<void> _openCreateSheet() async {
+    final action = await showAppSheet<String>(
+      context: context,
+      builder: (sheetContext) => AppSheet(
+        title: 'Créer',
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          children: [
+            for (final item in _visibleActions)
+              AppSheetAction(
+                icon: item.icon,
+                label: item.label,
+                description: item.description,
+                onTap: () => Navigator.of(sheetContext).pop(item.action),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (action != null && mounted) await _handleAdd(action);
+  }
+
   Future<void> _handleAdd(String action) async {
-    _closeMenu();
     switch (action) {
       case 'add_property':
         await context.router.push(AddPropertyRoute());
@@ -134,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen>
           context.router.push(AddReservationRoute(mode: mode));
         }
       case 'add_expense':
-        if (!ensureFullPlan(context)) return;
+        if (!ensureFullPlan(context, PremiumFeature.expenses)) return;
         // Attendu, puis les chiffres relus : une dépense change le bénéfice
         // net affiché sur l'accueil, qui reste monté sous la pile.
         await context.router.push(AddExpenseRoute());
@@ -153,81 +160,41 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              children: [
-                const ProfileCompletionBanner(),
-                Expanded(
-                  child: MultiBlocProvider(
-                    providers: [
-                      BlocProvider(create: (_) => sl<PropertyCubit>()..load()),
-                      // Fourni ici et non dans l'onglet : celui-ci reste monté
-                      // dans l'`IndexedStack`, et un cubit local ne serait
-                      // jamais rechargé après l'ajout d'un bien ou d'une
-                      // dépense.
-                      BlocProvider(create: (_) => sl<HomeStatsCubit>()..load()),
-                    ],
-                    child: _HomeTabs(
-                      key: _tabsKey,
-                      currentIndex: _currentIndex,
-                      onSeeAllProperties: _showProperties,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (_menuOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _closeMenu,
-                behavior: HitTestBehavior.opaque,
-                child: ColoredBox(color: Colors.black.withOpacity(0.15)),
-              ),
-            ),
-
-          Positioned(
-            bottom: 16 + 90,
-            right: 24,
-            child: IgnorePointer(
-              ignoring: !_menuOpen,
-              child: FadeTransition(
-                opacity: _menuFade,
-                child: SlideTransition(
-                  position: _menuSlide,
-                  child: ScaleTransition(
-                    scale: _menuScale,
-                    alignment: Alignment.bottomRight,
-                    child: FloatingActionCard(
-                      features: _visibleFeatures,
-                      onSelect: _handleAdd,
-                      onDismiss: _closeMenu,
-                    ),
-                  ),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            const ProfileCompletionBanner(),
+            Expanded(
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (_) => sl<PropertyCubit>()..load()),
+                  // Fourni ici et non dans l'onglet : celui-ci reste monté
+                  // dans l'`IndexedStack`, et un cubit local ne serait
+                  // jamais rechargé après l'ajout d'un bien ou d'une
+                  // dépense.
+                  BlocProvider(create: (_) => sl<HomeStatsCubit>()..load()),
+                ],
+                child: _HomeTabs(
+                  key: _tabsKey,
+                  currentIndex: _currentIndex,
+                  onSeeAllProperties: _showProperties,
                 ),
               ),
             ),
-          ),
-
-          Positioned(
-            bottom: 16,
-            left: 0,
-            right: 0,
-            child: AppBottomNav(
-              currentIndex: _currentIndex,
-              isMenuOpen: _menuOpen,
-              onMenuToggle: (open) => open ? _openMenu() : _closeMenu(),
-              onTap: (i) {
-                if (_menuOpen) _closeMenu();
-                setState(() => _currentIndex = i);
-              },
+          ],
+        ),
+      ),
+      floatingActionButton: _visibleActions.isEmpty
+          ? null
+          : FloatingActionButton(
+              onPressed: _openCreateSheet,
+              tooltip: 'Créer',
+              child: const Icon(LucideIcons.plus, size: 22),
             ),
-          ),
-        ],
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
       ),
     );
   }

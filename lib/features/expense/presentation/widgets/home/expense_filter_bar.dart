@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 
 /// Barre d'actions de l'historique : filtres et export.
 class ExpenseFilterBar extends StatelessWidget {
@@ -13,7 +15,7 @@ class ExpenseFilterBar extends StatelessWidget {
     this.isExporting = false,
   });
 
-  /// Nombre de filtres actifs, affiché en pastille.
+  /// Nombre de filtres actifs, repris dans le libellé.
   final int activeCount;
   final VoidCallback onTap;
 
@@ -31,82 +33,39 @@ class ExpenseFilterBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: hasFilters ? AppColors.black : AppColors.background,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.filter_list_rounded,
-                    size: 18,
-                    color: hasFilters
-                        ? AppColors.white
-                        : AppColors.textPrimary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    hasFilters
-                        ? '$activeCount filtre${activeCount > 1 ? 's' : ''}'
-                        : 'Filtrer',
-                    style: AppTextStyles.valueSmall.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: hasFilters
-                          ? AppColors.white
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                  if (onClear != null) ...[
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: onClear,
-                      child: Icon(
-                        Icons.close,
-                        size: 16,
-                        color: hasFilters
-                            ? AppColors.white
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          child: AppButton(
+            label: hasFilters
+                ? '$activeCount filtre${activeCount > 1 ? 's' : ''}'
+                : 'Filtrer',
+            icon: LucideIcons.listFilter,
+            // Filtres posés : le bouton passe en noir, pour qu'on lise d'un
+            // coup d'œil que la liste n'est pas complète.
+            variant: hasFilters
+                ? AppButtonVariant.primary
+                : AppButtonVariant.secondary,
+            expand: true,
+            onPressed: onTap,
           ),
         ),
-        const SizedBox(width: 10),
-        InkWell(
-          onTap: isExporting ? null : onExport,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            width: 46,
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: isExporting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(
-                    Icons.ios_share_outlined,
-                    size: 19,
-                    // Estompé quand l'export n'a rien à produire.
-                    color: onExport == null
-                        ? AppColors.textLight
-                        : AppColors.textPrimary,
-                  ),
+        if (onClear != null) ...[
+          const SizedBox(width: 8),
+          AppIconButton(
+            icon: LucideIcons.x,
+            label: 'Effacer les filtres',
+            bordered: true,
+            onPressed: onClear,
           ),
-        ),
+        ],
+        const SizedBox(width: 8),
+        isExporting
+            ? const SizedBox.square(dimension: 40, child: AppLoader(size: 20))
+            : AppIconButton(
+                icon: LucideIcons.share,
+                label: 'Exporter en PDF',
+                bordered: true,
+                // Désactivé quand l'export n'a rien à produire.
+                onPressed: onExport,
+              ),
       ],
     );
   }

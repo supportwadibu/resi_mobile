@@ -1,34 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/resi_tokens.dart';
+import 'app_button.dart';
+import 'page_header.dart';
+
+/// Échec de chargement, miroir de `ErrorPanel` : pastille rouge, message,
+/// bouton « Réessayer ».
 class ErrorState extends StatelessWidget {
   const ErrorState({super.key, this.message, this.onRetry});
+
   final String? message;
   final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 64,
-            color: Theme.of(context).colorScheme.error,
+          const IconChip(
+            icon: LucideIcons.triangleAlert,
+            accent: AppAccent.red,
+            size: 44,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
-            message ?? 'Une erreur est survenue.',
+            'Impossible de charger',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
+            style: context.text.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message ?? 'Une erreur est survenue. Réessayez dans un instant.',
+            textAlign: TextAlign.center,
+            style: context.text.bodyMedium!.copyWith(
+              color: context.tokens.muted,
+            ),
           ),
           if (onRetry != null) ...[
-            const SizedBox(height: 24),
-            FilledButton.icon(
+            const SizedBox(height: 20),
+            AppButton(
+              label: 'Réessayer',
+              icon: LucideIcons.rotateCw,
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reessayer'),
             ),
           ],
         ],

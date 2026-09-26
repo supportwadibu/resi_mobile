@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'review_card.dart';
 
 class ReviewsCards extends StatelessWidget {
@@ -6,14 +7,14 @@ class ReviewsCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
         ReviewCard(
           name: 'Ama Koné',
           initials: 'AK',
           date: 'Mai 2026',
-          avatarColor: Color(0xFFE6F1FB),
-          textColor: Color(0xFF185FA5),
+          avatarColor: context.tokens.accentBlueSoft,
+          textColor: context.tokens.accentBlue,
           reviewText:
               'Logement impeccable, très bien situé. L\'hôte est réactif et attentionné. Je recommande vivement.',
         ),
@@ -22,8 +23,8 @@ class ReviewsCards extends StatelessWidget {
           name: 'Moussa Bamba',
           initials: 'MB',
           date: 'Avril 2026',
-          avatarColor: Color(0xFFEEEDFE),
-          textColor: Color(0xFF534AB7),
+          avatarColor: context.tokens.accentVioletSoft,
+          textColor: context.tokens.accentViolet,
           reviewText:
               'Séjour parfait. Propre, confortable et calme. Le quartier est idéal pour se déplacer facilement.',
         ),

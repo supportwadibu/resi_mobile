@@ -1,170 +1,250 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
 import '../../../../core/session/session_role.dart';
 import '../../business_logic/plan_cubit.dart';
 import '../../business_logic/plan_state.dart';
+import 'plan_style.dart';
 
-/// L'accès courant ouvre-t-il le forfait complet ?
-bool hasFullPlan() => sl<PlanCubit>().access.isFull;
-
-/// Laisse passer un geste réservé au forfait 5 000 F, ou explique le verrou.
+/// Palier de la session, `null` hors conteneur.
 ///
-/// À appeler avant de naviguer : l'entrée reste visible au forfait 3 000 F —
-/// la masquer cacherait au propriétaire ce que le forfait complet apporte —,
-/// et l'appui ouvre l'explication plutôt que l'écran, qui ne recevrait de
-/// l'API qu'un refus.
-bool ensureFullPlan(BuildContext context) {
+/// Même garde que `_currentRole` du profil : les tests d'écran montent les vues
+/// sans service locator, et un verrou ne doit pas les faire échouer — l'accès
+/// complet y est supposé.
+PlanCubit? planCubitOrNull() =>
+    sl.isRegistered<PlanCubit>() ? sl<PlanCubit>() : null;
+
+/// L'accès courant ouvre-t-il le forfait Premium ?
+bool hasFullPlan() => planCubitOrNull()?.access.isFull ?? true;
+
+/// Le gérant ne souscrit pas : c'est l'abonnement de son propriétaire qui
+/// compte, et lui proposer les forfaits le mènerait à un écran fermé.
+bool _canSubscribe() =>
+    !sl.isRegistered<SessionRole>() || sl<SessionRole>().value != 'gerant';
+
+/// Laisse passer un geste Premium, ou explique le verrou.
+///
+/// À appeler avant de naviguer : l'entrée reste visible au forfait Pro — la
+/// masquer cacherait ce que Premium apporte —, et l'appui ouvre l'explication
+/// plutôt qu'un écran que l'API refuserait.
+bool ensureFullPlan(BuildContext context, PremiumFeature feature) {
   if (hasFullPlan()) return true;
-  showLockedFeatureSheet(context);
+  showLockedFeatureSheet(context, feature);
   return false;
 }
 
-Future<void> showLockedFeatureSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+/// Feuille « Disponible avec Premium », au format des feuilles du projet.
+Future<void> showLockedFeatureSheet(
+  BuildContext context,
+  PremiumFeature feature,
+) {
+  final canSubscribe = _canSubscribe();
+
+  return showAppSheet<void>(
     context: context,
-    showDragHandle: true,
-    builder: (sheetContext) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: LockedFeatureCard(
-          onSeePlans: () => Navigator.of(sheetContext).pop(),
-          flat: true,
-        ),
+    builder: (sheetContext) => AppSheet(
+      title: 'premium.title'.tr(),
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppButton(
+            label: (canSubscribe ? 'premium.see_plans' : 'premium.ok').tr(),
+            icon: canSubscribe ? PlanStyle.full.icon : null,
+            expand: true,
+            onPressed: () {
+              Navigator.of(sheetContext).pop();
+              if (canSubscribe) context.router.push(SubscriptionPlansRoute());
+            },
+          ),
+          if (canSubscribe) ...[
+            const SizedBox(height: 8),
+            AppButton(
+              label: 'premium.later'.tr(),
+              variant: AppButtonVariant.ghost,
+              expand: true,
+              onPressed: () => Navigator.of(sheetContext).pop(),
+            ),
+          ],
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _FeatureBadge(feature: feature),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              canSubscribe
+                  ? '${'premium.body'.tr(args: [feature.title])} ${feature.body}'
+                  : 'premium.manager_body'.tr(),
+              style: context.mutedText.copyWith(height: 1.5),
+            ),
+          ),
+        ],
       ),
     ),
   );
 }
 
-/// Rend [child] au forfait complet, et l'encart de verrou sinon.
+/// Poignée des feuilles du projet. Les feuilles ouvertes par `showAppSheet`
+/// portent déjà la leur (`bottomSheetTheme`) ; celle-ci sert aux feuilles
+/// dessinées à la main.
+class SheetHandle extends StatelessWidget {
+  const SheetHandle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 32, height: 4, color: context.tokens.border);
+  }
+}
+
+/// Rend [child] au forfait Premium, et l'encart de verrou sinon.
 ///
 /// Écoute le `PlanCubit` : un refus de l'API reçu ailleurs bascule l'écran
 /// sans rechargement.
 class PlanGate extends StatelessWidget {
-  const PlanGate({required this.child, this.locked, super.key});
+  const PlanGate({
+    required this.feature,
+    required this.child,
+    this.compact = false,
+    super.key,
+  });
 
+  final PremiumFeature feature;
   final Widget child;
 
-  /// Remplaçant au forfait 3 000 F. Par défaut, l'encart de verrou.
-  final Widget? locked;
+  /// Bandeau d'une ligne plutôt qu'encart : pour une surface où l'encart
+  /// prendrait trop de place, comme la rangée de chiffres de l'accueil.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final plan = planCubitOrNull();
+    if (plan == null) return child;
+
     return BlocBuilder<PlanCubit, PlanState>(
-      bloc: sl<PlanCubit>(),
-      builder: (context, state) =>
-          state.access.isFull ? child : (locked ?? const LockedFeatureCard()),
+      bloc: plan,
+      builder: (context, state) {
+        if (state.access.isFull) return child;
+        return compact
+            ? LockedFeatureBanner(feature: feature)
+            : LockedFeatureCard(feature: feature);
+      },
     );
   }
 }
 
-/// Encart « Réservé au forfait 5 000 F », avec l'accès aux forfaits.
+/// Encart d'une fonction Premium, à la place de son contenu.
 class LockedFeatureCard extends StatelessWidget {
-  const LockedFeatureCard({this.onSeePlans, this.flat = false, super.key});
+  const LockedFeatureCard({required this.feature, super.key});
 
-  /// Appelé avant la navigation — pour fermer une feuille, par exemple.
-  final VoidCallback? onSeePlans;
-
-  /// Sans fond ni bordure, quand l'encart est déjà dans une feuille.
-  final bool flat;
+  final PremiumFeature feature;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    // Le gérant ne souscrit pas : c'est l'abonnement du propriétaire qui
-    // compte, et le lui proposer le mènerait à un écran qui lui est fermé.
-    final canSubscribe = sl<SessionRole>().value != 'gerant';
+    final canSubscribe = _canSubscribe();
 
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.lock_outline_rounded, size: 32, color: scheme.primary),
-        const SizedBox(height: 12),
-        Text(
-          'locked.title'.tr(),
-          textAlign: TextAlign.center,
-          style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'locked.body'.tr(),
-          textAlign: TextAlign.center,
-          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-        if (canSubscribe) ...[
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () {
-              onSeePlans?.call();
-              context.router.push(SubscriptionPlansRoute());
-            },
-            child: Text('locked.see_plans'.tr()),
-          ),
-        ],
-      ],
-    );
-
-    if (flat) return content;
-
-    return Container(
-      width: double.infinity,
+    return AppCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: content,
-    );
-  }
-}
-
-/// Bandeau compact du verrou, pour une surface où l'encart prendrait trop de
-/// place — la rangée de chiffres de l'accueil.
-class LockedFeatureBanner extends StatelessWidget {
-  const LockedFeatureBanner({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final canSubscribe = sl<SessionRole>().value != 'gerant';
-
-    return Material(
-      color: scheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: canSubscribe
-            ? () => context.router.push(SubscriptionPlansRoute())
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
+      child: Column(
+        children: [
+          _FeatureBadge(feature: feature),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.lock_outline_rounded, color: scheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'locked.title'.tr(),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
+              Flexible(
+                child: Text(feature.title, style: context.text.titleMedium),
               ),
-              if (canSubscribe)
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: scheme.onSurfaceVariant,
-                ),
+              const SizedBox(width: 8),
+              const PremiumBadge(),
             ],
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            canSubscribe ? feature.body : 'premium.manager_body'.tr(),
+            textAlign: TextAlign.center,
+            style: context.mutedText.copyWith(height: 1.5),
+          ),
+          if (canSubscribe) ...[
+            const SizedBox(height: 16),
+            AppButton(
+              label: 'premium.see_plans'.tr(),
+              icon: PlanStyle.full.icon,
+              onPressed: () => context.router.push(SubscriptionPlansRoute()),
+            ),
+          ],
+        ],
       ),
+    );
+  }
+}
+
+/// Bandeau d'une ligne d'une fonction Premium.
+class LockedFeatureBanner extends StatelessWidget {
+  const LockedFeatureBanner({required this.feature, super.key});
+
+  final PremiumFeature feature;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: () => showLockedFeatureSheet(context, feature),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          _FeatureBadge(feature: feature, size: 36),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  feature.title,
+                  style: context.text.titleSmall!.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  feature.body,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          const PremiumBadge(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pastille de la fonction, au ton du forfait qui l'ouvre.
+class _FeatureBadge extends StatelessWidget {
+  const _FeatureBadge({required this.feature, this.size = 48});
+
+  final PremiumFeature feature;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconChip(
+      icon: feature.icon,
+      accent: PlanStyle.full.accent,
+      size: size,
     );
   }
 }

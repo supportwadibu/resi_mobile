@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 
 @RoutePage()
 class PropertyScreen extends StatelessWidget {
@@ -8,7 +9,7 @@ class PropertyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Mes biens')),
+      appBar: AppTopBar(title: 'Mes biens'),
       body: SafeArea(child: Center(child: Text('Property Screen'))),
     );
   }

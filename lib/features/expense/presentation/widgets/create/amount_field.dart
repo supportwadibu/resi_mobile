@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:flutter/services.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 
 /// Montant de la dépense, traité comme la donnée centrale de l'écran.
 ///
@@ -15,16 +15,18 @@ class AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
+    final figure = context.text.figure.copyWith(fontSize: 30);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(18),
+        color: t.surface,
+        border: Border.all(color: t.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Montant', style: AppTextStyles.labelMedium),
+          Text('Montant', style: context.text.titleSmall),
           const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -38,14 +40,12 @@ class AmountField extends StatelessWidget {
                   // le filtre garde la saisie alignée sur ce que le serveur
                   // accepte.
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: AppTextStyles.valueMedium.copyWith(fontSize: 30),
+                  style: figure,
                   decoration: InputDecoration(
                     hintText: '0',
-                    hintStyle: AppTextStyles.valueMedium.copyWith(
-                      fontSize: 30,
-                      color: AppColors.textLight,
-                    ),
+                    hintStyle: figure.copyWith(color: t.muted),
                     isDense: true,
+                    filled: false,
                     contentPadding: EdgeInsets.zero,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -54,12 +54,7 @@ class AmountField extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                'Fcfa',
-                style: AppTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text('Fcfa', style: context.mutedText),
             ],
           ),
         ],

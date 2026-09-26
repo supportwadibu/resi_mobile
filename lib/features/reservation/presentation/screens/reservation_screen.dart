@@ -1,7 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
@@ -34,7 +36,7 @@ class _ReservationView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('reservation.title'.tr())),
+      appBar: AppTopBar(title: 'reservation.title'.tr()),
       // Sous le `Scaffold` : le message a besoin du `ScaffoldMessenger` de cet
       // écran pour se poser au-dessus de la liste.
       body: SyncResultListener(
@@ -74,7 +76,12 @@ class _ReservationList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) return EmptyState(message: 'reservation.empty'.tr());
+    if (items.isEmpty) {
+      return EmptyState(
+        message: 'reservation.empty'.tr(),
+        icon: AppSectionIcons.bookings,
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: () => context.read<ReservationCubit>().load(),

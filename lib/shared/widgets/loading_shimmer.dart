@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 /// Bloc gris animé, brique de base des squelettes de chargement.
 ///
@@ -7,21 +7,18 @@ import 'package:resi_africa/core/theme/app_colors.dart';
 /// que s'il occupe la place et la forme des données à venir, sinon la mise en
 /// page saute à l'arrivée du contenu.
 class LoadingShimmer extends StatelessWidget {
-  const LoadingShimmer({super.key, this.height, this.width, this.radius});
+  const LoadingShimmer({super.key, this.height, this.width});
 
   final double? height;
   final double? width;
-  final double? radius;
 
   @override
   Widget build(BuildContext context) {
+    // Angles droits, comme le contenu qu'il annonce.
     return Container(
       height: height ?? 16,
       width: width ?? double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.grey200,
-        borderRadius: BorderRadius.circular(radius ?? 8),
-      ),
+      color: context.tokens.border,
     );
   }
 }
@@ -62,10 +59,10 @@ class _ShimmerEffectState extends State<ShimmerEffect>
         shaderCallback: (bounds) => LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: const [
-            AppColors.grey200,
-            AppColors.grey100,
-            AppColors.grey200,
+          colors: [
+            context.tokens.border,
+            context.tokens.background,
+            context.tokens.border,
           ],
           stops: const [0.1, 0.5, 0.9],
           // Le dégradé traverse la zone de gauche à droite en boucle.

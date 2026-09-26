@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 
 /// Couverture d'une fiche de bien, feuilletable au doigt.
@@ -88,9 +90,9 @@ class _PropertyCoverImageState extends State<PropertyCoverImage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.3),
+                    context.tokens.overlay.withValues(alpha: 0.3),
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.2),
+                    context.tokens.overlay.withValues(alpha: 0.2),
                   ],
                 ),
               ),
@@ -156,8 +158,8 @@ class _CoverLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.grey200,
-      child: const Center(child: AppLoader(size: 64)),
+      color: context.tokens.background,
+      child: const Center(child: AppLoader()),
     );
   }
 }
@@ -168,8 +170,8 @@ class _CoverPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.grey200,
-      child: Icon(Icons.home_outlined, size: 64, color: AppColors.grey400),
+      color: context.tokens.background,
+      child: Icon(LucideIcons.bedDouble, size: 48, color: context.tokens.muted),
     );
   }
 }
@@ -188,17 +190,10 @@ class _PageDots extends StatelessWidget {
     if (count > 8) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(20),
-        ),
+        color: context.tokens.overlay.withValues(alpha: 0.55),
         child: Text(
           '${currentIndex + 1}/$count',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.text.labelMedium!.copyWith(color: context.tokens.onOverlay),
         ),
       );
     }
@@ -210,14 +205,11 @@ class _PageDots extends StatelessWidget {
           AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: i == currentIndex ? 18 : 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: i == currentIndex
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(4),
-            ),
+            width: i == currentIndex ? 18 : 6,
+            height: 4,
+            color: i == currentIndex
+                ? context.tokens.onOverlay
+                : context.tokens.onOverlay.withValues(alpha: 0.5),
           ),
       ],
     );

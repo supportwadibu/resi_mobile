@@ -1,10 +1,14 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
 import '../../business_logic/clients_cubit.dart';
 import '../../business_logic/clients_state.dart';
 import '../../data/models/client_filter_model.dart';
@@ -36,41 +40,20 @@ class _ClientsView extends StatelessWidget {
     final cubit = context.read<ClientsCubit>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Clients',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-        ),
-        centerTitle: true,
+      appBar: AppTopBar(
+        title: 'Clients',
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              // La liste est relue au retour : sans cela, le client tout juste
-              // enregistré n'y figurerait pas.
-              onTap: () async {
-                final cubit = context.read<ClientsCubit>();
-                await context.router.push(const AddClientRoute());
-                await cubit.load();
-              },
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.black,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  size: 20,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+          AppButton(
+            label: 'Nouveau',
+            icon: LucideIcons.plus,
+            size: AppButtonSize.sm,
+            // La liste est relue au retour : sans cela, le client tout juste
+            // enregistré n'y figurerait pas.
+            onPressed: () async {
+              final cubit = context.read<ClientsCubit>();
+              await context.router.push(const AddClientRoute());
+              await cubit.load();
+            },
           ),
         ],
       ),
@@ -79,7 +62,7 @@ class _ClientsView extends StatelessWidget {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                 child: Column(
                   children: [
                     ClientSearchBar(onChanged: cubit.search),
@@ -95,10 +78,9 @@ class _ClientsView extends StatelessWidget {
               ),
               Expanded(
                 child: switch (state) {
-                  ClientsInitial() || ClientsLoading() => const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  ClientsError(:final message) => _ErrorView(
+                  ClientsInitial() ||
+                  ClientsLoading() => const SimpleListSkeleton(itemCount: 6),
+                  ClientsError(:final message) => ErrorState(
                     message: message,
                     onRetry: cubit.load,
                   ),
@@ -118,20 +100,12 @@ class _ClientsView extends StatelessWidget {
                       child: ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                         itemCount: items.length + (isLoadingMore ? 1 : 0),
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, i) {
                           if (i >= items.length) {
                             return const Padding(
                               padding: EdgeInsets.all(16),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              ),
+                              child: Center(child: AppLoader(size: 24)),
                             );
                           }
 
@@ -164,58 +138,6 @@ class _ClientsView extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-/// Échec de chargement du carnet, avec de quoi réessayer.
-///
-/// Distinct de l'état vide : un carnet sans client invite à en créer un, une
-/// erreur réseau invite à relancer.
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 34,
-              color: AppColors.grey500,
-            ),
-            const SizedBox(height: 14),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 18),
-            OutlinedButton(
-              onPressed: onRetry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Réessayer', style: TextStyle(fontSize: 13)),
-            ),
-          ],
-        ),
       ),
     );
   }

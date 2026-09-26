@@ -1,66 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
 
+/// En-tête d'une fiche de bien : nom, ville, tarif journalier.
 class PropertyInfosHeader extends StatelessWidget {
   const PropertyInfosHeader({
     super.key,
     required this.name,
     required this.location,
     required this.pricePerDay,
+    this.status,
   });
 
   final String name;
   final String location;
   final double pricePerDay;
 
+  /// Badge de statut posé sous le nom (en ligne, brouillon…).
+  final Widget? status;
+
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Nom + localisation
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E2A5A),
-                ),
-              ),
+              Text(name, style: context.text.headlineSmall),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                  const SizedBox(width: 2),
-                  Text(
-                    location,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  Icon(LucideIcons.mapPin, size: 14, color: t.muted),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      location,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.mutedText,
+                    ),
                   ),
                 ],
               ),
+              if (status != null) ...[const SizedBox(height: 8), status!],
             ],
           ),
         ),
-
-        // Prix + "par jour"
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '${pricePerDay.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]} ')} F',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E2A5A),
-              ),
+              CurrencyFormatter.short(pricePerDay),
+              style: context.text.figure.copyWith(fontSize: 20),
             ),
-            const Text(
-              'par jour',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
+            Text('par jour', style: context.text.bodySmall),
           ],
         ),
       ],

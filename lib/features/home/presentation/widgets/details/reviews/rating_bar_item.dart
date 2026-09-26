@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 class RatingBarItem extends StatelessWidget {
   final String label;
@@ -23,15 +25,11 @@ class RatingBarItem extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: context.text.bodySmall,
             ),
             Text(
               score.toString(),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1F2937),
-              ),
+              style: context.text.titleSmall!.copyWith(color: context.tokens.foreground),
             ),
           ],
         ),
@@ -41,17 +39,13 @@ class RatingBarItem extends StatelessWidget {
         Container(
           height: 5,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(10),
+            color: context.tokens.border,
           ),
           child: FractionallySizedBox(
             widthFactor: percentage,
             child: Container(
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                ),
-                borderRadius: BorderRadius.circular(10),
+                color: context.tokens.accentAmber,
               ),
             ),
           ),

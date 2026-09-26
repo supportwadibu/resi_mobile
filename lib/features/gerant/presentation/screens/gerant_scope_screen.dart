@@ -1,8 +1,10 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/empty_state.dart';
@@ -50,17 +52,7 @@ class _GerantScopeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Logements confiés',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-        ),
-        centerTitle: true,
-      ),
+      appBar: AppTopBar(title: 'Logements confiés'),
       body: BlocBuilder<GerantScopeCubit, GerantScopeState>(
         builder: (context, state) => switch (state) {
           GerantScopeInitial() ||
@@ -75,7 +67,7 @@ class _GerantScopeView extends StatelessWidget {
           ),
           GerantScopeLoaded(:final totalCount) when totalCount == 0 =>
             const EmptyState(
-              icon: Icons.meeting_room_outlined,
+              icon: LucideIcons.doorOpen,
               message:
                   'Vous n’avez aucun logement à confier. Ajoutez un bien '
                   'avant de composer un périmètre.',
@@ -176,43 +168,20 @@ class ScopeSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEmpty = selectedCount == 0;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isEmpty ? AppColors.warningBg : AppColors.infoBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            gerantName == null
-                ? '$selectedCount logement${selectedCount > 1 ? 's' : ''} '
-                      'sur $totalCount'
-                : '$selectedCount logement${selectedCount > 1 ? 's' : ''} '
-                      'sur $totalCount confié${selectedCount > 1 ? 's' : ''} '
-                      'à $gerantName',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isEmpty
-                ? 'Sans logement, le gérant se connecte mais ne voit rien.'
-                : 'Il encaisse les réservations et suit les dépenses de ces '
-                      'logements seulement.',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
+    // Périmètre vide : ambre, comme tout ce qui attend une action.
+    return AppCallout(
+      icon: isEmpty ? LucideIcons.info : LucideIcons.doorOpen,
+      tone: isEmpty ? AppAccent.amber : AppAccent.blue,
+      title: gerantName == null
+          ? '$selectedCount logement${selectedCount > 1 ? 's' : ''} '
+                'sur $totalCount'
+          : '$selectedCount logement${selectedCount > 1 ? 's' : ''} '
+                'sur $totalCount confié${selectedCount > 1 ? 's' : ''} '
+                'à $gerantName',
+      message: isEmpty
+          ? 'Sans logement, le gérant se connecte mais ne voit rien.'
+          : 'Il encaisse les réservations et suit les dépenses de ces '
+                'logements seulement.',
     );
   }
 }

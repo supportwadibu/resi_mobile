@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class StarRating extends StatelessWidget {
   final double rating;
@@ -21,13 +23,13 @@ class StarRating extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 0; i < fullStars; i++)
-          Icon(Icons.star, color: const Color(0xFFF59E0B), size: starSize),
+          Icon(LucideIcons.star, color: context.tokens.accentAmber, size: starSize),
         if (hasHalfStar)
-          Icon(Icons.star_half, color: const Color(0xFFF59E0B), size: starSize),
+          Icon(LucideIcons.starHalf, color: context.tokens.accentAmber, size: starSize),
         for (int i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++)
           Icon(
-            Icons.star_border,
-            color: const Color(0xFFF59E0B),
+            LucideIcons.star,
+            color: context.tokens.accentAmber,
             size: starSize,
           ),
       ],

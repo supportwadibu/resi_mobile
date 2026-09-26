@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'star_rating.dart';
 
 class ReviewCard extends StatelessWidget {
@@ -24,9 +26,8 @@ class ReviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200, width: 0.5),
-        borderRadius: BorderRadius.circular(12),
+        color: context.tokens.surface,
+        border: Border.all(color: context.tokens.border, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,59 +35,51 @@ class ReviewCard extends StatelessWidget {
           // Avatar and name
           Row(
             children: [
-              _buildAvatar(),
+              _buildAvatar(context),
               const SizedBox(width: 10),
-              _buildUserInfo(),
+              _buildUserInfo(context),
             ],
           ),
           const SizedBox(height: 8),
           const StarRating(rating: 5.0, starSize: 12),
           const SizedBox(height: 8),
-          _buildReviewText(),
+          _buildReviewText(context),
         ],
       ),
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatar(BuildContext context) {
     return Container(
       width: 36,
       height: 36,
-      decoration: BoxDecoration(color: avatarColor, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: avatarColor, shape: BoxShape.rectangle),
       child: Center(
         child: Text(
           initials,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: textColor,
-          ),
+          style: context.text.titleSmall!.copyWith(color: textColor),
         ),
       ),
     );
   }
 
-  Widget _buildUserInfo() {
+  Widget _buildUserInfo(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           name,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1F2937),
-          ),
+          style: context.text.titleSmall!.copyWith(color: context.tokens.foreground),
         ),
-        Text(date, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(date, style: context.text.bodySmall),
       ],
     );
   }
 
-  Widget _buildReviewText() {
+  Widget _buildReviewText(BuildContext context) {
     return Text(
       reviewText,
-      style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.6),
+      style: context.text.bodyMedium!.copyWith(color: context.tokens.muted, height: 1.6),
     );
   }
 }

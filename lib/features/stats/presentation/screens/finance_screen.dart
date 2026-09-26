@@ -1,11 +1,18 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/service_locator.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/error/failures.dart';
 import '../../../expense/business_logic/expense_cubit.dart';
 import '../../../expense/business_logic/expense_state.dart';
@@ -18,7 +25,6 @@ import '../../../residence/data/models/residence_model.dart';
 import '../../../residence/data/repositories/residence_repository.dart';
 import '../widgets/finance/finance_app_bar.dart';
 import '../widgets/finance/finance_residence_sheet.dart';
-import '../widgets/finance/finance_summary_card.dart';
 import '../widgets/finance/revenue_chart.dart';
 import '../widgets/finance/stats_row.dart';
 
@@ -97,13 +103,12 @@ class _FinanceViewState extends State<_FinanceView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: FinanceAppBar(onFilterTap: _pickScope, scopeLabel: _scopeLabel),
       body: BlocBuilder<FinanceCubit, FinanceState>(
         builder: (context, state) => switch (state) {
           FinanceInitial() ||
-          FinanceLoading() => const Center(child: CircularProgressIndicator()),
-          FinanceError(:final message) => _ErrorView(
+          FinanceLoading() => const Center(child: AppLoader()),
+          FinanceError(:final message) => ErrorState(
             message: message,
             onRetry: () => context.read<FinanceCubit>().load(),
           ),
@@ -149,7 +154,7 @@ class _PeriodLabel extends StatelessWidget {
 
     return Text(
       'Du ${label(from)} à ${label(to)}',
-      style: AppTextStyles.labelSmall,
+      style: context.text.bodySmall,
     );
   }
 }
@@ -162,6 +167,7 @@ class _Content extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final summary = overview.summary;
+    final isLoss = summary.beneficeNet < 0;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -170,165 +176,90 @@ class _Content extends StatelessWidget {
           context.read<ExpenseCubit>().refresh(),
         ]);
       },
-      child: SingleChildScrollView(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // La période est annoncée avant les montants : ce relevé porte sur
-            // douze mois glissants, là où l'onglet Statistiques n'affiche que
-            // le mois courant. Le même `ca_brut` y prend deux valeurs, et sans
-            // cette mention les deux écrans semblent se contredire.
-            const _PeriodLabel(),
-            const SizedBox(height: 10),
-            FinanceSummaryCard(
-              label: 'CA Brut',
-              amount: summary.caBrut,
-              valueStyle: AppTextStyles.valueMedium,
-            ),
-            const SizedBox(height: 12),
-            FinanceSummaryCard(
-              label: 'Dépenses',
-              amount: summary.depenses,
-              valueStyle: AppTextStyles.valueMedium,
-              trailing: const Icon(
-                Icons.arrow_downward_rounded,
-                color: AppColors.red,
-                size: 18,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          // La période est annoncée avant les montants : ce relevé porte sur
+          // douze mois glissants, là où l'onglet Statistiques n'affiche que
+          // le mois courant. Le même `ca_brut` y prend deux valeurs, et sans
+          // cette mention les deux écrans semblent se contredire.
+          const _PeriodLabel(),
+          const SizedBox(height: 12),
+          StatTile(
+            label: 'Bénéfice net',
+            value: CurrencyFormatter.format(summary.beneficeNet),
+            icon: LucideIcons.wallet,
+            accent: isLoss ? AppAccent.red : AppAccent.green,
+            note: isLoss ? 'Période en perte' : null,
+            noteTone: isLoss ? StatNoteTone.down : null,
+          ),
+          const SizedBox(height: 12),
+          StatGrid(
+            children: [
+              StatTile(
+                label: 'CA brut',
+                value: CurrencyFormatter.short(summary.caBrut),
+                icon: LucideIcons.trendingUp,
+                accent: AppAccent.green,
               ),
-            ),
-            const SizedBox(height: 12),
-            FinanceSummaryCard(
-              label: 'Bénéfice Net',
-              amount: summary.beneficeNet,
-              valueStyle: AppTextStyles.valueLarge,
-              trailing: summary.beneficeNet < 0
-                  ? const Icon(
-                      Icons.trending_down_rounded,
-                      color: AppColors.red,
-                      size: 18,
-                    )
-                  : null,
-            ),
-            // Masquée à zéro : la plupart des périodes n'ont aucun départ
-            // anticipé, et une carte vide ferait croire à un manque.
-            if (summary.remboursements > 0) ...[
-              const SizedBox(height: 12),
-              FinanceSummaryCard(
-                label: 'finance.refunds'.tr(),
-                amount: summary.remboursements,
-                valueStyle: AppTextStyles.valueMedium,
+              StatTile(
+                label: 'Dépenses',
+                value: CurrencyFormatter.short(summary.depenses),
+                icon: LucideIcons.trendingDown,
+                accent: AppAccent.red,
               ),
+              // Masquées à zéro : la plupart des périodes n'ont aucun départ
+              // anticipé ni apporteur, et une tuile vide ferait croire à un
+              // manque.
+              if (summary.remboursements > 0)
+                StatTile(
+                  label: 'finance.refunds'.tr(),
+                  value: CurrencyFormatter.short(summary.remboursements),
+                  icon: LucideIcons.undo2,
+                  accent: AppAccent.amber,
+                ),
+              if (summary.commissions > 0)
+                StatTile(
+                  label: 'finance.commissions'.tr(),
+                  value: CurrencyFormatter.short(summary.commissions),
+                  icon: LucideIcons.handshake,
+                  accent: AppAccent.blue,
+                ),
             ],
-            // Même règle : sans apporteur sur la période, pas de carte.
-            if (summary.commissions > 0) ...[
-              const SizedBox(height: 12),
-              FinanceSummaryCard(
-                label: 'finance.commissions'.tr(),
-                amount: summary.commissions,
-                valueStyle: AppTextStyles.valueMedium,
-              ),
-            ],
-            const SizedBox(height: 24),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: overview.revenuePoints.isEmpty
-                  ? _Placeholder(message: 'Aucun revenu sur la période.')
-                  : RevenueChart(points: overview.revenuePoints),
+          ),
+          const SizedBox(height: 12),
+          StatsRow(
+            tauxOccupation: summary.tauxOccupation,
+            reservations: summary.reservations,
+            moyenSejour: summary.moyenSejour,
+          ),
+          const SizedBox(height: 16),
+          Section(
+            title: 'Revenus mensuels',
+            icon: LucideIcons.chartLine,
+            child: overview.revenuePoints.isEmpty
+                ? const EmptyState(
+                    message: 'Aucun revenu sur la période.',
+                    icon: LucideIcons.chartLine,
+                  )
+                : RevenueChart(points: overview.revenuePoints),
+          ),
+          const SizedBox(height: 16),
+          BlocBuilder<ExpenseCubit, ExpenseState>(
+            builder: (context, state) => ExpenseBreakdownCard(
+              categories: state is ExpenseLoaded
+                  ? ExpenseCategoryModel.fromSummary(state.summary)
+                  : const [],
+              onExport: () {
+                AppToast.info(
+                  'Export disponible depuis l’historique des dépenses',
+                  context: context,
+                );
+              },
             ),
-            const SizedBox(height: 24),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: StatsRow(
-                tauxOccupation: summary.tauxOccupation,
-                reservations: summary.reservations,
-                moyenSejour: summary.moyenSejour,
-              ),
-            ),
-            const SizedBox(height: 24),
-            BlocBuilder<ExpenseCubit, ExpenseState>(
-              builder: (context, state) => ExpenseBreakdownCard(
-                categories: state is ExpenseLoaded
-                    ? ExpenseCategoryModel.fromSummary(state.summary)
-                    : const [],
-                onExport: () {
-                  AppToast.info(
-                    'Export disponible depuis l’historique des dépenses',
-                    context: context,
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      child: Center(
-        child: Text(
-          message,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 40,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Réessayer')),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
