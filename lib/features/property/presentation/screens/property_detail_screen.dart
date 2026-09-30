@@ -18,6 +18,7 @@ import '../../../home/presentation/widgets/details/property_features.dart';
 import '../../../home/presentation/widgets/details/property_description.dart';
 import '../../../home/presentation/widgets/details/property_location_section.dart';
 import '../../../home/presentation/widgets/details/property_pricing_details.dart';
+import '../../../home/presentation/widgets/details/property_reservations_section.dart';
 import '../../../home/presentation/widgets/details/property_residence_section.dart';
 import '../../../home/presentation/widgets/details/list_images_widget.dart';
 import '../../../residence/data/repositories/residence_repository.dart';
@@ -145,6 +146,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   const SizedBox(height: 12),
                   PropertyDescription(description: property.description),
                 ],
+                const SizedBox(height: 24),
+                PropertyReservationsSection(propertyId: property.id),
               ],
             ),
           ),

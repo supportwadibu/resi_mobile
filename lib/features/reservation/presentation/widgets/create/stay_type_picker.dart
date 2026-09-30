@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 import '../../../data/models/reservation_model.dart';
@@ -39,11 +40,13 @@ class StayTypePicker extends StatelessWidget {
               child: Material(
                 color: type == selected ? t.background : t.surface,
                 shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.md,
                   side: BorderSide(
                     color: type == selected ? t.primary : t.border,
                     width: type == selected ? 1.5 : 1,
                   ),
                 ),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () => onSelected(type),
                   child: Padding(

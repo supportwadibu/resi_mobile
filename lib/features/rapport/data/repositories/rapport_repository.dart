@@ -33,6 +33,7 @@ class RapportRepository {
     DateTime? customStart,
     DateTime? customEnd,
     String? residenceId,
+    String? commune,
   }) async {
     try {
       final response = await _dio.post<List<int>>(
@@ -49,6 +50,8 @@ class RapportRepository {
           // serveur. Omettre la clé revient à demander toutes les résidences.
           if (residenceId != null && residenceId != 'all')
             'residence_id': residenceId,
+          if (commune != null && commune.trim().isNotEmpty)
+            'commune': commune.trim(),
         },
         options: Options(responseType: ResponseType.bytes),
       );

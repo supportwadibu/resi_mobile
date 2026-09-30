@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/business_logic/property_state.dart';
@@ -132,7 +133,13 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
       onRefresh: () => context.read<PropertyCubit>().load(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
+        // Marge basse : hauteur de la barre flottante, voir `HomeTab`.
+        padding: EdgeInsets.fromLTRB(
+          16,
+          4,
+          16,
+          MediaQuery.paddingOf(context).bottom + 16,
+        ),
         children: [
           TextField(
             onChanged: (value) => setState(() => _query = value),
@@ -246,8 +253,12 @@ class _ViewToggle extends StatelessWidget {
             ),
           ),
         );
-    return DecoratedBox(
-      decoration: BoxDecoration(border: Border.all(color: t.border)),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        border: Border.all(color: t.border),
+        borderRadius: AppRadius.md,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -2,6 +2,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/utils/flag_helper.dart';
 
@@ -32,7 +33,7 @@ class AppCountryField extends StatelessWidget {
       searchAutofocus: false,
       onSelect: onSelected,
       countryListTheme: CountryListThemeData(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.vertical(top: AppRadius.lg.topLeft),
         backgroundColor: t.surface,
         inputDecoration: const InputDecoration(
           hintText: 'Rechercher un pays',
@@ -55,7 +56,8 @@ class AppCountryField extends StatelessWidget {
         const SizedBox(height: 6),
         Material(
           color: t.background,
-          shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+          shape: AppRadius.outlined(AppRadius.md, t.border),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: enabled ? () => _open(context) : null,
             child: Padding(

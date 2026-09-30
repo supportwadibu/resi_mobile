@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
@@ -99,6 +100,7 @@ class _SelectorShell extends StatelessWidget {
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
         color: context.tokens.background,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: child,

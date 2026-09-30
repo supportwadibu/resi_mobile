@@ -252,6 +252,24 @@ class ReservationModel {
   /// de début dépassée dès minuit, alors que le client n'est pas encore là.
   bool hasStarted(DateTime now) => !checkInAt.isAfter(now);
 
+  /// Tarif d'un jour ajouté par une prolongation, tel que le serveur le
+  /// facturera (`extendedAgreedAmount`).
+  ///
+  /// Un prix négocié à la réservation reste le prix de ce client : le jour
+  /// ajouté vaut le prix convenu divisé par les jours vendus, pas le tarif de
+  /// la grille. Sans négociation, la grille s'applique, remise de durée
+  /// comprise.
+  double get extensionDailyRate {
+    if (hasNegotiatedPrice) return receivedAmount / daysCount;
+    return dailyPrice * (1 - durationDiscountPercent / 100);
+  }
+
+  /// Le prix du séjour a été convenu hors grille, au comptoir.
+  bool get hasNegotiatedPrice =>
+      source == ReservationSource.offline &&
+      receivedAmount != expectedAmount &&
+      daysCount > 0;
+
   /// Reste dû après l'acompte, jamais négatif.
   double get balanceDue =>
       (receivedAmount - depositAmount).clamp(0, double.infinity);

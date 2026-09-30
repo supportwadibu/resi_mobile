@@ -16,10 +16,7 @@ class PropertyDescription extends StatelessWidget {
     return Section(
       title: 'Description',
       icon: LucideIcons.alignLeft,
-      child: Text(
-        description,
-        style: context.mutedText.copyWith(height: 1.55),
-      ),
+      child: Text(description, style: context.mutedText.copyWith(height: 1.55)),
     );
   }
 }

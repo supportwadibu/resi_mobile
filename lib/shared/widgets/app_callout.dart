@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Encart d'état : fond d'accent doux, icône au ton plein, titre, message et
@@ -20,6 +21,7 @@ class AppCallout extends StatelessWidget {
   });
 
   final IconData icon;
+
   /// Absent, le message seul occupe l'encart, au ton du texte courant.
   final String? title;
   final String? message;
@@ -37,6 +39,7 @@ class AppCallout extends StatelessWidget {
       decoration: BoxDecoration(
         color: neutral ? t.surface : t.accentSoft(tone),
         border: neutral ? Border.all(color: t.border) : null,
+        borderRadius: AppRadius.md,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

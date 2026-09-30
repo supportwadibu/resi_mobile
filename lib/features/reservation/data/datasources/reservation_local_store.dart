@@ -128,6 +128,9 @@ class PendingClient {
     this.remoteId,
     this.documentFrontPath,
     this.documentBackPath,
+    this.idDocumentType,
+    this.idDocumentNumber,
+    this.identity = ClientIdentity.empty,
   });
 
   final String localId;
@@ -137,6 +140,28 @@ class PendingClient {
   final String? documentFrontPath;
   final String? documentBackPath;
 
+  /// Pièce et identité lues au comptoir. Sans elles, un client saisi hors
+  /// ligne arriverait au carnet sans rien de ce que le registre de police
+  /// exige, et il faudrait tout ressaisir.
+  final ClientIdDocumentType? idDocumentType;
+  final String? idDocumentNumber;
+  final ClientIdentity identity;
+
+  /// Ligne de `pending_clients`. L'identité y est rangée en JSON, sous la
+  /// forme même que le formulaire multipart enverra.
+  Map<String, Object?> toRow({required int createdAt}) => {
+    'local_id': localId,
+    'remote_id': remoteId,
+    'full_name': fullName,
+    'phone': phone,
+    'document_front_path': documentFrontPath,
+    'document_back_path': documentBackPath,
+    'created_at': createdAt,
+    'id_document_type': idDocumentType?.code,
+    'id_document_number': idDocumentNumber,
+    'identity_fields': jsonEncode(identity.toFormFields()),
+  };
+
   factory PendingClient.fromRow(Map<String, Object?> row) {
     return PendingClient(
       localId: row['local_id'] as String,
@@ -145,7 +170,26 @@ class PendingClient {
       phone: row['phone'] as String,
       documentFrontPath: row['document_front_path'] as String?,
       documentBackPath: row['document_back_path'] as String?,
+      // Absents des lignes écrites avant la v4 du schéma.
+      idDocumentType: ClientIdDocumentType.fromCode(
+        row['id_document_type'] as String?,
+      ),
+      idDocumentNumber: row['id_document_number'] as String?,
+      identity: _identityFrom(row['identity_fields']),
     );
+  }
+
+  /// Une identité illisible vaut une identité vide : la réservation, qui porte
+  /// de l'argent encaissé, doit partir quand même.
+  static ClientIdentity _identityFrom(Object? raw) {
+    if (raw is! String || raw.isEmpty) return ClientIdentity.empty;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return ClientIdentity.empty;
+      return ClientIdentity.fromJson(decoded);
+    } on FormatException {
+      return ClientIdentity.empty;
+    }
   }
 }
 
@@ -392,13 +436,8 @@ class ReservationLocalStore {
     await db.transaction((txn) async {
       if (newClient != null) {
         await txn.insert('pending_clients', {
-          'local_id': newClient.localId,
-          'remote_id': newClient.remoteId,
-          'full_name': newClient.fullName,
+          ...newClient.toRow(createdAt: DateTime.now().millisecondsSinceEpoch),
           'phone': _normalizePhone(newClient.phone),
-          'document_front_path': newClient.documentFrontPath,
-          'document_back_path': newClient.documentBackPath,
-          'created_at': DateTime.now().millisecondsSinceEpoch,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
 

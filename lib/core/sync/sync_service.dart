@@ -319,6 +319,9 @@ class SyncService {
       phone: pending.phone,
       documentFrontPath: pending.documentFrontPath,
       documentBackPath: pending.documentBackPath,
+      idDocumentType: pending.idDocumentType,
+      idDocumentNumber: pending.idDocumentNumber,
+      identity: pending.identity,
     );
 
     final client = created.client;

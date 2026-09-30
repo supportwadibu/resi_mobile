@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 
@@ -33,6 +34,7 @@ class ResidenceSelector extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.tokens.background,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: DropdownButtonHideUnderline(
@@ -40,7 +42,7 @@ class ResidenceSelector extends StatelessWidget {
           value: selectedId,
           isExpanded: true,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppRadius.md,
           dropdownColor: context.tokens.surface,
           style: context.text.bodyMedium,
           icon: Icon(

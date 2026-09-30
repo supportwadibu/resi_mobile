@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../../../core/session/session_role.dart';
 import '../../../../core/storage/app_database.dart';
 import '../../../../core/storage/secure_storage.dart';
@@ -13,8 +15,19 @@ class AuthService {
     this._storage,
     this._google,
     this._sessionRole,
-    this._database,
-  );
+    this._database, {
+    Future<void> Function()? onSignedIn,
+    Future<void> Function()? beforeSignOut,
+  }) : _onSignedIn = onSignedIn,
+       _beforeSignOut = beforeSignOut;
+
+  /// Appelé à chaque ouverture de session — la déclaration de l'appareil aux
+  /// notifications push. Sans attente : la connexion n'a pas à patienter.
+  final Future<void> Function()? _onSignedIn;
+
+  /// Appelé avant la fermeture de session, jetons encore valides : le retrait
+  /// de l'appareil exige une requête authentifiée.
+  final Future<void> Function()? _beforeSignOut;
 
   final AuthRepository _repository;
   final SecureStorage _storage;
@@ -75,6 +88,12 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    // Avant tout le reste, jetons encore valides. Un échec ne bloque jamais la
+    // déconnexion : l'appareil garderait au pire des notifications en trop.
+    try {
+      await _beforeSignOut?.call();
+    } catch (_) {}
+
     final refresh = await _storage.refreshToken;
 
     try {
@@ -118,5 +137,8 @@ class AuthService {
       refresh: auth.refreshToken,
     );
     await _sessionRole.set(auth.user.role);
+
+    final onSignedIn = _onSignedIn;
+    if (onSignedIn != null) unawaited(onSignedIn());
   }
 }

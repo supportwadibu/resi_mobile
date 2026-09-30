@@ -42,7 +42,10 @@ class _StatsView extends StatelessWidget {
           onRefresh: () => context.read<DashboardCubit>().load(),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 88),
+            // Marge basse : hauteur de la barre flottante, voir `HomeTab`.
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.paddingOf(context).bottom + 16,
+            ),
             children: [
               const PageHeader(title: 'Statistiques'),
               Padding(

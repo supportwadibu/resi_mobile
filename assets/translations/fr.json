@@ -6,7 +6,8 @@
     "confirm": "Confirmer",
     "save": "Enregistrer",
     "delete": "Supprimer",
-    "close": "Fermer"
+    "close": "Fermer",
+    "clear": "Effacer"
   },
   "errors": {
     "no_internet": "Pas de connexion internet.",
@@ -99,11 +100,29 @@
     "logout": "Se déconnecter"
   },
   "referrer": {
-    "section": "Apporteur d'affaire (facultatif)",
+    "section": "Apporteur d'affaire",
+    "toggle_hint": "Une personne vous a amené ce client",
     "name_hint": "Nom de l'apporteur",
     "phone_hint": "Téléphone de l'apporteur (facultatif)",
     "commission": "Commission apporteur ({} %)",
     "label": "Apporteur"
+  },
+  "reservation": {
+    "title": "Réservations",
+    "recent": "Séjours récents",
+    "empty": "Aucune réservation pour le moment.",
+    "see_all": "Voir toutes les réservations ({})",
+    "load_more": "Charger la suite ({} sur {})"
+  },
+  "reservation_filters": {
+    "search_hint": "Client : nom ou téléphone",
+    "clear": "Effacer la recherche",
+    "all": "Toutes",
+    "no_match": "Aucune réservation ne correspond à ces critères."
+  },
+  "property_reservations": {
+    "title": "Réservations",
+    "empty": "Aucune réservation sur ce bien pour le moment."
   },
   "invoice": {
     "send": "Envoyer la facture",
@@ -125,11 +144,62 @@
     "error": "Impossible de générer la facture."
   },
   "ocr": {
-    "scan": "Scanner la pièce (verso)",
+    "scan": "Lire la pièce d'identité",
     "scanning": "Lecture de la pièce…",
-    "found": "Pièce lue : vérifiez les informations.",
-    "not_found": "Aucune bande de lecture (MRZ) reconnue. Saisissez les informations à la main.",
-    "hint": "Photographiez le verso, la bande de caractères du bas bien visible."
+    "found": "Pièce lue : vérifiez et complétez les informations.",
+    "not_found": "Rien de lisible sur cette photo. Saisissez les informations à la main.",
+    "hint": "Photographiez ou importez la face portant la bande de caractères du bas (MRZ). Le recto complète le lieu de naissance.",
+    "source_title": "Lire la pièce",
+    "source_camera": "Scanner avec l'appareil photo",
+    "source_gallery": "Importer depuis le téléphone",
+    "owner_hint": "La photo est lue pour préremplir le numéro de la pièce, que vous pourrez corriger.",
+    "owner_found": "Numéro lu sur la pièce : vérifiez-le."
+  },
+  "booking_amounts": {
+    "agreed_label": "Prix convenu du séjour",
+    "agreed_hint": "Tarif : {} F",
+    "agreed_helper": "Prix total du séjour. Laissez vide pour appliquer le tarif. L'argent déjà versé se saisit dans l'acompte.",
+    "suspicious": "Ce prix est très inférieur au tarif ({} F). S'il s'agit d'un premier versement, saisissez-le dans l'acompte et laissez le prix vide.",
+    "deposit_label": "Acompte versé",
+    "deposit_hint": "Facultatif",
+    "negotiated_discount": "Remise consentie",
+    "promo_discount": "Remise (code promo)",
+    "grid_price": "Tarif grille",
+    "stay_amount": "Montant du séjour",
+    "balance_due": "Reste dû"
+  },
+  "booking_edit": {
+    "action": "Modifier",
+    "title": "Modifier la réservation",
+    "submit": "Enregistrer les modifications",
+    "success": "Réservation modifiée",
+    "client": "Client",
+    "client_hint": "Le client ne se change pas ici : corrigez sa fiche, ou annulez pour ressaisir.",
+    "property": "Résidence",
+    "stay_type": "Type de séjour",
+    "check_in": "Date d'entrée",
+    "check_out": "Sortie prévue",
+    "invalid_dates": "La sortie doit être après l'entrée.",
+    "payment": "Paiement",
+    "message": "Note",
+    "message_hint": "Facultatif",
+    "days_times_price": "{} j × {}",
+    "duration_discount": "Remise durée (−{} %)"
+  },
+  "client_identity": {
+    "section": "Identité (registre de police)",
+    "document_type": "Type de pièce",
+    "document_number": "Numéro de pièce",
+    "document_number_hint": "Ex : CI-0012345678",
+    "issued_at": "Date de délivrance",
+    "birth_date": "Date de naissance",
+    "birth_place": "Lieu de naissance",
+    "birth_place_hint": "Ex : Bouaké",
+    "nationality": "Nationalité",
+    "nationality_hint": "Ex : Ivoirienne",
+    "address": "Domicile habituel",
+    "address_hint": "Ex : Cocody Angré, Abidjan",
+    "missing": "Non renseigné"
   },
   "client_documents": {
     "title": "Pièce d'identité",
@@ -203,5 +273,10 @@
         "body": "Envoyez à votre client la facture de son séjour, en un geste."
       }
     }
+  },
+  "report_police": {
+    "commune": "Commune (rapport police)",
+    "commune_hint": "Ex : Cocody",
+    "commune_helper": "Imprimée en tête du registre. Vide : la ville de la résidence."
   }
 }

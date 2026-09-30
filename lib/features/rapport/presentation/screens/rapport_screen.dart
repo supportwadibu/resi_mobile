@@ -1,8 +1,10 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +12,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import '../../business_logic/report_form_cubit.dart';
 import '../../business_logic/report_form_state.dart';
+import '../../data/models/report_type_model.dart';
 import '../widgets/custom_date_picker.dart';
 import '../widgets/generate_button.dart';
 import '../widgets/period_preset_selector.dart';
@@ -97,6 +100,27 @@ class _ReportView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+
+                // La commune n'existe dans aucune donnée : le registre de
+                // police l'exige en tête, elle se saisit ici. Vide, la ville
+                // de la résidence en tient lieu.
+                if (state.selectedType == ReportType.police) ...[
+                  Section(
+                    title: 'report_police.commune'.tr(),
+                    icon: LucideIcons.mapPin,
+                    child: TextFormField(
+                      initialValue: state.commune,
+                      onChanged: cubit.setCommune,
+                      style: context.text.bodyMedium,
+                      decoration: InputDecoration(
+                        hintText: 'report_police.commune_hint'.tr(),
+                        helperText: 'report_police.commune_helper'.tr(),
+                        helperMaxLines: 2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // Période
                 Section(

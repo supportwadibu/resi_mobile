@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/loading_shimmer.dart';
 
@@ -63,8 +64,10 @@ class _GroupSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         border: Border.all(color: context.tokens.border),
+        borderRadius: AppRadius.md,
       ),
       child: Column(
         children: List.generate(rowCount, (i) {
@@ -83,10 +86,7 @@ class _GroupSkeleton extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const LoadingShimmer(
-                            height: 11,
-                            width: 70,
-                          ),
+                          const LoadingShimmer(height: 11, width: 70),
                           const SizedBox(height: 6),
                           const LoadingShimmer(height: 13),
                         ],

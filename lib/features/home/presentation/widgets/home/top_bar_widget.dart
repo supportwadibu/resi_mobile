@@ -5,6 +5,7 @@ import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/storage/local_storage.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/features/auth/data/models/property_manager_model.dart';
 import 'package:resi_africa/features/support/presentation/widgets/support_contact_sheet.dart';
@@ -50,11 +51,15 @@ class _TopBarWidgetState extends State<TopBarWidget> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: t.background,
+                        borderRadius: AppRadius.pill,
                         border: Border.all(color: t.border),
                       ),
                       child: name.isEmpty
                           ? Icon(LucideIcons.user, size: 18, color: t.muted)
-                          : Text(_initials(name), style: context.text.titleSmall),
+                          : Text(
+                              _initials(name),
+                              style: context.text.titleSmall,
+                            ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

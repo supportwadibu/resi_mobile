@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 import 'app_icon_button.dart';
 
@@ -171,6 +172,7 @@ class AppSheetAction extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: danger ? t.dangerSurface : t.background,
                   border: danger ? null : Border.all(color: t.border),
+                  borderRadius: AppRadius.sm,
                 ),
                 child:
                     iconWidget ??
@@ -202,7 +204,7 @@ class AppSheetAction extends StatelessWidget {
   }
 }
 
-/// Puce de choix carrée : noire (primary) une fois choisie, bordée sinon.
+/// Puce de choix en pilule : noire (primary) une fois choisie, bordée sinon.
 class AppChoiceChip extends StatelessWidget {
   const AppChoiceChip({
     required this.label,
@@ -226,9 +228,10 @@ class AppChoiceChip extends StatelessWidget {
       button: true,
       child: Material(
         color: selected ? t.primary : t.surface,
-        shape: RoundedRectangleBorder(
+        shape: StadiumBorder(
           side: BorderSide(color: selected ? t.primary : t.border),
         ),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Padding(
@@ -240,7 +243,10 @@ class AppChoiceChip extends StatelessWidget {
                   Icon(icon, size: 14, color: selected ? fg : t.muted),
                   const SizedBox(width: 6),
                 ],
-                Text(label, style: context.text.labelLarge!.copyWith(color: fg)),
+                Text(
+                  label,
+                  style: context.text.labelLarge!.copyWith(color: fg),
+                ),
               ],
             ),
           ),

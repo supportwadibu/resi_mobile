@@ -10,41 +10,69 @@ import '../../../business_logic/add_reservation_state.dart';
 /// qu'il touchera, annoncée avant l'envoi.
 ///
 /// Facultatif et libre : l'apporteur n'a pas de compte, et n'est souvent
-/// connu que de nom.
+/// connu que de nom. Les champs restent masqués tant que la bascule est
+/// éteinte — la plupart des séjours n'en ont pas.
 class ReferrerFields extends StatelessWidget {
   const ReferrerFields({
     required this.state,
+    required this.onEnabledChanged,
     required this.onNameChanged,
     required this.onPhoneChanged,
     super.key,
   });
 
   final AddReservationState state;
+  final ValueChanged<bool> onEnabledChanged;
   final ValueChanged<String> onNameChanged;
   final ValueChanged<String> onPhoneChanged;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = state.hasReferrerEnabled;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          onChanged: onNameChanged,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            hintText: 'referrer.name_hint'.tr(),
-            prefixIcon: const Icon(LucideIcons.user, size: 16),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'referrer.section'.tr(),
+                    style: context.text.titleMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'referrer.toggle_hint'.tr(),
+                    style: context.text.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Switch(value: enabled, onChanged: onEnabledChanged),
+          ],
         ),
-        const SizedBox(height: 12),
-        TextField(
-          onChanged: onPhoneChanged,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            hintText: 'referrer.phone_hint'.tr(),
-            prefixIcon: const Icon(LucideIcons.phone, size: 16),
+        if (enabled) ...[
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: onNameChanged,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              hintText: 'referrer.name_hint'.tr(),
+              prefixIcon: const Icon(LucideIcons.user, size: 16),
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: onPhoneChanged,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              hintText: 'referrer.phone_hint'.tr(),
+              prefixIcon: const Icon(LucideIcons.phone, size: 16),
+            ),
+          ),
+        ],
         if (state.hasReferrer) ...[
           const SizedBox(height: 10),
           Row(

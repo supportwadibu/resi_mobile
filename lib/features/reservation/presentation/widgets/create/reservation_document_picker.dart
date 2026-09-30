@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -75,6 +76,7 @@ class _DocumentSlot extends StatelessWidget {
     return Material(
       color: t.background,
       shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.md,
         side: BorderSide(color: file == null ? t.border : t.primary),
       ),
       clipBehavior: Clip.antiAlias,
@@ -107,8 +109,10 @@ class _DocumentSlot extends StatelessWidget {
                         child: Material(
                           color: t.surface,
                           shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.sm,
                             side: BorderSide(color: t.border),
                           ),
+                          clipBehavior: Clip.antiAlias,
                           child: InkWell(
                             onTap: () => onChanged(null),
                             child: SizedBox.square(

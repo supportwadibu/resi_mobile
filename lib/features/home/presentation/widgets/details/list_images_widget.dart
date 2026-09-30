@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 
@@ -47,16 +48,25 @@ class ListImagesWidget extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: EdgeInsets.all(isSelected ? 3 : 0),
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
+                borderRadius: AppRadius.md,
                 border: Border.all(
-                  color: isSelected ? context.tokens.foreground : Colors.transparent,
+                  color: isSelected
+                      ? context.tokens.foreground
+                      : Colors.transparent,
                   width: 2,
                 ),
               ),
-              child: _thumbnail(
-                context,
-                displayImages[index],
-                isSelected ? 50 : 56,
+              // Rayon plus petit que le liseré : la photo est en retrait de
+              // la marge, et un même rayon laisserait un jour aux coins.
+              child: ClipRRect(
+                borderRadius: isSelected ? AppRadius.sm : AppRadius.md,
+                child: _thumbnail(
+                  context,
+                  displayImages[index],
+                  isSelected ? 50 : 56,
+                ),
               ),
             ),
           );

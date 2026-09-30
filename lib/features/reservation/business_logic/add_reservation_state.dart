@@ -1,6 +1,7 @@
 import '../../clients/data/models/client_model.dart';
 import '../../property/data/models/property_model.dart';
 import '../data/models/reservation_model.dart';
+import 'stay_quote.dart';
 
 /// Mode d'enregistrement, choisi à l'ouverture du formulaire.
 enum ReservationMode {
@@ -56,10 +57,12 @@ class AddReservationState {
     this.duplicateClient,
     this.isLookingUpPhone = false,
     this.occupiedConflict,
+    this.hasReferrerEnabled = false,
     this.referrerName = '',
     this.referrerPhone = '',
     this.idDocumentType,
     this.idDocumentNumber,
+    this.identity = ClientIdentity.empty,
   });
 
   final ReservationMode mode;
@@ -76,6 +79,10 @@ class AddReservationState {
   /// la fiche client.
   final ClientIdDocumentType? idDocumentType;
   final String? idDocumentNumber;
+
+  /// Identité du registre de police, lue sur la pièce ou saisie. Transmise
+  /// avec le client nouveau, en ligne comme par la file hors ligne.
+  final ClientIdentity identity;
 
   final String? propertyId;
 
@@ -114,6 +121,10 @@ class AddReservationState {
   /// Réservation qui empiète sur les dates saisies, détectée avant l'envoi.
   final String? occupiedConflict;
 
+  /// Bascule « apporteur d'affaire ». Éteinte, les champs sont masqués et rien
+  /// n'est envoyé.
+  final bool hasReferrerEnabled;
+
   /// Apporteur d'affaire, facultatif. Vide = pas d'apporteur.
   final String referrerName;
   final String referrerPhone;
@@ -122,65 +133,31 @@ class AddReservationState {
   /// ne sert qu'à afficher la commission avant l'envoi.
   static const referrerCommissionRate = 0.10;
 
-  bool get hasReferrer => referrerName.trim().length >= 2;
+  bool get hasReferrer => hasReferrerEnabled && referrerName.trim().length >= 2;
 
   /// Commission annoncée, arrondie au franc comme le fait le serveur.
   double get referrerCommission => hasReferrer
       ? (effectiveAmount * referrerCommissionRate).roundToDouble()
       : 0;
 
-  /// Tarif d'une unité du type de séjour choisi.
-  ///
-  /// Reprend les ratios du serveur : la demi-journée vaut la moitié du tarif
-  /// journalier, le passage 30 %.
-  double get unitPrice => switch (stayType) {
-    StayType.fullDay => dailyPrice,
-    StayType.halfDay => (dailyPrice * 0.5).roundToDouble(),
-    StayType.passage => (dailyPrice * 0.3).roundToDouble(),
-  };
+  /// Chiffrage du séjour saisi, partagé avec l'écran de modification.
+  StayQuote get quote => StayQuote(
+    dailyPrice: dailyPrice,
+    priceTiers: priceTiers,
+    stayType: stayType,
+    checkInAt: checkInAt,
+    checkOutAt: checkOutAt,
+  );
 
-  /// Nombre de jours facturés, au minimum un.
-  int get daysCount {
-    if (stayType != StayType.fullDay) return 1;
-    final start = checkInAt;
-    final end = checkOutAt;
-    if (start == null || end == null) return 1;
+  double get unitPrice => quote.unitPrice;
 
-    final hours = end.difference(start).inMinutes / 60;
-    return hours <= 0 ? 1 : (hours / 24).ceil().clamp(1, 3650);
-  }
+  int get daysCount => quote.daysCount;
 
-  /// Remise de durée applicable au séjour saisi, en pourcentage.
-  ///
-  /// Reprend `resolveDiscountPercent` du serveur : le palier retenu est le plus
-  /// avantageux atteint, et non le dernier déclaré — la grille d'un bien
-  /// enregistré avant sa normalisation peut être désordonnée.
-  ///
-  /// Les séjours infra-journaliers en sont exclus : ils valent un jour, quand
-  /// le palier le plus court admis par le serveur en couvre deux.
-  int get discountPercent {
-    if (stayType != StayType.fullDay || priceTiers.isEmpty) return 0;
+  int get discountPercent => quote.discountPercent;
 
-    var best = 0;
-    for (final tier in priceTiers) {
-      if (daysCount >= tier.minDays && tier.discountPercent > best) {
-        best = tier.discountPercent;
-      }
-    }
+  double get expectedAmount => quote.expectedAmount;
 
-    return best.clamp(0, 100);
-  }
-
-  /// Montant attendu selon la grille du bien, remise de durée comprise, avant
-  /// négociation.
-  ///
-  /// L'arrondi au franc reproduit celui du serveur : sans lui, l'écran
-  /// annoncerait au comptoir un montant que la facture ne confirmerait pas.
-  double get expectedAmount =>
-      (unitPrice * daysCount * (1 - discountPercent / 100)).roundToDouble();
-
-  /// Montant avant remise de durée, pour montrer ce que le palier fait gagner.
-  double get fullAmount => (unitPrice * daysCount).roundToDouble();
+  double get fullAmount => quote.fullAmount;
 
   /// Montant qui sera enregistré : le prix négocié s'il est saisi, le montant
   /// attendu sinon.
@@ -236,10 +213,12 @@ class AddReservationState {
     bool? isLookingUpPhone,
     String? occupiedConflict,
     bool clearConflict = false,
+    bool? hasReferrerEnabled,
     String? referrerName,
     String? referrerPhone,
     ClientIdDocumentType? idDocumentType,
     String? idDocumentNumber,
+    ClientIdentity? identity,
   }) {
     return AddReservationState(
       mode: mode ?? this.mode,
@@ -275,10 +254,12 @@ class AddReservationState {
       occupiedConflict: clearConflict
           ? null
           : (occupiedConflict ?? this.occupiedConflict),
+      hasReferrerEnabled: hasReferrerEnabled ?? this.hasReferrerEnabled,
       referrerName: referrerName ?? this.referrerName,
       referrerPhone: referrerPhone ?? this.referrerPhone,
       idDocumentType: idDocumentType ?? this.idDocumentType,
       idDocumentNumber: idDocumentNumber ?? this.idDocumentNumber,
+      identity: identity ?? this.identity,
     );
   }
 }

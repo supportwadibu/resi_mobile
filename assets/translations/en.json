@@ -6,7 +6,8 @@
     "confirm": "Confirm",
     "save": "Save",
     "delete": "Delete",
-    "close": "Close"
+    "close": "Close",
+    "clear": "Clear"
   },
   "errors": {
     "no_internet": "No internet connection.",
@@ -99,11 +100,29 @@
     "logout": "Log out"
   },
   "referrer": {
-    "section": "Business referrer (optional)",
+    "section": "Business referrer",
+    "toggle_hint": "Someone brought you this client",
     "name_hint": "Referrer name",
     "phone_hint": "Referrer phone (optional)",
     "commission": "Referrer commission ({} %)",
     "label": "Referrer"
+  },
+  "reservation": {
+    "title": "Bookings",
+    "recent": "Recent stays",
+    "empty": "No booking yet.",
+    "see_all": "See all bookings ({})",
+    "load_more": "Load more ({} of {})"
+  },
+  "reservation_filters": {
+    "search_hint": "Client: name or phone",
+    "clear": "Clear search",
+    "all": "All",
+    "no_match": "No booking matches these filters."
+  },
+  "property_reservations": {
+    "title": "Bookings",
+    "empty": "No booking on this unit yet."
   },
   "invoice": {
     "send": "Send the invoice",
@@ -125,11 +144,62 @@
     "error": "Unable to generate the invoice."
   },
   "ocr": {
-    "scan": "Scan the ID (back)",
+    "scan": "Read the ID document",
     "scanning": "Reading the ID…",
-    "found": "ID read: please check the details.",
-    "not_found": "No machine-readable zone (MRZ) found. Please enter the details manually.",
-    "hint": "Photograph the back, with the bottom character strip clearly visible."
+    "found": "ID read: please check and complete the details.",
+    "not_found": "Nothing readable on this photo. Please enter the details manually.",
+    "hint": "Photograph or import the side with the bottom character strip (MRZ). The front adds the place of birth.",
+    "source_title": "Read the ID",
+    "source_camera": "Scan with the camera",
+    "source_gallery": "Import from the phone",
+    "owner_hint": "The photo is read to prefill the ID number, which you can correct.",
+    "owner_found": "ID number read from the document: please check it."
+  },
+  "booking_amounts": {
+    "agreed_label": "Agreed stay price",
+    "agreed_hint": "Rate: {} F",
+    "agreed_helper": "Total price of the stay. Leave empty to apply the rate. Money already paid goes in the deposit.",
+    "suspicious": "This price is far below the rate ({} F). If it is a first payment, enter it as the deposit and leave the price empty.",
+    "deposit_label": "Deposit paid",
+    "deposit_hint": "Optional",
+    "negotiated_discount": "Discount granted",
+    "promo_discount": "Discount (promo code)",
+    "grid_price": "Standard rate",
+    "stay_amount": "Stay amount",
+    "balance_due": "Balance due"
+  },
+  "booking_edit": {
+    "action": "Edit",
+    "title": "Edit booking",
+    "submit": "Save changes",
+    "success": "Booking updated",
+    "client": "Guest",
+    "client_hint": "The guest cannot be changed here: edit their record, or cancel and re-enter.",
+    "property": "Residence",
+    "stay_type": "Stay type",
+    "check_in": "Check-in date",
+    "check_out": "Planned check-out",
+    "invalid_dates": "Check-out must be after check-in.",
+    "payment": "Payment",
+    "message": "Note",
+    "message_hint": "Optional",
+    "days_times_price": "{} d × {}",
+    "duration_discount": "Length-of-stay discount (−{} %)"
+  },
+  "client_identity": {
+    "section": "Identity (police register)",
+    "document_type": "Document type",
+    "document_number": "Document number",
+    "document_number_hint": "E.g. CI-0012345678",
+    "issued_at": "Date of issue",
+    "birth_date": "Date of birth",
+    "birth_place": "Place of birth",
+    "birth_place_hint": "E.g. Bouaké",
+    "nationality": "Nationality",
+    "nationality_hint": "E.g. Ivorian",
+    "address": "Usual address",
+    "address_hint": "E.g. Cocody Angré, Abidjan",
+    "missing": "Not provided"
   },
   "client_documents": {
     "title": "ID document",
@@ -203,5 +273,10 @@
         "body": "Send your client the invoice for their stay, in one tap."
       }
     }
+  },
+  "report_police": {
+    "commune": "Municipality (police report)",
+    "commune_hint": "E.g. Cocody",
+    "commune_helper": "Printed at the top of the register. Empty: the residence city."
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Option d'un choix unique présenté en cartes (type de pièce, mode de
@@ -38,12 +39,12 @@ class AppOptionTile extends StatelessWidget {
       button: true,
       child: Material(
         color: selected ? t.background : t.surface,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            color: selected ? t.primary : t.border,
-            width: selected ? 1.5 : 1,
-          ),
+        shape: AppRadius.outlined(
+          AppRadius.md,
+          selected ? t.primary : t.border,
+          selected ? 1.5 : 1,
         ),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Padding(
@@ -51,7 +52,11 @@ class AppOptionTile extends StatelessWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18, color: selected ? t.foreground : t.muted),
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected ? t.foreground : t.muted,
+                  ),
                   const SizedBox(width: 12),
                 ],
                 Expanded(

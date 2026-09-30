@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 class RatingBarsCompact extends StatelessWidget {
@@ -26,21 +27,23 @@ class RatingBarsCompact extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    item.label,
-                    style: context.text.bodySmall,
-                  ),
+                  Text(item.label, style: context.text.bodySmall),
                   Text(
                     item.score.toString(),
-                    style: context.text.labelMedium!.copyWith(color: context.tokens.foreground, fontWeight: FontWeight.w600),
+                    style: context.text.labelMedium!.copyWith(
+                      color: context.tokens.foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Container(
                 height: 4,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: context.tokens.border,
+                  borderRadius: AppRadius.pill,
                 ),
                 child: FractionallySizedBox(
                   widthFactor: item.percentage,

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
@@ -46,6 +47,7 @@ class DocumentSlotCard extends StatelessWidget {
     return Material(
       color: t.background,
       shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.md,
         side: BorderSide(color: hasFile ? t.primary : t.border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -132,7 +134,11 @@ class _FilledSlot extends StatelessWidget {
             message: 'Retirer',
             child: Material(
               color: t.surface,
-              shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.sm,
+                side: BorderSide(color: t.border),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: onRemove,
                 child: SizedBox.square(

@@ -71,7 +71,6 @@ CreatePropertyPayload _payload({
       livingRooms: 1,
       kitchens: 1,
       parkingSpaces: 2,
-      furnishing: Furnishing.furnished,
     ),
     amenities: amenities,
     images: images,
@@ -122,7 +121,7 @@ void main() {
       expect(details['living_rooms'], 1);
       expect(details['kitchens'], 1);
       expect(details['parking_spaces'], 2);
-      expect(details['furnishing'], 'furnished');
+      expect(details.containsKey('furnishing'), isFalse);
     });
 
     test('la surface est omise quand elle n’est pas renseignée', () async {
@@ -393,14 +392,6 @@ void main() {
         'parking',
         'pet_friendly',
         'smoking_allowed',
-      });
-    });
-
-    test('l’ameublement couvre exactement FURNISHING', () {
-      expect(Furnishing.values.map((f) => f.code).toSet(), {
-        'unfurnished',
-        'semi_furnished',
-        'furnished',
       });
     });
   });

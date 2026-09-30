@@ -70,10 +70,7 @@ class _Notice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      child: EmptyState(
-        message: message,
-        icon: AppSectionIcons.properties,
-      ),
+      child: EmptyState(message: message, icon: AppSectionIcons.properties),
     );
   }
 }

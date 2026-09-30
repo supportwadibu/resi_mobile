@@ -49,10 +49,9 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
 
   ReservationModel get _reservation => widget.reservation;
 
-  double get _effectiveDailyPrice {
-    final discount = _reservation.durationDiscountPercent;
-    return _reservation.dailyPrice * (1 - discount / 100);
-  }
+  /// Tarif convenu à la réservation s'il a été négocié, grille sinon : c'est
+  /// ce que le serveur facturera pour chaque jour ajouté.
+  double get _effectiveDailyPrice => _reservation.extensionDailyRate;
 
   double get _extensionTotal =>
       (_effectiveDailyPrice * _extraDays).roundToDouble();
@@ -134,11 +133,20 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
               ),
               const SizedBox(height: 12),
               PriceSummaryCard(
-                pricePerDay: CurrencyFormatter.fcfa(_reservation.dailyPrice),
+                // Un prix négocié se prolonge au prix négocié : c'est lui qui
+                // s'affiche, sans ligne de remise. Sinon, la grille puis sa
+                // remise de durée, comme avant.
+                pricePerDay: CurrencyFormatter.fcfa(
+                  _reservation.hasNegotiatedPrice
+                      ? _effectiveDailyPrice.roundToDouble()
+                      : _reservation.dailyPrice,
+                ),
                 days: _extraDays,
                 subtotal: CurrencyFormatter.fcfa(_extensionTotal),
                 total: CurrencyFormatter.fcfa(_extensionTotal),
-                discountPercent: _reservation.durationDiscountPercent,
+                discountPercent: _reservation.hasNegotiatedPrice
+                    ? 0
+                    : _reservation.durationDiscountPercent,
               ),
             ],
           ),

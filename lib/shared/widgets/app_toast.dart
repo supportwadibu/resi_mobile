@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Nature du retour, qui fixe la couleur et l'icône.
@@ -152,6 +153,7 @@ class _ToastViewState extends State<_ToastView>
               decoration: BoxDecoration(
                 color: t.surface,
                 border: Border.all(color: t.border),
+                borderRadius: AppRadius.md,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.12),

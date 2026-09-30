@@ -21,6 +21,7 @@ class ExpenseLegendItem extends StatelessWidget {
             height: 10,
             decoration: BoxDecoration(
               color: category.category.colorIn(context.tokens),
+              shape: BoxShape.circle,
             ),
           ),
         ),

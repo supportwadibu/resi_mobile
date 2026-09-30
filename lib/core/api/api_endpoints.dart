@@ -14,6 +14,9 @@ abstract final class ApiEndpoints {
   static const String logout = '$_v1/auth/logout';
   static const String me = '$_v1/auth/me';
 
+  /// Appareils recevant les notifications push, tous rôles confondus.
+  static const String deviceTokens = '$_v1/auth/device-tokens';
+
   /// État d'abonnement du propriétaire connecté (essai, jours restants,
   /// statut du dossier de validation).
   static const String proprioSubscription = '$_v1/proprio/subscription';

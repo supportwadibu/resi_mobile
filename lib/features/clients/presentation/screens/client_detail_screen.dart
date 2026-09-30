@@ -1,10 +1,10 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/features/clients/data/models/client_model.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
@@ -156,6 +156,8 @@ class _LoadedView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        _IdentitySection(client: client),
+        const SizedBox(height: 16),
         IdentityDocumentsCard(client: client),
         const SizedBox(height: 16),
         Section(
@@ -165,6 +167,66 @@ class _LoadedView extends StatelessWidget {
           child: _History(state: state),
         ),
       ],
+    );
+  }
+}
+
+/// Ce que le registre de police imprimera pour ce client.
+///
+/// Un champ manquant s'affiche « Non renseigné » plutôt que de disparaître :
+/// le propriétaire doit voir ce qu'il reste à compléter avant d'éditer le
+/// registre, où la case sortirait vide.
+class _IdentitySection extends StatelessWidget {
+  const _IdentitySection({required this.client});
+
+  final ClientModel client;
+
+  @override
+  Widget build(BuildContext context) {
+    final identity = client.identity;
+    final missing = 'client_identity.missing'.tr();
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    String date(DateTime? value) =>
+        value == null ? missing : dateFormat.format(value);
+    String text(String? value) =>
+        value == null || value.trim().isEmpty ? missing : value;
+
+    final document = [
+      client.idDocumentType?.label,
+      if (client.idDocumentNumber case final number?
+          when number.trim().isNotEmpty)
+        'n° $number',
+    ].whereType<String>().join(' ');
+
+    return Section(
+      title: 'client_identity.section'.tr(),
+      icon: LucideIcons.idCard,
+      child: DetailList(
+        items: [
+          DetailItem(
+            'client_identity.document_number'.tr(),
+            document.isEmpty ? missing : document,
+          ),
+          DetailItem(
+            'client_identity.issued_at'.tr(),
+            date(identity.idDocumentIssuedAt),
+          ),
+          DetailItem(
+            'client_identity.birth_date'.tr(),
+            date(identity.birthDate),
+          ),
+          DetailItem(
+            'client_identity.birth_place'.tr(),
+            text(identity.birthPlace),
+          ),
+          DetailItem(
+            'client_identity.nationality'.tr(),
+            text(identity.nationality),
+          ),
+          DetailItem('client_identity.address'.tr(), text(identity.address)),
+        ],
+      ),
     );
   }
 }

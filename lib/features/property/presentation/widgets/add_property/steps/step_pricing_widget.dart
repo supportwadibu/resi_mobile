@@ -6,6 +6,7 @@ import 'package:resi_africa/shared/widgets/app_icon_button.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
@@ -263,6 +264,7 @@ class _TierRow extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(
           color: isIneffective
               ? context.tokens.accentAmber
@@ -481,6 +483,7 @@ class _StaySimulator extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Column(
@@ -595,6 +598,7 @@ class _Stepper extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: context.tokens.background,
+            borderRadius: AppRadius.md,
             border: Border.all(color: context.tokens.border),
           ),
           child: Row(
@@ -676,6 +680,7 @@ class _PricingCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Column(

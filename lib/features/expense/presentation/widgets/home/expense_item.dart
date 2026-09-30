@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
@@ -40,6 +41,7 @@ class ExpenseItem extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: t.background,
+              borderRadius: AppRadius.sm,
               border: Border.all(color: t.border),
             ),
             child: Icon(category.icon, size: 16, color: category.colorIn(t)),

@@ -28,13 +28,12 @@ class ReviewsHeader extends StatelessWidget {
               children: [
                 Text(
                   '4,9',
-                  style: context.text.headlineSmall!.copyWith(color: context.tokens.foreground),
+                  style: context.text.headlineSmall!.copyWith(
+                    color: context.tokens.foreground,
+                  ),
                 ),
                 const SizedBox(width: 2),
-                Text(
-                  '/ 5',
-                  style: context.mutedText,
-                ),
+                Text('/ 5', style: context.mutedText),
               ],
             ),
           ],
@@ -55,12 +54,11 @@ class ReviewsHeader extends StatelessWidget {
             children: [
               Text(
                 'Excellent',
-                style: context.text.titleSmall!.copyWith(color: context.tokens.foreground),
+                style: context.text.titleSmall!.copyWith(
+                  color: context.tokens.foreground,
+                ),
               ),
-              Text(
-                'Basé sur 128 avis',
-                style: context.text.bodySmall,
-              ),
+              Text('Basé sur 128 avis', style: context.text.bodySmall),
             ],
           ),
         ),

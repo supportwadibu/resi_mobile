@@ -56,14 +56,28 @@ void main() {
     );
 
     test('10 % du montant convenu, arrondi au franc', () {
-      final state = base.copyWith(referrerName: 'Koffi');
+      final state = base.copyWith(
+        hasReferrerEnabled: true,
+        referrerName: 'Koffi',
+      );
       expect(state.hasReferrer, isTrue);
       expect(state.referrerCommission, 4500);
     });
 
     test('sans nom d’apporteur, aucune commission', () {
       expect(base.hasReferrer, isFalse);
-      expect(base.copyWith(referrerName: ' ').referrerCommission, 0);
+      expect(
+        base
+            .copyWith(hasReferrerEnabled: true, referrerName: ' ')
+            .referrerCommission,
+        0,
+      );
+    });
+
+    test('bascule éteinte, le nom saisi est ignoré', () {
+      final state = base.copyWith(referrerName: 'Koffi');
+      expect(state.hasReferrer, isFalse);
+      expect(state.referrerCommission, 0);
     });
   });
 

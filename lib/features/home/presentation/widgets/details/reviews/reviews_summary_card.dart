@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'star_rating.dart';
 import 'rating_bars_compact.dart';
@@ -13,6 +14,7 @@ class ReviewsSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Row(
@@ -25,15 +27,14 @@ class ReviewsSummaryCard extends StatelessWidget {
               children: [
                 Text(
                   '4,9',
-                  style: context.text.headlineSmall!.copyWith(color: context.tokens.foreground),
+                  style: context.text.headlineSmall!.copyWith(
+                    color: context.tokens.foreground,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const StarRating(rating: 4.9, starSize: 18),
                 const SizedBox(height: 8),
-                Text(
-                  '128 avis',
-                  style: context.mutedText,
-                ),
+                Text('128 avis', style: context.mutedText),
               ],
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 
@@ -18,6 +19,7 @@ class ClientAvatar extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: t.background,
+        borderRadius: AppRadius.pill,
         border: Border.all(color: t.border),
       ),
       child: Text(

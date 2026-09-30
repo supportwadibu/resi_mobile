@@ -8,6 +8,20 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 /// savoir reprendre, et le faire produire par le code courant ne testerait
 /// qu'une tautologie.
 const _schemaV1 = [
+  // Présente dès la version 1 (commit e75dbb9) : la migration v4 la fait
+  // évoluer, et son absence ici masquerait un ALTER TABLE sur une table
+  // inexistante.
+  '''
+    CREATE TABLE pending_clients (
+      local_id            TEXT PRIMARY KEY,
+      remote_id           TEXT,
+      full_name           TEXT NOT NULL,
+      phone               TEXT NOT NULL,
+      document_front_path TEXT,
+      document_back_path  TEXT,
+      created_at          INTEGER NOT NULL
+    )
+  ''',
   '''
     CREATE TABLE cached_properties (
       id           TEXT PRIMARY KEY,
@@ -242,6 +256,48 @@ void main() {
     });
   });
 
+  group('Migration → v4', () {
+    test('un client en file garde sa saisie et reçoit son identité', () async {
+      final db = await _openV1();
+      addTearDown(db.close);
+
+      await db.insert('pending_clients', {
+        'local_id': 'local-1',
+        'full_name': 'Aya Traoré',
+        'phone': '0700000000',
+        'created_at': 1000,
+      });
+
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
+
+      final before = (await db.query('pending_clients')).single;
+      expect(before['full_name'], 'Aya Traoré');
+      expect(before['id_document_number'], isNull);
+
+      await db.insert('pending_clients', {
+        'local_id': 'local-2',
+        'full_name': 'Koffi',
+        'phone': '0500000000',
+        'created_at': 2000,
+        'id_document_type': 'cni',
+        'id_document_number': 'C0012345',
+        'identity_fields': '{"birth_place":"Bouaké"}',
+      });
+
+      final after = (await db.query(
+        'pending_clients',
+        where: 'local_id = ?',
+        whereArgs: ['local-2'],
+      )).single;
+      expect(after['id_document_number'], 'C0012345');
+      expect(after['identity_fields'], contains('Bouaké'));
+    });
+  });
+
   group('Schéma neuf', () {
     test(
       'une base créée de zéro porte les mêmes colonnes qu’une base migrée',
@@ -262,7 +318,11 @@ void main() {
         // Les deux tables que les migrations font évoluer.
         Future<Set<String>> columnsOf(Database db) async {
           final columns = <String>{};
-          for (final table in ['cached_properties', 'pending_bookings']) {
+          for (final table in [
+            'cached_properties',
+            'pending_bookings',
+            'pending_clients',
+          ]) {
             final rows = await db.rawQuery('PRAGMA table_info($table)');
             columns.addAll(rows.map((c) => '$table.${c['name']}'));
           }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import '../../../data/models/expense_model.dart';
@@ -26,11 +27,13 @@ class CategoryItem extends StatelessWidget {
       child: Material(
         color: selected ? t.background : t.surface,
         shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.md,
           side: BorderSide(
             color: selected ? t.primary : t.border,
             width: selected ? 1.5 : 1,
           ),
         ),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Column(

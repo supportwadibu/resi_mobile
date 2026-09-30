@@ -24,6 +24,8 @@ import 'package:resi_africa/features/rapport/data/repositories/rapport_repositor
 import 'package:resi_africa/features/expense/business_logic/expense_cubit.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_extension_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/edit_reservation_cubit.dart';
+import 'package:resi_africa/features/reservation/data/models/reservation_model.dart';
 import 'package:resi_africa/features/reservation/business_logic/early_check_out_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_check_out_cubit.dart';
 import 'package:resi_africa/features/home/business_logic/home_stats_cubit.dart';
@@ -64,6 +66,8 @@ import '../api/interceptors/plan_interceptor.dart';
 import '../api/plan_signals.dart';
 import '../api/interceptors/retry_interceptor.dart';
 import '../config/app_config.dart';
+import '../notifications/device_token_repository.dart';
+import '../notifications/push_notification_service.dart';
 import '../router/app_router.dart';
 import '../session/session_role.dart';
 import '../storage/local_storage.dart';
@@ -169,6 +173,16 @@ Future<void> setupServiceLocator(AppConfig config) async {
       sl<GoogleAuthService>(),
       sl<SessionRole>(),
       sl<AppDatabase>(),
+      // Résolus à l'appel : le service push dépend lui-même d'`AuthService`.
+      onSignedIn: () => sl<PushNotificationService>().registerDevice(),
+      beforeSignOut: () => sl<PushNotificationService>().unregisterDevice(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => PushNotificationService(
+      DeviceTokenRepository(sl<Dio>()),
+      sl<AppRouter>(),
+      isLoggedIn: () => sl<AuthService>().isLoggedIn(),
     ),
   );
   sl.registerLazySingleton<PropertyManagerService>(
@@ -218,8 +232,21 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerFactory(() => CreatePropertyCubit(sl<PropertyRepository>()));
   sl.registerFactory(() => EditPropertyCubit(sl<PropertyRepository>()));
-  sl.registerFactory(() => ReservationCubit(sl<ReservationRepository>()));
+  // Chaque liste dit ce qu'elle charge : aperçu de l'onglet, liste complète
+  // paginée, ou réservations d'un bien. Sans paramètre, la liste complète.
+  sl.registerFactoryParam<ReservationCubit, ReservationListOptions?, void>(
+    (options, _) => ReservationCubit(
+      sl<ReservationRepository>(),
+      options: options ?? const ReservationListOptions(),
+    ),
+  );
   sl.registerFactory(() => StayExtensionCubit(sl<ReservationRepository>()));
+  // La réservation à modifier est passée à la création : le formulaire part
+  // de ses valeurs, et le cubit ne la relit pas.
+  sl.registerFactoryParam<EditReservationCubit, ReservationModel, void>(
+    (reservation, _) =>
+        EditReservationCubit(sl<ReservationRepository>(), reservation),
+  );
   sl.registerFactory(() => StayCheckOutCubit(sl<ReservationRepository>()));
   sl.registerFactory(() => EarlyCheckOutCubit(sl<ReservationRepository>()));
   sl.registerFactory(

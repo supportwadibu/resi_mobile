@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// En-tête d'un onglet racine, miroir de `PageHeader` du backoffice : titre
@@ -130,7 +131,7 @@ class AppCard extends StatelessWidget {
     final t = context.tokens;
     return Material(
       color: color ?? t.surface,
-      shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+      shape: AppRadius.outlined(AppRadius.md, t.border),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -164,10 +165,14 @@ class Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return DecoratedBox(
+    return Container(
+      // Détouré : une ligne pleine largeur du contenu (liste à filets, ondulation
+      // d'un appui) déborderait sinon des coins arrondis.
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: t.surface,
         border: Border.all(color: t.border),
+        borderRadius: AppRadius.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -184,9 +189,7 @@ class Section extends StatelessWidget {
                   Icon(icon, size: 16, color: t.muted),
                   const SizedBox(width: 8),
                 ],
-                Expanded(
-                  child: Text(title, style: context.text.titleMedium),
-                ),
+                Expanded(child: Text(title, style: context.text.titleMedium)),
                 ...actions,
               ],
             ),
@@ -277,7 +280,7 @@ class DetailRow extends StatelessWidget {
   }
 }
 
-/// Pastille carrée d'une icône, fond d'accent doux et ton plein posé dessus.
+/// Pastille d'une icône, fond d'accent doux et ton plein posé dessus.
 /// `neutral` : filet et fond de page, comme `EmptyState`.
 class IconChip extends StatelessWidget {
   const IconChip({
@@ -302,6 +305,7 @@ class IconChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.accentSoft(accent),
         border: neutral ? Border.all(color: t.border) : null,
+        borderRadius: AppRadius.sm,
       ),
       child: Icon(
         icon,

@@ -49,6 +49,8 @@ class ReportFormCubit extends Cubit<ReportFormState> {
     }
   }
 
+  void setCommune(String value) => emit(state.copyWith(commune: value));
+
   void setPreset(PeriodPreset preset) =>
       emit(state.copyWith(selectedPreset: preset));
 
@@ -67,6 +69,8 @@ class ReportFormCubit extends Cubit<ReportFormState> {
         customStart: state.customStart,
         customEnd: state.customEnd,
         residenceId: state.selectedResidenceId,
+        // Le registre de police seul imprime la commune.
+        commune: state.selectedType == ReportType.police ? state.commune : null,
       );
       if (!isClosed) {
         emit(state.copyWith(isGenerating: false, result: result));

@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
@@ -33,7 +34,10 @@ class ReservationItem extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: t.surface,
-        shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.md,
+          side: BorderSide(color: t.border),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () async {

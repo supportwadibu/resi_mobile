@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Faux champ de recherche qui ouvre l'écran de recherche au toucher, avec la
@@ -25,7 +26,8 @@ class AppSearchField extends StatelessWidget {
       padding: padding ?? EdgeInsets.zero,
       child: Material(
         color: t.background,
-        shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+        shape: AppRadius.outlined(AppRadius.md, t.border),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: SizedBox(

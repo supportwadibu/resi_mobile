@@ -12,6 +12,7 @@ import '../firebase_options.dart';
 import 'bloc/app_bloc_observer.dart';
 import 'config/app_config.dart';
 import 'di/service_locator.dart';
+import 'notifications/push_notification_service.dart';
 import 'session/session_role.dart';
 import 'sync/sync_service.dart';
 
@@ -51,6 +52,10 @@ Future<void> bootstrap(AppConfig config) async {
   // Lancé sans attendre : une file vide ne doit pas retarder l'affichage, et
   // un envoi en cours se poursuit pendant que l'application démarre.
   unawaited(sl<SyncService>().start());
+
+  // Notifications push : écouteurs, ouverture au toucher, et déclaration de
+  // l'appareil si une session est déjà ouverte. Sans attente, comme la file.
+  unawaited(sl<PushNotificationService>().start());
 
   runApp(
     EasyLocalization(

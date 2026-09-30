@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 
@@ -48,13 +49,18 @@ class ScopeSelector extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(4, 6, 4, 10),
             child: Text(
               'Logements hors résidence',
-              style: context.text.labelMedium!.copyWith(color: context.tokens.muted, fontWeight: FontWeight.w600),
+              style: context.text.labelMedium!.copyWith(
+                color: context.tokens.muted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Container(
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: context.tokens.surface,
               border: Border.all(color: context.tokens.border),
+              borderRadius: AppRadius.md,
             ),
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Column(
@@ -108,9 +114,11 @@ class _ResidenceTileState extends State<_ResidenceTile> {
     );
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.tokens.surface,
         border: Border.all(color: context.tokens.border),
+        borderRadius: AppRadius.md,
       ),
       child: Column(
         children: [
@@ -134,8 +142,6 @@ class _ResidenceTileState extends State<_ResidenceTile> {
                     tristate: true,
                     onChanged: (_) =>
                         widget.onToggleResidence(widget.group.residence),
-                    shape: RoundedRectangleBorder(
-                    ),
                   ),
                   Expanded(
                     child: Column(
@@ -157,9 +163,7 @@ class _ResidenceTileState extends State<_ResidenceTile> {
                     ),
                   ),
                   Icon(
-                    _expanded
-                        ? LucideIcons.chevronUp
-                        : LucideIcons.chevronDown,
+                    _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                     size: 20,
                     color: context.tokens.muted,
                   ),
@@ -212,12 +216,7 @@ class _PropertyRow extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(indented ? 20 : 8, 2, 12, 2),
         child: Row(
           children: [
-            Checkbox(
-              value: checked,
-              onChanged: (_) => onChanged(),
-              shape: RoundedRectangleBorder(
-              ),
-            ),
+            Checkbox(value: checked, onChanged: (_) => onChanged()),
             Expanded(
               child: Text(
                 label,

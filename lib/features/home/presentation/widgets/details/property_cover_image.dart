@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 
@@ -190,10 +191,15 @@ class _PageDots extends StatelessWidget {
     if (count > 8) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        color: context.tokens.overlay.withValues(alpha: 0.55),
+        decoration: BoxDecoration(
+          color: context.tokens.overlay.withValues(alpha: 0.55),
+          borderRadius: AppRadius.pill,
+        ),
         child: Text(
           '${currentIndex + 1}/$count',
-          style: context.text.labelMedium!.copyWith(color: context.tokens.onOverlay),
+          style: context.text.labelMedium!.copyWith(
+            color: context.tokens.onOverlay,
+          ),
         ),
       );
     }
@@ -207,9 +213,12 @@ class _PageDots extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 3),
             width: i == currentIndex ? 18 : 6,
             height: 4,
-            color: i == currentIndex
-                ? context.tokens.onOverlay
-                : context.tokens.onOverlay.withValues(alpha: 0.5),
+            decoration: BoxDecoration(
+              color: i == currentIndex
+                  ? context.tokens.onOverlay
+                  : context.tokens.onOverlay.withValues(alpha: 0.5),
+              borderRadius: AppRadius.pill,
+            ),
           ),
       ],
     );

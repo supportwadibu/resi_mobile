@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/models/review_model.dart';
 import 'star_rating.dart';
@@ -16,6 +17,7 @@ class ReviewCardLarge extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Column(
@@ -36,12 +38,11 @@ class ReviewCardLarge extends StatelessWidget {
                       children: [
                         Text(
                           review.name,
-                          style: context.text.titleMedium!.copyWith(color: context.tokens.foreground),
+                          style: context.text.titleMedium!.copyWith(
+                            color: context.tokens.foreground,
+                          ),
                         ),
-                        Text(
-                          review.date,
-                          style: context.text.bodySmall,
-                        ),
+                        Text(review.date, style: context.text.bodySmall),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -56,7 +57,10 @@ class ReviewCardLarge extends StatelessWidget {
           // Texte du commentaire
           Text(
             review.reviewText,
-            style: context.text.bodyMedium!.copyWith(color: context.tokens.muted, height: 1.5),
+            style: context.text.bodyMedium!.copyWith(
+              color: context.tokens.muted,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -73,7 +77,7 @@ class ReviewCardLarge extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         color: review.avatarColor,
-        shape: BoxShape.rectangle,
+        shape: BoxShape.circle,
       ),
       child: Center(
         child: Text(
@@ -87,9 +91,7 @@ class ReviewCardLarge extends StatelessWidget {
   Widget _buildDetailedRatings(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.tokens.background,
-      ),
+      decoration: BoxDecoration(color: context.tokens.background),
       child: Column(
         children: [
           _buildRatingRow(context, 'Propreté', review.cleanliness),
@@ -98,7 +100,11 @@ class ReviewCardLarge extends StatelessWidget {
           const SizedBox(height: 8),
           _buildRatingRow(context, 'Confort', review.comfort),
           const SizedBox(height: 8),
-          _buildRatingRow(context, 'Rapport qualité/prix', review.valueForMoney),
+          _buildRatingRow(
+            context,
+            'Rapport qualité/prix',
+            review.valueForMoney,
+          ),
         ],
       ),
     );
@@ -107,13 +113,7 @@ class ReviewCardLarge extends StatelessWidget {
   Widget _buildRatingRow(BuildContext context, String label, int rating) {
     return Row(
       children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: context.text.bodySmall,
-          ),
-        ),
+        SizedBox(width: 120, child: Text(label, style: context.text.bodySmall)),
         Expanded(
           child: Row(
             children: List.generate(5, (index) {
@@ -127,7 +127,9 @@ class ReviewCardLarge extends StatelessWidget {
         ),
         Text(
           rating.toString(),
-          style: context.text.labelMedium!.copyWith(color: context.tokens.foreground),
+          style: context.text.labelMedium!.copyWith(
+            color: context.tokens.foreground,
+          ),
         ),
       ],
     );

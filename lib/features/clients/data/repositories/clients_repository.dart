@@ -179,6 +179,7 @@ class ClientsRepository {
     String? whatsapp,
     ClientIdDocumentType? idDocumentType,
     String? idDocumentNumber,
+    ClientIdentity? identity,
     String? documentFrontPath,
     String? documentBackPath,
   }) async {
@@ -190,6 +191,7 @@ class ClientsRepository {
         if (idDocumentType != null) 'id_document_type': idDocumentType.code,
         if (idDocumentNumber != null && idDocumentNumber.isNotEmpty)
           'id_document_number': idDocumentNumber,
+        ...?identity?.toFormFields(),
         if (documentFrontPath != null)
           'id_document_front': await _imageFile(documentFrontPath),
         if (documentBackPath != null)
@@ -220,6 +222,7 @@ class ClientsRepository {
     String? whatsapp,
     ClientIdDocumentType? idDocumentType,
     String? idDocumentNumber,
+    ClientIdentity? identity,
     ClientStatus? status,
     String? documentFrontPath,
     String? documentBackPath,
@@ -234,6 +237,9 @@ class ClientsRepository {
         'whatsapp': ?whatsapp,
         if (idDocumentType != null) 'id_document_type': idDocumentType.code,
         'id_document_number': ?idDocumentNumber,
+        // Champs vides envoyés vides : c'est ainsi qu'un formulaire multipart
+        // efface une valeur, le serveur lisant `''` comme `null`.
+        ...?identity?.toFormFields(includeEmpty: true),
         if (status != null) 'status': status.code,
         if (documentFrontPath != null)
           'id_document_front': await _imageFile(documentFrontPath),

@@ -8,6 +8,7 @@ import 'package:resi_africa/core/router/role_guard.dart';
 import 'package:resi_africa/core/session/session_role.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/utils/country_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
@@ -225,7 +226,10 @@ class _ProfileContent extends StatelessWidget {
             avatarUrl: profile.avatarUrl,
           ),
           const SizedBox(height: 16),
-          _StatusCard(profile: profile, onComplete: () => _editProfile(context)),
+          _StatusCard(
+            profile: profile,
+            onComplete: () => _editProfile(context),
+          ),
           // Le forfait, sous le dossier : les deux conditionnent l'accès. Le
           // gérant n'en a pas — c'est celui de son propriétaire.
           if (_currentRole() != 'gerant') ...[
@@ -487,6 +491,7 @@ class _Identity extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: t.background,
+            borderRadius: AppRadius.pill,
             border: Border.all(color: t.border),
           ),
           child: url == null || url.isEmpty

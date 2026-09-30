@@ -1,16 +1,16 @@
-import '../data/models/client_model.dart';
 import '../data/models/identity_document_model.dart';
 
 enum AddClientStatus { idle, loading, success, error }
 
+/// Coordonnées et photos de la pièce.
+///
+/// La nature, le numéro et l'identité de la pièce n'y figurent pas : ils vivent
+/// dans le `ClientIdentityController` de l'écran, que la lecture de la pièce
+/// préremplit, et sont remis au cubit à l'envoi.
 class AddClientState {
   final String fullName;
   final String phone;
   final Map<DocumentSlot, IdentityDocumentModel> documents;
-
-  /// Pièce lue par l'OCR. Non lus, ces champs se complètent depuis la fiche.
-  final ClientIdDocumentType? idDocumentType;
-  final String? idDocumentNumber;
 
   final AddClientStatus status;
   final String? errorMessage;
@@ -23,8 +23,6 @@ class AddClientState {
     this.fullName = '',
     this.phone = '',
     this.documents = const {},
-    this.idDocumentType,
-    this.idDocumentNumber,
     this.status = AddClientStatus.idle,
     this.errorMessage,
     this.alreadyExisted = false,
@@ -41,8 +39,6 @@ class AddClientState {
     String? fullName,
     String? phone,
     Map<DocumentSlot, IdentityDocumentModel>? documents,
-    ClientIdDocumentType? idDocumentType,
-    String? idDocumentNumber,
     AddClientStatus? status,
     String? errorMessage,
     bool? alreadyExisted,
@@ -51,8 +47,6 @@ class AddClientState {
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       documents: documents ?? this.documents,
-      idDocumentType: idDocumentType ?? this.idDocumentType,
-      idDocumentNumber: idDocumentNumber ?? this.idDocumentNumber,
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       alreadyExisted: alreadyExisted ?? this.alreadyExisted,

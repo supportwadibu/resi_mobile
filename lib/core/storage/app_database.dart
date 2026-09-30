@@ -35,7 +35,11 @@ class AppDatabase {
   ///
   /// 3 — `pending_bookings` porte l’apporteur d’affaire, pour qu’une
   /// réservation saisie hors ligne le transmette à la synchronisation.
-  static const _version = 3;
+  ///
+  /// 4 — `pending_clients` porte la pièce (nature, numéro) et l’identité du
+  /// registre de police, lues au comptoir : sans elles, un client saisi hors
+  /// ligne arrivait au carnet sans rien de ce que le registre exige.
+  static const _version = 4;
 
   /// Version courante du schéma, lue par les tests de migration.
   @visibleForTesting
@@ -135,7 +139,10 @@ class AppDatabase {
         phone               TEXT NOT NULL,
         document_front_path TEXT,
         document_back_path  TEXT,
-        created_at          INTEGER NOT NULL
+        created_at          INTEGER NOT NULL,
+        id_document_type    TEXT,
+        id_document_number  TEXT,
+        identity_fields     TEXT
       )
     ''');
 
@@ -212,6 +219,22 @@ class AppDatabase {
       );
       await db.execute(
         'ALTER TABLE pending_bookings ADD COLUMN referrer_phone TEXT',
+      );
+    }
+
+    if (from < 4) {
+      // `identity_fields` porte les champs du registre en JSON, tels que le
+      // formulaire multipart les enverra : cinq colonnes de plus seraient à
+      // migrer au prochain champ ajouté. Les clients déjà en file valent
+      // `NULL`, sans identité — ce qu’ils étaient.
+      await db.execute(
+        'ALTER TABLE pending_clients ADD COLUMN id_document_type TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE pending_clients ADD COLUMN id_document_number TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE pending_clients ADD COLUMN identity_fields TEXT',
       );
     }
   }

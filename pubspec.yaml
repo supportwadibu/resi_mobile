@@ -49,6 +49,11 @@ dependencies:
   # Icônes Lucide, les mêmes que celles du backoffice (`lucide-react`) : une
   # section garde le même pictogramme sur le web et sur le téléphone.
   lucide_icons_flutter: ^3.1.20
+  # Notifications push (FCM) : relances d'échéance d'abonnement et messages
+  # du back-office. Firebase est déjà initialisé pour Google Sign-In, et le
+  # serveur envoie par le compte de service qu'il a déjà — aucun fournisseur
+  # de plus.
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_radius.dart';
 import 'app_typography.dart';
 import 'resi_tokens.dart';
 
@@ -9,15 +10,14 @@ import 'resi_tokens.dart';
 /// Le `ColorScheme` est posé à la main, jamais dérivé d'une graine : Material
 /// inventerait des teintes intermédiaires (conteneurs lavande, surfaces
 /// teintées) qui n'existent pas dans le backoffice. Chaque thème de composant
-/// est déclaré ici une fois, à angles droits, si bien qu'un widget Material
-/// laissé tel quel dans un écran prend déjà l'allure commune.
+/// est déclaré ici une fois, arrondi selon [AppRadius], si bien qu'un widget
+/// Material laissé tel quel dans un écran prend déjà l'allure commune.
 abstract final class AppTheme {
   static ThemeData light() => _build(ResiTokens.light, Brightness.light);
 
   static ThemeData dark() => _build(ResiTokens.dark, Brightness.dark);
 
-  /// Angles droits partout : bordures, boutons, champs, cartes, feuilles.
-  static const _square = RoundedRectangleBorder();
+  static const _control = AppRadius.mdShape;
 
   static ThemeData _build(ResiTokens t, Brightness brightness) {
     final text = AppTypography.textTheme(t);
@@ -60,7 +60,7 @@ abstract final class AppTheme {
     final borderSide = BorderSide(color: t.border);
     OutlineInputBorder field(Color color, [double width = 1]) =>
         OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppRadius.md,
           borderSide: BorderSide(color: color, width: width),
         );
 
@@ -109,7 +109,7 @@ abstract final class AppTheme {
           foregroundColor: t.primaryForeground,
           disabledBackgroundColor: t.primary.withValues(alpha: 0.4),
           disabledForegroundColor: t.primaryForeground,
-          shape: _square,
+          shape: _control,
           padding: buttonPadding,
           minimumSize: buttonMinSize,
           textStyle: text.labelLarge,
@@ -122,7 +122,7 @@ abstract final class AppTheme {
           foregroundColor: t.primaryForeground,
           disabledBackgroundColor: t.primary.withValues(alpha: 0.4),
           disabledForegroundColor: t.primaryForeground,
-          shape: _square,
+          shape: _control,
           padding: buttonPadding,
           minimumSize: buttonMinSize,
           textStyle: text.labelLarge,
@@ -135,7 +135,7 @@ abstract final class AppTheme {
           backgroundColor: t.surface,
           foregroundColor: t.foreground,
           side: borderSide,
-          shape: _square,
+          shape: _control,
           padding: buttonPadding,
           minimumSize: buttonMinSize,
           textStyle: text.labelLarge,
@@ -144,7 +144,7 @@ abstract final class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: t.foreground,
-          shape: _square,
+          shape: _control,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           textStyle: text.labelLarge,
         ),
@@ -152,14 +152,14 @@ abstract final class AppTheme {
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: t.foreground,
-          shape: _square,
+          shape: AppRadius.smShape,
           iconSize: 20,
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: t.primary,
         foregroundColor: t.primaryForeground,
-        shape: _square,
+        shape: AppRadius.lgShape,
         elevation: 2,
         focusElevation: 2,
         hoverElevation: 3,
@@ -168,7 +168,7 @@ abstract final class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
-          shape: const WidgetStatePropertyAll(_square),
+          shape: const WidgetStatePropertyAll(_control),
           side: WidgetStatePropertyAll(borderSide),
           textStyle: WidgetStatePropertyAll(text.labelLarge),
           backgroundColor: WidgetStateProperty.resolveWith(
@@ -218,7 +218,7 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(side: borderSide),
+        shape: AppRadius.outlined(AppRadius.md, t.border),
       ),
       dividerTheme: DividerThemeData(color: t.border, thickness: 1, space: 1),
       listTileTheme: ListTileThemeData(
@@ -226,13 +226,13 @@ abstract final class AppTheme {
         textColor: t.foreground,
         titleTextStyle: text.titleSmall,
         subtitleTextStyle: text.bodySmall,
-        shape: _square,
+        shape: _control,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         minLeadingWidth: 20,
       ),
       expansionTileTheme: ExpansionTileThemeData(
-        shape: _square,
-        collapsedShape: _square,
+        shape: _control,
+        collapsedShape: _control,
         iconColor: t.muted,
         collapsedIconColor: t.muted,
         textColor: t.foreground,
@@ -242,7 +242,7 @@ abstract final class AppTheme {
         backgroundColor: t.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 2,
-        shape: RoundedRectangleBorder(side: borderSide),
+        shape: AppRadius.outlined(AppRadius.lg, t.border),
         titleTextStyle: text.titleLarge,
         contentTextStyle: text.bodyMedium!.copyWith(color: t.muted),
         barrierColor: Colors.black.withValues(alpha: 0.5),
@@ -253,7 +253,10 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 2,
         modalElevation: 2,
-        shape: const RoundedRectangleBorder(),
+        // Coins hauts seuls : la feuille repose sur le bas de l'écran.
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         showDragHandle: true,
         dragHandleColor: t.border,
         dragHandleSize: const Size(32, 4),
@@ -264,11 +267,14 @@ abstract final class AppTheme {
         backgroundColor: t.foreground,
         contentTextStyle: text.bodyMedium!.copyWith(color: t.background),
         actionTextColor: t.background,
-        shape: _square,
+        shape: _control,
         elevation: 2,
       ),
       tooltipTheme: TooltipThemeData(
-        decoration: BoxDecoration(color: t.foreground),
+        decoration: BoxDecoration(
+          color: t.foreground,
+          borderRadius: AppRadius.sm,
+        ),
         textStyle: text.bodySmall!.copyWith(color: t.background),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
@@ -276,7 +282,7 @@ abstract final class AppTheme {
         color: t.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 2,
-        shape: RoundedRectangleBorder(side: borderSide),
+        shape: AppRadius.outlined(AppRadius.md, t.border),
         textStyle: text.bodyMedium,
         labelTextStyle: WidgetStatePropertyAll(text.bodyMedium),
       ),
@@ -284,7 +290,9 @@ abstract final class AppTheme {
         style: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(t.surface),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(side: borderSide)),
+          shape: WidgetStatePropertyAll(
+            AppRadius.outlined(AppRadius.md, t.border),
+          ),
           elevation: const WidgetStatePropertyAll(2),
         ),
       ),
@@ -293,7 +301,9 @@ abstract final class AppTheme {
         menuStyle: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(t.surface),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(side: borderSide)),
+          shape: WidgetStatePropertyAll(
+            AppRadius.outlined(AppRadius.md, t.border),
+          ),
         ),
       ),
       chipTheme: ChipThemeData(
@@ -302,7 +312,7 @@ abstract final class AppTheme {
         disabledColor: t.background,
         checkmarkColor: t.primaryForeground,
         side: borderSide,
-        shape: _square,
+        shape: const StadiumBorder(),
         labelStyle: text.labelMedium,
         secondaryLabelStyle: text.labelMedium!.copyWith(
           color: t.primaryForeground,
@@ -315,7 +325,7 @@ abstract final class AppTheme {
         textColor: t.surface,
       ),
       checkboxTheme: CheckboxThemeData(
-        shape: _square,
+        shape: AppRadius.xsShape,
         side: BorderSide(color: t.muted, width: 1.5),
         fillColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected) ? t.primary : null,
@@ -329,9 +339,8 @@ abstract final class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? t.primaryForeground
-              : t.muted,
+          (s) =>
+              s.contains(WidgetState.selected) ? t.primaryForeground : t.muted,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected) ? t.primary : t.background,
@@ -351,7 +360,7 @@ abstract final class AppTheme {
         linearTrackColor: t.border,
         circularTrackColor: Colors.transparent,
         linearMinHeight: 4,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppRadius.pill,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: t.surface,
@@ -359,7 +368,7 @@ abstract final class AppTheme {
         elevation: 0,
         height: 64,
         indicatorColor: t.background,
-        indicatorShape: RoundedRectangleBorder(side: borderSide),
+        indicatorShape: StadiumBorder(side: borderSide),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (s) => text.labelMedium!.copyWith(
@@ -389,11 +398,11 @@ abstract final class AppTheme {
         backgroundColor: t.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 2,
-        shape: RoundedRectangleBorder(side: borderSide),
+        shape: AppRadius.outlined(AppRadius.lg, t.border),
         headerBackgroundColor: t.surface,
         headerForegroundColor: t.foreground,
         dividerColor: t.border,
-        dayShape: const WidgetStatePropertyAll(_square),
+        dayShape: const WidgetStatePropertyAll(CircleBorder()),
         dayForegroundColor: WidgetStateProperty.resolveWith((s) {
           if (s.contains(WidgetState.disabled)) {
             return t.muted.withValues(alpha: 0.5);
@@ -413,7 +422,7 @@ abstract final class AppTheme {
           (s) => s.contains(WidgetState.selected) ? t.primary : null,
         ),
         todayBorder: BorderSide(color: t.foreground),
-        yearShape: const WidgetStatePropertyAll(_square),
+        yearShape: const WidgetStatePropertyAll(StadiumBorder()),
         yearForegroundColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
               ? t.primaryForeground
@@ -425,7 +434,7 @@ abstract final class AppTheme {
         rangeSelectionBackgroundColor: t.background,
         rangePickerBackgroundColor: t.surface,
         rangePickerSurfaceTintColor: Colors.transparent,
-        rangePickerShape: const RoundedRectangleBorder(),
+        rangePickerShape: AppRadius.lgShape,
         rangePickerHeaderBackgroundColor: t.surface,
         rangePickerHeaderForegroundColor: t.foreground,
         confirmButtonStyle: TextButton.styleFrom(foregroundColor: t.foreground),
@@ -433,9 +442,9 @@ abstract final class AppTheme {
       ),
       timePickerTheme: TimePickerThemeData(
         backgroundColor: t.surface,
-        shape: RoundedRectangleBorder(side: borderSide),
-        hourMinuteShape: _square,
-        dayPeriodShape: _square,
+        shape: AppRadius.outlined(AppRadius.lg, t.border),
+        hourMinuteShape: _control,
+        dayPeriodShape: _control,
         dayPeriodBorderSide: borderSide,
         hourMinuteColor: t.background,
         hourMinuteTextColor: t.foreground,
@@ -452,7 +461,9 @@ abstract final class AppTheme {
         elevation: const WidgetStatePropertyAll(0),
         backgroundColor: WidgetStatePropertyAll(t.background),
         surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(side: borderSide)),
+        shape: WidgetStatePropertyAll(
+          AppRadius.outlined(AppRadius.md, t.border),
+        ),
         textStyle: WidgetStatePropertyAll(text.bodyMedium),
         hintStyle: WidgetStatePropertyAll(
           text.bodyMedium!.copyWith(color: t.muted),

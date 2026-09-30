@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -79,8 +80,10 @@ class StepImagesWidget extends StatelessWidget {
               return Material(
                 color: context.tokens.background,
                 shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.md,
                   side: BorderSide(color: context.tokens.border),
                 ),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () => _addImages(context),
                   child: Column(
@@ -100,7 +103,12 @@ class StepImagesWidget extends StatelessWidget {
             }
             return Stack(
               children: [
-                Positioned.fill(child: _Thumbnail(source: images[i])),
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: AppRadius.md,
+                    child: _Thumbnail(source: images[i]),
+                  ),
+                ),
                 Positioned(
                   top: 4,
                   right: 4,
@@ -109,8 +117,10 @@ class StepImagesWidget extends StatelessWidget {
                     child: Material(
                       color: context.tokens.surface,
                       shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.sm,
                         side: BorderSide(color: context.tokens.border),
                       ),
+                      clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: () => _removeImage(images, i),
                         child: SizedBox.square(
@@ -135,7 +145,10 @@ class StepImagesWidget extends StatelessWidget {
                         horizontal: 6,
                         vertical: 2,
                       ),
-                      color: context.tokens.overlay.withValues(alpha: 0.7),
+                      decoration: BoxDecoration(
+                        color: context.tokens.overlay.withValues(alpha: 0.7),
+                        borderRadius: AppRadius.pill,
+                      ),
                       child: Text(
                         'Couverture',
                         style: context.text.labelMedium!.copyWith(

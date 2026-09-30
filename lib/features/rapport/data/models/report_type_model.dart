@@ -2,7 +2,11 @@
 // derrière côté API : aucune donnée d'intervention ni de prestataire pour la
 // maintenance, aucun marqueur de déductibilité pour le fiscal. Retirés plutôt
 // que branchés sur des champs qui n'existent pas.
-enum ReportType { financial, performance, reservations }
+//
+// `police` est le registre des personnes hébergées remis à la Brigade
+// mondaine : un formulaire administratif, en paysage, que le propriétaire
+// imprime tel quel.
+enum ReportType { financial, performance, reservations, police }
 
 extension ReportTypeExt on ReportType {
   String get label {
@@ -13,6 +17,8 @@ extension ReportTypeExt on ReportType {
         return 'Performance & Occupation';
       case ReportType.reservations:
         return 'Relevé des Réservations';
+      case ReportType.police:
+        return 'Rapport police';
     }
   }
 
@@ -24,6 +30,8 @@ extension ReportTypeExt on ReportType {
         return 'Taux d\'occupation, RevPAR, nuitées';
       case ReportType.reservations:
         return 'Historique locataires, paiements';
+      case ReportType.police:
+        return 'Liste des personnes hébergées, pour la police';
     }
   }
 
@@ -35,6 +43,8 @@ extension ReportTypeExt on ReportType {
         return 'bar_chart';
       case ReportType.reservations:
         return 'people';
+      case ReportType.police:
+        return 'shield';
     }
   }
 }
@@ -49,6 +59,8 @@ extension ReportTypeApiExt on ReportType {
         return 'performance';
       case ReportType.reservations:
         return 'reservations';
+      case ReportType.police:
+        return 'police';
     }
   }
 }

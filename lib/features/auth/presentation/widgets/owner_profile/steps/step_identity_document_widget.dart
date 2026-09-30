@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_option_tile.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
@@ -149,6 +150,7 @@ class _UploadField extends StatelessWidget {
         Material(
           color: t.background,
           shape: RoundedRectangleBorder(
+            borderRadius: AppRadius.md,
             side: BorderSide(color: _hasImage ? t.primary : t.border),
           ),
           clipBehavior: Clip.antiAlias,
@@ -199,7 +201,11 @@ class _UploadField extends StatelessWidget {
       children: [
         Icon(LucideIcons.cloudUpload, size: 24, color: context.tokens.muted),
         const SizedBox(height: 8),
-        Text(label, textAlign: TextAlign.center, style: context.text.titleSmall),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: context.text.titleSmall,
+        ),
         const SizedBox(height: 2),
         Text(
           'Photo nette, document entier visible',

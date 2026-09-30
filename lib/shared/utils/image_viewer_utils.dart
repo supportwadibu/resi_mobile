@@ -62,6 +62,8 @@ class _FullScreenImage extends StatelessWidget {
               message: 'Fermer',
               child: Material(
                 color: t.overlay.withValues(alpha: 0.5),
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () => Navigator.pop(context),
                   child: SizedBox.square(

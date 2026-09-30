@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
@@ -134,7 +135,7 @@ class PropertyCard extends StatelessWidget {
     final t = context.tokens;
     return Material(
       color: t.surface,
-      shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+      shape: AppRadius.outlined(AppRadius.md, t.border),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -159,8 +160,8 @@ class PropertyCard extends StatelessWidget {
                   child: _DeleteButton(onTap: onDelete!),
                 ),
               Positioned(
-                left: 0,
-                bottom: 0,
+                left: 8,
+                bottom: 8,
                 child: _PriceBadge(price: data.price),
               ),
             ],
@@ -228,7 +229,10 @@ class _PriceBadge extends StatelessWidget {
     final t = context.tokens;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      color: t.overlay.withValues(alpha: 0.7),
+      decoration: BoxDecoration(
+        color: t.overlay.withValues(alpha: 0.7),
+        borderRadius: AppRadius.pill,
+      ),
       child: _PriceText(price: price, color: t.onOverlay),
     );
   }
@@ -326,7 +330,8 @@ class _DeleteButton extends StatelessWidget {
       message: 'Supprimer',
       child: Material(
         color: t.surface,
-        shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+        shape: AppRadius.outlined(AppRadius.sm, t.border),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: SizedBox.square(

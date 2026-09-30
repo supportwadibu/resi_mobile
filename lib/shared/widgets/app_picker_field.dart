@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Champ qui ouvre un sélecteur (date, période, liste) au lieu d'une saisie :
@@ -33,7 +34,8 @@ class AppPickerField extends StatelessWidget {
     final hasValue = value != null && value!.isNotEmpty;
     final field = Material(
       color: t.background,
-      shape: RoundedRectangleBorder(side: BorderSide(color: t.border)),
+      shape: AppRadius.outlined(AppRadius.md, t.border),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(

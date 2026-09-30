@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
@@ -152,7 +153,6 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   int _livingRooms = 1;
   int _kitchens = 1;
   int _parkingSpaces = 0;
-  Furnishing? _furnishing;
 
   // ── Étape 5 : commodités
   Set<Amenity> _amenities = {};
@@ -186,7 +186,6 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     _livingRooms = property.details.livingRooms;
     _kitchens = property.details.kitchens;
     _parkingSpaces = property.details.parkingSpaces;
-    _furnishing = property.details.furnishing;
     _amenities = {...property.amenities};
     // Copie modifiable : l'étape Photos réordonne et retire en place.
     _images = [...property.images];
@@ -447,7 +446,6 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     floorNumber: _original?.details.floorNumber,
     totalFloors: _original?.details.totalFloors,
     yearBuilt: _original?.details.yearBuilt,
-    furnishing: _furnishing,
   );
 
   PropertyPricing get _pricing => PropertyPricing(
@@ -709,14 +707,12 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         livingRooms: _livingRooms,
         kitchens: _kitchens,
         parkingSpaces: _parkingSpaces,
-        furnishing: _furnishing,
         onSurfaceChanged: (v) => _surfaceArea = v,
         onBedroomsChanged: (v) => setState(() => _bedrooms = v),
         onBathroomsChanged: (v) => setState(() => _bathrooms = v),
         onLivingRoomsChanged: (v) => setState(() => _livingRooms = v),
         onKitchensChanged: (v) => setState(() => _kitchens = v),
         onParkingChanged: (v) => setState(() => _parkingSpaces = v),
-        onFurnishingChanged: (v) => setState(() => _furnishing = v),
       ),
       4 => StepAmenitiesWidget(
         selected: _amenities,
@@ -766,8 +762,10 @@ class _SummaryTile extends StatelessWidget {
     return Material(
       color: t.surface,
       shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.md,
         side: BorderSide(color: isTouched ? t.accentAmber : t.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(

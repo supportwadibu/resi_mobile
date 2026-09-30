@@ -1,3 +1,7 @@
+import 'client_identity.dart';
+
+export 'client_identity.dart';
+
 /// Statut d'une fiche du carnet, aligné sur `CLIENT_STATUSES` du serveur.
 enum ClientStatus {
   active('active', 'Actif'),
@@ -76,6 +80,7 @@ class ClientModel {
     this.status = ClientStatus.active,
     this.documentFrontUrl,
     this.documentBackUrl,
+    this.identity = ClientIdentity.empty,
   });
 
   final String id;
@@ -103,6 +108,9 @@ class ClientModel {
   final String? documentFrontUrl;
   final String? documentBackUrl;
 
+  /// Identité du registre de police, vide tant qu'elle n'est pas saisie.
+  final ClientIdentity identity;
+
   factory ClientModel.fromJson(Map<String, dynamic> json) {
     return ClientModel(
       id: json['id'] as String? ?? '',
@@ -120,6 +128,7 @@ class ClientModel {
       status: ClientStatus.fromCode(json['status'] as String?),
       documentFrontUrl: json['document_front_url'] as String?,
       documentBackUrl: json['document_back_url'] as String?,
+      identity: ClientIdentity.fromJson(json),
     );
   }
 
@@ -136,6 +145,7 @@ class ClientModel {
     ClientStatus? status,
     String? documentFrontUrl,
     String? documentBackUrl,
+    ClientIdentity? identity,
   }) {
     return ClientModel(
       id: id,
@@ -151,6 +161,7 @@ class ClientModel {
       status: status ?? this.status,
       documentFrontUrl: documentFrontUrl ?? this.documentFrontUrl,
       documentBackUrl: documentBackUrl ?? this.documentBackUrl,
+      identity: identity ?? this.identity,
     );
   }
 

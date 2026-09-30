@@ -27,6 +27,10 @@ class ReportFormState {
   final List<ReportResidenceOption> residences;
   final bool isLoadingResidences;
 
+  /// Commune imprimée en tête du rapport police, saisie à l’édition : aucune
+  /// donnée ne la porte, les résidences n’ayant qu’une ville.
+  final String commune;
+
   const ReportFormState({
     this.selectedType = ReportType.financial,
     this.selectedResidenceId = 'all',
@@ -38,6 +42,7 @@ class ReportFormState {
     this.errorMessage,
     this.residences = const [allResidencesOption],
     this.isLoadingResidences = false,
+    this.commune = '',
   });
 
   /// [clearResult] et [clearError] effacent un champ que `copyWith` ne peut
@@ -57,6 +62,7 @@ class ReportFormState {
     bool clearError = false,
     List<ReportResidenceOption>? residences,
     bool? isLoadingResidences,
+    String? commune,
   }) {
     return ReportFormState(
       selectedType: selectedType ?? this.selectedType,
@@ -69,6 +75,7 @@ class ReportFormState {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       residences: residences ?? this.residences,
       isLoadingResidences: isLoadingResidences ?? this.isLoadingResidences,
+      commune: commune ?? this.commune,
     );
   }
 

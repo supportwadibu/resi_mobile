@@ -72,13 +72,6 @@ class ReservationRepository {
     }
   }
 
-  /// Première page seulement — conservé pour les écrans qui n'exploitent pas
-  /// encore la pagination.
-  Future<List<ReservationModel>> getReservationList() async {
-    final page = await getReservationPage();
-    return page.items;
-  }
-
   /// Chiffres du tableau de bord : occupation du mois, séjours à venir et en
   /// cours, revenu du mois rapporté au précédent.
   Future<BookingStatsModel> getStats() async {
@@ -243,6 +236,51 @@ class ReservationRepository {
           // `?` plutôt qu'un `if`, comme à la création : sans la clé, le
           // serveur réajuste sur le montant attendu.
           'received_amount': ?receivedAmount,
+        },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Ressaisit une réservation comptoir non terminée.
+  ///
+  /// La réservation part **entière** (`PUT`) : le serveur recalcule montant
+  /// attendu et chevauchement sur l'ensemble, et un champ absent ne dirait
+  /// pas s'il est inchangé ou oublié. Le client, lui, ne change pas : il est
+  /// figé dans l'instantané de la réservation.
+  ///
+  /// [agreedAmount] `null` : le serveur applique le montant attendu.
+  /// [message] vide efface le message.
+  ///
+  /// Comme la prolongation, la modification n'est pas mise en file hors
+  /// réseau : elle porte sur un séjour que le serveur connaît déjà, et un 409
+  /// est un conflit de période à arbitrer sur place.
+  Future<ReservationModel> update(
+    String id, {
+    required String propertyId,
+    required StayType stayType,
+    required DateTime checkInAt,
+    required DateTime checkOutAt,
+    double? agreedAmount,
+    required double depositAmount,
+    required String message,
+  }) async {
+    try {
+      final response = await _dio.put(
+        ApiEndpoints.booking(_role.value, id),
+        data: {
+          'property_id': propertyId,
+          'stay_type': stayType.code,
+          'check_in_at': checkInAt.toUtc().toIso8601String(),
+          'check_out_at': checkOutAt.toUtc().toIso8601String(),
+          'received_amount': ?agreedAmount,
+          'deposit_amount': depositAmount,
+          'message': message.trim().isEmpty ? null : message.trim(),
         },
       );
       final data = (response.data as Map<String, dynamic>)['data'];

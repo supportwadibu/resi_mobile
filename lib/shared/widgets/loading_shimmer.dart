@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 /// Bloc gris animé, brique de base des squelettes de chargement.
@@ -18,7 +19,10 @@ class LoadingShimmer extends StatelessWidget {
     return Container(
       height: height ?? 16,
       width: width ?? double.infinity,
-      color: context.tokens.border,
+      decoration: BoxDecoration(
+        color: context.tokens.border,
+        borderRadius: AppRadius.xs,
+      ),
     );
   }
 }

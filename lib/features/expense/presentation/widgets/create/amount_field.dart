@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +22,7 @@ class AmountField extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: t.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: t.border),
       ),
       child: Column(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 
@@ -35,8 +36,12 @@ class ResidenceDropdown extends StatelessWidget {
       isExpanded: true,
       hint: Text(hint ?? 'Choisir un bien', style: context.mutedText),
       style: context.text.bodyMedium,
-      icon: Icon(LucideIcons.chevronDown, size: 16, color: context.tokens.muted),
-      borderRadius: BorderRadius.zero,
+      icon: Icon(
+        LucideIcons.chevronDown,
+        size: 16,
+        color: context.tokens.muted,
+      ),
+      borderRadius: AppRadius.md,
       dropdownColor: context.tokens.surface,
       items: residences
           .map(

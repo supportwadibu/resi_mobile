@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Variantes du bouton, miroir de `Button` du backoffice.
@@ -82,7 +83,9 @@ class AppButton extends StatelessWidget {
       ),
       side: side == null ? null : WidgetStatePropertyAll(side),
       elevation: const WidgetStatePropertyAll(0),
-      shape: const WidgetStatePropertyAll(RoundedRectangleBorder()),
+      shape: WidgetStatePropertyAll(
+        isSmall ? AppRadius.smShape : AppRadius.mdShape,
+      ),
       padding: WidgetStatePropertyAll(
         isSmall
             ? const EdgeInsets.symmetric(horizontal: 10, vertical: 6)

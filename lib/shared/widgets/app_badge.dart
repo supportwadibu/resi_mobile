@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Pastille de statut. Le libellé porte le sens : la couleur ne fait que le
@@ -25,6 +26,7 @@ class AppBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: tone == AppAccent.neutral ? null : t.accentSoft(tone),
         border: tone == AppAccent.neutral ? Border.all(color: t.border) : null,
+        borderRadius: AppRadius.pill,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

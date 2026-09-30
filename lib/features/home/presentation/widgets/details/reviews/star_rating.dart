@@ -23,9 +23,17 @@ class StarRating extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 0; i < fullStars; i++)
-          Icon(LucideIcons.star, color: context.tokens.accentAmber, size: starSize),
+          Icon(
+            LucideIcons.star,
+            color: context.tokens.accentAmber,
+            size: starSize,
+          ),
         if (hasHalfStar)
-          Icon(LucideIcons.starHalf, color: context.tokens.accentAmber, size: starSize),
+          Icon(
+            LucideIcons.starHalf,
+            color: context.tokens.accentAmber,
+            size: starSize,
+          ),
         for (int i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++)
           Icon(
             LucideIcons.star,

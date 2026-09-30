@@ -17,6 +17,7 @@ class ReportTypeSelector extends StatelessWidget {
     ReportType.financial: LucideIcons.trendingUp,
     ReportType.performance: LucideIcons.chartColumn,
     ReportType.reservations: LucideIcons.users,
+    ReportType.police: LucideIcons.shield,
   };
 
   @override

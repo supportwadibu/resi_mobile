@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
@@ -11,7 +13,12 @@ import '../../business_logic/client_detail_cubit.dart';
 import '../../business_logic/client_detail_state.dart';
 import '../../data/models/client_model.dart';
 import '../../data/models/identity_document_model.dart';
+import '../../data/services/id_card_reading.dart';
+import '../../data/services/id_scan_service.dart';
+import '../widgets/create/client_identity_controller.dart';
+import '../widgets/create/client_identity_fields.dart';
 import '../widgets/create/client_text_field.dart';
+import '../widgets/create/id_scan_button.dart';
 import '../widgets/create/form_section_label.dart';
 import '../widgets/create/identity_document_picker.dart';
 import '../widgets/create/submit_client_button.dart';
@@ -40,9 +47,9 @@ class _EditClientScreenState extends State<EditClientScreen> {
   late final TextEditingController _fullName;
   late final TextEditingController _phone;
   late final TextEditingController _whatsapp;
-  late final TextEditingController _documentNumber;
 
-  late ClientIdDocumentType? _documentType;
+  /// Pièce et identité, préremplissables par la lecture de la pièce.
+  late final ClientIdentityController _identity;
 
   /// Pièces nouvellement choisies, à téléverser à l'enregistrement.
   ///
@@ -59,10 +66,11 @@ class _EditClientScreenState extends State<EditClientScreen> {
     _fullName = TextEditingController(text: widget.client.fullName);
     _phone = TextEditingController(text: widget.client.phone);
     _whatsapp = TextEditingController(text: widget.client.whatsapp ?? '');
-    _documentNumber = TextEditingController(
-      text: widget.client.idDocumentNumber ?? '',
+    _identity = ClientIdentityController(
+      documentType: widget.client.idDocumentType,
+      documentNumber: widget.client.idDocumentNumber,
+      identity: widget.client.identity,
     );
-    _documentType = widget.client.idDocumentType;
   }
 
   @override
@@ -70,8 +78,41 @@ class _EditClientScreenState extends State<EditClientScreen> {
     _fullName.dispose();
     _phone.dispose();
     _whatsapp.dispose();
-    _documentNumber.dispose();
+    _identity.dispose();
     super.dispose();
+  }
+
+  /// Reporte une lecture de la pièce. Le nom d'une fiche existante n'est
+  /// remplacé que par un scan explicite : il figure déjà sur les
+  /// réservations, et une photo déposée ne doit pas le réécrire en douce.
+  void _applyReading(IdCardReading reading, {required bool overwrite}) {
+    setState(() {
+      _identity.apply(reading, overwrite: overwrite);
+      final name = reading.fullName;
+      if (name != null && overwrite) _fullName.text = name;
+    });
+  }
+
+  /// Lit une face déposée, en arrière-plan : son échec ne se signale pas.
+  Future<void> _readDocument(File file) async {
+    final reading = await const IdScanService().scan(file.path);
+    if (reading == null || !mounted) return;
+    _applyReading(reading, overwrite: false);
+  }
+
+  /// L'identité part entière dès qu'un de ses champs a bougé : aucun contrôle
+  /// de doublon ne pèse sur elle, et l'envoyer d'un bloc permet d'effacer un
+  /// champ vidé.
+  ClientIdentity? get _changedIdentity {
+    final before = widget.client.identity;
+    final after = _identity.identity;
+    final changed =
+        before.birthDate != after.birthDate ||
+        before.birthPlace != after.birthPlace ||
+        before.nationality != after.nationality ||
+        before.address != after.address ||
+        before.idDocumentIssuedAt != after.idDocumentIssuedAt;
+    return changed ? after : null;
   }
 
   bool get _nameValid => _fullName.text.trim().length >= 2;
@@ -100,10 +141,14 @@ class _EditClientScreenState extends State<EditClientScreen> {
       fullName: _changed(_fullName, client.fullName),
       phone: _changed(_phone, client.phone),
       whatsapp: _changed(_whatsapp, client.whatsapp),
-      idDocumentType: _documentType == client.idDocumentType
+      idDocumentType: _identity.documentType == client.idDocumentType
           ? null
-          : _documentType,
-      idDocumentNumber: _changed(_documentNumber, client.idDocumentNumber),
+          : _identity.documentType,
+      idDocumentNumber: _changed(
+        _identity.documentNumber,
+        client.idDocumentNumber,
+      ),
+      identity: _changedIdentity,
       documentFrontPath: _documents[DocumentSlot.recto]?.file.path,
       documentBackPath: _documents[DocumentSlot.verso]?.file.path,
     );
@@ -176,23 +221,19 @@ class _EditClientScreenState extends State<EditClientScreen> {
               ),
               const SizedBox(height: 20),
 
-              const FormSectionLabel(text: "Type de pièce"),
-              _DocumentTypeSelector(
-                selected: _documentType,
-                onSelect: (type) => setState(() => _documentType = type),
-              ),
-              const SizedBox(height: 20),
-
-              const FormSectionLabel(text: "Numéro de pièce"),
-              ClientTextField(
-                hint: 'Ex : CI-0012345678',
-                prefixIcon: LucideIcons.idCard,
-                controller: _documentNumber,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 20),
-
               const FormSectionLabel(text: "Pièce d'identité"),
+              IdScanButton(
+                onScanned: (path, reading) {
+                  setState(() {
+                    _documents[DocumentSlot.verso] = IdentityDocumentModel(
+                      slot: DocumentSlot.verso,
+                      file: File(path),
+                    );
+                  });
+                  if (reading != null) _applyReading(reading, overwrite: true);
+                },
+              ),
+              const SizedBox(height: 12),
               // Les pièces déjà déposées restent en place tant qu'aucune
               // nouvelle n'est choisie : le serveur ne réécrit que ce qu'il
               // reçoit.
@@ -200,64 +241,24 @@ class _EditClientScreenState extends State<EditClientScreen> {
                 const _ExistingDocumentsNotice(),
               IdentityDocumentPicker(
                 documents: _documents,
-                onAdd: (slot, file) => setState(() {
-                  _documents[slot] = IdentityDocumentModel(
-                    slot: slot,
-                    file: file,
-                  );
-                }),
+                onAdd: (slot, file) {
+                  setState(() {
+                    _documents[slot] = IdentityDocumentModel(
+                      slot: slot,
+                      file: file,
+                    );
+                  });
+                  if (slot != DocumentSlot.photo) _readDocument(file);
+                },
                 onRemove: (slot) => setState(() => _documents.remove(slot)),
               ),
+              const SizedBox(height: 20),
+              ClientIdentityFields(controller: _identity),
               const SizedBox(height: 32),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DocumentTypeSelector extends StatelessWidget {
-  const _DocumentTypeSelector({required this.selected, required this.onSelect});
-
-  final ClientIdDocumentType? selected;
-  final ValueChanged<ClientIdDocumentType> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: ClientIdDocumentType.values
-          .map((type) {
-            final isSelected = type == selected;
-            return GestureDetector(
-              onTap: () => onSelect(type),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? context.tokens.foreground
-                      : context.tokens.surface,
-                  border: Border.all(
-                    color: isSelected
-                        ? context.tokens.foreground
-                        : context.tokens.border,
-                  ),
-                ),
-                child: Text(
-                  type.label,
-                  style: context.text.titleSmall!.copyWith(
-                    color: isSelected ? context.tokens.background : null,
-                  ),
-                ),
-              ),
-            );
-          })
-          .toList(growable: false),
     );
   }
 }

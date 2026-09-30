@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 import '../../../../property/data/models/property_model.dart';
@@ -35,6 +36,7 @@ class StayTierHints extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Column(
@@ -81,6 +83,7 @@ class _TierChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: active ? context.tokens.accentGreenSoft : null,
+        borderRadius: AppRadius.pill,
         border: active ? null : Border.all(color: context.tokens.border),
       ),
       child: Row(

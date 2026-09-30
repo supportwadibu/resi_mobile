@@ -3,8 +3,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -56,6 +58,24 @@ class DetailsReservationScreen extends StatelessWidget {
 
     if (changed == true) router.maybePop(true);
   }
+
+  /// Ouvre la modification, puis referme la fiche si la réservation a changé —
+  /// même contrat que la prolongation : la fiche ne sait pas se relire.
+  Future<void> _edit(BuildContext context) async {
+    final router = context.router;
+
+    final changed = await router.push<bool>(
+      EditReservationRoute(reservation: reservation),
+    );
+
+    if (changed == true) router.maybePop(true);
+  }
+
+  /// Seule une réservation comptoir non terminée se modifie : le serveur
+  /// refuse de réécrire un séjour clos ou une réservation payée en ligne.
+  bool get _isEditable =>
+      reservation.status.isActive &&
+      reservation.source == ReservationSource.offline;
 
   /// Demande si le séjour a été utilisé en entier avant de clôturer : le geste
   /// est sans retour, le serveur refusant toute prolongation d'un séjour
@@ -156,6 +176,7 @@ class DetailsReservationScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: context.tokens.surface,
+            borderRadius: AppRadius.md,
             border: Border.all(color: context.tokens.border),
           ),
           child: const AppLoader(),
@@ -228,8 +249,42 @@ class DetailsReservationScreen extends StatelessWidget {
       DetailItem('Durée', reservation.durationLabel),
     ];
 
+    // Les libellés disent ce que les champs portent : `totalAmount` est le
+    // prix convenu du séjour, pas l'argent reçu, et la remise est l'écart au
+    // tarif. « Montant total 15 000 F / Remise − 205 000 F », sans le tarif,
+    // ne se lisait pas.
+    //
+    // En ligne, la remise vient d'un code promo et `expected_amount` n'existe
+    // pas — le modèle le replie sur le total : pas de tarif grille à montrer.
+    final isCounter = reservation.source == ReservationSource.offline;
     final amounts = <DetailItem>[
-      DetailItem('Montant total', formatAmount(reservation.totalAmount)),
+      if (isCounter && reservation.discountAmount > 0)
+        DetailItem(
+          'booking_amounts.grid_price'.tr(),
+          formatAmount(reservation.expectedAmount),
+        ),
+      if (reservation.discountAmount > 0)
+        DetailItem(
+          (isCounter
+                  ? 'booking_amounts.negotiated_discount'
+                  : 'booking_amounts.promo_discount')
+              .tr(),
+          '- ${formatAmount(reservation.discountAmount)}',
+        ),
+      DetailItem(
+        'booking_amounts.stay_amount'.tr(),
+        formatAmount(reservation.totalAmount),
+      ),
+      if (reservation.depositAmount > 0) ...[
+        DetailItem(
+          'booking_amounts.deposit_label'.tr(),
+          formatAmount(reservation.depositAmount),
+        ),
+        DetailItem(
+          'booking_amounts.balance_due'.tr(),
+          formatAmount(reservation.balanceDue),
+        ),
+      ],
       // Séjour écourté : les dates et le montant ci-dessus portent l'usage
       // réel, la vente d'origine reste lisible pour un litige.
       if (reservation.plannedTotalAmount case final planned?)
@@ -239,8 +294,6 @@ class DetailsReservationScreen extends StatelessWidget {
           'stay_checkout.refunded'.tr(),
           formatAmount(reservation.refundedAmount),
         ),
-      if (reservation.discountAmount > 0)
-        DetailItem('Remise', '- ${formatAmount(reservation.discountAmount)}'),
       // Commission due à l'apporteur, au taux figé à la réservation et
       // recalculée par le serveur quand le montant du séjour change.
       if (reservation.referrer case final referrer?) ...[
@@ -260,14 +313,30 @@ class DetailsReservationScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: const AppTopBar(title: 'Réservation'),
+      appBar: AppTopBar(
+        title: 'Réservation',
+        actions: [
+          if (_isEditable)
+            AppIconButton(
+              icon: LucideIcons.pencil,
+              label: 'booking_edit.action'.tr(),
+              onPressed: () => _edit(context),
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           DecoratedBox(
             position: DecorationPosition.foreground,
-            decoration: BoxDecoration(border: Border.all(color: t.border)),
-            child: _Cover(image: property?.image),
+            decoration: BoxDecoration(
+              border: Border.all(color: t.border),
+              borderRadius: AppRadius.md,
+            ),
+            child: ClipRRect(
+              borderRadius: AppRadius.md,
+              child: _Cover(image: property?.image),
+            ),
           ),
           const SizedBox(height: 16),
           Row(

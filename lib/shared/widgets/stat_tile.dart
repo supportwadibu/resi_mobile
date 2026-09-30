@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/resi_tokens.dart';
 import 'page_header.dart';
@@ -235,7 +236,10 @@ class Breakdown extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(row.label, style: context.text.bodyMedium),
+                          child: Text(
+                            row.label,
+                            style: context.text.bodyMedium,
+                          ),
                         ),
                         Text(
                           row.display ?? '${row.count}',
@@ -246,23 +250,28 @@ class Breakdown extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    SizedBox(
-                      height: 4,
-                      child: LayoutBuilder(
-                        builder: (context, box) => Stack(
-                          children: [
-                            Container(color: t.background),
-                            Container(
-                              width: total > 0
-                                  ? box.maxWidth * (row.count / total)
-                                  : 0,
-                              color: row.tone == null
-                                  ? t.primary
-                                  : row.tone == AppAccent.neutral
-                                  ? t.muted
-                                  : t.accent(row.tone!),
-                            ),
-                          ],
+                    // Rail en pilule : le détourage arrondit aussi le bout
+                    // du remplissage.
+                    ClipRRect(
+                      borderRadius: AppRadius.pill,
+                      child: SizedBox(
+                        height: 4,
+                        child: LayoutBuilder(
+                          builder: (context, box) => Stack(
+                            children: [
+                              Container(color: t.background),
+                              Container(
+                                width: total > 0
+                                    ? box.maxWidth * (row.count / total)
+                                    : 0,
+                                color: row.tone == null
+                                    ? t.primary
+                                    : row.tone == AppAccent.neutral
+                                    ? t.muted
+                                    : t.accent(row.tone!),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

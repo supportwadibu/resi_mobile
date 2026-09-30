@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
-import 'package:resi_africa/shared/widgets/app_sheet.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:auto_route/auto_route.dart';
@@ -25,9 +25,11 @@ const _premiumActions = <String, PremiumFeature>{
   'clients': PremiumFeature.clients,
 };
 
-/// Accès aux écrans de gestion, en liste : chaque entrée porte l'icône de sa
-/// section et une ligne d'explication. Une grille de pavés colorés faisait
-/// d'une simple navigation une série de statistiques.
+/// Accès aux écrans de gestion, en cartes deux par ligne : chaque entrée porte
+/// l'icône de sa section et une ligne d'explication.
+///
+/// Pastilles neutres, sans accent : une grille de pavés colorés faisait d'une
+/// simple navigation une série de statistiques.
 class ActionGrid extends StatelessWidget {
   const ActionGrid({super.key});
 
@@ -80,22 +82,42 @@ class ActionGrid extends StatelessWidget {
 
     return BlocBuilder<PlanCubit, PlanState>(
       bloc: sl<PlanCubit>(),
-      builder: (context, plan) => AppCard(
-        padding: EdgeInsets.zero,
-        child: Column(
+      builder: (context, plan) {
+        Widget card(StatsAction action) => ActionCard(
+          action: action,
+          locked: plan.access.isFull ? null : _premiumActions[action.key],
+        );
+
+        return Column(
           children: [
-            for (var i = 0; i < actions.length; i++) ...[
-              if (i > 0) const Divider(height: 1),
-              ActionCard(
-                action: actions[i],
-                locked: plan.access.isFull ? null : _premiumActions[actions[i].key],
+            for (var i = 0; i < actions.length; i += 2) ...[
+              if (i > 0) const SizedBox(height: _gap),
+              // Même hauteur pour les deux cartes d'une rangée : une
+              // description plus longue d'un côté décalait sinon les bords.
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: card(actions[i])),
+                    const SizedBox(width: _gap),
+                    // Une entrée seule garde la demi-largeur : étirée, elle
+                    // romprait la grille.
+                    Expanded(
+                      child: i + 1 < actions.length
+                          ? card(actions[i + 1])
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
               ),
             ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
+
+  static const _gap = 12.0;
 }
 
 class ActionCard extends StatelessWidget {
@@ -107,24 +129,59 @@ class ActionCard extends StatelessWidget {
   /// refuserait.
   final PremiumFeature? locked;
 
+  void _open(BuildContext context) {
+    if (locked case final feature?) {
+      showLockedFeatureSheet(context, feature);
+      return;
+    }
+    if (action.route != null) {
+      context.pushRoute(action.route!);
+    } else {
+      AppToast.info('Bientôt disponible', context: context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppSheetAction(
-      icon: action.icon,
-      label: action.label,
-      description: action.description,
-      trailing: locked != null ? const PremiumBadge() : null,
-      onTap: () {
-        if (locked case final feature?) {
-          showLockedFeatureSheet(context, feature);
-          return;
-        }
-        if (action.route != null) {
-          context.pushRoute(action.route!);
-        } else {
-          AppToast.info('Bientôt disponible', context: context);
-        }
-      },
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      onTap: () => _open(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconChip(icon: action.icon),
+              const Spacer(),
+              if (locked != null)
+                const Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.topRight,
+                    child: PremiumBadge(),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            action.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.titleSmall!.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            action.description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }

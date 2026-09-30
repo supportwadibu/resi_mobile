@@ -23,26 +23,6 @@ enum PropertyType {
   }
 }
 
-/// Niveau d'ameublement.
-enum Furnishing {
-  unfurnished('unfurnished', 'Non meublé'),
-  semiFurnished('semi_furnished', 'Semi-meublé'),
-  furnished('furnished', 'Meublé');
-
-  const Furnishing(this.code, this.label);
-
-  final String code;
-  final String label;
-
-  static Furnishing? fromCode(String? code) {
-    if (code == null) return null;
-    for (final value in Furnishing.values) {
-      if (value.code == code) return value;
-    }
-    return null;
-  }
-}
-
 /// Statut d'une annonce côté serveur.
 enum PropertyStatus {
   draft('draft', 'Brouillon'),
@@ -121,7 +101,6 @@ class PropertyDetails {
     this.floorNumber,
     this.totalFloors,
     this.yearBuilt,
-    this.furnishing,
   });
 
   /// Surface habitable en m². Optionnelle : tous les propriétaires ne la
@@ -136,7 +115,6 @@ class PropertyDetails {
   final int? floorNumber;
   final int? totalFloors;
   final int? yearBuilt;
-  final Furnishing? furnishing;
 
   factory PropertyDetails.fromJson(Map<String, dynamic> json) {
     return PropertyDetails(
@@ -149,7 +127,6 @@ class PropertyDetails {
       floorNumber: (json['floor_number'] as num?)?.toInt(),
       totalFloors: (json['total_floors'] as num?)?.toInt(),
       yearBuilt: (json['year_built'] as num?)?.toInt(),
-      furnishing: Furnishing.fromCode(json['furnishing'] as String?),
     );
   }
 
@@ -165,7 +142,6 @@ class PropertyDetails {
     if (floorNumber != null) 'floor_number': floorNumber,
     if (totalFloors != null) 'total_floors': totalFloors,
     if (yearBuilt != null) 'year_built': yearBuilt,
-    if (furnishing != null) 'furnishing': furnishing!.code,
   };
 }
 

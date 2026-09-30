@@ -3,11 +3,10 @@ import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter/services.dart';
-import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/shared/widgets/app_icon_button.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
-/// Caractéristiques du bien : surface, pièces et ameublement.
+/// Caractéristiques du bien : surface et pièces.
 ///
 /// Le décompte des pièces est exigé par l'API. La surface, elle, est
 /// facultative : peu de propriétaires la connaissent au mètre près, et
@@ -21,14 +20,12 @@ class StepDetailsWidget extends StatefulWidget {
     required this.livingRooms,
     required this.kitchens,
     required this.parkingSpaces,
-    required this.furnishing,
     required this.onSurfaceChanged,
     required this.onBedroomsChanged,
     required this.onBathroomsChanged,
     required this.onLivingRoomsChanged,
     required this.onKitchensChanged,
     required this.onParkingChanged,
-    required this.onFurnishingChanged,
   });
 
   final double? surfaceArea;
@@ -37,7 +34,6 @@ class StepDetailsWidget extends StatefulWidget {
   final int livingRooms;
   final int kitchens;
   final int parkingSpaces;
-  final Furnishing? furnishing;
 
   final ValueChanged<double?> onSurfaceChanged;
   final ValueChanged<int> onBedroomsChanged;
@@ -45,7 +41,6 @@ class StepDetailsWidget extends StatefulWidget {
   final ValueChanged<int> onLivingRoomsChanged;
   final ValueChanged<int> onKitchensChanged;
   final ValueChanged<int> onParkingChanged;
-  final ValueChanged<Furnishing?> onFurnishingChanged;
 
   @override
   State<StepDetailsWidget> createState() => _StepDetailsWidgetState();
@@ -123,25 +118,6 @@ class _StepDetailsWidgetState extends State<StepDetailsWidget> {
           icon: LucideIcons.squareParking,
           value: widget.parkingSpaces,
           onChanged: widget.onParkingChanged,
-        ),
-
-        const SizedBox(height: 24),
-        Text('Ameublement', style: context.text.titleMedium),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: SegmentedButton<Furnishing>(
-            showSelectedIcon: false,
-            // L'ameublement reste facultatif : rien n'est coché d'office.
-            emptySelectionAllowed: true,
-            segments: [
-              for (final option in Furnishing.values)
-                ButtonSegment(value: option, label: Text(option.label)),
-            ],
-            selected: {?widget.furnishing},
-            onSelectionChanged: (s) =>
-                widget.onFurnishingChanged(s.isEmpty ? null : s.first),
-          ),
         ),
       ],
     );

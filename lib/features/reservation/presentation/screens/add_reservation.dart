@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
@@ -10,12 +11,16 @@ import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:easy_localization/easy_localization.dart';
 
 import '../../../clients/presentation/widgets/client_picker_sheet.dart';
+import '../../../clients/data/services/id_card_reading.dart';
+import '../../../clients/data/services/id_scan_service.dart';
+import '../../../clients/presentation/widgets/create/client_identity_controller.dart';
+import '../../../clients/presentation/widgets/create/client_identity_fields.dart';
 import '../../../clients/presentation/widgets/create/id_scan_button.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../business_logic/add_reservation_cubit.dart';
+import '../../business_logic/agreed_price.dart';
 import '../../business_logic/add_reservation_state.dart';
 import '../widgets/create/client_field_group.dart';
 import '../widgets/create/date_time_field.dart';
@@ -63,13 +68,48 @@ class _AddReservationViewState extends State<_AddReservationView> {
   final _amountController = TextEditingController();
   final _depositController = TextEditingController();
 
+  /// Pièce et identité du client nouveau, préremplies par la lecture de la
+  /// pièce et reportées au cubit à l'envoi.
+  final _identity = ClientIdentityController();
+
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _amountController.dispose();
     _depositController.dispose();
+    _identity.dispose();
     super.dispose();
+  }
+
+  /// Reporte une lecture de la pièce : un scan remplace la saisie, une photo
+  /// déposée dans une case ne comble que les vides.
+  void _applyReading(IdCardReading reading, {required bool overwrite}) {
+    _identity.apply(reading, overwrite: overwrite);
+
+    final name = reading.fullName;
+    if (name != null && (overwrite || _nameController.text.trim().isEmpty)) {
+      _nameController.text = name;
+      context.read<AddReservationCubit>().setFullName(name);
+    }
+  }
+
+  /// Lit une face déposée, en arrière-plan : son échec ne se signale pas.
+  Future<void> _readDocument(String? path) async {
+    if (path == null) return;
+    final reading = await const IdScanService().scan(path);
+    if (reading == null || !mounted) return;
+    _applyReading(reading, overwrite: false);
+  }
+
+  void _submit() {
+    final cubit = context.read<AddReservationCubit>();
+    cubit.setClientIdentity(
+      documentType: _identity.documentType,
+      documentNumber: _identity.documentNumberValue,
+      identity: _identity.identity,
+    );
+    cubit.submit();
   }
 
   @override
@@ -93,7 +133,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 : 'Enregistrer la réservation',
             primaryIcon: LucideIcons.check,
             isLoading: state.status == AddReservationStatus.submitting,
-            onPrimary: state.isValid ? cubit.submit : null,
+            onPrimary: state.isValid ? _submit : null,
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -128,14 +168,13 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   const ReservationSectionTitle(
                     title: 'Pièce d’identité (facultative)',
                   ),
-                  // La saisie hors ligne garde la photo et le nom lus ; le
-                  // numéro de pièce, lui, ne voyage pas dans la file et se
-                  // complète depuis la fiche client.
+                  // Tout ce qui est lu voyage avec la réservation, file hors
+                  // ligne comprise : le registre de police en dépend.
                   IdScanButton(
                     onScanned: (path, result) {
                       cubit.applyIdScan(path, result);
                       if (result != null) {
-                        _nameController.text = result.fullName;
+                        _applyReading(result, overwrite: true);
                       }
                     },
                   ),
@@ -143,9 +182,17 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   ReservationDocumentPicker(
                     frontPath: state.documentFrontPath,
                     backPath: state.documentBackPath,
-                    onFrontChanged: cubit.setDocumentFront,
-                    onBackChanged: cubit.setDocumentBack,
+                    onFrontChanged: (path) {
+                      cubit.setDocumentFront(path);
+                      _readDocument(path);
+                    },
+                    onBackChanged: (path) {
+                      cubit.setDocumentBack(path);
+                      _readDocument(path);
+                    },
                   ),
+                  const SizedBox(height: 20),
+                  ClientIdentityFields(controller: _identity),
                 ],
 
                 const SizedBox(height: 24),
@@ -198,22 +245,44 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 const ReservationSectionTitle(title: 'Paiement'),
                 _AmountSummary(state: state),
                 const SizedBox(height: 12),
+                // « Prix convenu » et non « Montant reçu » : le serveur en fait
+                // le montant du séjour, et l'écart au tarif une remise. Libellé
+                // « reçu », il recueillait l'argent versé ce jour-là — un
+                // séjour de onze jours enregistré à 15 000 F.
                 _AmountField(
                   controller: _amountController,
-                  hint: 'Montant reçu — ${_money(state.expectedAmount)} F',
+                  label: 'booking_amounts.agreed_label'.tr(),
+                  hint: 'booking_amounts.agreed_hint'.tr(
+                    args: [_money(state.expectedAmount)],
+                  ),
+                  helper: 'booking_amounts.agreed_helper'.tr(),
                   onChanged: (v) => cubit.setReceivedAmount(_parse(v)),
                 ),
+                if (AgreedPrice.looksLikePayment(
+                  expected: state.expectedAmount,
+                  agreed: state.receivedAmount,
+                )) ...[
+                  const SizedBox(height: 8),
+                  AppCallout(
+                    icon: LucideIcons.triangleAlert,
+                    tone: AppAccent.amber,
+                    message: 'booking_amounts.suspicious'.tr(
+                      args: [_money(state.expectedAmount)],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 _AmountField(
                   controller: _depositController,
-                  hint: 'Acompte versé (facultatif)',
+                  label: 'booking_amounts.deposit_label'.tr(),
+                  hint: 'booking_amounts.deposit_hint'.tr(),
                   onChanged: (v) => cubit.setDepositAmount(_parse(v) ?? 0),
                 ),
 
                 const SizedBox(height: 24),
-                ReservationSectionTitle(title: 'referrer.section'.tr()),
                 ReferrerFields(
                   state: state,
+                  onEnabledChanged: cubit.setReferrerEnabled,
                   onNameChanged: cubit.setReferrerName,
                   onPhoneChanged: cubit.setReferrerPhone,
                 ),
@@ -309,8 +378,27 @@ class _AmountSummary extends StatelessWidget {
           _Row(label: 'Montant attendu', value: state.expectedAmount),
           if (state.receivedAmount != null &&
               state.receivedAmount != state.expectedAmount) ...[
+            // La remise est montrée avant l'envoi : c'est elle qui trahit un
+            // versement saisi comme prix du séjour.
+            if (AgreedPrice.discount(
+                  expected: state.expectedAmount,
+                  agreed: state.receivedAmount,
+                ) >
+                0) ...[
+              const SizedBox(height: 8),
+              _Row(
+                label: 'booking_amounts.negotiated_discount'.tr(),
+                value: AgreedPrice.discount(
+                  expected: state.expectedAmount,
+                  agreed: state.receivedAmount,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
-            _Row(label: 'Montant convenu', value: state.effectiveAmount),
+            _Row(
+              label: 'booking_amounts.agreed_label'.tr(),
+              value: state.effectiveAmount,
+            ),
           ],
           if (state.depositAmount > 0) ...[
             const SizedBox(height: 8),
@@ -356,12 +444,19 @@ class _Row extends StatelessWidget {
 class _AmountField extends StatelessWidget {
   const _AmountField({
     required this.controller,
+    required this.label,
     required this.hint,
     required this.onChanged,
+    this.helper,
   });
 
   final TextEditingController controller;
+
+  /// Toujours visible, contrairement à [hint] qui s'efface à la saisie : le
+  /// sens du champ doit rester lisible une fois le montant tapé.
+  final String label;
   final String hint;
+  final String? helper;
   final ValueChanged<String> onChanged;
 
   @override
@@ -372,7 +467,10 @@ class _AmountField extends StatelessWidget {
       onChanged: onChanged,
       style: context.text.bodyMedium,
       decoration: InputDecoration(
+        labelText: label,
         hintText: hint,
+        helperText: helper,
+        helperMaxLines: 3,
         prefixIcon: const Icon(LucideIcons.banknote, size: 16),
       ),
     );

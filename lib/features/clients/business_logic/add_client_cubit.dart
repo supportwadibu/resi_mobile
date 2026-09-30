@@ -6,7 +6,7 @@ import '../../../core/error/failures.dart';
 import '../data/models/client_creation_result.dart';
 import '../data/models/identity_document_model.dart';
 import '../data/repositories/clients_repository.dart';
-import '../data/services/mrz_parser.dart';
+import '../data/models/client_model.dart';
 import 'add_client_state.dart';
 
 /// Enregistre un client au carnet, hors réservation.
@@ -39,27 +39,13 @@ class AddClientCubit extends Cubit<AddClientState> {
     emit(state.copyWith(documents: updated));
   }
 
-  /// Reprend la lecture de la pièce : la photo devient le verso, et ce que la
-  /// MRZ a livré préremplit la fiche.
-  void applyIdScan(String imagePath, MrzResult? result) {
-    final updated = Map<DocumentSlot, IdentityDocumentModel>.from(
-      state.documents,
-    );
-    updated[DocumentSlot.verso] = IdentityDocumentModel(
-      slot: DocumentSlot.verso,
-      file: File(imagePath),
-    );
-    emit(
-      state.copyWith(
-        documents: updated,
-        fullName: result?.fullName,
-        idDocumentType: result?.documentType,
-        idDocumentNumber: result?.documentNumber,
-      ),
-    );
-  }
-
-  Future<void> submit() async {
+  /// [identity] et la pièce viennent du formulaire, préremplis par la lecture
+  /// de la pièce et corrigés à la main : tous facultatifs.
+  Future<void> submit({
+    ClientIdDocumentType? documentType,
+    String? documentNumber,
+    ClientIdentity identity = ClientIdentity.empty,
+  }) async {
     if (!state.isValid || state.isLoading) return;
     emit(state.copyWith(status: AddClientStatus.loading));
 
@@ -67,8 +53,9 @@ class AddClientCubit extends Cubit<AddClientState> {
       final created = await _clients.create(
         fullName: state.fullName.trim(),
         phone: state.phone.trim(),
-        idDocumentType: state.idDocumentType,
-        idDocumentNumber: state.idDocumentNumber,
+        idDocumentType: documentType,
+        idDocumentNumber: documentNumber,
+        identity: identity,
         documentFrontPath: state.documents[DocumentSlot.recto]?.file.path,
         documentBackPath: state.documents[DocumentSlot.verso]?.file.path,
       );

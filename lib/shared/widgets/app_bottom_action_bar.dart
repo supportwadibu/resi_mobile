@@ -3,11 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/resi_tokens.dart';
 import 'app_button.dart';
 
-/// Barre d'actions ancrée en bas d'écran, hors de la zone scrollable.
-///
-/// L'action principale occupe deux fois la largeur de l'action secondaire,
-/// qui disparaît quand [secondaryLabel] est absent — le cas de la première
-/// étape d'un parcours, ou d'un écran à action unique.
 class AppBottomActionBar extends StatelessWidget {
   const AppBottomActionBar({
     super.key,
@@ -27,23 +22,18 @@ class AppBottomActionBar extends StatelessWidget {
 
   final String primaryLabel;
 
-  /// `null` désactive le bouton — utilisé pendant un chargement bloquant.
   final VoidCallback? onPrimary;
 
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
 
-  /// Icône de l'action principale, placée après le libellé : elle dit où
-  /// mène l'étape (`arrowRight`, `check`).
   final IconData? primaryIcon;
   final IconData? secondaryIcon;
 
-  /// `danger` pour une barre dont l'action principale détruit.
   final AppButtonVariant primaryVariant;
 
   final bool isLoading;
 
-  /// Lien discret sous les boutons (« Plus tard », mentions…).
   final Widget? footer;
 
   @override

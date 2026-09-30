@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -170,40 +171,45 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
         DecoratedBox(
           position: DecorationPosition.foreground,
           decoration: BoxDecoration(
+            borderRadius: AppRadius.md,
             border: Border.all(color: context.tokens.border),
           ),
-          child: SizedBox(
-            height: 220,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _markerPos,
-                initialZoom: 13,
-                onTap: (_, point) => _applyPoint(point),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'ci.wadibu.resi_africa',
+          child: ClipRRect(
+            borderRadius: AppRadius.md,
+            child: SizedBox(
+              height: 220,
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _markerPos,
+                  initialZoom: 13,
+                  onTap: (_, point) => _applyPoint(point),
                 ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _markerPos,
-                      width: 36,
-                      height: 36,
-                      alignment: Alignment.topCenter,
-                      // Toujours noir : la carte garde ses couleurs claires
-                      // quel que soit le mode.
-                      child: Icon(
-                        LucideIcons.mapPin,
-                        color: context.tokens.overlay,
-                        size: 36,
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'ci.wadibu.resi_africa',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _markerPos,
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.topCenter,
+                        // Toujours noir : la carte garde ses couleurs claires
+                        // quel que soit le mode.
+                        child: Icon(
+                          LucideIcons.mapPin,
+                          color: context.tokens.overlay,
+                          size: 36,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

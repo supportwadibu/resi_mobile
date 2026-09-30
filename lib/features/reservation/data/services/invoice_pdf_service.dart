@@ -71,6 +71,16 @@ class InvoicePdfService {
           value: _fcfa(reservation.dailyPrice),
           strong: false,
         ),
+      // Le tarif grille précède la remise : « Remise − 205 000 F » sans le
+      // montant dont elle se déduit ne se lisait pas. En ligne, `expected`
+      // retombe sur le total et n'a rien à montrer.
+      if (reservation.discountAmount > 0 &&
+          reservation.source == ReservationSource.offline)
+        (
+          labelKey: 'booking_amounts.grid_price',
+          value: _fcfa(reservation.expectedAmount),
+          strong: false,
+        ),
       if (reservation.discountAmount > 0)
         (
           labelKey: 'invoice.discount',

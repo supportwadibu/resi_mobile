@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_city_field.dart';
@@ -484,8 +485,10 @@ class _AmenityTile extends StatelessWidget {
       child: Material(
         color: isSelected ? t.primary : t.surface,
         shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.md,
           side: BorderSide(color: isSelected ? t.primary : t.border),
         ),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Padding(

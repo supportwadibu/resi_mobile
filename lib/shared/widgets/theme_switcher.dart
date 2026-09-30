@@ -4,9 +4,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/theme/theme_controller.dart';
 
-/// Choix de l'apparence : clair, sombre ou celle du système — miroir du
-/// `ThemeSwitcher` du backoffice. Le choix s'applique aussitôt à toute
-/// l'application et survit au redémarrage.
 class ThemeSwitcher extends StatelessWidget {
   const ThemeSwitcher({super.key});
 

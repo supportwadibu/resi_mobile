@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 class RatingDistributionChart extends StatelessWidget {
@@ -20,6 +21,7 @@ class RatingDistributionChart extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.tokens.surface,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Column(
@@ -27,7 +29,9 @@ class RatingDistributionChart extends StatelessWidget {
         children: [
           Text(
             'Distribution des notes',
-            style: context.text.titleMedium!.copyWith(color: context.tokens.foreground),
+            style: context.text.titleMedium!.copyWith(
+              color: context.tokens.foreground,
+            ),
           ),
           const SizedBox(height: 16),
           ...distributions.map(
@@ -48,26 +52,27 @@ class RatingDistributionChart extends StatelessWidget {
           width: 60,
           child: Row(
             children: [
-              Text(
-                '${dist.stars}',
-                style: context.text.titleSmall,
+              Text('${dist.stars}', style: context.text.titleSmall),
+              Icon(
+                LucideIcons.star,
+                size: 14,
+                color: context.tokens.accentAmber,
               ),
-              Icon(LucideIcons.star, size: 14, color: context.tokens.accentAmber),
             ],
           ),
         ),
         Expanded(
           child: Container(
             height: 8,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: context.tokens.border,
+              borderRadius: AppRadius.pill,
             ),
             child: FractionallySizedBox(
               widthFactor: dist.percentage,
               child: Container(
-                decoration: BoxDecoration(
-                  color: context.tokens.accentAmber,
-                ),
+                decoration: BoxDecoration(color: context.tokens.accentAmber),
               ),
             ),
           ),

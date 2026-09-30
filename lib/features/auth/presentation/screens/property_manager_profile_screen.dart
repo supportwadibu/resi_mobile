@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
@@ -10,12 +11,15 @@ import 'package:resi_africa/core/utils/country_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_step_header.dart';
 import 'package:resi_africa/shared/widgets/skeletons/form_skeleton.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../business_logic/owner_profile_cubit.dart';
 import '../../business_logic/owner_profile_state.dart';
+import '../../../clients/data/models/client_model.dart';
+import '../../../clients/data/services/id_scan_service.dart';
 import '../../data/models/owner_profile_model.dart';
 import '../widgets/owner_profile/steps/step_identity_document_widget.dart';
 import '../widgets/owner_profile/steps/step_personal_info_widget.dart';
@@ -166,12 +170,43 @@ class _PropertyManagerProfileViewState
     _backRemoteUrl = profile.idDocumentBackUrl;
   }
 
+  /// Dépose une face de la pièce, puis la lit pour préremplir le numéro.
+  ///
+  /// Deux sources : ML Kit analyse une image sans piloter l'appareil photo,
+  /// la prise de vue revient donc à `image_picker` — photo sur le moment ou
+  /// image déjà sur le téléphone. Les deux sont lues de la même façon.
   Future<void> _pickImage({required bool isFront}) async {
+    final source = await showAppSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => AppSheet(
+        title: isFront ? 'Recto de la pièce' : 'Verso de la pièce',
+        description: 'ocr.owner_hint'.tr(),
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          children: [
+            AppSheetAction(
+              icon: LucideIcons.scanText,
+              label: 'ocr.source_camera'.tr(),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            AppSheetAction(
+              icon: LucideIcons.images,
+              label: 'ocr.source_gallery'.tr(),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
     final image = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
+      // Assez fin pour la bande MRZ, assez léger pour l'envoi.
+      maxWidth: 2000,
       imageQuality: 80,
     );
-    if (image == null) return;
+    if (image == null || !mounted) return;
 
     setState(() {
       if (isFront) {
@@ -180,7 +215,45 @@ class _PropertyManagerProfileViewState
         _backImagePath = image.path;
       }
     });
+
+    await _readDocument(image.path);
   }
+
+  /// Préremplit numéro et nature de la pièce depuis la photo déposée.
+  ///
+  /// Ne comble que les champs vides : une seconde face, ou une photo
+  /// redéposée, ne défait pas une correction faite à la main. Le numéro reste
+  /// modifiable, et c'est au propriétaire de le vérifier — d'où le message.
+  Future<void> _readDocument(String path) async {
+    final reading = await const IdScanService().scan(path);
+    if (reading == null || !mounted) return;
+
+    var filled = false;
+    setState(() {
+      final number = reading.documentNumber;
+      if (number != null && _idNumberController.text.trim().isEmpty) {
+        _idNumberController.text = number;
+        filled = true;
+      }
+      final type = _ownerDocumentType(reading.documentType);
+      if (type != null && _documentType == null) {
+        _documentType = type;
+        filled = true;
+      }
+    });
+
+    if (filled) AppToast.info('ocr.owner_found'.tr(), context: context);
+  }
+
+  /// Nature de pièce du carnet → celle du dossier propriétaire : deux
+  /// énumérations distinctes côté mobile, pour les mêmes codes serveur.
+  static IdDocumentType? _ownerDocumentType(ClientIdDocumentType? type) =>
+      switch (type) {
+        ClientIdDocumentType.cni => IdDocumentType.cni,
+        ClientIdDocumentType.passeport => IdDocumentType.passport,
+        ClientIdDocumentType.permis => IdDocumentType.drivingLicence,
+        null => null,
+      };
 
   void _next() {
     if (_isFirstStep) {

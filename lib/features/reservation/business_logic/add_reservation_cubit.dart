@@ -8,7 +8,7 @@ import '../../../../core/error/failures.dart';
 import '../../clients/data/models/client_creation_result.dart';
 import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';
-import '../../clients/data/services/mrz_parser.dart';
+import '../../clients/data/services/id_card_reading.dart';
 import '../../property/data/models/property_model.dart';
 import '../data/datasources/reservation_local_store.dart';
 import '../data/models/occupied_period_model.dart';
@@ -146,17 +146,34 @@ class AddReservationCubit extends Cubit<AddReservationState> {
   );
 
   /// Reprend la lecture de la pièce : la photo devient la face arrière, et ce
-  /// que la MRZ a livré préremplit le client.
+  /// que la pièce a livré préremplit le client.
   ///
   /// Le nom lu remplace la saisie : le propriétaire vient de scanner la pièce
   /// du client présent, c'est la source la plus sûre qu'il ait.
-  void applyIdScan(String imagePath, MrzResult? result) {
+  void applyIdScan(String imagePath, IdCardReading? result) {
     emit(
       state.copyWith(
         documentBackPath: imagePath,
         fullName: result?.fullName,
         idDocumentType: result?.documentType,
         idDocumentNumber: result?.documentNumber,
+      ),
+    );
+  }
+
+  /// Pièce et identité du client nouveau, telles que le formulaire les
+  /// présente — lues sur la pièce, corrigées à la main. Reportées juste avant
+  /// l'envoi : ce sont elles qui partent, en ligne comme en file.
+  void setClientIdentity({
+    ClientIdDocumentType? documentType,
+    String? documentNumber,
+    required ClientIdentity identity,
+  }) {
+    emit(
+      state.copyWith(
+        idDocumentType: documentType,
+        idDocumentNumber: documentNumber,
+        identity: identity,
       ),
     );
   }
@@ -234,6 +251,17 @@ class AddReservationCubit extends Cubit<AddReservationState> {
       emit(state.copyWith(depositAmount: value));
 
   void setMessage(String value) => emit(state.copyWith(message: value));
+
+  /// Éteindre la bascule vide aussi la saisie : les champs, sans contrôleur,
+  /// réapparaîtraient vides au rallumage alors que l'état garderait l'ancien
+  /// nom, et la commission annoncée ne correspondrait plus à l'écran.
+  void setReferrerEnabled(bool value) => emit(
+    state.copyWith(
+      hasReferrerEnabled: value,
+      referrerName: value ? null : '',
+      referrerPhone: value ? null : '',
+    ),
+  );
 
   void setReferrerName(String value) =>
       emit(state.copyWith(referrerName: value));
@@ -342,6 +370,9 @@ class AddReservationCubit extends Cubit<AddReservationState> {
                 phone: state.phone.trim(),
                 documentFrontPath: state.documentFrontPath,
                 documentBackPath: state.documentBackPath,
+                idDocumentType: state.idDocumentType,
+                idDocumentNumber: state.idDocumentNumber,
+                identity: state.identity,
               ),
       );
 
@@ -404,6 +435,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
       documentBackPath: state.documentBackPath,
       idDocumentType: state.idDocumentType,
       idDocumentNumber: state.idDocumentNumber,
+      identity: state.identity,
     );
 
     final client = created.client;

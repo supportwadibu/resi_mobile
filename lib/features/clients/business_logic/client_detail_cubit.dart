@@ -94,6 +94,7 @@ class ClientDetailCubit extends Cubit<ClientDetailState> {
     String? whatsapp,
     ClientIdDocumentType? idDocumentType,
     String? idDocumentNumber,
+    ClientIdentity? identity,
     String? documentFrontPath,
     String? documentBackPath,
   }) async {
@@ -108,6 +109,7 @@ class ClientDetailCubit extends Cubit<ClientDetailState> {
           whatsapp: whatsapp,
           idDocumentType: idDocumentType,
           idDocumentNumber: idDocumentNumber,
+          identity: identity,
           documentFrontPath: documentFrontPath,
           documentBackPath: documentBackPath,
         );

@@ -122,7 +122,11 @@ class _TileLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [lead, const SizedBox(height: 12), StatGrid(children: pair)],
+      children: [
+        lead,
+        const SizedBox(height: 12),
+        StatGrid(children: pair),
+      ],
     );
   }
 }

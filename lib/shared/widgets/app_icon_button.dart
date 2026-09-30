@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Bouton à icône seule, miroir de `IconButton` du backoffice. Le `label` sert
@@ -41,7 +42,7 @@ class AppIconButton extends StatelessWidget {
           color: danger ? t.danger : t.foreground,
           disabledColor: t.muted.withValues(alpha: 0.5),
           style: IconButton.styleFrom(
-            shape: const RoundedRectangleBorder(),
+            shape: AppRadius.smShape,
             backgroundColor: bordered ? t.surface : null,
             side: bordered ? BorderSide(color: t.border) : null,
             minimumSize: const Size.square(40),

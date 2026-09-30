@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/image_viewer_utils.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
@@ -80,27 +81,33 @@ class _DocumentFace extends StatelessWidget {
           aspectRatio: 1.58, // format ID-1 d'une carte d'identité
           child: DecoratedBox(
             position: DecorationPosition.foreground,
-            decoration: BoxDecoration(border: Border.all(color: t.border)),
-            child: source == null || source.isEmpty
-                ? _Placeholder(label: 'client_documents.missing'.tr())
-                : InkWell(
-                    onTap: () =>
-                        ImageViewerUtils.showFullScreenImage(context, source),
-                    child: Image.network(
-                      source,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) =>
-                          progress == null
-                          ? child
-                          : ColoredBox(
-                              color: t.background,
-                              child: const Center(child: AppLoader(size: 24)),
-                            ),
-                      errorBuilder: (_, _, _) => _Placeholder(
-                        label: 'client_documents.unavailable'.tr(),
+            decoration: BoxDecoration(
+              border: Border.all(color: t.border),
+              borderRadius: AppRadius.md,
+            ),
+            child: ClipRRect(
+              borderRadius: AppRadius.md,
+              child: source == null || source.isEmpty
+                  ? _Placeholder(label: 'client_documents.missing'.tr())
+                  : InkWell(
+                      onTap: () =>
+                          ImageViewerUtils.showFullScreenImage(context, source),
+                      child: Image.network(
+                        source,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) =>
+                            progress == null
+                            ? child
+                            : ColoredBox(
+                                color: t.background,
+                                child: const Center(child: AppLoader(size: 24)),
+                              ),
+                        errorBuilder: (_, _, _) => _Placeholder(
+                          label: 'client_documents.unavailable'.tr(),
+                        ),
                       ),
                     ),
-                  ),
+            ),
           ),
         ),
         const SizedBox(height: 6),

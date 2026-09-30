@@ -7,6 +7,7 @@ import 'package:resi_africa/shared/widgets/empty_state.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/error/failures.dart';
@@ -283,6 +284,7 @@ class _CopyAddressToggle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       decoration: BoxDecoration(
         color: context.tokens.background,
+        borderRadius: AppRadius.md,
         border: Border.all(color: context.tokens.border),
       ),
       child: Row(
