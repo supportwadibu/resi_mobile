@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
@@ -162,7 +163,11 @@ class _EditClientScreenState extends State<EditClientScreen> {
 
     // Sans `context` : l'écran se referme dans la foulée, et le toast doit
     // survivre à sa disparition.
-    AppToast.success('Fiche mise à jour');
+    AppToast.success(
+      widget.cubit.lastSaveQueued
+          ? 'offline_queue.saved'.tr()
+          : 'clients.record_updated'.tr(),
+    );
     Navigator.pop(context);
   }
 
@@ -171,14 +176,14 @@ class _EditClientScreenState extends State<EditClientScreen> {
     return BlocProvider.value(
       value: widget.cubit,
       child: Scaffold(
-        appBar: AppTopBar(title: 'Modifier le client'),
+        appBar: AppTopBar(title: 'clients.edit_title'.tr()),
         bottomNavigationBar: BlocBuilder<ClientDetailCubit, ClientDetailState>(
           builder: (context, state) {
             final isSaving = state is ClientDetailLoaded && state.isSaving;
             return SubmitClientButton(
               isLoading: isSaving,
               enabled: !isSaving,
-              label: 'Enregistrer',
+              label: 'common.save'.tr(),
               onTap: _save,
             );
           },
@@ -188,32 +193,34 @@ class _EditClientScreenState extends State<EditClientScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const FormSectionLabel(text: 'Nom complet'),
+              FormSectionLabel(text: 'clients.full_name'.tr()),
               ClientTextField(
-                hint: 'Ex : Mohamed Traoré',
+                hint: 'clients.name_hint'.tr(),
                 prefixIcon: LucideIcons.user,
                 controller: _fullName,
                 onChanged: (_) => setState(() {}),
-                errorText: _submitted && !_nameValid ? 'Nom trop court' : null,
+                errorText: _submitted && !_nameValid
+                    ? 'clients.name_too_short'.tr()
+                    : null,
               ),
               const SizedBox(height: 20),
 
-              const FormSectionLabel(text: 'Numéro de téléphone'),
+              FormSectionLabel(text: 'clients.phone'.tr()),
               ClientTextField(
-                hint: 'Ex : +225 07 XX XX XX XX',
+                hint: 'clients.phone_hint'.tr(),
                 prefixIcon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
                 controller: _phone,
                 onChanged: (_) => setState(() {}),
                 errorText: _submitted && !_phoneValid
-                    ? 'Numéro invalide'
+                    ? 'clients.phone_invalid'.tr()
                     : null,
               ),
               const SizedBox(height: 20),
 
-              const FormSectionLabel(text: 'WhatsApp (facultatif)'),
+              FormSectionLabel(text: 'clients.whatsapp_optional'.tr()),
               ClientTextField(
-                hint: 'Si différent du téléphone',
+                hint: 'clients.whatsapp_hint'.tr(),
                 prefixIcon: LucideIcons.messageCircle,
                 keyboardType: TextInputType.phone,
                 controller: _whatsapp,
@@ -221,7 +228,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
               ),
               const SizedBox(height: 20),
 
-              const FormSectionLabel(text: "Pièce d'identité"),
+              FormSectionLabel(text: 'clients.id_document'.tr()),
               IdScanButton(
                 onScanned: (path, reading) {
                   setState(() {
@@ -280,7 +287,7 @@ class _ExistingDocumentsNotice extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              'Pièces déjà déposées. En ajouter une nouvelle la remplacera.',
+              'clients.documents_already'.tr(),
               style: context.text.bodySmall,
             ),
           ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -16,21 +17,21 @@ class ThemeSwitcher extends StatelessWidget {
         width: double.infinity,
         child: SegmentedButton<ThemeMode>(
           showSelectedIcon: false,
-          segments: const [
+          segments: [
             ButtonSegment(
               value: ThemeMode.light,
-              icon: Icon(LucideIcons.sun, size: 16),
-              label: Text('Clair'),
+              icon: const Icon(LucideIcons.sun, size: 16),
+              label: Text('theme.light'.tr()),
             ),
             ButtonSegment(
               value: ThemeMode.dark,
-              icon: Icon(LucideIcons.moon, size: 16),
-              label: Text('Sombre'),
+              icon: const Icon(LucideIcons.moon, size: 16),
+              label: Text('theme.dark'.tr()),
             ),
             ButtonSegment(
               value: ThemeMode.system,
-              icon: Icon(LucideIcons.monitor, size: 16),
-              label: Text('Système'),
+              icon: const Icon(LucideIcons.monitor, size: 16),
+              label: Text('theme.system'.tr()),
             ),
           ],
           selected: {mode},

@@ -1,5 +1,8 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
@@ -58,10 +61,17 @@ class SyncStatusBanner extends StatelessWidget {
         icon: isConflict ? LucideIcons.circleAlert : LucideIcons.cloudUpload,
         tone: isConflict ? AppAccent.red : AppAccent.amber,
         message: label(pending, conflicts, rejected),
+        // Un refus s'arbitre sur l'écran dédié ; une attente se relance.
         action: isConflict
-            ? null
+            ? AppButton(
+                label: 'sync_banner.review'.tr(),
+                icon: LucideIcons.listChecks,
+                size: AppButtonSize.sm,
+                variant: AppButtonVariant.secondary,
+                onPressed: () => context.router.push(const SyncReviewRoute()),
+              )
             : AppButton(
-                label: 'Envoyer maintenant',
+                label: 'sync_banner.send_now'.tr(),
                 icon: LucideIcons.refreshCw,
                 size: AppButtonSize.sm,
                 variant: AppButtonVariant.secondary,
@@ -74,19 +84,13 @@ class SyncStatusBanner extends StatelessWidget {
   @visibleForTesting
   static String label(int pending, int conflicts, int rejected) {
     if (rejected > 0) {
-      return rejected == 1
-          ? '1 réservation refusée : logement hors de votre périmètre.'
-          : '$rejected réservations refusées : logements hors de votre périmètre.';
+      return 'sync_banner.rejected'.plural(rejected);
     }
 
     if (conflicts > 0) {
-      return conflicts == 1
-          ? '1 réservation refusée : la période était déjà prise.'
-          : '$conflicts réservations refusées : périodes déjà prises.';
+      return 'sync_banner.conflicts'.plural(conflicts);
     }
 
-    return pending == 1
-        ? '1 réservation en attente d’envoi.'
-        : '$pending réservations en attente d’envoi.';
+    return 'sync_banner.pending'.plural(pending);
   }
 }

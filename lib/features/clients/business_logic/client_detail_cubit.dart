@@ -1,15 +1,26 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
+import '../../../core/offline/offline_action_queue.dart';
+import '../../../core/offline/pending_action.dart';
 import '../data/models/client_model.dart';
 import '../data/repositories/clients_repository.dart';
 import 'client_detail_state.dart';
 
 /// Fiche d'un client : coordonnées, cumuls et historique des séjours.
 class ClientDetailCubit extends Cubit<ClientDetailState> {
-  ClientDetailCubit(this._repository) : super(const ClientDetailInitial());
+  ClientDetailCubit(this._repository, {OfflineActionQueue? queue})
+    : _queue = queue,
+      super(const ClientDetailInitial());
 
   final ClientsRepository _repository;
+
+  /// File hors ligne. Sans elle, une panne réseau s'affiche comme un échec.
+  final OfflineActionQueue? _queue;
+
+  /// Le dernier enregistrement est-il parti en file plutôt qu'au serveur ?
+  /// Lu par l'écran d'édition pour annoncer un envoi différé.
+  bool lastSaveQueued = false;
 
   /// Charge la fiche, puis son historique.
   ///
@@ -100,6 +111,49 @@ class ClientDetailCubit extends Cubit<ClientDetailState> {
   }) async {
     if (state case final ClientDetailLoaded loaded) {
       emit(loaded.copyWith(isSaving: true));
+      lastSaveQueued = false;
+
+      Future<String?> enqueue(OfflineActionQueue queue) async {
+        await queue.enqueue(
+          PendingActionType.clientUpdate,
+          targetRef: id,
+          // Seuls les champs modifiés, comme en ligne : le serveur ne réécrit
+          // que ce qui a changé.
+          payload: {
+            'full_name': ?fullName,
+            'phone': ?phone,
+            'whatsapp': ?whatsapp,
+            'id_document_type': ?idDocumentType?.code,
+            'id_document_number': ?idDocumentNumber,
+            'identity': ?identity?.toFormFields(includeEmpty: true),
+          },
+          filePaths: {
+            'id_document_front': ?documentFrontPath,
+            'id_document_back': ?documentBackPath,
+          },
+        );
+        lastSaveQueued = true;
+        if (isClosed) return null;
+        emit(
+          loaded.copyWith(
+            client: loaded.client.copyWith(
+              fullName: fullName,
+              phone: phone,
+              whatsapp: whatsapp,
+              idDocumentType: idDocumentType,
+              idDocumentNumber: idDocumentNumber,
+              identity: identity,
+              hasDocumentFront: documentFrontPath != null ? true : null,
+              hasDocumentBack: documentBackPath != null ? true : null,
+            ),
+            isSaving: false,
+          ),
+        );
+        return null;
+      }
+
+      final queue = _queue;
+      if (queue != null && isLocalId(id)) return enqueue(queue);
 
       try {
         final updated = await _repository.update(
@@ -126,6 +180,9 @@ class ClientDetailCubit extends Cubit<ClientDetailState> {
         return null;
       } on AppFailure catch (failure) {
         if (isClosed) return null;
+        if (queue != null && OfflineActionQueue.isNetworkFailure(failure)) {
+          return enqueue(queue);
+        }
         emit(loaded.copyWith(isSaving: false));
         return failure.userMessage;
       }

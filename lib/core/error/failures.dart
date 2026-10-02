@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Extrait le code metier stable du corps d'une reponse d'erreur.
 ///
@@ -48,6 +49,28 @@ Map<String, List<String>> parseValidationErrors(dynamic data) {
   }
 
   return const {};
+}
+
+/// L'application est-elle affichée en français ?
+///
+/// Lu sur `Intl.defaultLocale`, que l'application aligne sur la langue
+/// active : une `AppFailure` naît dans un repository, sans `BuildContext`.
+bool get _isFrench => Intl.getCurrentLocale().startsWith('fr');
+
+/// Message d'un refus métier de l'API, dans la langue de l'application.
+///
+/// L'API rédige ses messages en français. Sur un téléphone en français, le
+/// sien fait foi : il porte des précisions (un nombre de jours, un reste dû)
+/// qu'une traduction par code perdrait. Dans une autre langue, le texte
+/// français est écarté au profit de la traduction du code ; un code inconnu
+/// rend `null`, et l'appelant retombe sur son libellé générique plutôt que
+/// d'afficher du français.
+String? localizedServerMessage(String? code, String? serverMessage) {
+  final message = serverMessage?.trim();
+  if (_isFrench && message != null && message.isNotEmpty) return message;
+  final key = 'api_errors.$code';
+  if (code != null && key.trExists()) return key.tr();
+  return null;
 }
 
 class AppFailure implements Exception {
@@ -130,11 +153,26 @@ class AppFailure implements Exception {
   }
 
   factory AppFailure.noInternet() =>
-      const AppFailure._(userMessage: 'Pas de connexion internet.');
+      AppFailure._(userMessage: 'errors.no_internet'.tr());
   factory AppFailure.timeout() =>
-      const AppFailure._(userMessage: 'La requete a expire. Reessayez.');
-  factory AppFailure.unauthorized() => const AppFailure._(
-    userMessage: 'Session expiree. Reconnectez-vous.',
+      AppFailure._(userMessage: 'errors.timeout'.tr());
+
+  /// Hors réseau, et rien en cache pour cette lecture : l'écran n'a jamais
+  /// été ouvert en ligne. Distincte de [AppFailure.noInternet] pour dire
+  /// pourquoi le reste de l'application, lui, s'affiche.
+  factory AppFailure.offlineUnavailable() => AppFailure._(
+    userMessage: 'errors.offline_unavailable'.tr(),
+    code: offlineUnavailableCode,
+  );
+
+  /// Code de [AppFailure.offlineUnavailable], lu par les repositories qui
+  /// savent recomposer une lecture à partir d'une autre déjà en cache.
+  static const offlineUnavailableCode = 'offline_unavailable';
+
+  /// Lecture impossible faute de réseau et de cache.
+  bool get isOfflineUnavailable => code == offlineUnavailableCode;
+  factory AppFailure.unauthorized() => AppFailure._(
+    userMessage: 'errors.session_expired'.tr(),
     statusCode: 401,
   );
 
@@ -149,14 +187,13 @@ class AppFailure implements Exception {
   /// pas pour le seul gérant. Revenir au générique se verrait — des tests le
   /// verrouillent dans `failures_code_test.dart`.
   factory AppFailure.forbidden({String? message, String? code}) => AppFailure._(
-    userMessage: message?.trim().isNotEmpty == true
-        ? message!.trim()
-        : 'Acces refuse.',
+    userMessage:
+        localizedServerMessage(code, message) ?? 'errors.forbidden'.tr(),
     statusCode: 403,
     code: code,
   );
   factory AppFailure.notFound({String? code}) => AppFailure._(
-    userMessage: 'Ressource introuvable.',
+    userMessage: 'errors.not_found'.tr(),
     statusCode: 404,
     code: code,
   );
@@ -175,8 +212,9 @@ class AppFailure implements Exception {
     // la refuse pour une raison métier, que l'appelant doit pouvoir
     // présenter telle quelle.
     userMessage: code == 409
-        ? (message ?? 'Cette periode est deja reservee.')
-        : 'Erreur serveur. Reessayez plus tard.',
+        ? localizedServerMessage(businessCode, message) ??
+              'errors.period_taken'.tr()
+        : 'errors.server'.tr(),
     debugMessage: 'HTTP $code - $message',
     statusCode: code,
     code: businessCode,
@@ -194,17 +232,35 @@ class AppFailure implements Exception {
     int statusCode = 422,
     String? code,
   }) => AppFailure._(
-    userMessage: errors.isEmpty
-        // Le serveur peut renvoyer ses erreurs sous une forme non reconnue :
-        // mieux vaut un message generique qu'une bulle vide.
-        ? 'Les informations saisies ont ete refusees par le serveur.'
-        : errors.values.expand((e) => e).join('\n'),
+    // Les erreurs de champ viennent de VineJS, qui les rédige en anglais :
+    // elles ne s'affichent que là où elles sont dans la langue de l'écran.
+    // Ailleurs — et quand le serveur renvoie une forme non reconnue —, un
+    // message générique vaut mieux qu'une bulle vide ou dans une autre langue.
+    userMessage: errors.isNotEmpty && !_isFrench
+        ? errors.values.expand((e) => e).join('\n')
+        : localizedServerMessage(code, null) ??
+              'errors.validation_rejected'.tr(),
     debugMessage: 'HTTP $statusCode - $errors',
     statusCode: statusCode,
     code: code,
   );
+  /// Refus dont le message est déjà rédigé dans la langue de l'application.
+  ///
+  /// Distinct de [AppFailure.validation], qui écarte en français les erreurs
+  /// de champ venues de VineJS : un message que l'application a traduit
+  /// elle-même doit, lui, toujours s'afficher.
+  factory AppFailure.localized({
+    required String message,
+    int? statusCode,
+    String? code,
+  }) => AppFailure._(
+    userMessage: message,
+    debugMessage: 'HTTP $statusCode - $code',
+    statusCode: statusCode,
+    code: code,
+  );
   factory AppFailure.unexpected({String? message}) => AppFailure._(
-    userMessage: 'Une erreur inattendue est survenue.',
+    userMessage: 'errors.unexpected'.tr(),
     debugMessage: message,
   );
 

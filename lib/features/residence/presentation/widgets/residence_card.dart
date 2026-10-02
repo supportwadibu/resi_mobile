@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -69,9 +70,8 @@ class ResidenceCard extends StatelessWidget {
                 // ensuite.
                 AppBadge(
                   label: switch (count) {
-                    0 => 'Aucun logement',
-                    1 => '1 logement',
-                    _ => '$count logements',
+                    0 => 'residence.no_unit'.tr(),
+                    _ => 'residence.unit_count'.plural(count),
                   },
                   icon: count == 0 ? LucideIcons.info : LucideIcons.doorOpen,
                   tone: count == 0 ? AppAccent.amber : AppAccent.neutral,
@@ -82,7 +82,7 @@ class ResidenceCard extends StatelessWidget {
           if (onDelete != null)
             AppIconButton(
               icon: LucideIcons.trash2,
-              label: 'Supprimer',
+              label: 'common.delete'.tr(),
               danger: true,
               onPressed: onDelete,
             )

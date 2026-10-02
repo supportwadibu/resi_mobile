@@ -37,6 +37,7 @@ class EditReservationState {
     this.status = EditReservationStatus.idle,
     this.errorMessage,
     this.updated,
+    this.queued = false,
   });
 
   /// Point de départ du formulaire.
@@ -84,6 +85,9 @@ class EditReservationState {
   /// Réservation telle que le serveur l'a réécrite.
   final ReservationModel? updated;
 
+  /// Modification saisie hors ligne, envoyée au retour du réseau.
+  final bool queued;
+
   StayQuote get quote => StayQuote(
     dailyPrice: dailyPrice,
     priceTiers: priceTiers,
@@ -127,6 +131,7 @@ class EditReservationState {
     EditReservationStatus? status,
     String? errorMessage,
     ReservationModel? updated,
+    bool? queued,
   }) {
     return EditReservationState(
       original: original,
@@ -145,6 +150,7 @@ class EditReservationState {
       // Un message d'erreur ne survit pas à la saisie suivante.
       errorMessage: errorMessage,
       updated: updated ?? this.updated,
+      queued: queued ?? this.queued,
     );
   }
 }

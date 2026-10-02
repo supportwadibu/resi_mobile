@@ -151,10 +151,24 @@ class ReservationRepository {
   ///
   /// Un 422 signale un séjour pas encore commencé : il s'annule, il ne se
   /// clôture pas.
-  Future<ReservationModel> checkOut(String id) async {
+  ///
+  /// [actualCheckOutAt] : heure de sortie saisie hors ligne. Sans elle, le
+  /// serveur consigne l'heure de la synchronisation, qui peut suivre le départ
+  /// réel de plusieurs heures.
+  Future<ReservationModel> checkOut(
+    String id, {
+    DateTime? actualCheckOutAt,
+  }) async {
     try {
       final response = await _dio.patch(
         ApiEndpoints.bookingCheckOut(_role.value, id),
+        data: actualCheckOutAt == null
+            ? null
+            : {
+                'actual_check_out_at': actualCheckOutAt
+                    .toUtc()
+                    .toIso8601String(),
+              },
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);

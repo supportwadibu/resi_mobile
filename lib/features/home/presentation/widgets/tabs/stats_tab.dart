@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/di/service_locator.dart';
@@ -47,7 +48,7 @@ class _StatsView extends StatelessWidget {
               bottom: MediaQuery.paddingOf(context).bottom + 16,
             ),
             children: [
-              const PageHeader(title: 'Statistiques'),
+              PageHeader(title: 'home.stats_title'.tr()),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
@@ -69,7 +70,7 @@ class _StatsView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const SectionHeading(title: 'Gestion'),
+                    SectionHeading(title: 'home.management'.tr()),
                     const SizedBox(height: 8),
                     const ActionGrid(),
                   ],

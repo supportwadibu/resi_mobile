@@ -21,17 +21,18 @@ import '../create/date_time_field.dart';
 /// Feuille de départ anticipé : heure de sortie réelle, chiffrage du serveur
 /// et montant retenu.
 ///
-/// Rend la réservation clôturée, ou `null` si le propriétaire renonce.
+/// Rend le succès de la clôture — enregistrée, ou mise en file hors ligne —,
+/// ou `null` si le propriétaire renonce.
 class EarlyCheckOutSheet extends StatelessWidget {
   const EarlyCheckOutSheet({required this.reservation, super.key});
 
   final ReservationModel reservation;
 
-  static Future<ReservationModel?> show(
+  static Future<EarlyCheckOutSuccess?> show(
     BuildContext context,
     ReservationModel reservation,
   ) {
-    return showAppSheet<ReservationModel>(
+    return showAppSheet<EarlyCheckOutSuccess>(
       context: context,
       builder: (_) => EarlyCheckOutSheet(reservation: reservation),
     );
@@ -41,7 +42,11 @@ class EarlyCheckOutSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          sl<EarlyCheckOutCubit>()..quote(reservation.id, DateTime.now()),
+          sl<EarlyCheckOutCubit>()..quote(
+            reservation.id,
+            DateTime.now(),
+            reservation: reservation,
+          ),
       child: _EarlyCheckOutForm(reservation: reservation),
     );
   }
@@ -82,8 +87,8 @@ class _EarlyCheckOutFormState extends State<_EarlyCheckOutForm> {
         _filledFrom = quote;
         _amount.text = quote.proposedAmount.round().toString();
 
-      case EarlyCheckOutSuccess(:final reservation):
-        Navigator.of(context).pop(reservation);
+      case EarlyCheckOutSuccess():
+        Navigator.of(context).pop(state);
 
       default:
         break;
@@ -92,7 +97,11 @@ class _EarlyCheckOutFormState extends State<_EarlyCheckOutForm> {
 
   void _changeDeparture(DateTime value) {
     setState(() => _departure = value);
-    context.read<EarlyCheckOutCubit>().quote(widget.reservation.id, value);
+    context.read<EarlyCheckOutCubit>().quote(
+      widget.reservation.id,
+      value,
+      reservation: widget.reservation,
+    );
   }
 
   @override
@@ -145,6 +154,16 @@ class _EarlyCheckOutFormState extends State<_EarlyCheckOutForm> {
                   enabled: !isSubmitting,
                   onAmountChanged: () => setState(() {}),
                 ),
+              // Chiffré sur l'appareil faute de réseau : le propriétaire doit
+              // savoir que le montant retenu partira tel quel, plus tard.
+              if (state case EarlyCheckOutLoaded(isEstimate: true)) ...[
+                const SizedBox(height: 12),
+                AppCallout(
+                  icon: LucideIcons.wifiOff,
+                  tone: AppAccent.amber,
+                  message: 'stay_checkout.early_estimate'.tr(),
+                ),
+              ],
               if (state case EarlyCheckOutError(:final message)) ...[
                 const SizedBox(height: 12),
                 AppCallout(

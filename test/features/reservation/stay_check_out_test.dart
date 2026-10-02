@@ -89,7 +89,7 @@ void main() {
       final state = built.cubit.state;
       expect(state, isA<StayCheckOutSuccess>());
       expect(
-        (state as StayCheckOutSuccess).reservation.status,
+        (state as StayCheckOutSuccess).reservation!.status,
         ReservationStatus.completed,
       );
     });

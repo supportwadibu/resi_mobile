@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -17,9 +18,9 @@ class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
 
   static const _highlights = [
-    '14 jours d\'essai, sans engagement',
-    'Réservations au comptoir, même hors ligne',
-    'Revenus et dépenses suivis bien par bien',
+    'auth.highlight_trial',
+    'auth.highlight_offline',
+    'auth.highlight_tracking',
   ];
 
   @override
@@ -31,7 +32,7 @@ class RegisterScreen extends StatelessWidget {
           if (state is AuthSuccess) {
             // Un compte fraîchement créé doit d'abord déposer son dossier
             // d'identité : sans lui, il sera suspendu à la fin de l'essai.
-            // L'écran d'essai vient ensuite, et annonce les 14 jours. Une
+            // L'écran d'essai vient ensuite, et annonce sa durée. Une
             // simple reconnexion va droit à l'accueil.
             context.router.replaceAll([
               if (state.auth.isNewUser)
@@ -43,7 +44,10 @@ class RegisterScreen extends StatelessWidget {
           if (state is AuthOtpSent) {
             // Le compte est créé mais pas encore vérifié : la session ne
             // s'ouvre qu'après la saisie du code.
-            AppToast.info('Code envoyé à ${state.target}', context: context);
+            AppToast.info(
+              'auth.code_sent'.tr(args: [state.target]),
+              context: context,
+            );
           }
           if (state is AuthError) {
             AppToast.error(state.message, context: context);
@@ -52,9 +56,8 @@ class RegisterScreen extends StatelessWidget {
         builder: (context, state) {
           final t = context.tokens;
           return AuthLayout(
-            title: 'Créer un compte',
-            description: 'Propriétaire : inscrivez-vous avec votre compte '
-                'Google.',
+            title: 'auth.register_title'.tr(),
+            description: 'auth.register_description'.tr(),
             onBack: () => context.router.maybePop(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,7 +70,7 @@ class RegisterScreen extends StatelessWidget {
                         Icon(LucideIcons.check, size: 16, color: t.accentGreen),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(line, style: context.text.bodyMedium),
+                          child: Text(line.tr(), style: context.text.bodyMedium),
                         ),
                       ],
                     ),
@@ -77,7 +80,7 @@ class RegisterScreen extends StatelessWidget {
                   const Center(child: AppLoader())
                 else
                   GoogleSignInButton(
-                    label: 'S\'inscrire avec Google',
+                    label: 'auth.sign_up_google'.tr(),
                     // Même appel que sur l'écran de connexion : côté API,
                     // `/auth/google` crée le compte s'il n'existe pas et
                     // connecte sinon. Le drapeau `is_new_user` de la réponse
@@ -89,10 +92,10 @@ class RegisterScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Déjà un compte ?', style: context.mutedText),
+                    Text('auth.has_account'.tr(), style: context.mutedText),
                     TextButton(
                       onPressed: () => context.router.maybePop(),
-                      child: const Text('Se connecter'),
+                      child: Text('auth.sign_in'.tr()),
                     ),
                   ],
                 ),

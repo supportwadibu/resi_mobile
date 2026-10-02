@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
@@ -15,6 +16,7 @@ import '../../../../subscription/business_logic/plan_state.dart';
 import '../../../../subscription/presentation/widgets/plan_gate.dart';
 
 import '../../../../subscription/presentation/widgets/plan_style.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Entrées réservées au forfait Premium, et la fonction que chacune ouvre.
 /// Les résidences restent ouvertes : leur enregistrement fait partie de Pro.
@@ -37,36 +39,36 @@ class ActionGrid extends StatelessWidget {
     StatsAction(
       key: 'expenses',
       icon: AppSectionIcons.expenses,
-      label: 'Dépenses',
-      description: 'Charges par bien et par catégorie',
+      label: 'stats_actions.expenses',
+      description: 'stats_actions.expenses_hint',
       route: ExpenseRoute(),
     ),
     StatsAction(
       key: 'finance',
       icon: LucideIcons.scale,
-      label: 'Finances',
-      description: 'Revenus, charges et bénéfice',
+      label: 'stats_actions.finance',
+      description: 'stats_actions.finance_hint',
       route: FinanceRoute(),
     ),
     StatsAction(
       key: 'reports',
       icon: AppSectionIcons.reports,
-      label: 'Rapports PDF',
-      description: 'Relevés à partager ou imprimer',
+      label: 'stats_actions.reports',
+      description: 'stats_actions.reports_hint',
       route: ReportRoute(),
     ),
     StatsAction(
       key: 'clients',
       icon: AppSectionIcons.clients,
-      label: 'Clients',
-      description: 'Carnet et historique des séjours',
+      label: 'stats_actions.clients',
+      description: 'stats_actions.clients_hint',
       route: ClientsRoute(),
     ),
     StatsAction(
       key: 'residences',
       icon: AppSectionIcons.residences,
-      label: 'Résidences',
-      description: 'Regrouper les logements d\'un immeuble',
+      label: 'stats_actions.residences',
+      description: 'stats_actions.residences_hint',
       route: ResidenceRoute(),
     ),
   ];
@@ -129,15 +131,21 @@ class ActionCard extends StatelessWidget {
   /// refuserait.
   final PremiumFeature? locked;
 
-  void _open(BuildContext context) {
+  Future<void> _open(BuildContext context) async {
     if (locked case final feature?) {
       showLockedFeatureSheet(context, feature);
+      return;
+    }
+    // L'export de rapport se calcule au serveur : hors réseau, l'écran ne
+    // pourrait rien produire.
+    if (action.key == 'reports' &&
+        (!await ensureOnline(context) || !context.mounted)) {
       return;
     }
     if (action.route != null) {
       context.pushRoute(action.route!);
     } else {
-      AppToast.info('Bientôt disponible', context: context);
+      AppToast.info('common.coming_soon'.tr(), context: context);
     }
   }
 
@@ -166,7 +174,7 @@ class ActionCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            action.label,
+            action.label.tr(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.titleSmall!.copyWith(
@@ -175,7 +183,7 @@ class ActionCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            action.description,
+            action.description.tr(),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: context.text.bodySmall,

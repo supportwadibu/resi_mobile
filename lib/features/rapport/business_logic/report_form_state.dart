@@ -5,10 +5,11 @@ import '../presentation/widgets/residence_selector.dart';
 
 /// Sentinelle du sélecteur local, jamais envoyée telle quelle : le repository
 /// l'omet du corps de la requête, ce qui vaut pour l'API « toutes les
-/// résidences ».
+/// résidences ». Son nom est une clé de traduction : la sentinelle est une
+/// constante, traduite à l'affichage par le sélecteur.
 const allResidencesOption = ReportResidenceOption(
   id: 'all',
-  name: 'Toutes mes résidences',
+  name: 'report.all_residences',
 );
 
 class ReportFormState {

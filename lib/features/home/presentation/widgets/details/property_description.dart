@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -14,7 +15,7 @@ class PropertyDescription extends StatelessWidget {
     if (description.trim().isEmpty) return const SizedBox.shrink();
 
     return Section(
-      title: 'Description',
+      title: 'property_detail.description'.tr(),
       icon: LucideIcons.alignLeft,
       child: Text(description, style: context.mutedText.copyWith(height: 1.55)),
     );

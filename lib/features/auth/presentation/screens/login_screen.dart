@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -43,7 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   static String? _required(String? value) =>
-      value == null || value.trim().isEmpty ? 'Ce champ est requis' : null;
+      value == null || value.trim().isEmpty
+      ? 'common.field_required'.tr()
+      : null;
 
   @override
   Widget build(BuildContext context) {
@@ -66,17 +69,15 @@ class _LoginScreenState extends State<LoginScreen> {
         builder: (context, state) {
           final loading = state is AuthLoading;
           return AuthLayout(
-            title: 'Connexion',
-            description:
-                'Gérant : votre téléphone et votre mot de passe.'
-                'Propriétaire : votre compte Google.',
+            title: 'auth.login_title'.tr(),
+            description: 'auth.login_description'.tr(),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AppTextField(
-                    label: 'Numéro de téléphone',
+                    label: 'auth.phone'.tr(),
                     hint: '07 00 00 00 00',
                     controller: _identifierController,
                     keyboardType: TextInputType.phone,
@@ -85,15 +86,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   AppTextField(
-                    label: 'Mot de passe',
+                    label: 'auth.password'.tr(),
                     hint: '••••••••',
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     prefixIcon: const Icon(LucideIcons.lock, size: 16),
                     suffixIcon: IconButton(
                       tooltip: _obscurePassword
-                          ? 'Afficher le mot de passe'
-                          : 'Masquer le mot de passe',
+                          ? 'auth.show_password'.tr()
+                          : 'auth.hide_password'.tr(),
                       icon: Icon(
                         _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
                         size: 16,
@@ -102,11 +103,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     validator: (v) =>
-                        v == null || v.isEmpty ? 'Ce champ est requis' : null,
+                        v == null || v.isEmpty
+                        ? 'common.field_required'.tr()
+                        : null,
                   ),
                   const SizedBox(height: 24),
                   AppButton(
-                    label: 'Se connecter',
+                    label: 'auth.sign_in'.tr(),
                     isLoading: loading,
                     expand: true,
                     onPressed: () => _submit(context),
@@ -115,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const OrDivider(),
                   const SizedBox(height: 20),
                   GoogleSignInButton(
-                    label: 'Continuer avec Google',
+                    label: 'auth.continue_google'.tr(),
                     onPressed: loading
                         ? null
                         : () => context.read<AuthCubit>().loginWithGoogle(),
@@ -124,11 +127,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('Pas encore de compte ?', style: context.mutedText),
+                      Text('auth.no_account'.tr(), style: context.mutedText),
                       TextButton(
                         onPressed: () =>
                             context.router.push(const RegisterRoute()),
-                        child: const Text('S\'inscrire'),
+                        child: Text('auth.sign_up'.tr()),
                       ),
                     ],
                   ),

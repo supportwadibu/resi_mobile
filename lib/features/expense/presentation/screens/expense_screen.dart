@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -9,7 +10,6 @@ import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
@@ -122,7 +122,7 @@ class _ExpenseViewState extends State<_ExpenseView>
       return;
     }
 
-    AppToast.success('Dépense supprimée');
+    AppToast.success('expense.deleted'.tr());
   }
 
   /// Exporte l'ensemble des dépenses filtrées, et non la seule page affichée.
@@ -146,7 +146,7 @@ class _ExpenseViewState extends State<_ExpenseView>
         scopeLabel: _scopeLabel(state),
       );
     } catch (e) {
-      AppToast.error('L’export a échoué. Réessayez.');
+      AppToast.error('expense.export_failed'.tr());
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -169,7 +169,9 @@ class _ExpenseViewState extends State<_ExpenseView>
     }
     if (filters.category != null) parts.add(filters.category!.label);
 
-    return parts.isEmpty ? 'Sélection filtrée' : parts.join(' · ');
+    return parts.isEmpty
+        ? 'expense.filtered_selection'.tr()
+        : parts.join(' · ');
   }
 
   /// Période couverte par les filtres, ou `null` quand aucune borne n'est
@@ -179,26 +181,28 @@ class _ExpenseViewState extends State<_ExpenseView>
     final to = filters.to;
     if (from == null && to == null) return null;
 
-    final format = DateFormat('d MMM yyyy', 'fr');
+    final format = DateFormat('d MMM yyyy');
     if (from != null && to != null) {
-      return 'Du ${format.format(from)} au ${format.format(to)}';
+      return 'expense.range_between'.tr(
+        namedArgs: {'from': format.format(from), 'to': format.format(to)},
+      );
     }
     return from != null
-        ? 'Depuis le ${format.format(from)}'
-        : 'Jusqu’au ${format.format(to!)}';
+        ? 'expense.range_from'.tr(args: [format.format(from)])
+        : 'expense.range_until'.tr(args: [format.format(to!)]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Dépenses',
+        title: 'expense.title'.tr(),
         actions: [
           // Le rechargement au retour est pris en charge par `didPopNext` :
           // inutile de le déclencher aussi ici, ce qui lancerait deux
           // requêtes pour un même retour.
           AppButton(
-            label: 'Ajouter',
+            label: 'common.add'.tr(),
             icon: LucideIcons.plus,
             size: AppButtonSize.sm,
             onPressed: () => context.router.push(AddExpenseRoute()),
@@ -254,14 +258,13 @@ class _ExpenseViewState extends State<_ExpenseView>
                 ExpenseLoaded(:final items) when items.isEmpty => EmptyState(
                   icon: AppSectionIcons.expenses,
                   title: state.filters.isEmpty
-                      ? 'Aucune dépense enregistrée'
-                      : 'Aucune dépense pour ces filtres',
+                      ? 'expense.empty_title'.tr()
+                      : 'expense.empty_filtered'.tr(),
                   // Un écran vide oriente vers l'action suivante plutôt que
                   // de constater le vide.
                   message: state.filters.isEmpty
-                      ? 'Ajoutez vos charges pour suivre ce que vos biens '
-                            'vous coûtent.'
-                      : 'Élargissez la période ou changez de catégorie.',
+                      ? 'expense.empty_body'.tr()
+                      : 'expense.empty_filtered_body'.tr(),
                 ),
                 ExpenseLoaded(:final items) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

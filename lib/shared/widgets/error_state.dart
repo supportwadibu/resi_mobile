@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -28,13 +29,13 @@ class ErrorState extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Impossible de charger',
+            'error_state.title'.tr(),
             textAlign: TextAlign.center,
             style: context.text.titleMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            message ?? 'Une erreur est survenue. Réessayez dans un instant.',
+            message ?? 'error_state.body'.tr(),
             textAlign: TextAlign.center,
             style: context.text.bodyMedium!.copyWith(
               color: context.tokens.muted,
@@ -43,7 +44,7 @@ class ErrorState extends StatelessWidget {
           if (onRetry != null) ...[
             const SizedBox(height: 20),
             AppButton(
-              label: 'Réessayer',
+              label: 'common.retry'.tr(),
               icon: LucideIcons.rotateCw,
               onPressed: onRetry,
             ),

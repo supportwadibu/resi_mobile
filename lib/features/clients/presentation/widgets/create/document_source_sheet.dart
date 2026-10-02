@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
@@ -33,13 +34,13 @@ class DocumentSourceSheet extends StatelessWidget {
         children: [
           AppSheetAction(
             icon: LucideIcons.camera,
-            label: 'Prendre une photo',
+            label: 'clients.take_photo'.tr(),
             onTap: () => Navigator.pop(context, ImagePickerSource.camera),
           ),
           if (!cameraOnly)
             AppSheetAction(
               icon: LucideIcons.images,
-              label: 'Choisir depuis la galerie',
+              label: 'clients.from_gallery'.tr(),
               onTap: () => Navigator.pop(context, ImagePickerSource.gallery),
             ),
         ],

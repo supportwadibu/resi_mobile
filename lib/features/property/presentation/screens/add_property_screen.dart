@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -112,14 +113,15 @@ class _AddPropertyViewState extends State<AddPropertyView> {
 
   bool get _isEditing => _original != null;
 
+  /// Clés de traduction, traduites à l'affichage.
   static const _stepTitles = [
-    'Type de bien',
-    'Identification',
-    'Localisation',
-    'Caractéristiques',
-    'Commodités',
-    'Photos',
-    'Tarification',
+    'property_form.step_type',
+    'property_form.step_identification',
+    'property_form.step_location',
+    'property_form.step_details',
+    'property_form.step_amenities',
+    'property_form.step_photos',
+    'property_form.step_pricing',
   ];
 
   /// Une icône par section, dans l'ordre de [_stepTitles].
@@ -217,17 +219,17 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   /// immédiat et situé qu'une erreur 422 après huit étapes.
   String? _validateStep(int step) {
     return switch (step) {
-      0 when _propertyType == null => 'Choisissez un type de bien.',
-      1 when _title.trim().length < 3 =>
-        'Le nom du bien doit faire au moins 3 caractères.',
+      0 when _propertyType == null => 'property_form.choose_type'.tr(),
+      1 when _title.trim().length < 3 => 'property_form.name_too_short'.tr(),
       1 when _description.trim().length < 10 =>
-        'La description doit faire au moins 10 caractères.',
-      2 when _street.trim().length < 2 => 'Renseignez l’adresse du bien.',
-      2 when _city.trim().length < 2 => 'Renseignez la ville.',
+        'property_form.description_too_short'.tr(),
+      2 when _street.trim().length < 2 =>
+        'property_form.address_required'.tr(),
+      2 when _city.trim().length < 2 => 'property_form.city_required'.tr(),
       // La surface est facultative ; renseignée, elle doit rester plausible.
       3 when _surfaceArea != null && _surfaceArea! <= 0 =>
-        'La surface doit être supérieure à zéro.',
-      6 when _dailyPrice <= 0 => 'Indiquez le tarif par jour.',
+        'property_form.surface_positive'.tr(),
+      6 when _dailyPrice <= 0 => 'property_form.price_required'.tr(),
       _ => null,
     };
   }
@@ -302,25 +304,24 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   /// celle à corriger sans avoir à toutes les ouvrir.
   String _stepSummary(int step) {
     return switch (step) {
-      0 => _propertyType?.label ?? 'Non renseigné',
-      1 => _title.trim().isEmpty ? 'Sans titre' : _title.trim(),
+      0 => _propertyType?.label ?? 'property_form.not_set'.tr(),
+      1 =>
+        _title.trim().isEmpty ? 'property_form.untitled'.tr() : _title.trim(),
       2 => switch ([
         _city.trim(),
         _street.trim(),
       ].where((p) => p.isNotEmpty).join(' · ')) {
-        '' => 'Non renseignée',
+        '' => 'property_form.not_set_f'.tr(),
         final location => location,
       },
       3 => _detailsSummary(),
       4 => switch (_amenities.length) {
-        0 => 'Aucune',
-        1 => '1 commodité',
-        final count => '$count commodités',
+        0 => 'property_form.amenities_none'.tr(),
+        final count => 'property_form.amenities_count'.plural(count),
       },
       5 => switch (_images.length) {
-        0 => 'Aucune photo',
-        1 => '1 photo',
-        final count => '$count photos',
+        0 => 'property_form.photos_none'.tr(),
+        final count => 'property_form.photos_count'.plural(count),
       },
       6 => _pricingSummary(),
       _ => '',
@@ -330,8 +331,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   /// « 4 ch · 2 sdb · 180 m² » — seules les valeurs renseignées apparaissent.
   String _detailsSummary() {
     final parts = [
-      '$_bedrooms ch',
-      '$_bathrooms sdb',
+      'property_form.bedrooms_short'.tr(args: ['$_bedrooms']),
+      'property_form.bathrooms_short'.tr(args: ['$_bathrooms']),
       if (_surfaceArea != null && _surfaceArea! > 0)
         '${_surfaceArea!.toInt()} m²',
     ];
@@ -339,12 +340,16 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   }
 
   String _pricingSummary() {
-    if (_dailyPrice <= 0) return 'Tarif à définir';
+    if (_dailyPrice <= 0) return 'property_form.price_to_define'.tr();
 
     final price = CurrencyFormatter.fcfa(_dailyPrice.round());
-    if (_priceTiers.isEmpty) return '$price / jour';
-    return '$price / jour · ${_priceTiers.length} palier'
-        '${_priceTiers.length > 1 ? 's' : ''}';
+    if (_priceTiers.isEmpty) {
+      return 'property_form.price_per_day'.tr(args: [price]);
+    }
+    return 'property_form.price_with_tiers'.plural(
+      _priceTiers.length,
+      namedArgs: {'price': price, 'count': '${_priceTiers.length}'},
+    );
   }
 
   /// Ferme l'assistant, en rendant [result] à l'écran appelant.
@@ -391,24 +396,25 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       builder: (dialogContext) {
         dismissed = ModalRoute.of(dialogContext)!.completed;
         return AlertDialog(
-          title: const Text('Abandonner les modifications ?'),
+          title: Text('property_form.discard_title'.tr()),
           content: Text(
             _touched.length == 1
-                ? 'Une section a été modifiée sans être enregistrée.'
-                : '${_touched.length} sections ont été modifiées sans être '
-                      'enregistrées.',
+                ? 'property_form.discard_one'.tr()
+                : 'property_form.discard_many'.tr(
+                    args: ['${_touched.length}'],
+                  ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Continuer l’édition'),
+              child: Text('property_form.keep_editing'.tr()),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: TextButton.styleFrom(
                 foregroundColor: context.tokens.danger,
               ),
-              child: const Text('Abandonner'),
+              child: Text('property_form.discard'.tr()),
             ),
           ],
         );
@@ -530,9 +536,13 @@ class _AddPropertyViewState extends State<AddPropertyView> {
             state is CreatePropertyUploadingImages ||
             state is CreatePropertySubmitting,
         primaryLabel: switch (state) {
-          CreatePropertyUploadingImages() => 'Envoi des photos...',
-          CreatePropertySubmitting() => 'Enregistrement...',
-          _ => _isLastStep ? 'Enregistrer le bien' : 'Suivant',
+          CreatePropertyUploadingImages() =>
+            'property_form.uploading_photos'.tr(),
+          CreatePropertySubmitting() => 'property_form.saving'.tr(),
+          _ =>
+            _isLastStep
+                ? 'property_form.save_property'.tr()
+                : 'owner_profile.next'.tr(),
         },
       ),
     );
@@ -549,8 +559,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
             _leave(property);
             AppToast.success(
               unchanged
-                  ? 'Aucune modification à enregistrer.'
-                  : 'Les modifications ont été enregistrées.',
+                  ? 'property_form.no_changes'.tr()
+                  : 'property_form.changes_saved'.tr(),
               context: context,
             );
           case EditPropertyFailure(:final message):
@@ -564,12 +574,13 @@ class _AddPropertyViewState extends State<AddPropertyView> {
             state is EditPropertyUploadingImages ||
             state is EditPropertySubmitting,
         primaryLabel: switch (state) {
-          EditPropertyUploadingImages() => 'Envoi des photos...',
-          EditPropertySubmitting() => 'Enregistrement...',
+          EditPropertyUploadingImages() =>
+            'property_form.uploading_photos'.tr(),
+          EditPropertySubmitting() => 'property_form.saving'.tr(),
           // Depuis une section, l'action valide la section et ramène au
           // sommaire — elle n'enregistre pas encore.
-          _ when !_isSummary => 'Valider cette section',
-          _ => 'Enregistrer les modifications',
+          _ when !_isSummary => 'property_form.validate_section'.tr(),
+          _ => 'property_form.save_changes'.tr(),
         },
       ),
     );
@@ -594,8 +605,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
               children: [
                 AppStepHeader(
                   title: _isSummary
-                      ? 'Modifier le bien'
-                      : _stepTitles[_currentStep],
+                      ? 'property_form.edit_title'.tr()
+                      : _stepTitles[_currentStep].tr(),
                   onBack: _back,
                   // Pas de progression sur le sommaire : les sections s'y
                   // abordent dans l'ordre qu'on veut, il n'y a pas de « 3/7 ».
@@ -622,7 +633,9 @@ class _AddPropertyViewState extends State<AddPropertyView> {
                   // Sur le sommaire, la flèche de l'en-tête suffit à sortir :
                   // un second bouton « Retour » au même endroit que
                   // « Enregistrer » invite à l'appui malheureux.
-                  secondaryLabel: _hidesSecondaryAction ? null : 'Retour',
+                  secondaryLabel: _hidesSecondaryAction
+                      ? null
+                      : 'common.back'.tr(),
                   onSecondary: _hidesSecondaryAction ? null : _back,
                   secondaryIcon: LucideIcons.chevronLeft,
                   isLoading: isBusy,
@@ -640,12 +653,15 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Que souhaitez-vous modifier ?', style: context.text.titleMedium),
+        Text(
+          'property_form.what_to_edit'.tr(),
+          style: context.text.titleMedium,
+        ),
         const SizedBox(height: 4),
         Text(
           _hasPendingChanges
-              ? 'Enregistrez pour appliquer vos modifications.'
-              : 'Touchez une section pour la corriger.',
+              ? 'property_form.save_to_apply'.tr()
+              : 'property_form.tap_section'.tr(),
           style: context.text.bodySmall!.copyWith(
             color: _hasPendingChanges
                 ? context.tokens.accentAmber
@@ -668,7 +684,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
           itemCount: _stepTitles.length,
           itemBuilder: (_, index) => _SummaryTile(
             icon: _stepIcons[index],
-            title: _stepTitles[index],
+            title: _stepTitles[index].tr(),
             summary: _stepSummary(index),
             isTouched: _touched.contains(index),
             onTap: () => _openStep(index),
@@ -782,7 +798,10 @@ class _SummaryTile extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (isTouched)
-                    const AppBadge(label: 'Modifiée', tone: AppAccent.amber)
+                    AppBadge(
+                      label: 'property_form.modified'.tr(),
+                      tone: AppAccent.amber,
+                    )
                   else
                     Icon(LucideIcons.chevronRight, size: 16, color: t.muted),
                 ],

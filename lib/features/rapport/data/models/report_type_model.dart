@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 // `maintenance` et `fiscal` ont existé dans la maquette mais n'ont rien
 // derrière côté API : aucune donnée d'intervention ni de prestataire pour la
 // maintenance, aucun marqueur de déductibilité pour le fiscal. Retirés plutôt
@@ -12,26 +13,26 @@ extension ReportTypeExt on ReportType {
   String get label {
     switch (this) {
       case ReportType.financial:
-        return 'Bilan Financier';
+        return 'report.financial'.tr();
       case ReportType.performance:
-        return 'Performance & Occupation';
+        return 'report.performance'.tr();
       case ReportType.reservations:
-        return 'Relevé des Réservations';
+        return 'report.reservations'.tr();
       case ReportType.police:
-        return 'Rapport police';
+        return 'report.police'.tr();
     }
   }
 
   String get description {
     switch (this) {
       case ReportType.financial:
-        return 'Revenus vs dépenses, bénéfice net';
+        return 'report.financial_hint'.tr();
       case ReportType.performance:
-        return 'Taux d\'occupation, RevPAR, nuitées';
+        return 'report.performance_hint'.tr();
       case ReportType.reservations:
-        return 'Historique locataires, paiements';
+        return 'report.reservations_hint'.tr();
       case ReportType.police:
-        return 'Liste des personnes hébergées, pour la police';
+        return 'report.police_hint'.tr();
     }
   }
 

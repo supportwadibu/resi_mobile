@@ -18,6 +18,11 @@ class FinanceRepository {
   /// logements, ses charges communes et celles de ses logements. Le taux
   /// d’occupation est alors rapporté à ses seules unités, et non au parc entier.
   ///
+  /// [to] est le dernier jour **inclus** : il part en fin de journée. L'API
+  /// traite cette borne comme exclusive pour le revenu, l'occupation et les
+  /// remboursements ; envoyée à minuit, elle amputerait le relevé de son
+  /// dernier jour — le 30 septembre d'un relevé de septembre.
+  ///
   /// Une résidence inconnue répond 404 — lire le `statusCode`, jamais le texte
   /// du message.
   Future<FinanceOverviewModel> getOverview({
@@ -30,7 +35,7 @@ class FinanceRepository {
         ApiEndpoints.financeOverview(_role.value),
         queryParameters: {
           if (from != null) 'from': _formatDate(from),
-          if (to != null) 'to': _formatDate(to),
+          if (to != null) 'to': '${_formatDate(to)} 23:59:59',
           'residence_id': ?residenceId,
         },
       );

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
@@ -48,7 +49,7 @@ class ScopeSelector extends StatelessWidget {
           Padding(
             padding: EdgeInsets.fromLTRB(4, 6, 4, 10),
             child: Text(
-              'Logements hors résidence',
+              'gerant.standalone_units'.tr(),
               style: context.text.labelMedium!.copyWith(
                 color: context.tokens.muted,
                 fontWeight: FontWeight.w600,
@@ -155,8 +156,13 @@ class _ResidenceTileState extends State<_ResidenceTile> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '$checkedCount confié${checkedCount > 1 ? 's' : ''} '
-                          'sur ${ids.length}',
+                          'gerant.assigned_of'.plural(
+                            checkedCount,
+                            namedArgs: {
+                              'checked': '$checkedCount',
+                              'total': '${ids.length}',
+                            },
+                          ),
                           style: context.text.bodySmall,
                         ),
                       ],

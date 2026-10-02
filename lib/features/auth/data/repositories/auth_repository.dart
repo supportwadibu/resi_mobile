@@ -109,6 +109,17 @@ class AuthRepository {
     }
   }
 
+  /// Compte de la session en cours, tel que l'API le connaît aujourd'hui.
+  Future<AuthUser> fetchMe() async {
+    try {
+      final res = await _dio.get(ApiEndpoints.me);
+      final data = res.data as Map<String, dynamic>;
+      return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   /// État d'abonnement du propriétaire connecté.
   ///
   /// Alimente l'écran affiché juste après l'inscription, puis le tableau de

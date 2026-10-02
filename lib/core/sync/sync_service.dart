@@ -8,6 +8,9 @@ import '../../features/clients/data/repositories/clients_repository.dart';
 import '../../features/reservation/data/datasources/reservation_local_store.dart';
 import '../../features/reservation/data/repositories/reservation_repository.dart';
 import '../error/failures.dart';
+import '../offline/pending_action.dart';
+import '../offline/pending_action_store.dart';
+import 'pending_action_sender.dart';
 
 /// Codes d'un refus que rejouer ne résoudra jamais.
 ///
@@ -131,13 +134,28 @@ class SyncService {
     this._store,
     this._reservations,
     this._clients,
-    this._connectivity,
-  );
+    this._connectivity, {
+    this.afterSync,
+    PendingActionStore? actions,
+    PendingActionSender? sender,
+  }) : _actions = actions,
+       _sender = sender;
 
   final ReservationLocalStore _store;
   final ReservationRepository _reservations;
   final ClientsRepository _clients;
   final Connectivity _connectivity;
+
+  /// File des autres actions du comptoir — départ, prolongation, fiche
+  /// client, dépense. Optionnelle pour que les tests de la file des
+  /// réservations n'aient pas à la monter.
+  final PendingActionStore? _actions;
+  final PendingActionSender? _sender;
+
+  /// Lancé après une passe complète en ligne — le préchargement hors ligne.
+  /// Après et non avant : le cache doit refléter les saisies qui viennent de
+  /// partir, pas l'état d'avant leur envoi.
+  final Future<void> Function()? afterSync;
 
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
@@ -186,9 +204,16 @@ class SyncService {
   }
 
   Future<void> refreshCounters() async {
-    pendingCount.value = await _store.pendingCount();
-    conflictCount.value = await _store.conflictCount();
-    rejectedCount.value = await _store.rejectedCount();
+    final actions = _actions;
+    pendingCount.value =
+        await _store.pendingCount() +
+        (await actions?.count(PendingActionState.pending) ?? 0);
+    conflictCount.value =
+        await _store.conflictCount() +
+        (await actions?.count(PendingActionState.conflict) ?? 0);
+    rejectedCount.value =
+        await _store.rejectedCount() +
+        (await actions?.count(PendingActionState.rejected) ?? 0);
   }
 
   /// Vide la file, une réservation après l'autre.
@@ -206,10 +231,13 @@ class SyncService {
     var failed = 0;
 
     try {
-      final queue = await _store.getQueue();
+      final queue = await _mergedQueue();
 
-      for (final booking in queue) {
-        final outcome = await _send(booking);
+      for (final item in queue) {
+        final booking = item.booking;
+        final outcome = booking != null
+            ? await _send(booking)
+            : await _sendAction(item.action!);
 
         switch (outcome) {
           case _SendOutcome.sent:
@@ -220,6 +248,10 @@ class SyncService {
             // La saisie vient de quitter la file : la passe continue, c'est
             // précisément ce que ce retrait débloque.
             rejected++;
+          case _SendOutcome.waiting:
+            // Sa cible n'est pas encore partie : elle attend la passe
+            // suivante, sans rien empêcher de ce qui est indépendant.
+            failed++;
           case _SendOutcome.retry:
             failed++;
             // Le réseau vient de retomber : inutile d'insister sur le reste
@@ -233,6 +265,9 @@ class SyncService {
       _running = false;
       await refreshCounters();
     }
+
+    final after = afterSync;
+    if (after != null) unawaited(after());
 
     return _report(sent, conflicts, rejected, failed);
   }
@@ -264,13 +299,93 @@ class SyncService {
     return results.any((r) => r != ConnectivityResult.none);
   }
 
+  /// Les deux files, réservations et autres actions, dans l'ordre de saisie.
+  ///
+  /// Un seul ordre pour les deux : un départ saisi après la réservation qu'il
+  /// clôt doit partir après elle, faute de quoi il viserait une réservation
+  /// que le serveur ne connaît pas encore.
+  Future<List<_QueueItem>> _mergedQueue() async {
+    final bookings = await _store.getQueue();
+    final actions = _sender == null
+        ? const <PendingAction>[]
+        : await _actions?.queue() ?? const <PendingAction>[];
+
+    return [
+      for (final booking in bookings) _QueueItem.booking(booking),
+      for (final action in actions) _QueueItem.action(action),
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
+
+  /// Envoie une action, après avoir résolu l'élément qu'elle vise.
+  Future<_SendOutcome> _sendAction(PendingAction action) async {
+    final actions = _actions!;
+
+    String? target;
+    final ref = action.targetRef;
+    if (ref != null && action.type != PendingActionType.clientCreate) {
+      target = await actions.resolve(ref);
+      if (target == null) return _SendOutcome.waiting;
+    }
+
+    try {
+      final remoteId = await _sender!.send(action, target);
+      // Une fiche créée hors ligne a pu être visée depuis — modifiée, ou
+      // choisie pour une réservation : son identifiant serveur les débloque.
+      if (action.type == PendingActionType.clientCreate &&
+          ref != null &&
+          remoteId != null) {
+        await actions.link(ref, remoteId);
+      }
+      await actions.remove(action.id);
+      return _SendOutcome.sent;
+    } on AppFailure catch (failure) {
+      if (isAlreadyApplied(action.type, failure)) {
+        await actions.remove(action.id);
+        return _SendOutcome.sent;
+      }
+
+      switch (classifyFailure(failure)) {
+        case FailureDisposition.rejected:
+          await actions.mark(
+            action.id,
+            state: PendingActionState.rejected,
+            errorCode: failure.code,
+            errorMessage: failure.userMessage,
+          );
+          return _SendOutcome.rejected;
+        case FailureDisposition.conflict:
+          // Un 409 se tranche ; tout autre refus définitif se constate. Les
+          // deux restent en base, visibles dans « À arbitrer ».
+          await actions.mark(
+            action.id,
+            state: failure.statusCode == 409
+                ? PendingActionState.conflict
+                : PendingActionState.rejected,
+            errorCode: failure.code,
+            errorMessage: failure.userMessage,
+          );
+          return failure.statusCode == 409
+              ? _SendOutcome.conflict
+              : _SendOutcome.rejected;
+        case FailureDisposition.retry:
+          await actions.mark(
+            action.id,
+            state: PendingActionState.pending,
+            errorCode: failure.code,
+            errorMessage: failure.userMessage,
+          );
+          return _SendOutcome.retry;
+      }
+    }
+  }
+
   /// Envoie une réservation, en créant son client au passage si besoin.
   Future<_SendOutcome> _send(PendingBooking booking) async {
     try {
       final clientId = await _resolveClientId(booking);
       if (clientId == null) return _SendOutcome.retry;
 
-      await _reservations.createOwnerBooking(
+      final created = await _reservations.createOwnerBooking(
         propertyId: booking.propertyId,
         clientId: clientId,
         stayType: booking.stayType,
@@ -288,6 +403,13 @@ class SyncService {
         referrerPhone: booking.referrerPhone,
       );
 
+      // Un départ ou une prolongation saisis avant l'envoi visent la
+      // réservation par son identifiant local : il désigne désormais celle du
+      // serveur.
+      await _actions?.link(
+        ReservationLocalStore.localBookingId(booking.clientRequestId),
+        created.id,
+      );
       await _store.dequeue(booking.clientRequestId);
       return _SendOutcome.sent;
     } on AppFailure catch (failure) {
@@ -298,7 +420,12 @@ class SyncService {
   /// Identifiant serveur du client, créé à la volée s'il ne l'est pas encore.
   Future<String?> _resolveClientId(PendingBooking booking) async {
     final remote = booking.remoteClientId;
-    if (remote != null && remote.isNotEmpty) return remote;
+    if (remote != null && remote.isNotEmpty) {
+      // Fiche créée hors ligne puis choisie au carnet : elle part d'abord par
+      // la file des actions, et la réservation attend son identifiant serveur.
+      if (isLocalId(remote)) return _actions?.resolve(remote);
+      return remote;
+    }
 
     final localId = booking.localClientId;
     if (localId == null) return null;
@@ -400,4 +527,29 @@ class SyncService {
   }
 }
 
-enum _SendOutcome { sent, conflict, rejected, retry }
+/// Le serveur a-t-il déjà appliqué cette action ?
+///
+/// Un départ dont la réponse s'est perdue est rejoué au retour du réseau, et
+/// le serveur répond alors « séjour déjà clôturé » : c'est le succès du
+/// premier envoi, pas un refus à arbitrer.
+bool isAlreadyApplied(PendingActionType type, AppFailure failure) =>
+    (type == PendingActionType.bookingCheckOut ||
+        type == PendingActionType.bookingCheckOutEarly) &&
+    failure.code == 'booking_already_completed';
+
+enum _SendOutcome { sent, conflict, rejected, retry, waiting }
+
+/// Élément de l'une ou l'autre file, ordonné par date de saisie.
+class _QueueItem {
+  _QueueItem.booking(PendingBooking this.booking)
+    : action = null,
+      createdAt = booking.createdAt;
+
+  _QueueItem.action(PendingAction this.action)
+    : booking = null,
+      createdAt = action.createdAt;
+
+  final PendingBooking? booking;
+  final PendingAction? action;
+  final DateTime createdAt;
+}

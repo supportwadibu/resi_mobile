@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -28,7 +29,7 @@ class RatingDistributionChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Distribution des notes',
+            'reviews.distribution'.tr(),
             style: context.text.titleMedium!.copyWith(
               color: context.tokens.foreground,
             ),

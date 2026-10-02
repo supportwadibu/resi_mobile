@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
@@ -22,7 +23,7 @@ class PaymentLinkButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppBottomActionBar(
-      primaryLabel: 'Prolonger le séjour',
+      primaryLabel: 'stay_extension.title'.tr(),
       primaryIcon: LucideIcons.calendarPlus,
       isLoading: isLoading,
       onPrimary: onPressed,

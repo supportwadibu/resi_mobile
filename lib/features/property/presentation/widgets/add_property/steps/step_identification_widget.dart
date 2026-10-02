@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
@@ -47,16 +48,16 @@ class _StepIdentificationWidgetState extends State<StepIdentificationWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppTextField(
-          label: 'Nom du bien',
-          hint: 'Ex: Villa Belvédère, Appart Cocody...',
+          label: 'property_form.name'.tr(),
+          hint: 'property_form.name_hint'.tr(),
           controller: _nameCtrl,
           prefixIcon: const Icon(LucideIcons.house, size: 16),
           onChanged: widget.onTitleChanged,
         ),
         const SizedBox(height: 16),
         AppTextField(
-          label: 'Description',
-          hint: 'Décrivez votre bien en quelques mots...',
+          label: 'property_detail.description'.tr(),
+          hint: 'property_form.description_hint'.tr(),
           controller: _descCtrl,
           maxLines: 4,
           onChanged: widget.onDescriptionChanged,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
@@ -30,8 +31,8 @@ class PropertyGridWidget extends StatelessWidget {
           padding: EdgeInsets.zero,
         ),
         PropertyError(:final message) => _Notice(message: message),
-        PropertyLoaded(:final items) when items.isEmpty => const _Notice(
-          message: 'Aucun bien enregistré pour le moment.',
+        PropertyLoaded(:final items) when items.isEmpty => _Notice(
+          message: 'home.no_property_yet'.tr(),
         ),
         PropertyLoaded(:final items) => _buildGrid(
           context,

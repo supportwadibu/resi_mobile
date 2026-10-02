@@ -17,11 +17,19 @@ final class EarlyCheckOutLoading extends EarlyCheckOutState {
 
 /// Chiffrage reçu. [isSubmitting] garde le détail affiché pendant l'envoi :
 /// le vider ferait sauter la feuille au moment où le propriétaire valide.
+///
+/// [isEstimate] : chiffré sur l'appareil, faute de réseau. Le montant retenu
+/// partira tel quel à la synchronisation.
 final class EarlyCheckOutLoaded extends EarlyCheckOutState {
-  const EarlyCheckOutLoaded(this.quote, {this.isSubmitting = false});
+  const EarlyCheckOutLoaded(
+    this.quote, {
+    this.isSubmitting = false,
+    this.isEstimate = false,
+  });
 
   final EarlyCheckOutQuote quote;
   final bool isSubmitting;
+  final bool isEstimate;
 }
 
 /// Heure refusée, réseau coupé ou clôture refusée.
@@ -36,7 +44,11 @@ final class EarlyCheckOutError extends EarlyCheckOutState {
 }
 
 final class EarlyCheckOutSuccess extends EarlyCheckOutState {
-  const EarlyCheckOutSuccess(this.reservation);
+  const EarlyCheckOutSuccess(this.reservation, {this.queued = false});
 
-  final ReservationModel reservation;
+  /// Réservation clôturée par le serveur, `null` quand le départ est en file.
+  final ReservationModel? reservation;
+
+  /// Départ saisi hors ligne, envoyé au retour du réseau.
+  final bool queued;
 }

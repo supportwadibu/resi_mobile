@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -24,16 +25,19 @@ class PropertyPricingDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Section(
-      title: 'Tarifs',
+      title: 'property_detail.pricing'.tr(),
       icon: LucideIcons.banknote,
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          _PriceRow(label: 'Par jour', price: pricePerDay),
+          _PriceRow(
+            label: 'property_detail.per_day_title'.tr(),
+            price: pricePerDay,
+          ),
           for (final tier in priceTiers) ...[
             const Divider(height: 1),
             _PriceRow(
-              label: 'Dès ${tier.minDays} jours',
+              label: 'property_detail.from_days'.tr(args: ['${tier.minDays}']),
               price: pricePerDay * (1 - tier.discountPercent / 100),
               // Une remise est un avantage acquis : vert, comme un statut
               // « en règle ».

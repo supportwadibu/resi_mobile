@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -48,7 +49,7 @@ class IdentityDocumentPicker extends StatelessWidget {
 
         if (showError && missing > 0)
           Text(
-            '$missing document${missing > 1 ? 's' : ''} manquant${missing > 1 ? 's' : ''}',
+            'clients.documents_missing'.plural(missing),
             style: context.text.bodySmall!.copyWith(
               color: context.tokens.accentRed,
             ),

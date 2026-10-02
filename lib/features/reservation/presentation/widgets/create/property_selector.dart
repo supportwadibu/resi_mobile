@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
@@ -32,7 +33,10 @@ class PropertySelector extends StatelessWidget {
             children: [
               const AppLoader(size: 20),
               SizedBox(width: 12),
-              Text('Chargement des résidences…', style: context.mutedText),
+              Text(
+                'booking_form.loading_residences'.tr(),
+                style: context.mutedText,
+              ),
             ],
           ),
         ),
@@ -46,7 +50,7 @@ class PropertySelector extends StatelessWidget {
         ),
         PropertyLoaded(items: final items) when items.isEmpty => _SelectorShell(
           child: Text(
-            'Aucune résidence enregistrée.',
+            'booking_form.no_residence'.tr(),
             style: context.mutedText,
           ),
         ),
@@ -55,7 +59,10 @@ class PropertySelector extends StatelessWidget {
             child: DropdownButton<String>(
               value: _validSelection(items),
               isExpanded: true,
-              hint: Text('Choisir une résidence', style: context.mutedText),
+              hint: Text(
+                'booking_form.choose_residence'.tr(),
+                style: context.mutedText,
+              ),
               items: items
                   .map(
                     (p) => DropdownMenuItem(

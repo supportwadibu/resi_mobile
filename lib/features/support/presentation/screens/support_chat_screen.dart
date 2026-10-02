@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
@@ -35,7 +36,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppTopBar(title: 'Aide & support'),
+      appBar: AppTopBar(title: 'support.title'.tr()),
       body: SafeArea(child: _hasFailed ? _errorView() : _chatView()),
     );
   }
@@ -125,8 +126,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   Widget _errorView() {
     return ErrorState(
-      message: 'Le support est injoignable. Vérifiez votre connexion, puis '
-          'réessayez.',
+      message: 'support.unreachable'.tr(),
       onRetry: () {
         setState(() {
           _hasFailed = false;

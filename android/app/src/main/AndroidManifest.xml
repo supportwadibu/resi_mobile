@@ -8,7 +8,23 @@
             </intent-filter>
         </activity>
         <meta-data android:name="flutterEmbedding" android:value="2" />
+        <!-- Canal des notifications reçues en arrière-plan. Créé par
+             l'application avec une importance haute : sans lui, FCM range
+             la notification dans son canal de secours, sans bannière ni son. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="resi_default" />
+        <!-- Petite icône des notifications reçues en arrière-plan. Android ne
+             garde que le canal alpha : l'icône du lanceur, opaque, s'affichait
+             en carré blanc. Même ressource que pour l'affichage au premier
+             plan (`PushNotificationService`). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
     </application>
+
+    <!-- Android 13+ : affichage des notifications, demandé à la connexion. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

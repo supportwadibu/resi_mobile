@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
@@ -12,9 +13,9 @@ class HeaderPropertyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionHeading(
-      title: 'Mes biens',
+      title: 'home.my_properties'.tr(),
       icon: AppSectionIcons.properties,
-      actionLabel: 'Voir tout',
+      actionLabel: 'common.see_all'.tr(),
       onAction: onSeeAll,
     );
   }

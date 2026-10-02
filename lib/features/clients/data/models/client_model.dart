@@ -1,16 +1,21 @@
+import 'package:easy_localization/easy_localization.dart';
+import '../../../../core/offline/pending_action.dart';
+import '../../../../core/offline/pending_overlay.dart';
 import 'client_identity.dart';
 
 export 'client_identity.dart';
 
 /// Statut d'une fiche du carnet, aligné sur `CLIENT_STATUSES` du serveur.
 enum ClientStatus {
-  active('active', 'Actif'),
-  archived('archived', 'Archivé');
+  active('active'),
+  archived('archived');
 
-  const ClientStatus(this.code, this.label);
+  const ClientStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'client_status.$code'.tr();
 
   static ClientStatus fromCode(String? code) {
     for (final status in ClientStatus.values) {
@@ -24,14 +29,16 @@ enum ClientStatus {
 
 /// Type de pièce d'identité, aligné sur `ID_DOCUMENT_TYPES` du serveur.
 enum ClientIdDocumentType {
-  cni('cni', 'CNI'),
-  passeport('passeport', 'Passeport'),
-  permis('permis', 'Permis de conduire');
+  cni('cni'),
+  passeport('passeport'),
+  permis('permis');
 
-  const ClientIdDocumentType(this.code, this.label);
+  const ClientIdDocumentType(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'client_id_types.$code'.tr();
 
   static ClientIdDocumentType? fromCode(String? code) {
     if (code == null) return null;
@@ -70,6 +77,7 @@ class ClientModel {
     required this.id,
     required this.fullName,
     required this.phone,
+    this.syncState,
     this.whatsapp,
     this.idDocumentType,
     this.idDocumentNumber,
@@ -108,6 +116,10 @@ class ClientModel {
   final String? documentFrontUrl;
   final String? documentBackUrl;
 
+  /// Fiche saisie ou modifiée hors ligne, pas encore acceptée par le
+  /// serveur ; `null` sinon. Posé par la superposition de la file.
+  final PendingActionState? syncState;
+
   /// Identité du registre de police, vide tant qu'elle n'est pas saisie.
   final ClientIdentity identity;
 
@@ -129,6 +141,7 @@ class ClientModel {
       documentFrontUrl: json['document_front_url'] as String?,
       documentBackUrl: json['document_back_url'] as String?,
       identity: ClientIdentity.fromJson(json),
+      syncState: localSyncState(json['sync_status']),
     );
   }
 
@@ -162,6 +175,7 @@ class ClientModel {
       documentFrontUrl: documentFrontUrl ?? this.documentFrontUrl,
       documentBackUrl: documentBackUrl ?? this.documentBackUrl,
       identity: identity ?? this.identity,
+      syncState: syncState,
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -386,7 +387,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
           state.copyWith(
             status: AddReservationStatus.failure,
             errorMessage:
-                'Impossible d’enregistrer la réservation sur l’appareil.',
+                'booking_form.local_save_failed'.tr(),
           ),
         );
       }
@@ -468,7 +469,9 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
     if (!end.isAfter(start)) {
       emit(
-        state.copyWith(occupiedConflict: 'La sortie doit être après l’entrée.'),
+        state.copyWith(
+          occupiedConflict: 'booking_form.checkout_after_checkin'.tr(),
+        ),
       );
       return;
     }
@@ -480,8 +483,8 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         emit(
           state.copyWith(
             occupiedConflict: who == null
-                ? 'Ce bien est déjà réservé sur cette période.'
-                : 'Déjà réservé sur cette période par $who.',
+                ? 'booking_form.period_taken'.tr()
+                : 'booking_form.period_taken_by'.tr(args: [who]),
           ),
         );
         return;

@@ -1,14 +1,21 @@
+import 'package:easy_localization/easy_localization.dart';
+
+import '../../../../core/offline/pending_action.dart';
+import '../../../../core/offline/pending_overlay.dart';
+
 /// Statut d'une réservation, aligné sur `BookingStatus` du serveur.
 enum ReservationStatus {
-  confirmed('confirmed', 'Confirmée'),
-  inProgress('in_progress', 'En cours'),
-  cancelled('cancelled', 'Annulée'),
-  completed('completed', 'Terminée');
+  confirmed('confirmed'),
+  inProgress('in_progress'),
+  cancelled('cancelled'),
+  completed('completed');
 
-  const ReservationStatus(this.code, this.label);
+  const ReservationStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'reservation_status.$code'.tr();
 
   static ReservationStatus fromCode(String? code) {
     for (final status in ReservationStatus.values) {
@@ -31,14 +38,16 @@ enum ReservationStatus {
 /// pour les réservations prises au comptoir, où un client peut n'occuper le
 /// bien que quelques heures.
 enum StayType {
-  passage('passage', 'Passage'),
-  halfDay('half_day', 'Demi-journée'),
-  fullDay('full_day', 'Journée complète');
+  passage('passage'),
+  halfDay('half_day'),
+  fullDay('full_day');
 
-  const StayType(this.code, this.label);
+  const StayType(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'stay_types.$code'.tr();
 
   static StayType fromCode(String? code) {
     for (final type in StayType.values) {
@@ -65,13 +74,15 @@ enum StayType {
 /// `online` prise par un client depuis l'application. Ne change jamais : à ne
 /// pas confondre avec l'état de synchronisation d'une saisie hors réseau.
 enum ReservationSource {
-  online('online', 'En ligne'),
-  offline('offline', 'Comptoir');
+  online('online'),
+  offline('offline');
 
-  const ReservationSource(this.code, this.label);
+  const ReservationSource(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'reservation_source.$code'.tr();
 
   static ReservationSource fromCode(String? code) =>
       code == 'offline' ? ReservationSource.offline : ReservationSource.online;
@@ -168,6 +179,7 @@ class ReservationModel {
     this.referrer,
     this.referrerCommissionRate = 0,
     this.referrerCommissionAmount = 0,
+    this.syncState,
   }) : _checkInAt = checkInAt,
        _checkOutAt = checkOutAt;
 
@@ -236,6 +248,10 @@ class ReservationModel {
   /// Commission due à l'apporteur, recalculée par le serveur quand le montant
   /// du séjour change.
   final double referrerCommissionAmount;
+
+  /// Saisie hors ligne pas encore acceptée par le serveur, `null` sinon.
+  /// Posé par la superposition de la file, jamais par l'API.
+  final PendingActionState? syncState;
 
   /// Le séjour a été écourté par un départ anticipé.
   bool get isEarlyCheckOut => plannedCheckOutAt != null;
@@ -333,6 +349,7 @@ class ReservationModel {
           (json['referrer_commission_rate'] as num?)?.toDouble() ?? 0,
       referrerCommissionAmount:
           (json['referrer_commission_amount'] as num?)?.toDouble() ?? 0,
+      syncState: localSyncState(json['sync_status']),
     );
   }
 
@@ -349,7 +366,7 @@ class ReservationModel {
   /// même la durée exacte sur laquelle le montant a été calculé.
   String get durationLabel => switch (stayType) {
     StayType.passage || StayType.halfDay => stayType.label,
-    StayType.fullDay => daysCount > 1 ? '$daysCount jours' : '1 jour',
+    StayType.fullDay => 'booking_form.days'.plural(daysCount),
   };
 
   @override

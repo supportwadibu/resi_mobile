@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
@@ -14,22 +15,22 @@ Future<ReservationMode?> showReservationModeSheet(BuildContext context) {
   return showAppSheet<ReservationMode>(
     context: context,
     builder: (sheetContext) => AppSheet(
-      title: 'Nouvelle réservation',
-      description: 'Le client est-il déjà sur place ?',
+      title: 'booking_form.new_booking'.tr(),
+      description: 'booking_form.mode_question'.tr(),
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [
           AppSheetAction(
             icon: LucideIcons.logIn,
-            label: 'Check-in immédiat',
-            description: 'Le client entre maintenant',
+            label: 'booking_form.title_check_in'.tr(),
+            description: 'booking_form.mode_check_in_hint'.tr(),
             onTap: () =>
                 Navigator.of(sheetContext).pop(ReservationMode.checkIn),
           ),
           AppSheetAction(
             icon: LucideIcons.calendarClock,
-            label: 'Réservation future',
-            description: 'Séjour prévu à une date à venir',
+            label: 'booking_form.title_future'.tr(),
+            description: 'booking_form.mode_future_hint'.tr(),
             onTap: () => Navigator.of(sheetContext).pop(ReservationMode.future),
           ),
         ],

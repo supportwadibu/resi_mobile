@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../shared/widgets/app_toast.dart';
 import '../router/app_router.dart';
@@ -32,10 +33,37 @@ class PushNotificationService {
 
   FirebaseMessaging get _messaging => FirebaseMessaging.instance;
 
+  final _local = FlutterLocalNotificationsPlugin();
+
   StreamSubscription<String>? _tokenRefresh;
   bool _started = false;
 
   static String get _platform => Platform.isIOS ? 'ios' : 'android';
+
+  /// Canal Android des notifications, à importance haute : bannière et son.
+  ///
+  /// Déclaré aussi comme canal par défaut de FCM dans `AndroidManifest.xml`,
+  /// et visé par le serveur (`RESI_ANDROID_CHANNEL`) : sans lui, Android
+  /// rangeait les notifications dans le canal de secours de FCM, d'importance
+  /// normale — une simple icône dans la barre d'état, que personne ne voyait.
+  static const channelId = 'resi_default';
+
+  /// Nom et description lus dans les réglages Android, donc dans la langue du
+  /// téléphone. Choisie sur la locale de la plateforme et non par `tr()` : le
+  /// canal se crée au démarrage, avant que les traductions soient chargées.
+  /// Toute autre langue que l'anglais retombe sur le français, comme
+  /// l'application elle-même.
+  static AndroidNotificationChannel get _channel {
+    final english = PlatformDispatcher.instance.locale.languageCode == 'en';
+    return AndroidNotificationChannel(
+      channelId,
+      english ? 'RESI notifications' : 'Notifications RESI',
+      description: english
+          ? 'Subscription deadlines and messages from RESI.'
+          : 'Échéances d’abonnement et messages de RESI.',
+      importance: Importance.high,
+    );
+  }
 
   /// Branche les écouteurs, une fois, au démarrage de l'application.
   Future<void> start() async {
@@ -43,12 +71,37 @@ class PushNotificationService {
     _started = true;
 
     try {
-      // Au premier plan, Android n'affiche pas la notification lui-même : un
-      // toast la montre, sans quoi elle passerait inaperçue.
-      FirebaseMessaging.onMessage.listen((message) {
-        final title = message.notification?.title;
-        if (title != null) AppToast.info(title);
-      });
+      await _local.initialize(
+        settings: const InitializationSettings(
+          // Silhouette blanche sur fond transparent, comme l'exige la barre
+          // d'état ; déclarée aussi pour FCM dans `AndroidManifest.xml`.
+          android: AndroidInitializationSettings('@drawable/ic_notification'),
+          iOS: DarwinInitializationSettings(
+            // L'autorisation est demandée par FCM à la connexion, pas au
+            // lancement : ne pas la redemander ici.
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          ),
+        ),
+        onDidReceiveNotificationResponse: (response) =>
+            _openType(response.payload),
+      );
+      await _local
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(_channel);
+
+      // iOS affiche lui-même la bannière au premier plan quand on le lui
+      // demande ; Android non, d'où [_showForeground].
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      FirebaseMessaging.onMessage.listen(_showForeground);
 
       FirebaseMessaging.onMessageOpenedApp.listen(_open);
 
@@ -103,8 +156,44 @@ class PushNotificationService {
     }
   }
 
-  void _open(RemoteMessage message) {
-    switch (PushDestination.fromData(message.data)) {
+  /// Application ouverte : Android ne montre rien de lui-même. Une vraie
+  /// notification système est posée — un toast de trois secondes, titre seul,
+  /// passait inaperçu.
+  Future<void> _showForeground(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null || !Platform.isAndroid) return;
+
+    try {
+      await _local.show(
+        id: message.messageId?.hashCode ?? notification.hashCode,
+        title: notification.title,
+        body: notification.body,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channel.id,
+            _channel.name,
+            channelDescription: _channel.description,
+            importance: Importance.high,
+            priority: Priority.high,
+            // Le corps entier, pas une ligne tronquée : une relance porte la
+            // date d'échéance en fin de phrase.
+            styleInformation: BigTextStyleInformation(notification.body ?? ''),
+          ),
+        ),
+        payload: message.data['type'] as String?,
+      );
+    } catch (error) {
+      // Repli : au moins le titre, plutôt que rien.
+      final title = notification.title;
+      if (title != null) AppToast.info(title);
+      debugPrint('Notification locale non affichée : $error');
+    }
+  }
+
+  void _open(RemoteMessage message) => _openType(message.data['type'] as String?);
+
+  void _openType(String? type) {
+    switch (PushDestination.fromData({'type': type})) {
       case PushDestination.subscription:
         _router.push(SubscriptionPlansRoute());
       case null:

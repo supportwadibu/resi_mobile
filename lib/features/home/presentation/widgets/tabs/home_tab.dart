@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../../../../../shared/widgets/page_header.dart';
@@ -29,7 +30,10 @@ class HomeTab extends StatelessWidget {
         children: [
           const TopBarWidget(),
           const SizedBox(height: 20),
-          const SectionHeading(title: 'Ce mois-ci', icon: AppSectionIcons.home),
+          SectionHeading(
+            title: 'common.this_month'.tr(),
+            icon: AppSectionIcons.home,
+          ),
           const SizedBox(height: 8),
           // Parc, séjours du mois et bénéfice sont des statistiques : forfait
           // complet seulement.

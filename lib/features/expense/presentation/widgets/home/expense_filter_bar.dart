@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
@@ -35,8 +36,8 @@ class ExpenseFilterBar extends StatelessWidget {
         Expanded(
           child: AppButton(
             label: hasFilters
-                ? '$activeCount filtre${activeCount > 1 ? 's' : ''}'
-                : 'Filtrer',
+                ? 'expense.filters_count'.plural(activeCount)
+                : 'expense.filter'.tr(),
             icon: LucideIcons.listFilter,
             // Filtres posés : le bouton passe en noir, pour qu'on lise d'un
             // coup d'œil que la liste n'est pas complète.
@@ -51,7 +52,7 @@ class ExpenseFilterBar extends StatelessWidget {
           const SizedBox(width: 8),
           AppIconButton(
             icon: LucideIcons.x,
-            label: 'Effacer les filtres',
+            label: 'expense.clear_filters'.tr(),
             bordered: true,
             onPressed: onClear,
           ),
@@ -61,7 +62,7 @@ class ExpenseFilterBar extends StatelessWidget {
             ? const SizedBox.square(dimension: 40, child: AppLoader(size: 20))
             : AppIconButton(
                 icon: LucideIcons.share,
-                label: 'Exporter en PDF',
+                label: 'expense.export_pdf'.tr(),
                 bordered: true,
                 // Désactivé quand l'export n'a rien à produire.
                 onPressed: onExport,

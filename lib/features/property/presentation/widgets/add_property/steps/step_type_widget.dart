@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -32,7 +33,7 @@ class StepTypeWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quel type de bien souhaitez-vous enregistrer ?',
+          'property_form.which_type'.tr(),
           style: context.text.titleMedium,
         ),
         const SizedBox(height: 16),

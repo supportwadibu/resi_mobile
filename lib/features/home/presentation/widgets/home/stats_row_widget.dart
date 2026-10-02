@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -39,24 +40,26 @@ class StatsRowWidget extends StatelessWidget {
 
         return _TileLayout(
           lead: StatTile(
-            label: 'Bénéfice ce mois',
+            label: 'home.net_income'.tr(),
             value: netIncome == null
                 ? _placeholder
                 : CurrencyFormatter.short(netIncome),
             icon: LucideIcons.banknote,
             accent: isLoss ? AppAccent.red : AppAccent.green,
-            note: isLoss ? 'Mois en perte' : 'Recettes moins dépenses',
+            note: isLoss
+                ? 'home.month_loss'.tr()
+                : 'home.income_minus_expenses'.tr(),
             noteTone: isLoss ? StatNoteTone.down : null,
           ),
           pair: [
             StatTile(
-              label: 'Mes biens',
+              label: 'home.my_properties'.tr(),
               value: stats?.propertiesCount?.toString() ?? _placeholder,
               icon: AppSectionIcons.properties,
               accent: AppAccent.blue,
             ),
             StatTile(
-              label: 'Réservations ce mois',
+              label: 'home.bookings_month'.tr(),
               value: stats?.activeBookings?.toString() ?? _placeholder,
               icon: AppSectionIcons.bookings,
               accent: AppAccent.violet,
@@ -81,7 +84,7 @@ class StatsRowWidget extends StatelessWidget {
 
     return _TileLayout(
       lead: StatTile(
-        label: 'Encaissé ce mois',
+        label: 'home.collected_month'.tr(),
         value: grossRevenue == null
             ? _placeholder
             : CurrencyFormatter.short(grossRevenue),
@@ -90,13 +93,13 @@ class StatsRowWidget extends StatelessWidget {
       ),
       pair: [
         StatTile(
-          label: 'Réservations ce mois',
+          label: 'home.bookings_month'.tr(),
           value: stats.bookingsCount?.toString() ?? _placeholder,
           icon: AppSectionIcons.bookings,
           accent: AppAccent.violet,
         ),
         StatTile(
-          label: 'Occupation',
+          label: 'common.occupancy'.tr(),
           // Le serveur rend une part de 0 à 1 : affichée en pourcentage
           // entier, dans la forme déjà retenue par l'onglet Statistiques.
           value: occupancyRate == null

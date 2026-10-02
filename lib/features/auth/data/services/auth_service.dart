@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/session/session_role.dart';
 import '../../../../core/storage/app_database.dart';
+import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../models/auth_model.dart';
 import '../models/register_init_model.dart';
@@ -15,7 +17,8 @@ class AuthService {
     this._storage,
     this._google,
     this._sessionRole,
-    this._database, {
+    this._database,
+    this._localStorage, {
     Future<void> Function()? onSignedIn,
     Future<void> Function()? beforeSignOut,
   }) : _onSignedIn = onSignedIn,
@@ -43,6 +46,10 @@ class AuthService {
   /// base locale est le point que la déconnexion doit garantir, et un
   /// singleton pris en dur la rendrait invérifiable.
   final AppDatabase _database;
+
+  /// Porte le nom du compte, retenu à l'entrée en session pour saluer sans
+  /// requête.
+  final LocalStorage _localStorage;
 
   Future<AuthModel> login(String email, String password) async {
     final auth = await _repository.login(email, password);
@@ -107,6 +114,7 @@ class AuthService {
       // une exception.
       await _storage.clear();
       await _sessionRole.clear();
+      await _localStorage.clearAccountName();
       await _google.signOut();
 
       // Purge complète, file d'envoi comprise : la déconnexion est un acte
@@ -120,6 +128,23 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     final token = await _storage.accessToken;
     return token != null && token.isNotEmpty;
+  }
+
+  /// Nom du compte retenu à la connexion, `null` si aucun ne l'a été.
+  String? cachedAccountName() => _localStorage.getAccountName();
+
+  /// Relit le nom auprès de l'API et le retient. Les sessions ouvertes avant
+  /// qu'on ne conserve le nom n'en ont aucun, et il a pu changer depuis un
+  /// autre appareil. `null` quand l'API est injoignable : l'appelant garde
+  /// alors ce qu'il affiche.
+  Future<String?> refreshAccountName() async {
+    try {
+      final user = await _repository.fetchMe();
+      await _localStorage.saveAccountName(user.fullName);
+      return user.fullName;
+    } on AppFailure {
+      return null;
+    }
   }
 
   /// État d'abonnement du propriétaire connecté (essai en cours, jours
@@ -137,6 +162,7 @@ class AuthService {
       refresh: auth.refreshToken,
     );
     await _sessionRole.set(auth.user.role);
+    await _localStorage.saveAccountName(auth.user.fullName);
 
     final onSignedIn = _onSignedIn;
     if (onSignedIn != null) unawaited(onSignedIn());

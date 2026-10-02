@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
@@ -15,12 +16,13 @@ import '../models/gerant_account_model.dart';
 ///
 /// Défaut connu et volontairement non corrigé ici : il touche toute
 /// l'application et déborde largement la gestion des gérants.
-const _gerantErrorMessages = <String, String>{
-  'manager_already_exists': 'Un compte existe déjà avec ces coordonnées.',
-  'manager_contact_required': 'Renseignez un e-mail ou un téléphone.',
-  'property_not_owned':
-      'Un des logements sélectionnés ne vous appartient pas.',
-  'manager_not_found': 'Ce gérant est introuvable.',
+///
+/// Les codes traduits portent chacun leur clé sous `gerant_errors`.
+const _gerantErrorCodes = {
+  'manager_already_exists',
+  'manager_contact_required',
+  'property_not_owned',
+  'manager_not_found',
 };
 
 /// Traduit un refus métier en message affichable, ou rend l'échec inchangé.
@@ -29,15 +31,13 @@ const _gerantErrorMessages = <String, String>{
 /// de transport ou un refus nouveau doit continuer à dire ce qu'il est plutôt
 /// que d'être repeint en erreur de gérant.
 AppFailure translateGerantFailure(AppFailure failure) {
-  final message = _gerantErrorMessages[failure.code];
-  if (message == null) return failure;
+  final code = failure.code;
+  if (code == null || !_gerantErrorCodes.contains(code)) return failure;
 
-  return AppFailure.validation(
-    errors: {
-      '_': [message],
-    },
+  return AppFailure.localized(
+    message: 'gerant_errors.$code'.tr(),
     statusCode: failure.statusCode ?? 422,
-    code: failure.code,
+    code: code,
   );
 }
 

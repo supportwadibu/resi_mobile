@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -30,10 +31,10 @@ class ExpenseTotal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final countLabel = count == 0
-        ? 'Aucune dépense'
-        : '$count dépense${count > 1 ? 's' : ''}';
+        ? 'expense.none'.tr()
+        : 'expense.count'.plural(count);
     return StatTile(
-      label: 'Total dépensé',
+      label: 'expense.total_spent'.tr(),
       value: CurrencyFormatter.format(total),
       icon: AppSectionIcons.expenses,
       accent: AppAccent.red,

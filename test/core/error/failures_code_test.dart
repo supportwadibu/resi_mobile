@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:resi_africa/core/error/exception_mapper.dart';
 import 'package:resi_africa/core/error/failures.dart';
 
+import '../../support/translations_fixture.dart';
+
 /// Reponse d'erreur telle que l'API la renvoie : `{ code, message }`.
 DioException _dioError(int status, Map<String, dynamic>? body) {
   final requestOptions = RequestOptions(path: '/api/v1/gerant/bookings');
@@ -20,6 +22,8 @@ DioException _dioError(int status, Map<String, dynamic>? body) {
 }
 
 void main() {
+  setUp(loadTestTranslations);
+
   group('AppFailure.code', () {
     test('retient le code metier d’un 403', () {
       final failure = AppFailure.fromDio(
@@ -137,11 +141,11 @@ void main() {
       expect(AppFailure.unauthorized().statusCode, 401);
       expect(
         AppFailure.serverError(code: 409).userMessage,
-        'Cette periode est deja reservee.',
+        'Cette période est déjà réservée.',
       );
       expect(
         AppFailure.validation(errors: const {}).userMessage,
-        'Les informations saisies ont ete refusees par le serveur.',
+        'Les informations saisies ont été refusées par le serveur.',
       );
     });
   });
@@ -171,7 +175,7 @@ void main() {
       );
       expect(
         failure.userMessage,
-        isNot('Acces refuse.'),
+        isNot('Accès refusé.'),
         reason: 'le message du serveur ne doit pas etre ecrase',
       );
     });
@@ -196,22 +200,22 @@ void main() {
       // Le repli reste indispensable : une bulle vide n'apprendrait rien.
       expect(
         AppFailure.fromDio(_dioError(403, null)).userMessage,
-        'Acces refuse.',
+        'Accès refusé.',
       );
       expect(
         mapDioExceptionToFailure(_dioError(403, {})).userMessage,
-        'Acces refuse.',
+        'Accès refusé.',
       );
     });
 
     test('un message vide ou blanc retombe sur le generique', () {
       expect(
         AppFailure.fromDio(_dioError(403, {'message': '   '})).userMessage,
-        'Acces refuse.',
+        'Accès refusé.',
       );
       expect(
         AppFailure.fromDio(_dioError(403, {'message': ''})).userMessage,
-        'Acces refuse.',
+        'Accès refusé.',
       );
     });
   });
@@ -260,6 +264,64 @@ void main() {
       expect(
         failure.userMessage,
         'Ce logement ne fait pas partie de votre perimetre.',
+      );
+    });
+  });
+
+  group('langue du message', () {
+    // L'API rédige ses refus en français. Sur un téléphone dans une autre
+    // langue, les reprendre tels quels mélangeait les deux langues à l'écran.
+    setUp(() => loadTestTranslations('en'));
+
+    test('un refus métier connu est traduit par son code', () {
+      final failure = AppFailure.fromDio(
+        _dioError(403, {
+          'code': 'owner_profile_required',
+          'message': 'Complétez votre dossier avant de publier une annonce.',
+        }),
+      );
+
+      expect(failure.userMessage, startsWith('Complete your profile'));
+    });
+
+    test('un code inconnu retombe sur le libellé générique, pas sur le français', () {
+      expect(
+        AppFailure.fromDio(
+          _dioError(403, {'code': 'inconnu', 'message': 'Refus en français.'}),
+        ).userMessage,
+        'Access denied.',
+      );
+      expect(
+        AppFailure.serverError(code: 409, message: 'Période prise.').userMessage,
+        'This period is already booked.',
+      );
+    });
+
+    test('les libellés génériques sont en anglais', () {
+      expect(AppFailure.noInternet().userMessage, 'No internet connection.');
+      expect(AppFailure.notFound().userMessage, 'Resource not found.');
+    });
+
+    test('les erreurs de champ de VineJS, rédigées en anglais, sont affichées', () {
+      expect(
+        AppFailure.validation(
+          errors: const {
+            'email': ['The email field must be a valid email address'],
+          },
+        ).userMessage,
+        'The email field must be a valid email address',
+      );
+    });
+
+    test('en français, ces mêmes erreurs de champ cèdent au générique', () {
+      loadTestTranslations('fr');
+      expect(
+        AppFailure.validation(
+          errors: const {
+            'email': ['The email field must be a valid email address'],
+          },
+        ).userMessage,
+        'Les informations saisies ont été refusées par le serveur.',
       );
     });
   });

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'client_model.dart';
 
 /// Résultat d'une création de fiche client.
@@ -45,6 +46,4 @@ class ClientCreationResult {
 /// saisie d'une réservation : le gérant se heurte au même mur, il doit lire la
 /// même chose. Il ne dit **pas** de réessayer, la réponse serait identique, et
 /// ne nomme pas le client : la règle ferme précisément cet oracle.
-const clientOutOfScopeMessage =
-    'Un client porte déjà ce numéro, hors de votre périmètre. '
-    'Demandez au propriétaire de vous donner accès à sa fiche.';
+String get clientOutOfScopeMessage => 'clients.out_of_scope'.tr();

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -68,15 +69,15 @@ class _ClientPickerSheetState extends State<_ClientPickerSheet> {
         height: MediaQuery.sizeOf(context).height * 0.75,
         child: Column(
           children: [
-            const AppSheetHeader(title: 'Choisir un client'),
+            AppSheetHeader(title: 'clients.pick_client'.tr()),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: TextField(
                 autofocus: false,
                 onChanged: (q) => context.read<ClientsCubit>().search(q),
                 style: context.text.bodyMedium,
-                decoration: const InputDecoration(
-                  hintText: 'Nom ou numéro',
+                decoration: InputDecoration(
+                  hintText: 'clients.name_or_number'.tr(),
                   prefixIcon: Icon(LucideIcons.search, size: 16),
                 ),
               ),
@@ -92,10 +93,10 @@ class _ClientPickerSheetState extends State<_ClientPickerSheet> {
                     onRetry: () => context.read<ClientsCubit>().load(),
                   ),
                   ClientsLoaded(items: final items) when items.isEmpty =>
-                    const EmptyState(
+                    EmptyState(
                       icon: LucideIcons.userSearch,
-                      title: 'Aucun client trouvé',
-                      message: 'Fermez pour en enregistrer un nouveau.',
+                      title: 'clients.none_found'.tr(),
+                      message: 'clients.none_found_hint'.tr(),
                     ),
                   ClientsLoaded(:final items, :final isLoadingMore) =>
                     ListView.separated(
@@ -139,7 +140,7 @@ class _ClientTile extends StatelessWidget {
           // Le dossier incomplet est signalé sans bloquer : les pièces sont
           // facultatives à l'enregistrement, et la relance se fait plus tard.
           : Tooltip(
-              message: 'Pièce d’identité incomplète',
+              message: 'booking_form.id_incomplete'.tr(),
               child: Icon(
                 LucideIcons.idCard,
                 size: 18,

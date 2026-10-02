@@ -108,7 +108,11 @@ class _EditReservationViewState extends State<_EditReservationView> {
       case EditReservationStatus.success:
         // Sans `context` : l'écran se referme juste après, et le toast doit
         // survivre à sa disparition pour être lu sur la liste.
-        AppToast.success('booking_edit.success'.tr());
+        AppToast.success(
+          state.queued
+              ? 'offline_queue.saved'.tr()
+              : 'booking_edit.success'.tr(),
+        );
         context.router.maybePop(true);
       case EditReservationStatus.conflict:
         // Un conflit n'est pas une panne : le formulaire reste ouvert pour

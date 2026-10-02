@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
@@ -16,6 +17,7 @@ import '../../../../core/router/app_router.gr.dart';
 import '../../business_logic/gerant_list_cubit.dart';
 import '../../data/models/gerant_account_model.dart';
 import '../widgets/gerant_card.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Gérants du propriétaire — les comptes à qui il confie une partie du parc.
 @RoutePage()
@@ -38,10 +40,10 @@ class _GerantListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Mes gérants',
+        title: 'gerant.my_managers'.tr(),
         actions: [
           AppButton(
-            label: 'Ajouter',
+            label: 'common.add'.tr(),
             icon: LucideIcons.plus,
             size: AppButtonSize.sm,
             onPressed: () => _openForm(context),
@@ -85,6 +87,7 @@ class _GerantListView extends StatelessWidget {
 
   Future<void> _openForm(BuildContext context) async {
     final cubit = context.read<GerantListCubit>();
+    if (!await ensureOnline(context) || !context.mounted) return;
     await context.router.push(const AddGerantRoute());
     // La liste est relue au retour : le formulaire a son propre cubit, et ses
     // écritures n'atteignent donc pas celui de cette page.
@@ -97,6 +100,7 @@ class _GerantListView extends StatelessWidget {
   /// la liste des logements confiés que le propriétaire revient modifier.
   Future<void> _openScope(BuildContext context, GerantAccountModel g) async {
     final cubit = context.read<GerantListCubit>();
+    if (!await ensureOnline(context) || !context.mounted) return;
     await context.router.push(
       GerantScopeRoute(gerantId: g.id, gerantName: g.fullName),
     );
@@ -118,13 +122,14 @@ class _GerantListView extends StatelessWidget {
     final confirmed = await showConfirmDialog(
       context: context,
       title: suspendre
-          ? 'Suspendre ${gerant.fullName} ?'
-          : 'Réactiver ${gerant.fullName} ?',
+          ? 'gerant.suspend_title'.tr(args: [gerant.fullName])
+          : 'gerant.reactivate_title'.tr(args: [gerant.fullName]),
       message: suspendre
-          ? 'Il ne pourra plus se connecter. Son périmètre et les '
-                'réservations qu’il a saisies sont conservés.'
-          : 'Il retrouvera l’accès aux logements qui lui sont confiés.',
-      confirmLabel: suspendre ? 'Suspendre' : 'Réactiver',
+          ? 'gerant.suspend_body'.tr()
+          : 'gerant.reactivate_body'.tr(),
+      confirmLabel: suspendre
+          ? 'gerant.suspend'.tr()
+          : 'gerant.reactivate'.tr(),
       danger: suspendre,
     );
 
@@ -136,7 +141,9 @@ class _GerantListView extends StatelessWidget {
       return;
     }
 
-    AppToast.success(suspendre ? 'Gérant suspendu' : 'Gérant réactivé');
+    AppToast.success(
+      suspendre ? 'gerant.suspended'.tr() : 'gerant.reactivated'.tr(),
+    );
   }
 }
 
@@ -153,12 +160,9 @@ class _EmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyState(
       icon: AppSectionIcons.managers,
-      title: 'Aucun gérant',
-      message:
-          'Un gérant encaisse les réservations et suit les dépenses des '
-          'seuls logements que vous lui confiez. Il ne voit ni vos '
-          'revenus, ni vos autres biens.',
-      actionLabel: 'Ajouter un gérant',
+      title: 'gerant.empty_title'.tr(),
+      message: 'gerant.empty_body'.tr(),
+      actionLabel: 'gerant.add'.tr(),
       actionIcon: LucideIcons.plus,
       onAction: onCreate,
     );

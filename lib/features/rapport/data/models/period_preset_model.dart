@@ -1,16 +1,17 @@
+import 'package:easy_localization/easy_localization.dart';
 enum PeriodPreset { thisMonth, lastMonth, thisYear, custom }
 
 extension PeriodPresetExt on PeriodPreset {
   String get label {
     switch (this) {
       case PeriodPreset.thisMonth:
-        return 'Ce mois-ci';
+        return 'report.this_month'.tr();
       case PeriodPreset.lastMonth:
-        return 'Mois précédent';
+        return 'report.last_month'.tr();
       case PeriodPreset.thisYear:
-        return 'Année en cours';
+        return 'report.this_year'.tr();
       case PeriodPreset.custom:
-        return 'Dates personnalisées';
+        return 'report.custom'.tr();
     }
   }
 }

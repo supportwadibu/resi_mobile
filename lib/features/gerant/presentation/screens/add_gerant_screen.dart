@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
@@ -81,7 +82,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppTopBar(title: 'Nouveau gérant'),
+      appBar: AppTopBar(title: 'gerant.new_title'.tr()),
       body: Column(
         children: [
           Expanded(
@@ -92,28 +93,25 @@ class _AddGerantViewState extends State<_AddGerantView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _SectionLabel('Identité'),
+                    _SectionLabel('gerant.identity'.tr()),
                     AppTextField(
-                      label: 'Nom complet',
+                      label: 'gerant.full_name'.tr(),
                       controller: _nameController,
-                      hint: 'Awa Koné',
+                      hint: 'gerant.name_hint'.tr(),
                       validator: (value) =>
                           (value ?? '').trim().length < 2
-                          ? 'Indiquez le nom du gérant.'
+                          ? 'gerant.name_required'.tr()
                           : null,
                     ),
                     const SizedBox(height: 16),
 
-                    const _SectionLabel('Coordonnées de connexion'),
-                    const _Hint(
-                      'E-mail ou téléphone : c’est par là que le gérant se '
-                      'connecte. L’un des deux suffit.',
-                    ),
+                    _SectionLabel('gerant.login_details'.tr()),
+                    _Hint('gerant.login_details_hint'.tr()),
                     const SizedBox(height: 12),
                     AppTextField(
-                      label: 'E-mail',
+                      label: 'gerant.email'.tr(),
                       controller: _emailController,
-                      hint: 'awa@exemple.ci',
+                      hint: 'gerant.email_hint'.tr(),
                       keyboardType: TextInputType.emailAddress,
                       validator: _validateEmail,
                     ),
@@ -125,25 +123,21 @@ class _AddGerantViewState extends State<_AddGerantView> {
                     ),
                     const SizedBox(height: 16),
 
-                    const _SectionLabel('Mot de passe initial'),
+                    _SectionLabel('gerant.initial_password'.tr()),
                     // Dit à l'écran, sans quoi le propriétaire ne sait pas
                     // s'il doit le communiquer au gérant ni s'il le fixe pour
                     // de bon.
-                    const _Hint(
-                      'Communiquez-le au gérant : il en aura besoin pour sa '
-                      'première connexion, et pourra le changer ensuite depuis '
-                      'son profil.',
-                    ),
+                    _Hint('gerant.initial_password_hint'.tr()),
                     const SizedBox(height: 12),
                     AppTextField(
-                      label: 'Mot de passe',
+                      label: 'gerant.password'.tr(),
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      hint: '8 caractères minimum',
+                      hint: 'gerant.password_hint'.tr(),
                       suffixIcon: IconButton(
                         tooltip: _obscurePassword
-                            ? 'Afficher le mot de passe'
-                            : 'Masquer le mot de passe',
+                            ? 'auth.show_password'.tr()
+                            : 'auth.hide_password'.tr(),
                         onPressed: () => setState(
                           () => _obscurePassword = !_obscurePassword,
                         ),
@@ -155,16 +149,13 @@ class _AddGerantViewState extends State<_AddGerantView> {
                         ),
                       ),
                       validator: (value) => (value ?? '').length < 8
-                          ? 'Le mot de passe doit faire 8 caractères au moins.'
+                          ? 'gerant.password_too_short'.tr()
                           : null,
                     ),
                     const SizedBox(height: 20),
 
-                    const _SectionLabel('Logements confiés'),
-                    const _Hint(
-                      'Le gérant ne verra que ces logements. Vous pourrez en '
-                      'ajouter ou en retirer à tout moment.',
-                    ),
+                    _SectionLabel('gerant.assigned_units'.tr()),
+                    _Hint('gerant.assigned_units_hint'.tr()),
                     const SizedBox(height: 12),
                     const _ScopeSection(),
                   ],
@@ -173,7 +164,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
             ),
           ),
           AppBottomActionBar(
-            primaryLabel: 'Créer le gérant',
+            primaryLabel: 'gerant.create'.tr(),
             primaryIcon: LucideIcons.check,
             isLoading: _isSubmitting,
             onPrimary: _isSubmitting ? null : _submit,
@@ -194,7 +185,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
     // Contrôle volontairement large : le serveur tranche, et une expression
     // plus stricte ici refuserait des adresses valides qu'il accepte.
     if (!email.contains('@') || !email.contains('.')) {
-      return 'Adresse e-mail invalide.';
+      return 'gerant.email_invalid'.tr();
     }
     return null;
   }
@@ -206,7 +197,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
     final phoneInput = _phoneController.text.trim();
 
     if (email.isEmpty && phoneInput.isEmpty) {
-      AppToast.error('Renseignez un e-mail ou un téléphone.');
+      AppToast.error('gerant.contact_required'.tr());
       return;
     }
 
@@ -217,7 +208,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
         : PhoneHelper.toE164(phoneInput, _countryIso2);
 
     if (phoneInput.isNotEmpty && phone == null) {
-      AppToast.error('Numéro de téléphone invalide.');
+      AppToast.error('gerant.phone_invalid'.tr());
       return;
     }
 
@@ -246,12 +237,12 @@ class _AddGerantViewState extends State<_AddGerantView> {
 
     if (created == null) {
       AppToast.error(
-        cubit.lastError ?? 'La création du gérant a échoué. Réessayez.',
+        cubit.lastError ?? 'gerant.create_failed'.tr(),
       );
       return;
     }
 
-    AppToast.success('Gérant créé');
+    AppToast.success('gerant.created'.tr());
     await context.router.maybePop();
   }
 }
@@ -282,10 +273,7 @@ class _ScopeSection extends StatelessWidget {
             onRetry: cubit.load,
           ),
           GerantScopeLoaded(:final totalCount) when totalCount == 0 =>
-            const _Hint(
-              'Vous n’avez aucun logement à confier pour l’instant. Le compte '
-              'peut être créé sans périmètre.',
-            ),
+            _Hint('gerant.no_unit_to_assign'.tr()),
           GerantScopeLoaded() => ScopeSelector(
             groups: state.groups,
             standalone: state.standalone,

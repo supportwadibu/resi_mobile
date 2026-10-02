@@ -187,7 +187,8 @@ void main() {
         (r) => r.path.contains('finance/overview'),
       );
       expect(sent.queryParameters['from'], '2026-03-05');
-      expect(sent.queryParameters['to'], '2026-04-20');
+      // Dernier jour inclus : l'API traite `to` comme exclusive.
+      expect(sent.queryParameters['to'], '2026-04-20 23:59:59');
     });
 
     test('la période survit à un rechargement sans bornes', () async {

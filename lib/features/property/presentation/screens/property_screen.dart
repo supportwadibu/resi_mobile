@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
@@ -9,8 +10,8 @@ class PropertyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppTopBar(title: 'Mes biens'),
-      body: SafeArea(child: Center(child: Text('Property Screen'))),
+      appBar: AppTopBar(title: 'home.my_properties'.tr()),
+      body: SafeArea(child: Center(child: Text('home.my_properties'.tr()))),
     );
   }
 }

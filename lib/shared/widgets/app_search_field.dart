@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -10,7 +11,7 @@ import '../../core/theme/resi_tokens.dart';
 class AppSearchField extends StatelessWidget {
   const AppSearchField({
     required this.onTap,
-    this.hint = 'Rechercher…',
+    this.hint,
     this.padding,
     super.key,
   });
@@ -39,7 +40,7 @@ class AppSearchField extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    hint ?? '',
+                    hint ?? 'common.search_ellipsis'.tr(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.bodyMedium!.copyWith(color: t.muted),

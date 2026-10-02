@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -118,11 +119,11 @@ class _FilledSlot extends StatelessWidget {
             ),
           ),
         ),
-        const Positioned(
+        Positioned(
           top: 6,
           left: 6,
           child: AppBadge(
-            label: 'Ajoutée',
+            label: 'clients.added'.tr(),
             tone: AppAccent.green,
             icon: LucideIcons.check,
           ),
@@ -131,7 +132,7 @@ class _FilledSlot extends StatelessWidget {
           top: 6,
           right: 6,
           child: Tooltip(
-            message: 'Retirer',
+            message: 'property_form.remove'.tr(),
             child: Material(
               color: t.surface,
               shape: RoundedRectangleBorder(

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -68,12 +69,12 @@ class _StepDetailsWidgetState extends State<StepDetailsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Décrivez votre bien', style: context.text.titleMedium),
+        Text('property_form.describe'.tr(), style: context.text.titleMedium),
         const SizedBox(height: 20),
 
         AppTextField(
-          label: 'Surface (m²) — facultatif',
-          hint: 'Ex: 85',
+          label: 'property_form.surface_optional'.tr(),
+          hint: 'property_form.surface_hint'.tr(),
           controller: _surfaceCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
@@ -86,35 +87,35 @@ class _StepDetailsWidgetState extends State<StepDetailsWidget> {
         ),
 
         const SizedBox(height: 24),
-        Text('Composition', style: context.text.titleMedium),
+        Text('property_form.composition'.tr(), style: context.text.titleMedium),
         const SizedBox(height: 12),
 
         _CounterRow(
-          label: 'Chambres',
+          label: 'property_form.bedrooms'.tr(),
           icon: LucideIcons.bed,
           value: widget.bedrooms,
           onChanged: widget.onBedroomsChanged,
         ),
         _CounterRow(
-          label: 'Salles de bain',
+          label: 'property_form.bathrooms'.tr(),
           icon: LucideIcons.bath,
           value: widget.bathrooms,
           onChanged: widget.onBathroomsChanged,
         ),
         _CounterRow(
-          label: 'Salons',
+          label: 'property_form.living_rooms'.tr(),
           icon: LucideIcons.sofa,
           value: widget.livingRooms,
           onChanged: widget.onLivingRoomsChanged,
         ),
         _CounterRow(
-          label: 'Cuisines',
+          label: 'property_form.kitchens'.tr(),
           icon: LucideIcons.refrigerator,
           value: widget.kitchens,
           onChanged: widget.onKitchensChanged,
         ),
         _CounterRow(
-          label: 'Places de parking',
+          label: 'property_form.parking_spaces'.tr(),
           icon: LucideIcons.squareParking,
           value: widget.parkingSpaces,
           onChanged: widget.onParkingChanged,
@@ -180,7 +181,9 @@ class _StepButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppIconButton(
       icon: icon,
-      label: icon == LucideIcons.plus ? 'Ajouter' : 'Retirer',
+      label: icon == LucideIcons.plus
+          ? 'common.add'.tr()
+          : 'property_form.remove'.tr(),
       bordered: true,
       onPressed: onTap,
     );

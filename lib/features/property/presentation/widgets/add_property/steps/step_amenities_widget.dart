@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -49,12 +50,12 @@ class StepAmenitiesWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quelles commodités propose votre bien ?',
+          'property_form.which_amenities'.tr(),
           style: context.text.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
-          '${selected.length} sélectionnée(s)',
+          'property_form.selected_count'.tr(args: ['${selected.length}']),
           style: context.text.bodySmall,
         ),
         const SizedBox(height: 16),

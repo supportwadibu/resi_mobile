@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -254,7 +255,7 @@ class _PriceText extends StatelessWidget {
             style: context.text.amount.copyWith(color: color),
           ),
           TextSpan(
-            text: ' /jour',
+            text: 'common.per_day'.tr(),
             style: context.text.bodySmall!.copyWith(color: color),
           ),
         ],
@@ -327,7 +328,7 @@ class _DeleteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     return Tooltip(
-      message: 'Supprimer',
+      message: 'common.delete'.tr(),
       child: Material(
         color: t.surface,
         shape: AppRadius.outlined(AppRadius.sm, t.border),

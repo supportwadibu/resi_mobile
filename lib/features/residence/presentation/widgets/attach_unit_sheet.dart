@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
@@ -37,18 +38,14 @@ class AttachUnitSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppSheet(
-      title: 'Rattacher un logement',
-      description:
-          'À $residenceName. Le logement gardera son tarif et son '
-          'calendrier ; seule son adresse suivra celle du lieu.',
+      title: 'residence.attach_unit'.tr(),
+      description: 'residence.attach_unit_body'.tr(args: [residenceName]),
       padding: const EdgeInsets.only(bottom: 8),
       child: candidates.isEmpty
           // Tous les biens sont déjà rattachés, ou le parc est vide.
-          ? const EmptyState(
+          ? EmptyState(
               icon: AppSectionIcons.properties,
-              message:
-                  'Aucun logement disponible. Créez un bien, ou détachez-en un '
-                  'd’une autre résidence.',
+              message: 'residence.no_unit_available'.tr(),
             )
           : Column(
               children: [

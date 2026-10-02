@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -94,15 +95,19 @@ class ReviewCardLarge extends StatelessWidget {
       decoration: BoxDecoration(color: context.tokens.background),
       child: Column(
         children: [
-          _buildRatingRow(context, 'Propreté', review.cleanliness),
+          _buildRatingRow(
+            context,
+            'reviews.cleanliness'.tr(),
+            review.cleanliness,
+          ),
           const SizedBox(height: 8),
-          _buildRatingRow(context, 'Emplacement', review.location),
+          _buildRatingRow(context, 'reviews.location'.tr(), review.location),
           const SizedBox(height: 8),
-          _buildRatingRow(context, 'Confort', review.comfort),
+          _buildRatingRow(context, 'reviews.comfort'.tr(), review.comfort),
           const SizedBox(height: 8),
           _buildRatingRow(
             context,
-            'Rapport qualité/prix',
+            'reviews.value'.tr(),
             review.valueForMoney,
           ),
         ],

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -59,7 +60,9 @@ class StepPersonalInfoWidget extends StatelessWidget {
   final bool showIntro;
 
   static String? _required(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Ce champ est requis';
+    if (value == null || value.trim().isEmpty) {
+      return 'common.field_required'.tr();
+    }
     return null;
   }
 
@@ -82,10 +85,7 @@ class StepPersonalInfoWidget extends StatelessWidget {
             OwnerProfileNotice(
               icon: LucideIcons.idCard,
               tone: AppAccent.blue,
-              message:
-                  'Ces informations permettent de valider votre compte. '
-                  'Sans dossier validé, votre accès sera suspendu à la fin de '
-                  'l’essai gratuit.',
+              message: 'owner_profile.intro'.tr(),
             ),
             const SizedBox(height: 24),
           ],
@@ -93,14 +93,14 @@ class StepPersonalInfoWidget extends StatelessWidget {
           if (profile != null) ...[?_buildStatusNotice(context, profile!)],
 
           Text(
-            'Qui êtes-vous ?',
+            'owner_profile.who_are_you'.tr(),
             style: context.text.titleMedium,
           ),
           const SizedBox(height: 20),
 
           AppTextField(
-            label: 'Nom complet',
-            hint: 'Tel qu’il figure sur votre pièce d’identité',
+            label: 'owner_profile.full_name'.tr(),
+            hint: 'owner_profile.full_name_hint'.tr(),
             controller: nameController,
             prefixIcon: const Icon(LucideIcons.user, size: 16),
             validator: _required,
@@ -108,7 +108,7 @@ class StepPersonalInfoWidget extends StatelessWidget {
 
           const SizedBox(height: 24),
           Text(
-            'Où résidez-vous ?',
+            'owner_profile.where_do_you_live'.tr(),
             style: context.text.titleMedium,
           ),
           const SizedBox(height: 20),
@@ -136,8 +136,8 @@ class StepPersonalInfoWidget extends StatelessWidget {
           const SizedBox(height: 16),
 
           AppTextField(
-            label: 'Adresse',
-            hint: 'Rue, quartier...',
+            label: 'owner_profile.address'.tr(),
+            hint: 'owner_profile.address_hint'.tr(),
             controller: addressController,
             prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
           ),
@@ -166,28 +166,25 @@ class StepPersonalInfoWidget extends StatelessWidget {
         tone: AppAccent.red,
         message:
             profile.rejectionReason == null || profile.rejectionReason!.isEmpty
-            ? 'Votre dossier a été refusé. Corrigez-le et renvoyez-le.'
-            : 'Dossier refusé : ${profile.rejectionReason}',
+            ? 'owner_profile.rejected'.tr()
+            : 'owner_profile.rejected_with_reason'.tr(
+                args: [profile.rejectionReason!],
+              ),
       ),
       _ when profile.isSuspended => OwnerProfileNotice(
         icon: LucideIcons.ban,
         tone: AppAccent.red,
-        message:
-            'Votre compte est suspendu faute de dossier validé. '
-            'Complétez-le pour retrouver l’accès à vos biens.',
+        message: 'owner_profile.suspended'.tr(),
       ),
       _ when profile.isUnderReview => OwnerProfileNotice(
         icon: LucideIcons.clock,
         tone: AppAccent.blue,
-        message:
-            'Votre dossier est en cours de vérification. '
-            'Vous pouvez encore le corriger tant qu’il n’est pas validé.',
+        message: 'owner_profile.under_review'.tr(),
       ),
       _ when profile.isValidated => OwnerProfileNotice(
         icon: LucideIcons.circleCheck,
         tone: AppAccent.green,
-        message:
-            'Votre dossier est validé. Vos informations restent modifiables.',
+        message: 'owner_profile.validated'.tr(),
       ),
       _ => null,
     };

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
+import '../offline/offline_cache_interceptor.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/connectivity_interceptor.dart';
 import 'interceptors/plan_interceptor.dart';
@@ -14,6 +15,7 @@ Dio buildDioClient(
   RetryInterceptor retry,
   ConnectivityInterceptor connectivity,
   PlanInterceptor plan,
+  OfflineCacheInterceptor offlineCache,
 ) {
   final dio = Dio(
     BaseOptions(
@@ -29,6 +31,9 @@ Dio buildDioClient(
   );
 
   dio.interceptors.addAll([
+    // En tête : hors ligne, il sert la lecture depuis le cache avant que
+    // l'intercepteur de connectivité ne la rejette.
+    offlineCache,
     connectivity,
     auth,
     retry,
@@ -40,6 +45,8 @@ Dio buildDioClient(
     // mots de passe, jetons et OTP y sont masqués.
     if (kDebugMode && config.enableLogging) const RedactingLogInterceptor(),
   ]);
+
+  retry.attach(dio);
 
   return dio;
 }

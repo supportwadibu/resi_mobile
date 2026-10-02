@@ -13,7 +13,6 @@ import '../../../home/presentation/widgets/reservations/reservation_filters.dart
 import '../../../home/presentation/widgets/reservations/reservation_item.dart';
 import '../../business_logic/reservation_cubit.dart';
 import '../../business_logic/reservation_state.dart';
-import '../widgets/sync_result_listener.dart';
 import '../widgets/sync_status_banner.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -41,33 +40,29 @@ class _ReservationView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppTopBar(title: 'reservation.title'.tr()),
-      // Sous le `Scaffold` : le message a besoin du `ScaffoldMessenger` de cet
-      // écran pour se poser au-dessus de la liste.
-      body: SyncResultListener(
-        child: BlocListener<ReservationCubit, ReservationState>(
-          // Un échec de page suivante laisse la liste en place : seul un
-          // message le signale.
-          listenWhen: (previous, current) =>
-              current is ReservationLoaded &&
-              current.loadMoreError != null &&
-              (previous is! ReservationLoaded ||
-                  previous.loadMoreError != current.loadMoreError),
-          listener: (context, state) => AppToast.error(
-            (state as ReservationLoaded).loadMoreError!,
-            context: context,
-          ),
-          child: const Column(
-            children: [
-              // Au-dessus de la liste : ce qui n'est pas encore parti doit se
-              // voir avant ce qui est confirmé.
-              SyncStatusBanner(),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: ReservationFilters(),
-              ),
-              Expanded(child: _ReservationList()),
-            ],
-          ),
+      body: BlocListener<ReservationCubit, ReservationState>(
+        // Un échec de page suivante laisse la liste en place : seul un
+        // message le signale.
+        listenWhen: (previous, current) =>
+            current is ReservationLoaded &&
+            current.loadMoreError != null &&
+            (previous is! ReservationLoaded ||
+                previous.loadMoreError != current.loadMoreError),
+        listener: (context, state) => AppToast.error(
+          (state as ReservationLoaded).loadMoreError!,
+          context: context,
+        ),
+        child: const Column(
+          children: [
+            // Au-dessus de la liste : ce qui n'est pas encore parti doit se
+            // voir avant ce qui est confirmé.
+            SyncStatusBanner(),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: ReservationFilters(),
+            ),
+            Expanded(child: _ReservationList()),
+          ],
         ),
       ),
     );

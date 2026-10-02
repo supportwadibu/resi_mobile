@@ -65,7 +65,7 @@ void main() {
         translateGerantFailure(
           AppFailure.validation(errors: const {}, code: 'autre_chose'),
         ).userMessage,
-        'Les informations saisies ont ete refusees par le serveur.',
+        'Les informations saisies ont été refusées par le serveur.',
       );
     });
   });

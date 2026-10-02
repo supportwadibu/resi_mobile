@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/utils/city_service.dart';
@@ -16,7 +17,7 @@ class AppCityField extends StatefulWidget {
     required this.countryIso2,
     required this.controller,
     this.onChanged,
-    this.label = 'Ville',
+    this.label,
     this.validator,
   });
 
@@ -30,7 +31,7 @@ class AppCityField extends StatefulWidget {
   /// changement de pays : le champ commune en dépend et doit se recharger.
   final ValueChanged<String>? onChanged;
 
-  final String label;
+  final String? label;
   final String? Function(String?)? validator;
 
   @override
@@ -73,8 +74,8 @@ class _AppCityFieldState extends State<AppCityField> {
     final selected = await showAppOptionPicker(
       context: context,
       options: _cities,
-      searchHint: 'Rechercher une ville',
-      emptyLabel: 'Aucune ville trouvée',
+      searchHint: 'fields.city_search'.tr(),
+      emptyLabel: 'fields.city_empty'.tr(),
     );
 
     if (selected != null) {
@@ -94,8 +95,8 @@ class _AppCityFieldState extends State<AppCityField> {
     // Pays non couvert : saisie libre plutôt qu'un sélecteur vide.
     if (_cities.isEmpty) {
       return AppTextField(
-        label: widget.label,
-        hint: 'Saisissez votre ville',
+        label: widget.label ?? 'fields.city'.tr(),
+        hint: 'fields.city_type'.tr(),
         controller: widget.controller,
         onChanged: widget.onChanged,
         prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
@@ -104,8 +105,8 @@ class _AppCityFieldState extends State<AppCityField> {
     }
 
     return AppTextField(
-      label: widget.label,
-      hint: 'Choisissez votre ville',
+      label: widget.label ?? 'fields.city'.tr(),
+      hint: 'fields.city_choose'.tr(),
       controller: widget.controller,
       readOnly: true,
       onTap: _openPicker,

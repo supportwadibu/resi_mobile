@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
@@ -28,7 +29,7 @@ class DocumentAddButton extends StatelessWidget {
             children: [
               Icon(LucideIcons.plus, size: 20, color: t.muted),
               const SizedBox(height: 4),
-              Text('Ajouter', style: context.text.bodySmall),
+              Text('common.add'.tr(), style: context.text.bodySmall),
             ],
           ),
         ),

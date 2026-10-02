@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -18,26 +19,13 @@ class StatsHeader extends StatelessWidget {
 
   final ValueChanged<DateTimeRange> onPeriodPicked;
 
-  static const _months = [
-    'Janvier',
-    'Février',
-    'Mars',
-    'Avril',
-    'Mai',
-    'Juin',
-    'Juillet',
-    'Août',
-    'Septembre',
-    'Octobre',
-    'Novembre',
-    'Décembre',
-  ];
-
   /// « Septembre 2026 » quand la période tient dans un mois, « 03/09 - 21/10 »
   /// sinon : le nom du mois devient trompeur dès que la fenêtre le déborde.
   String get _label {
     if (from.year == to.year && from.month == to.month) {
-      return '${_months[from.month - 1]} ${from.year}';
+      // Le nom du mois vient d'intl, dans la langue de l'application ; le
+      // français l'écrit en minuscule, d'où la majuscule ajoutée.
+      return toBeginningOfSentenceCase(DateFormat('MMMM y').format(from));
     }
 
     String short(DateTime d) =>
@@ -53,7 +41,7 @@ class StatsHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Période', style: context.text.bodySmall),
+              Text('stats.period'.tr(), style: context.text.bodySmall),
               Text(
                 _label,
                 style: context.text.titleMedium,
@@ -63,7 +51,7 @@ class StatsHeader extends StatelessWidget {
           ),
         ),
         AppButton(
-          label: 'Changer',
+          label: 'stats.change'.tr(),
           icon: LucideIcons.calendarRange,
           variant: AppButtonVariant.secondary,
           size: AppButtonSize.sm,

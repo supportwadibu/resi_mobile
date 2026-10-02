@@ -133,7 +133,11 @@ class DetailsReservationScreen extends StatelessWidget {
       final closed = await EarlyCheckOutSheet.show(context, reservation);
       if (closed == null || !context.mounted) return;
 
-      AppToast.success('stay_checkout.early_success'.tr());
+      AppToast.success(
+        closed.queued
+            ? 'offline_queue.saved'.tr()
+            : 'stay_checkout.early_success'.tr(),
+      );
       // Même contrat que la clôture simple : le `true` fait recharger la liste.
       context.router.maybePop(true);
     }
@@ -141,10 +145,14 @@ class DetailsReservationScreen extends StatelessWidget {
 
   void _onCheckOutChanged(BuildContext context, StayCheckOutState state) {
     switch (state) {
-      case StayCheckOutSuccess():
+      case StayCheckOutSuccess(:final queued):
         // Sans `context` : la fiche se referme juste après, et le toast doit
         // survivre à sa disparition pour être lu sur la liste.
-        AppToast.success('stay_checkout.success'.tr());
+        AppToast.success(
+          queued
+              ? 'offline_queue.saved'.tr()
+              : 'stay_checkout.success'.tr(),
+        );
         // Même contrat que la prolongation : le `true` fait recharger la
         // liste, qui afficherait sinon le séjour comme encore actif.
         context.router.maybePop(true);
@@ -223,7 +231,7 @@ class DetailsReservationScreen extends StatelessWidget {
 
   /// Date longue : « 12 mai 2026 ».
   static String _longDate(DateTime date) =>
-      DateFormat('d MMMM y', 'fr').format(date);
+      DateFormat('d MMMM y').format(date);
 
   @override
   Widget build(BuildContext context) {
@@ -244,9 +252,15 @@ class DetailsReservationScreen extends StatelessWidget {
     final t = context.tokens;
 
     final stay = <DetailItem>[
-      DetailItem('Date d’entrée', _longDate(reservation.startDate)),
-      DetailItem('Date de sortie', _longDate(reservation.endDate)),
-      DetailItem('Durée', reservation.durationLabel),
+      DetailItem(
+        'booking_detail.check_in_date'.tr(),
+        _longDate(reservation.startDate),
+      ),
+      DetailItem(
+        'booking_detail.check_out_date'.tr(),
+        _longDate(reservation.endDate),
+      ),
+      DetailItem('booking_detail.duration'.tr(), reservation.durationLabel),
     ];
 
     // Les libellés disent ce que les champs portent : `totalAmount` est le
@@ -314,7 +328,7 @@ class DetailsReservationScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Réservation',
+        title: 'booking_detail.title'.tr(),
         actions: [
           if (_isEditable)
             AppIconButton(
@@ -347,7 +361,7 @@ class DetailsReservationScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      property?.title ?? 'Bien supprimé',
+                      property?.title ?? 'home.deleted_property'.tr(),
                       style: context.text.headlineSmall,
                     ),
                     if (property != null && property.city.isNotEmpty) ...[
@@ -372,13 +386,13 @@ class DetailsReservationScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Section(
-            title: 'Séjour',
+            title: 'booking_detail.stay'.tr(),
             icon: AppSectionIcons.bookings,
             child: DetailList(items: stay),
           ),
           const SizedBox(height: 12),
           Section(
-            title: 'Montants',
+            title: 'booking_detail.amounts'.tr(),
             icon: LucideIcons.banknote,
             child: DetailList(items: amounts),
           ),
@@ -389,7 +403,7 @@ class DetailsReservationScreen extends StatelessWidget {
           if (reservation.client case final client?) ...[
             const SizedBox(height: 12),
             Section(
-              title: 'Client',
+              title: 'booking_form.client'.tr(),
               icon: AppSectionIcons.clients,
               child: _ClientSummary(
                 client: client,
@@ -407,7 +421,7 @@ class DetailsReservationScreen extends StatelessWidget {
               when message.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
             Section(
-              title: 'Message du client',
+              title: 'booking_detail.client_message'.tr(),
               icon: AppSectionIcons.reviews,
               child: Text(
                 message,
@@ -497,7 +511,7 @@ class _ClientSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name.isEmpty ? 'Client sans nom' : name,
+                    name.isEmpty ? 'booking_detail.unnamed_client'.tr() : name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.titleSmall!.copyWith(
@@ -513,7 +527,7 @@ class _ClientSummary extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         AppButton(
-          label: 'Voir la fiche client',
+          label: 'booking_detail.see_client'.tr(),
           icon: LucideIcons.user,
           variant: AppButtonVariant.secondary,
           expand: true,

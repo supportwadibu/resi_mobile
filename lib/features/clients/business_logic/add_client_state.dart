@@ -19,6 +19,9 @@ class AddClientState {
   /// lieu d'en créer un doublon.
   final bool alreadyExisted;
 
+  /// Fiche saisie hors ligne, créée au serveur au retour du réseau.
+  final bool queued;
+
   const AddClientState({
     this.fullName = '',
     this.phone = '',
@@ -26,6 +29,7 @@ class AddClientState {
     this.status = AddClientStatus.idle,
     this.errorMessage,
     this.alreadyExisted = false,
+    this.queued = false,
   });
 
   /// Nom et téléphone suffisent : les pièces sont facultatives, comme au
@@ -42,6 +46,7 @@ class AddClientState {
     AddClientStatus? status,
     String? errorMessage,
     bool? alreadyExisted,
+    bool? queued,
   }) {
     return AddClientState(
       fullName: fullName ?? this.fullName,
@@ -50,6 +55,7 @@ class AddClientState {
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       alreadyExisted: alreadyExisted ?? this.alreadyExisted,
+      queued: queued ?? this.queued,
     );
   }
 }

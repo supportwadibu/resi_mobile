@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -58,7 +59,7 @@ class PropertyInfosHeader extends StatelessWidget {
               CurrencyFormatter.short(pricePerDay),
               style: context.text.figure.copyWith(fontSize: 20),
             ),
-            Text('par jour', style: context.text.bodySmall),
+            Text('property_detail.per_day'.tr(), style: context.text.bodySmall),
           ],
         ),
       ],

@@ -1,8 +1,19 @@
-/// Chiffrage d'un départ anticipé, calculé par le serveur.
+import 'reservation_model.dart';
+
+/// Refus d'un chiffrage local, par le même code que le serveur.
+class EarlyCheckOutRefusal implements Exception {
+  const EarlyCheckOutRefusal(this.code);
+
+  /// `invalid_departure`, `departure_in_future` ou `not_early_departure`.
+  final String code;
+}
+
+/// Chiffrage d'un départ anticipé.
 ///
-/// Le mobile n'en refait pas le calcul : il l'affiche, et le propriétaire ne
-/// retouche que le montant retenu. Recalculer ici ferait diverger l'écran de
-/// ce que la clôture enregistrera.
+/// En ligne, le serveur le calcule et le mobile l'affiche : le propriétaire ne
+/// retouche que le montant retenu. Hors ligne, [EarlyCheckOutQuote.estimate]
+/// reprend la même règle, et le montant retenu part explicitement à la
+/// synchronisation — le serveur n'en recalcule donc pas un autre.
 class EarlyCheckOutQuote {
   const EarlyCheckOutQuote({
     required this.actualCheckOutAt,
@@ -29,6 +40,69 @@ class EarlyCheckOutQuote {
   /// Remboursement qu'entraînerait [finalAmount], jamais négatif.
   double refundFor(double finalAmount) =>
       (paidAmount - finalAmount).clamp(0, double.infinity);
+
+  /// Marge tolérée sur une sortie datée « dans le futur », comme au serveur :
+  /// l'horloge du téléphone peut avancer de quelques minutes.
+  static const clockSkewTolerance = Duration(minutes: 5);
+
+  /// Chiffre un départ anticipé sur l'appareil, sans réseau.
+  ///
+  /// Reprend `quoteEarlyCheckOut` du serveur
+  /// (`api/app/features/bookings/early_check_out.ts`) : tout jour entamé reste
+  /// dû, le prorata porte sur le montant réglé, une demi-journée ou un
+  /// passage est indivisible. Une évolution de la règle là-bas se reporte ici.
+  factory EarlyCheckOutQuote.estimate(
+    ReservationModel booking,
+    DateTime departure, {
+    DateTime? now,
+  }) {
+    final clock = now ?? DateTime.now();
+    final checkIn = booking.checkInAt;
+    final plannedCheckOut = booking.checkOutAt;
+
+    if (!departure.isAfter(checkIn)) {
+      throw const EarlyCheckOutRefusal('invalid_departure');
+    }
+    if (departure.isAfter(clock.add(clockSkewTolerance))) {
+      throw const EarlyCheckOutRefusal('departure_in_future');
+    }
+    if (!departure.isBefore(plannedCheckOut)) {
+      throw const EarlyCheckOutRefusal('not_early_departure');
+    }
+
+    // `days_count` absent ou nul : repli sur la période facturée, pour ne
+    // jamais diviser par zéro.
+    final plannedDays = booking.daysCount > 0
+        ? booking.daysCount
+        : _maxOne(_countStayDays(checkIn, plannedCheckOut));
+
+    final paid = booking.receivedAmount;
+    final isFullDay = booking.stayType == StayType.fullDay;
+
+    final billedDays = isFullDay
+        ? _maxOne(_countStayDays(checkIn, departure)).clamp(1, plannedDays)
+        : plannedDays;
+    final proposed = isFullDay
+        ? (paid * billedDays / plannedDays).roundToDouble()
+        : paid;
+
+    return EarlyCheckOutQuote(
+      actualCheckOutAt: departure,
+      plannedCheckOutAt: plannedCheckOut,
+      plannedDays: plannedDays,
+      billedDays: billedDays,
+      paidAmount: paid,
+      proposedAmount: proposed,
+      refundAmount: paid - proposed,
+    );
+  }
+
+  /// Jours entamés entre deux instants, comme `countStayDays` du serveur.
+  static int _countStayDays(DateTime start, DateTime end) =>
+      (end.difference(start).inMilliseconds / Duration.millisecondsPerDay)
+          .ceil();
+
+  static int _maxOne(int days) => days < 1 ? 1 : days;
 
   factory EarlyCheckOutQuote.fromJson(Map<String, dynamic> json) {
     return EarlyCheckOutQuote(

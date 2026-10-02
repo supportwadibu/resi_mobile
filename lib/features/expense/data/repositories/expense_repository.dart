@@ -110,11 +110,16 @@ class ExpenseRepository {
     }
   }
 
-  Future<ExpenseModel> create(CreateExpensePayload payload) async {
+  /// [clientRequestId] rend la création rejouable : une dépense saisie hors
+  /// ligne et renvoyée après un timeout n'est pas comptée deux fois.
+  Future<ExpenseModel> create(
+    CreateExpensePayload payload, {
+    String? clientRequestId,
+  }) async {
     try {
       final response = await _dio.post(
         ApiEndpoints.expenses(_role.value),
-        data: payload.toJson(),
+        data: {...payload.toJson(), 'client_request_id': ?clientRequestId},
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ExpenseModel.fromJson(data as Map<String, dynamic>);

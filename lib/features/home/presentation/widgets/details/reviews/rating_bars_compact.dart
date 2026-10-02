@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
@@ -9,12 +10,12 @@ class RatingBarsCompact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<RatingItem> ratings = [
-      RatingItem(label: 'Propreté', score: 4.9, percentage: 0.98),
-      RatingItem(label: 'Emplacement', score: 4.8, percentage: 0.96),
-      RatingItem(label: 'Confort', score: 4.9, percentage: 0.98),
-      RatingItem(label: 'Rapport qualité/prix', score: 4.7, percentage: 0.94),
-      RatingItem(label: 'Service', score: 4.8, percentage: 0.96),
-      RatingItem(label: 'Équipements', score: 4.7, percentage: 0.94),
+      RatingItem(label: 'reviews.cleanliness'.tr(), score: 4.9, percentage: 0.98),
+      RatingItem(label: 'reviews.location'.tr(), score: 4.8, percentage: 0.96),
+      RatingItem(label: 'reviews.comfort'.tr(), score: 4.9, percentage: 0.98),
+      RatingItem(label: 'reviews.value'.tr(), score: 4.7, percentage: 0.94),
+      RatingItem(label: 'reviews.service'.tr(), score: 4.8, percentage: 0.96),
+      RatingItem(label: 'reviews.equipment'.tr(), score: 4.7, percentage: 0.94),
     ];
 
     return Column(

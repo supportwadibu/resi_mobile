@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class StepIdentityDocumentWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Quelle pièce d’identité fournissez-vous ?',
+            'owner_profile.which_document'.tr(),
             style: context.text.titleMedium,
           ),
           const SizedBox(height: 20),
@@ -59,13 +60,13 @@ class StepIdentityDocumentWidget extends StatelessWidget {
           const SizedBox(height: 20),
 
           AppTextField(
-            label: 'Numéro de la pièce',
-            hint: 'Tel qu’inscrit sur le document',
+            label: 'owner_profile.document_number'.tr(),
+            hint: 'owner_profile.document_number_hint'.tr(),
             controller: idNumberController,
             prefixIcon: const Icon(LucideIcons.idCard, size: 16),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Ce champ est requis';
+                return 'common.field_required'.tr();
               }
               return null;
             },
@@ -73,7 +74,7 @@ class StepIdentityDocumentWidget extends StatelessWidget {
 
           const SizedBox(height: 24),
           _UploadField(
-            title: 'Recto de la pièce',
+            title: 'owner_profile.front'.tr(),
             localPath: frontImagePath,
             remoteUrl: frontRemoteUrl,
             onTap: onPickFront,
@@ -81,7 +82,7 @@ class StepIdentityDocumentWidget extends StatelessWidget {
           if (_backRequired) ...[
             const SizedBox(height: 16),
             _UploadField(
-              title: 'Verso de la pièce',
+              title: 'owner_profile.back'.tr(),
               localPath: backImagePath,
               remoteUrl: backRemoteUrl,
               onTap: onPickBack,
@@ -102,8 +103,8 @@ class StepIdentityDocumentWidget extends StatelessWidget {
             icon: _iconFor(type),
             title: type.label,
             description: type.requiresBack
-                ? 'Recto et verso requis'
-                : 'Page de données uniquement',
+                ? 'owner_profile.front_and_back'.tr()
+                : 'owner_profile.data_page_only'.tr(),
             selected: documentType == type,
             onTap: () => onDocumentTypeChanged(type),
           ),
@@ -187,12 +188,12 @@ class _UploadField extends StatelessWidget {
         // l'écran, l'utilisateur peut toujours redéposer le fichier.
         errorBuilder: (context, _, _) => _placeholder(
           context,
-          'Aperçu indisponible · appuyez pour remplacer',
+          'owner_profile.preview_unavailable'.tr(),
         ),
       );
     }
 
-    return _placeholder(context, 'Appuyez pour ajouter une photo');
+    return _placeholder(context, 'owner_profile.tap_to_add'.tr());
   }
 
   Widget _placeholder(BuildContext context, String label) {
@@ -208,7 +209,7 @@ class _UploadField extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          'Photo nette, document entier visible',
+          'owner_profile.photo_tip'.tr(),
           style: context.text.bodySmall,
         ),
       ],

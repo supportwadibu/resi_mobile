@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -27,7 +28,7 @@ class ReservationStatsRow extends StatelessWidget {
           Expanded(
             child: StatTile(
               compact: true,
-              label: 'Occupation',
+              label: 'common.occupancy'.tr(),
               value: stats == null ? '—' : '${stats.occupancyPercent} %',
               icon: LucideIcons.chartPie,
               accent: AppAccent.amber,
@@ -37,7 +38,7 @@ class ReservationStatsRow extends StatelessWidget {
           Expanded(
             child: StatTile(
               compact: true,
-              label: 'À venir',
+              label: 'home.upcoming'.tr(),
               value: stats == null ? '—' : '${stats.upcoming}',
               icon: LucideIcons.calendarClock,
               accent: StatusTone.upcoming.accent,
@@ -47,7 +48,7 @@ class ReservationStatsRow extends StatelessWidget {
           Expanded(
             child: StatTile(
               compact: true,
-              label: 'En cours',
+              label: 'home.in_progress'.tr(),
               value: stats == null ? '—' : '${stats.inProgress}',
               icon: LucideIcons.bedDouble,
               accent: StatusTone.ongoing.accent,

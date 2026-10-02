@@ -1,8 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/features/rapport/business_logic/report_form_state.dart';
 
 /// Entrée du sélecteur : un `id`/`name` suffisent à l'affichage.
 ///
@@ -53,7 +55,10 @@ class ResidenceSelector extends StatelessWidget {
           items: residences.map((r) {
             return DropdownMenuItem(
               value: r.id,
-              child: Text(r.name, style: context.text.bodyMedium),
+              child: Text(
+                r.id == allResidencesOption.id ? r.name.tr() : r.name,
+                style: context.text.bodyMedium,
+              ),
             );
           }).toList(),
           onChanged: (v) {

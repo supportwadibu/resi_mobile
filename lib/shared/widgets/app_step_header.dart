@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -53,7 +54,7 @@ class AppStepHeader extends StatelessWidget {
                   if (onBack != null) ...[
                     AppIconButton(
                       icon: LucideIcons.chevronLeft,
-                      label: 'Retour',
+                      label: 'common.back'.tr(),
                       onPressed: onBack,
                     ),
                     const SizedBox(width: 4),
@@ -68,7 +69,12 @@ class AppStepHeader extends StatelessWidget {
                   ),
                   if (_hasProgress)
                     Text(
-                      'Étape ${currentStep! + 1} sur $totalSteps',
+                      'common.step_of'.tr(
+                        namedArgs: {
+                          'current': '${currentStep! + 1}',
+                          'total': '$totalSteps',
+                        },
+                      ),
                       style: context.text.bodySmall,
                     ),
                 ],

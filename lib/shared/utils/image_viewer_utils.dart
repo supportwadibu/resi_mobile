@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -59,7 +60,7 @@ class _FullScreenImage extends StatelessWidget {
             top: MediaQuery.paddingOf(context).top + 8,
             right: 12,
             child: Tooltip(
-              message: 'Fermer',
+              message: 'common.close'.tr(),
               child: Material(
                 color: t.overlay.withValues(alpha: 0.5),
                 shape: const CircleBorder(),

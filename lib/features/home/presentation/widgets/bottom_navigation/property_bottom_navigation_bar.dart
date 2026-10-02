@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
@@ -34,7 +35,7 @@ class PropertyBottomNavigationBar extends StatelessWidget {
     //   onChanged: onVisibilityChanged,
     // ), posée au-dessus du bouton.
     return AppBottomActionBar(
-      primaryLabel: 'Modifier ce bien',
+      primaryLabel: 'property_detail.edit'.tr(),
       primaryIcon: LucideIcons.pencil,
       onPrimary: onEditPressed,
     );

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -61,7 +62,7 @@ class ClientFieldGroup extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: AppButton(
-              label: 'Choisir au carnet',
+              label: 'booking_form.pick_from_book'.tr(),
               icon: LucideIcons.contact,
               variant: AppButtonVariant.secondary,
               expand: true,
@@ -70,14 +71,14 @@ class ClientFieldGroup extends StatelessWidget {
           ),
         _Field(
           controller: nameController,
-          hint: 'Nom et prénoms — ex : Mohamed Traoré',
+          hint: 'booking_form.name_hint'.tr(),
           onChanged: onNameChanged,
           textCapitalization: TextCapitalization.words,
         ),
         const SizedBox(height: 12),
         _Field(
           controller: phoneController,
-          hint: '+225 07 XX XX XX XX',
+          hint: 'booking_form.phone_placeholder'.tr(),
           keyboardType: TextInputType.phone,
           onChanged: onPhoneChanged,
           suffix: isLookingUp
@@ -158,8 +159,8 @@ class _SelectedClientCard extends StatelessWidget {
                 Text(client.phone, style: context.text.bodySmall),
                 if (!client.documentsComplete) ...[
                   const SizedBox(height: 4),
-                  const AppBadge(
-                    label: 'Pièce d’identité incomplète',
+                  AppBadge(
+                    label: 'booking_form.id_incomplete'.tr(),
                     tone: AppAccent.amber,
                   ),
                 ],
@@ -167,7 +168,7 @@ class _SelectedClientCard extends StatelessWidget {
             ),
           ),
           AppButton(
-            label: 'Changer',
+            label: 'stats.change'.tr(),
             variant: AppButtonVariant.ghost,
             size: AppButtonSize.sm,
             onPressed: onChange,
@@ -195,18 +196,18 @@ class _DuplicateBanner extends StatelessWidget {
     return AppCallout(
       icon: LucideIcons.userSearch,
       tone: AppAccent.amber,
-      title: 'Ce numéro est déjà au carnet',
+      title: 'booking_form.number_in_book'.tr(),
       message: client.fullName,
       action: Row(
         children: [
           AppButton(
-            label: 'Utiliser cette fiche',
+            label: 'booking_form.use_record'.tr(),
             size: AppButtonSize.sm,
             onPressed: onUse,
           ),
           const SizedBox(width: 8),
           AppButton(
-            label: 'Nouveau client',
+            label: 'booking_form.new_client'.tr(),
             variant: AppButtonVariant.ghost,
             size: AppButtonSize.sm,
             onPressed: onDismiss,

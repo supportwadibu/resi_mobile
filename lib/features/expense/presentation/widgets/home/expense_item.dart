@@ -6,6 +6,7 @@ import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/sync_state_badge.dart';
 
 /// Ligne d'une dépense : catégorie, bien concerné, note, montant et jour.
 class ExpenseItem extends StatelessWidget {
@@ -22,7 +23,7 @@ class ExpenseItem extends StatelessWidget {
 
   /// Jour seul : le mois et l'année sont portés par l'en-tête du groupe, les
   /// répéter sur chaque ligne noierait la date utile.
-  static final _dayFormat = DateFormat('d MMM', 'fr');
+  static DateFormat get _dayFormat => DateFormat('d MMM');
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +53,10 @@ class ExpenseItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(category.label, style: context.text.titleSmall),
+                if (expense.syncState case final syncState?) ...[
+                  const SizedBox(height: 4),
+                  SyncStateBadge(state: syncState),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   expense.targetLabel,

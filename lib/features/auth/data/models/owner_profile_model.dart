@@ -1,19 +1,20 @@
+import 'package:easy_localization/easy_localization.dart';
 /// Types de pièces d'identité acceptés par l'API.
 ///
 /// Les codes doivent rester alignés sur `ID_DOCUMENT_TYPES` côté serveur : le
 /// libellé affiché est décidé ici, le code transmis ne l'est pas.
 enum IdDocumentType {
-  cni('cni', 'Carte nationale d’identité', requiresBack: true),
-  passport('passport', 'Passeport', requiresBack: false),
-  drivingLicence('driving_licence', 'Permis de conduire', requiresBack: true);
+  cni('cni', requiresBack: true),
+  passport('passport', requiresBack: false),
+  drivingLicence('driving_licence', requiresBack: true);
 
-  const IdDocumentType(this.code, this.label, {required this.requiresBack});
+  const IdDocumentType(this.code, {required this.requiresBack});
 
   /// Valeur transmise à l'API.
   final String code;
 
-  /// Libellé montré à l'utilisateur.
-  final String label;
+  /// Libellé montré à l'utilisateur, dans la langue de l'application.
+  String get label => 'id_document_types.$code'.tr();
 
   /// Le verso porte-t-il une information à fournir ?
   ///
@@ -98,11 +99,11 @@ class OwnerProfileModel {
 
   /// Libellé du statut, tel que présenté à l'utilisateur.
   String get statusLabel => switch (ownerStatus) {
-    'active' => 'Dossier validé',
-    'rejected' => 'Dossier refusé',
-    'suspended' => 'Compte suspendu',
-    _ when isSubmitted => 'En cours de vérification',
-    _ => 'Dossier à compléter',
+    'active' => 'owner_status.active'.tr(),
+    'rejected' => 'owner_status.rejected'.tr(),
+    'suspended' => 'owner_status.suspended'.tr(),
+    _ when isSubmitted => 'owner_status.under_review'.tr(),
+    _ => 'owner_status.incomplete'.tr(),
   };
 
   factory OwnerProfileModel.fromJson(Map<String, dynamic> json) {

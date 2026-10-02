@@ -10,6 +10,16 @@ import 'package:resi_africa/features/auth/data/models/property_manager_model.dar
 class MemoryLocalStorage implements LocalStorage {
   String? role;
   String? planAccess;
+  String? accountName;
+
+  @override
+  Future<void> saveAccountName(String name) async => accountName = name;
+
+  @override
+  String? getAccountName() => accountName;
+
+  @override
+  Future<void> clearAccountName() async => accountName = null;
 
   @override
   Future<void> savePlanAccess(String code) async => planAccess = code;

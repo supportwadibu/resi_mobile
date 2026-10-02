@@ -47,15 +47,14 @@ class _ReportView extends StatelessWidget {
     if (result.type == ResultType.done) return;
 
     AppToast.error(
-      'Impossible d\'ouvrir le rapport. Installez une application capable '
-      'de lire un PDF.',
+      'report.open_failed'.tr(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppTopBar(title: 'Générer un rapport'),
+      appBar: AppTopBar(title: 'report.title'.tr()),
       bottomNavigationBar: BlocBuilder<ReportFormCubit, ReportFormState>(
         builder: (context, state) => GenerateButton(
           isLoading: state.isGenerating,
@@ -80,7 +79,7 @@ class _ReportView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Section(
-                  title: 'Type de rapport',
+                  title: 'report.type'.tr(),
                   icon: AppSectionIcons.reports,
                   child: ReportTypeSelector(
                     selected: state.selectedType,
@@ -91,7 +90,7 @@ class _ReportView extends StatelessWidget {
 
                 // Résidences
                 Section(
-                  title: 'Résidences concernées',
+                  title: 'report.residences'.tr(),
                   icon: AppSectionIcons.residences,
                   child: ResidenceSelector(
                     residences: state.residences,
@@ -124,7 +123,7 @@ class _ReportView extends StatelessWidget {
 
                 // Période
                 Section(
-                  title: 'Période',
+                  title: 'report.period'.tr(),
                   icon: LucideIcons.calendarRange,
                   child: Column(
                     children: [

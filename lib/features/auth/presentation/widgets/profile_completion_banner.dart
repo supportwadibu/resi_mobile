@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -70,12 +71,10 @@ class _ProfileCompletionBannerState extends State<ProfileCompletionBanner> {
           child: AppCallout(
             icon: LucideIcons.idCard,
             tone: AppAccent.amber,
-            title: 'Finalisez votre inscription',
-            message:
-                'Transmettez votre pièce d’identité pour éviter la '
-                'suspension de votre compte.',
+            title: 'owner_profile.banner_title'.tr(),
+            message: 'owner_profile.banner_body'.tr(),
             action: AppButton(
-              label: 'Compléter mon dossier',
+              label: 'owner_profile.banner_action'.tr(),
               size: AppButtonSize.sm,
               trailingIcon: LucideIcons.arrowRight,
               onPressed: _openProfile,

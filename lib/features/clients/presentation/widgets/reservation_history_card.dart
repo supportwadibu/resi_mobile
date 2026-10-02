@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
-import 'package:intl/intl.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
 import '../../data/models/client_reservation_model.dart';
@@ -25,15 +25,22 @@ class ReservationHistoryCard extends StatelessWidget {
                   // Vide si le bien a été supprimé depuis : l'historique du
                   // client reste lisible sans lui.
                   reservation.propertyTitle.isEmpty
-                      ? 'Bien supprimé'
+                      ? 'home.deleted_property'.tr()
                       : reservation.propertyTitle,
                   style: context.text.titleSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_fmt(reservation.startDate)} → ${_fmt(reservation.endDate)}'
-                  ' · ${reservation.days} jour${reservation.days > 1 ? 's' : ''}',
+                  'clients.history_line'.plural(
+                    reservation.days,
+                    namedArgs: {
+                      'period':
+                          '${_fmt(reservation.startDate)} → '
+                          '${_fmt(reservation.endDate)}',
+                      'count': '${reservation.days}',
+                    },
+                  ),
                   style: context.text.bodySmall,
                 ),
               ],
@@ -59,5 +66,5 @@ class ReservationHistoryCard extends StatelessWidget {
     );
   }
 
-  String _fmt(DateTime d) => DateFormat('dd MMM', 'fr_FR').format(d);
+  String _fmt(DateTime d) => DateFormat('dd MMM').format(d);
 }

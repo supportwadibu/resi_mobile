@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -35,10 +36,8 @@ class FinanceResidenceSheet extends StatelessWidget {
         Navigator.of(context).pop(FinanceScopeSelection(residenceId));
 
     return AppSheet(
-      title: 'Périmètre du relevé',
-      description:
-          'Restreint à une résidence, le relevé retient le revenu de ses '
-          'logements, ses charges communes et celles de ses logements.',
+      title: 'finance_page.scope_title'.tr(),
+      description: 'finance_page.scope_body'.tr(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -46,8 +45,8 @@ class FinanceResidenceSheet extends StatelessWidget {
           // qui lève la restriction, on doit le trouver sans parcourir les
           // résidences.
           AppOptionTile(
-            title: 'Tout le parc',
-            description: 'Tous les biens et toutes les charges',
+            title: 'finance_page.whole_portfolio'.tr(),
+            description: 'finance_page.whole_portfolio_hint'.tr(),
             icon: LucideIcons.building,
             selected: selectedId == null,
             onTap: () => select(null),
@@ -60,8 +59,7 @@ class FinanceResidenceSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Aucune résidence enregistrée : il n’y a pas de périmètre '
-                'plus restreint que le parc entier.',
+                'finance_page.no_residence'.tr(),
                 style: context.text.bodySmall,
               ),
             )
@@ -71,8 +69,13 @@ class FinanceResidenceSheet extends StatelessWidget {
                 title: residence.name,
                 description: switch (residence.unitsCount) {
                   0 => residence.address.city,
-                  1 => '${residence.address.city} · 1 logement',
-                  final count => '${residence.address.city} · $count logements',
+                  final count => 'residence.city_units'.plural(
+                    count,
+                    namedArgs: {
+                      'city': residence.address.city,
+                      'count': '$count',
+                    },
+                  ),
                 },
                 icon: AppSectionIcons.residences,
                 selected: selectedId == residence.id,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
@@ -19,12 +20,12 @@ class FinanceAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppTopBar(
-      title: 'Finances',
+      title: 'finance_page.title'.tr(),
       actions: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 150),
           child: AppButton(
-            label: scopeLabel ?? 'Tout le parc',
+            label: scopeLabel ?? 'finance_page.whole_portfolio'.tr(),
             icon: LucideIcons.slidersHorizontal,
             // Périmètre restreint : le bouton passe en noir, pour qu'on lise
             // que les chiffres ne couvrent pas tout le parc.

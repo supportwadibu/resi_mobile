@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -10,19 +11,20 @@ import 'package:resi_africa/shared/widgets/page_header.dart';
 class SuccessScreen extends StatefulWidget {
   const SuccessScreen({
     super.key,
-    this.title = 'Félicitations !',
-    this.subtitle = 'Votre bien a été enregistré avec succès',
-    this.buttonText = 'Voir mes biens',
-    this.secondaryButtonText = 'Ajouter un autre bien',
+    this.title,
+    this.subtitle,
+    this.buttonText,
+    this.secondaryButtonText,
     this.autoRedirectDuration = 5,
     this.onPrimaryAction,
     this.onSecondaryAction,
   });
 
-  final String title;
-  final String subtitle;
-  final String buttonText;
-  final String secondaryButtonText;
+  /// Textes par défaut : ceux du dépôt d'un bien, traduits à l'affichage.
+  final String? title;
+  final String? subtitle;
+  final String? buttonText;
+  final String? secondaryButtonText;
   final int autoRedirectDuration;
   final VoidCallback? onPrimaryAction;
   final VoidCallback? onSecondaryAction;
@@ -109,26 +111,27 @@ class _SuccessScreenState extends State<SuccessScreen>
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      widget.title,
+                      widget.title ?? 'success.title'.tr(),
                       style: context.text.headlineSmall,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.subtitle,
+                      widget.subtitle ?? 'success.subtitle'.tr(),
                       style: context.mutedText.copyWith(height: 1.5),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
                     AppButton(
-                      label: widget.buttonText,
+                      label: widget.buttonText ?? 'success.button'.tr(),
                       trailingIcon: LucideIcons.arrowRight,
                       expand: true,
                       onPressed: _leave,
                     ),
                     const SizedBox(height: 8),
                     AppButton(
-                      label: widget.secondaryButtonText,
+                      label:
+                          widget.secondaryButtonText ?? 'success.secondary'.tr(),
                       icon: LucideIcons.plus,
                       variant: AppButtonVariant.secondary,
                       expand: true,
@@ -142,7 +145,7 @@ class _SuccessScreenState extends State<SuccessScreen>
                       ),
                       duration: Duration(seconds: widget.autoRedirectDuration),
                       builder: (context, value, child) => Text(
-                        'Redirection automatique dans ${value.ceil()} s',
+                        'success.redirect'.tr(args: ['${value.ceil()}']),
                         textAlign: TextAlign.center,
                         style: context.text.bodySmall,
                       ),

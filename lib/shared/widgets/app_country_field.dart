@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -15,13 +16,13 @@ class AppCountryField extends StatelessWidget {
     super.key,
     required this.country,
     required this.onSelected,
-    this.label = 'Pays',
+    this.label,
     this.enabled = true,
   });
 
   final Country country;
   final ValueChanged<Country> onSelected;
-  final String label;
+  final String? label;
   final bool enabled;
 
   void _open(BuildContext context) {
@@ -35,8 +36,8 @@ class AppCountryField extends StatelessWidget {
       countryListTheme: CountryListThemeData(
         borderRadius: BorderRadius.vertical(top: AppRadius.lg.topLeft),
         backgroundColor: t.surface,
-        inputDecoration: const InputDecoration(
-          hintText: 'Rechercher un pays',
+        inputDecoration: InputDecoration(
+          hintText: 'fields.country_search'.tr(),
           prefixIcon: Icon(LucideIcons.search, size: 16),
         ),
         searchTextStyle: context.text.bodyMedium,
@@ -52,7 +53,7 @@ class AppCountryField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: context.text.titleSmall),
+        Text(label ?? 'fields.country'.tr(), style: context.text.titleSmall),
         const SizedBox(height: 6),
         Material(
           color: t.background,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -71,7 +72,7 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Bienvenue sur RESI',
+                        'trial.welcome'.tr(),
                         style: context.text.headlineSmall,
                       ),
                       const SizedBox(height: 8),
@@ -82,15 +83,15 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                           icon: LucideIcons.calendarClock,
                           tone: days > 0 ? AppAccent.violet : AppAccent.neutral,
                           title: days > 0
-                              ? 'Essai de $days jour${days > 1 ? 's' : ''}'
-                              : 'Sans engagement',
+                              ? 'trial.days_title'.plural(days)
+                              : 'trial.no_commitment'.tr(),
                           message: _terms(days),
                         ),
                       const SizedBox(height: 32),
                       AppButton(
                         label: days > 0
-                            ? 'Démarrer mon essai gratuit'
-                            : 'Commencer',
+                            ? 'trial.start_trial'.tr()
+                            : 'trial.start'.tr(),
                         trailingIcon: LucideIcons.arrowRight,
                         onPressed: loading ? null : _goToHome,
                         expand: true,
@@ -98,7 +99,7 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                       if (showDocLink) ...[
                         const SizedBox(height: 8),
                         AppButton(
-                          label: 'Transmettre ma pièce d’identité',
+                          label: 'trial.send_document'.tr(),
                           icon: LucideIcons.idCard,
                           variant: AppButtonVariant.ghost,
                           onPressed: _goToDocuments,
@@ -128,11 +129,9 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
 
   String _terms(int days) {
     if (days == 0) {
-      return 'Aucun engagement. Résiliable à tout moment.';
+      return 'trial.terms_free'.tr();
     }
-    final plural = days > 1 ? 's' : '';
-    return 'Essai de $days jour$plural offert$plural,\n'
-        'puis forfait Pro ou Premium.';
+    return 'trial.terms_days'.plural(days);
   }
 }
 
@@ -161,14 +160,13 @@ class _RichSubtitle extends StatelessWidget {
         style: context.mutedText.copyWith(height: 1.55),
         children: [
           TextSpan(
-            text: 'Votre compte est prêt. ',
+            text: 'trial.ready'.tr(),
             style: context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600),
           ),
           TextSpan(
             text: days > 0
-                ? 'Gérez vos biens et vos locataires sans limite pendant '
-                      'toute la durée de l’essai.'
-                : 'Gérez vos biens et vos locataires depuis un seul endroit.',
+                ? 'trial.ready_trial'.tr()
+                : 'trial.ready_plain'.tr(),
           ),
         ],
       ),

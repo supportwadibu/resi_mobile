@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -35,7 +36,7 @@ class ReservationDocumentPicker extends StatelessWidget {
       children: [
         Expanded(
           child: _DocumentSlot(
-            label: 'CNI Recto',
+            label: 'booking_form.id_front'.tr(),
             path: frontPath,
             slot: DocumentSlot.recto,
             onChanged: onFrontChanged,
@@ -44,7 +45,7 @@ class ReservationDocumentPicker extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _DocumentSlot(
-            label: 'CNI Verso',
+            label: 'booking_form.id_back'.tr(),
             path: backPath,
             slot: DocumentSlot.verso,
             onChanged: onBackChanged,
@@ -105,7 +106,7 @@ class _DocumentSlot extends StatelessWidget {
                       top: 4,
                       right: 4,
                       child: Tooltip(
-                        message: 'Retirer',
+                        message: 'property_form.remove'.tr(),
                         child: Material(
                           color: t.surface,
                           shape: RoundedRectangleBorder(

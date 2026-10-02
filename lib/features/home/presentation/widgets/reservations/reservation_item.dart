@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,9 @@ import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
-import 'package:intl/intl.dart';
 import '../../../../../core/router/app_router.gr.dart';
 import '../../../../reservation/data/models/reservation_model.dart';
+import 'package:resi_africa/shared/widgets/sync_state_badge.dart';
 
 /// Ligne d'une réservation reçue sur un bien du propriétaire : vignette,
 /// bien, statut, période et montant.
@@ -62,7 +63,7 @@ class ReservationItem extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              property?.title ?? 'Bien supprimé',
+                              property?.title ?? 'home.deleted_property'.tr(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: context.text.titleSmall!.copyWith(
@@ -77,6 +78,13 @@ class ReservationItem extends StatelessWidget {
                           ),
                         ],
                       ),
+                      // Saisie hors ligne pas encore reçue par le serveur : le
+                      // statut affiché n'est qu'une promesse tant qu'elle n'est
+                      // pas partie.
+                      if (reservation.syncState case final syncState?) ...[
+                        const SizedBox(height: 4),
+                        SyncStateBadge(state: syncState),
+                      ],
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -129,14 +137,14 @@ class ReservationItem extends StatelessWidget {
 
 /// Période du séjour, en dates courtes : « 12 sept. → 14 oct. ».
 String formatReservationPeriod(ReservationModel reservation) {
-  final format = DateFormat('d MMM', 'fr');
+  final format = DateFormat('d MMM');
   return '${format.format(reservation.startDate)} → '
       '${format.format(reservation.endDate)}';
 }
 
 /// Montant en FCFA, séparateurs de milliers compris.
 String formatAmount(double amount) {
-  final format = NumberFormat.decimalPattern('fr');
+  final format = NumberFormat.decimalPattern();
   return '${format.format(amount.round())} F';
 }
 

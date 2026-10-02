@@ -1,9 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
-import 'package:intl/intl.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
@@ -48,7 +48,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
   late DateTime? _from = widget.initial.from;
   late DateTime? _to = widget.initial.to;
 
-  static final _dateFormat = DateFormat('d MMM y', 'fr');
+  static DateFormat get _dateFormat => DateFormat('d MMM y');
 
   Future<void> _pickRange() async {
     final now = DateTime.now();
@@ -74,12 +74,12 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
     final t = context.tokens;
     final hasRange = _from != null && _to != null;
     return AppSheet(
-      title: 'Filtrer les dépenses',
+      title: 'expense.filter_title'.tr(),
       footer: Row(
         children: [
           Expanded(
             child: AppButton(
-              label: 'Réinitialiser',
+              label: 'expense.reset'.tr(),
               variant: AppButtonVariant.secondary,
               expand: true,
               onPressed: () => Navigator.pop(context, const ExpenseFilters()),
@@ -88,7 +88,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
           const SizedBox(width: 12),
           Expanded(
             child: AppButton(
-              label: 'Appliquer',
+              label: 'expense.apply'.tr(),
               expand: true,
               onPressed: () => Navigator.pop(
                 context,
@@ -106,7 +106,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Bien', style: context.text.titleSmall),
+          Text('expense.property'.tr(), style: context.text.titleSmall),
           const SizedBox(height: 8),
           _PropertyChips(
             properties: widget.properties,
@@ -114,7 +114,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
             onSelected: (id) => setState(() => _propertyId = id),
           ),
           const SizedBox(height: 20),
-          Text('Catégorie', style: context.text.titleSmall),
+          Text('expense.category'.tr(), style: context.text.titleSmall),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -134,7 +134,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
             ],
           ),
           const SizedBox(height: 20),
-          Text('Période', style: context.text.titleSmall),
+          Text('expense.period'.tr(), style: context.text.titleSmall),
           const SizedBox(height: 8),
           Material(
             color: t.background,
@@ -158,7 +158,7 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
                       child: Text(
                         hasRange
                             ? '${_dateFormat.format(_from!)} → ${_dateFormat.format(_to!)}'
-                            : 'Toutes les dates',
+                            : 'expense.all_dates'.tr(),
                         style: hasRange
                             ? context.text.bodyMedium
                             : context.mutedText,
@@ -198,7 +198,7 @@ class _PropertyChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (properties.isEmpty) {
-      return Text('Aucun bien enregistré', style: context.mutedText);
+      return Text('expense.no_property'.tr(), style: context.mutedText);
     }
 
     return Wrap(

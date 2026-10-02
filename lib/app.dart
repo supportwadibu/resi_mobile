@@ -7,6 +7,7 @@ import 'core/router/app_router.gr.dart';
 import 'core/session/session_role.dart';
 import 'features/subscription/business_logic/plan_cubit.dart';
 import 'features/subscription/business_logic/plan_state.dart';
+import 'features/reservation/presentation/widgets/sync_result_listener.dart';
 import 'features/subscription/data/models/plan_access.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -69,6 +70,11 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   }
 
   Widget _buildApp(BuildContext context, ThemeMode themeMode) {
+    // easy_localization ne touche pas à `Intl.defaultLocale` : sans cette
+    // ligne, dates et montants resteraient dans la langue par défaut d'intl
+    // pendant que les libellés passent à l'anglais. Posé ici, il suit aussi
+    // un changement de langue, qui reconstruit ce widget.
+    Intl.defaultLocale = context.locale.toLanguageTag();
     return MaterialApp.router(
       title: widget.config.appName,
       debugShowCheckedModeBanner: !widget.config.isProduction,
@@ -88,8 +94,50 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         bloc: sl<PlanCubit>(),
         listenWhen: (_, current) => _isLockedOut(current.access),
         listener: _onPlanChanged,
-        child: child ?? const SizedBox.shrink(),
+        child: SyncResultListener(
+          child: _LocaleRebuilder(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }
+}
+
+/// Redessine tout l'écran quand la langue change, sans rien démonter.
+///
+/// La plupart des libellés appellent `tr()` sans `BuildContext` : ils ne
+/// dépendent d'aucun widget hérité et ne seraient pas reconstruits — la langue
+/// choisie dans le profil ne s'appliquerait qu'aux écrans ouverts ensuite.
+/// `Localizations` ne publie la nouvelle langue qu'une fois ses traductions
+/// chargées : c'est ce moment qu'on attend pour marquer chaque élément à
+/// reconstruire. Une clé changée aurait le même effet visible, mais perdrait
+/// l'onglet ouvert, les champs saisis et la pile de navigation.
+class _LocaleRebuilder extends StatefulWidget {
+  const _LocaleRebuilder({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_LocaleRebuilder> createState() => _LocaleRebuilderState();
+}
+
+class _LocaleRebuilderState extends State<_LocaleRebuilder> {
+  Locale? _locale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_locale != null && _locale != locale) {
+      void rebuild(Element element) {
+        element.markNeedsBuild();
+        element.visitChildren(rebuild);
+      }
+
+      (context as Element).visitChildren(rebuild);
+    }
+    _locale = locale;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

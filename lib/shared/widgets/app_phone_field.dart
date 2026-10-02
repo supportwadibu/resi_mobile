@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -19,7 +20,7 @@ class AppPhoneField extends StatelessWidget {
     required this.countryIso2,
     required this.phoneCode,
     required this.controller,
-    this.label = 'Numéro de téléphone',
+    this.label,
   });
 
   final String countryIso2;
@@ -28,7 +29,7 @@ class AppPhoneField extends StatelessWidget {
   final String phoneCode;
 
   final TextEditingController controller;
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +37,7 @@ class AppPhoneField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: context.text.titleSmall),
+        Text(label ?? 'fields.phone'.tr(), style: context.text.titleSmall),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,

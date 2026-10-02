@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -28,7 +29,7 @@ class AmountField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Montant', style: context.text.titleSmall),
+          Text('expense.amount'.tr(), style: context.text.titleSmall),
           const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -56,7 +57,7 @@ class AmountField extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('Fcfa', style: context.mutedText),
+              Text('expense.currency'.tr(), style: context.mutedText),
             ],
           ),
         ],

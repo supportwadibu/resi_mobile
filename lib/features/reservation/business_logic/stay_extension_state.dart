@@ -14,11 +14,15 @@ final class StayExtensionSubmitting extends StayExtensionState {
 }
 
 final class StayExtensionSuccess extends StayExtensionState {
-  const StayExtensionSuccess(this.reservation);
+  const StayExtensionSuccess(this.reservation, {this.queued = false});
 
   /// Réservation telle que le serveur l'a réécrite : c'est elle qui porte le
-  /// montant réellement dû, pas l'estimation affichée avant l'envoi.
-  final ReservationModel reservation;
+  /// montant réellement dû, pas l'estimation affichée avant l'envoi. `null`
+  /// quand la prolongation est en file.
+  final ReservationModel? reservation;
+
+  /// Prolongation saisie hors ligne, envoyée au retour du réseau.
+  final bool queued;
 }
 
 /// Échec ordinaire — réseau, montant refusé, séjour déjà clôturé.

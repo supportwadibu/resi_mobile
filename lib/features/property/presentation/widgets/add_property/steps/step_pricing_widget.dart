@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_badge.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
@@ -78,17 +79,17 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Définissez votre tarif', style: context.text.titleMedium),
+        Text('property_form.set_price'.tr(), style: context.text.titleMedium),
         const SizedBox(height: 20),
 
         _PricingCard(
           icon: LucideIcons.calendarDays,
-          title: 'Tarif par jour',
-          subtitle: 'De l’arrivée à la même heure le lendemain',
+          title: 'property_form.daily_rate'.tr(),
+          subtitle: 'property_form.daily_rate_hint'.tr(),
           color: context.tokens.primary,
           child: AppTextField(
-            label: 'Prix / jour (FCFA)',
-            hint: 'Ex: 15000',
+            label: 'property_form.price_per_day_label'.tr(),
+            hint: 'property_form.price_hint'.tr(),
             controller: _dailyCtrl,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -108,10 +109,13 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Réductions par durée', style: context.text.titleMedium),
+                  Text(
+                    'property_form.duration_discounts'.tr(),
+                    style: context.text.titleMedium,
+                  ),
                   const SizedBox(height: 2),
                   Text(
-                    'Facultatif · modifiable à tout moment',
+                    'property_form.optional_editable'.tr(),
                     style: context.text.bodySmall,
                   ),
                 ],
@@ -123,7 +127,7 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
                 // atteinte, et disparaître laisserait croire à un bug.
                 onPressed: canAdd ? _addTier : null,
                 icon: LucideIcons.plus,
-                label: 'Palier',
+                label: 'property_form.tier'.tr(),
                 variant: AppButtonVariant.secondary,
                 size: AppButtonSize.sm,
               ),
@@ -163,13 +167,10 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
 
         const SizedBox(height: 12),
 
-        const AppCallout(
+        AppCallout(
           icon: LucideIcons.info,
           tone: AppAccent.blue,
-          message:
-              'Un séjour est facturé au prix par jour. Si sa durée atteint '
-              'un palier, la remise correspondante s’applique à tout le '
-              'séjour — la plus avantageuse en cas de chevauchement.',
+          message: 'property_form.pricing_rule'.tr(),
         ),
       ],
     );
@@ -198,15 +199,14 @@ class _EmptyTiers extends StatelessWidget {
             const IconChip(icon: LucideIcons.percent),
             const SizedBox(height: 10),
             Text(
-              'Ajouter un palier de remise',
+              'property_form.add_tier'.tr(),
               style: context.text.titleSmall!.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 3),
             Text(
-              'Encourage les séjours longs. Sans palier, le prix par jour '
-              's’applique quelle que soit la durée.',
+              'property_form.add_tier_hint'.tr(),
               textAlign: TextAlign.center,
               style: context.text.bodySmall,
             ),
@@ -282,7 +282,7 @@ class _TierRow extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Dès ${tier.minDays} jours',
+                    'property_detail.from_days'.tr(args: ['${tier.minDays}']),
                     style: context.text.titleSmall!.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -294,7 +294,7 @@ class _TierRow extends StatelessWidget {
                 ),
                 AppIconButton(
                   icon: LucideIcons.trash2,
-                  label: 'Supprimer ce palier',
+                  label: 'property_form.remove_tier'.tr(),
                   danger: true,
                   onPressed: onRemove,
                 ),
@@ -308,8 +308,10 @@ class _TierRow extends StatelessWidget {
               children: [
                 Expanded(
                   child: _Stepper(
-                    label: 'Durée',
-                    value: '${tier.minDays} j',
+                    label: 'property_form.duration'.tr(),
+                    value: 'property_form.days_short'.tr(
+                      args: ['${tier.minDays}'],
+                    ),
                     // Les bornes viennent des voisins : l'écran n'a pas à
                     // savoir qu'un palier ne peut pas en rejoindre un autre.
                     onDecrement: tier.minDays > daysBounds.min
@@ -328,7 +330,7 @@ class _TierRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _Stepper(
-                    label: 'Remise',
+                    label: 'property_form.discount'.tr(),
                     value: '${tier.discountPercent} %',
                     onDecrement: tier.discountPercent > discountBounds.min
                         ? () => onChanged(
@@ -365,19 +367,19 @@ class _TierRow extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _Figure(
-                      label: 'Prix / jour',
+                      label: 'property_form.price_day_short'.tr(),
                       value: CurrencyFormatter.fcfa(effective.round()),
                     ),
                   ),
                   Expanded(
                     child: _Figure(
-                      label: '${tier.minDays} jours',
+                      label: 'property_form.days'.tr(args: ['${tier.minDays}']),
                       value: CurrencyFormatter.fcfa(total.round()),
                     ),
                   ),
                   Expanded(
                     child: _Figure(
-                      label: 'Le client économise',
+                      label: 'property_form.client_saves'.tr(),
                       value: CurrencyFormatter.fcfa(saved.round()),
                       color: context.tokens.accentGreen,
                     ),
@@ -402,8 +404,7 @@ class _TierRow extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Sans effet : un palier plus court accorde déjà autant. '
-                      'Augmentez la remise ou supprimez ce palier.',
+                      'property_form.tier_no_effect'.tr(),
                       style: context.text.bodySmall!.copyWith(
                         color: context.tokens.accentAmber,
                       ),
@@ -494,7 +495,7 @@ class _StaySimulator extends StatelessWidget {
               Icon(LucideIcons.receipt, size: 13, color: context.tokens.muted),
               const SizedBox(width: 8),
               Text(
-                'Ce que paiera le client',
+                'property_form.client_pays'.tr(),
                 style: context.text.titleSmall!.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -531,7 +532,7 @@ class _SimulatorRow extends StatelessWidget {
           SizedBox(
             width: 62,
             child: Text(
-              '$days jours',
+              'property_form.days'.tr(args: ['$days']),
               style: context.text.labelMedium!.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -558,7 +559,10 @@ class _SimulatorRow extends StatelessWidget {
                       ),
                     ],
                   )
-                : Text('plein tarif', style: context.text.bodySmall),
+                : Text(
+                    'property_form.full_price'.tr(),
+                    style: context.text.bodySmall,
+                  ),
           ),
           Text(
             CurrencyFormatter.fcfa(total.round()),

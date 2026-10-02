@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -34,10 +35,10 @@ class AppBottomNav extends StatelessWidget {
   static const barHeight = 64.0;
 
   static const _items = [
-    (icon: AppSectionIcons.home, label: 'Accueil'),
-    (icon: AppSectionIcons.bookings, label: 'Réservations'),
-    (icon: AppSectionIcons.properties, label: 'Biens'),
-    (icon: AppSectionIcons.stats, label: 'Stats'),
+    (icon: AppSectionIcons.home, label: 'nav.home'),
+    (icon: AppSectionIcons.bookings, label: 'nav.bookings'),
+    (icon: AppSectionIcons.properties, label: 'nav.properties'),
+    (icon: AppSectionIcons.stats, label: 'nav.stats'),
   ];
 
   @override
@@ -62,7 +63,7 @@ class AppBottomNav extends StatelessWidget {
                           Expanded(
                             child: _NavItem(
                               icon: _items[i].icon,
-                              label: _items[i].label,
+                              label: _items[i].label.tr(),
                               selected: i == currentIndex,
                               onTap: () => onTap(i),
                             ),
@@ -163,7 +164,7 @@ class _CreateButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     return Tooltip(
-      message: isOpen ? 'Fermer' : 'Créer',
+      message: isOpen ? 'common.close'.tr() : 'common.create'.tr(),
       child: SizedBox.square(
         dimension: AppBottomNav.barHeight,
         child: FrostedSurface(

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
@@ -28,6 +29,7 @@ import '../../data/models/residence_model.dart';
 import '../../data/repositories/residence_repository.dart';
 import '../widgets/attach_unit_sheet.dart';
 import '../widgets/residence_unit_tile.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Fiche d'une résidence : ses informations et les logements qu'elle regroupe.
 @RoutePage()
@@ -62,13 +64,13 @@ class _ResidenceDetailView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Résidence',
+        title: 'property_detail.residence'.tr(),
         actions: [
           BlocBuilder<ResidenceDetailCubit, ResidenceDetailState>(
             builder: (context, state) =>
                 state is ResidenceDetailLoaded && canEdit
                 ? AppButton(
-                    label: 'Modifier',
+                    label: 'common.edit'.tr(),
                     icon: LucideIcons.pencil,
                     variant: AppButtonVariant.secondary,
                     size: AppButtonSize.sm,
@@ -111,6 +113,7 @@ class _ResidenceDetailView extends StatelessWidget {
 
   Future<void> _edit(BuildContext context) async {
     final cubit = context.read<ResidenceDetailCubit>();
+    if (!await ensureOnline(context) || !context.mounted) return;
     await context.router.push(AddResidenceRoute(residenceId: residenceId));
     // Le formulaire a son propre cubit : ses écritures n'atteignent pas
     // celui-ci, qui doit donc relire la fiche au retour.
@@ -161,7 +164,7 @@ class _ResidenceDetailView extends StatelessWidget {
     }
 
     messenger.clearSnackBars();
-    AppToast.success('Logement rattaché');
+    AppToast.success('residence.unit_attached'.tr());
     await cubit.load(residenceId);
   }
 }
@@ -213,7 +216,7 @@ class _Content extends StatelessWidget {
         if (residence.description.trim().isNotEmpty) ...[
           const SizedBox(height: 16),
           Section(
-            title: 'Description',
+            title: 'property_detail.description'.tr(),
             icon: LucideIcons.alignLeft,
             child: Text(
               residence.description,
@@ -224,20 +227,22 @@ class _Content extends StatelessWidget {
         if (residence.amenities.isNotEmpty) ...[
           const SizedBox(height: 12),
           Section(
-            title: 'Parties communes',
+            title: 'residence.common_areas'.tr(),
             icon: LucideIcons.listChecks,
             child: _AmenitiesList(amenities: residence.amenities),
           ),
         ],
         const SizedBox(height: 12),
         Section(
-          title: units.isEmpty ? 'Logements' : 'Logements · ${units.length}',
+          title: units.isEmpty
+              ? 'residence.units'.tr()
+              : 'residence.units_count'.tr(args: ['${units.length}']),
           icon: AppSectionIcons.properties,
           padding: EdgeInsets.zero,
           actions: [
             if (onAttach != null)
               AppButton(
-                label: 'Rattacher',
+                label: 'property_detail.attach'.tr(),
                 icon: LucideIcons.plus,
                 variant: AppButtonVariant.secondary,
                 size: AppButtonSize.sm,
@@ -245,22 +250,18 @@ class _Content extends StatelessWidget {
               ),
           ],
           child: unitsFailed
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.all(16),
                   child: AppCallout(
                     icon: LucideIcons.circleAlert,
                     tone: AppAccent.red,
-                    message:
-                        'Les logements n’ont pas pu être chargés. Tirez pour '
-                        'réessayer.',
+                    message: 'residence.units_load_failed'.tr(),
                   ),
                 )
               : units.isEmpty
-              ? const EmptyState(
+              ? EmptyState(
                   icon: AppSectionIcons.properties,
-                  message:
-                      'Aucun logement rattaché. Une résidence sans logement '
-                      'n’est pas encore louable.',
+                  message: 'residence.no_units'.tr(),
                 )
               : Column(
                   children: [

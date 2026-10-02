@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
@@ -34,7 +35,7 @@ class ReviewsSummaryCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 const StarRating(rating: 4.9, starSize: 18),
                 const SizedBox(height: 8),
-                Text('128 avis', style: context.mutedText),
+                Text('reviews.count'.tr(args: ['128']), style: context.mutedText),
               ],
             ),
           ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -22,14 +23,14 @@ class NightCounter extends StatelessWidget {
     return AppCard(
       child: Column(
         children: [
-          Text('Jours supplémentaires', style: context.mutedText),
+          Text('stay_extension.extra_days'.tr(), style: context.mutedText),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AppIconButton(
                 icon: LucideIcons.minus,
-                label: 'Retirer un jour',
+                label: 'stay_extension.remove_day'.tr(),
                 bordered: true,
                 onPressed: onRemove,
               ),
@@ -46,7 +47,7 @@ class NightCounter extends StatelessWidget {
               const SizedBox(width: 28),
               AppIconButton(
                 icon: LucideIcons.plus,
-                label: 'Ajouter un jour',
+                label: 'stay_extension.add_day'.tr(),
                 bordered: true,
                 onPressed: onAdd,
               ),

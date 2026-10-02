@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_picker_field.dart';
-import 'package:intl/intl.dart';
 
 class CustomDatePicker extends StatelessWidget {
   final DateTime? startDate;
@@ -16,8 +16,8 @@ class CustomDatePicker extends StatelessWidget {
   });
 
   String _format(DateTime? date) {
-    if (date == null) return 'Sélectionner';
-    return DateFormat('dd MMM yyyy', 'fr_FR').format(date);
+    if (date == null) return 'report.select'.tr();
+    return DateFormat('dd MMM yyyy').format(date);
   }
 
   Future<void> _pick(BuildContext context) async {
@@ -36,7 +36,7 @@ class CustomDatePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPickerField(
       value: startDate == null ? null : '${_format(startDate)}  →  ${_format(endDate)}',
-      placeholder: 'Choisir les dates',
+      placeholder: 'report.choose_dates'.tr(),
       icon: LucideIcons.calendarRange,
       onTap: () => _pick(context),
     );

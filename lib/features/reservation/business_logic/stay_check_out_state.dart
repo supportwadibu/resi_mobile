@@ -14,9 +14,13 @@ final class StayCheckOutSubmitting extends StayCheckOutState {
 }
 
 final class StayCheckOutSuccess extends StayCheckOutState {
-  const StayCheckOutSuccess(this.reservation);
+  const StayCheckOutSuccess(this.reservation, {this.queued = false});
 
-  final ReservationModel reservation;
+  /// Réservation clôturée par le serveur, `null` quand le départ est en file.
+  final ReservationModel? reservation;
+
+  /// Départ saisi hors ligne, envoyé au retour du réseau.
+  final bool queued;
 }
 
 /// Échec — réseau, séjour déjà clôturé ou annulé, séjour pas encore commencé.

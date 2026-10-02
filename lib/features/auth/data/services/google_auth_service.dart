@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/property_manager_model.dart';
@@ -57,9 +58,7 @@ class GoogleAuthService {
     if (idToken == null || idToken.isEmpty) {
       // Sur Android, un idToken nul signifie presque toujours que
       // `serverClientId` (client OAuth de type Web) n'est pas configuré.
-      throw const GoogleSignInFailure(
-        "Google n'a pas fourni de jeton d'identité. Vérifiez la configuration OAuth.",
-      );
+      throw GoogleSignInFailure('google_auth.no_token'.tr());
     }
 
     return idToken;
@@ -77,21 +76,20 @@ class GoogleAuthService {
     // l'APK. Il manque le client OAuth Android correspondant au couple
     // (nom du package, empreinte SHA-1) dans la console Google Cloud.
     if (details.contains('ApiException: 10')) {
-      return "La connexion Google n'est pas configurée pour cette version de "
-          "l'application. Contactez le support.";
+      return 'google_auth.not_configured'.tr();
     }
 
     // 7 = NETWORK_ERROR
     if (details.contains('ApiException: 7')) {
-      return 'Connexion impossible. Vérifiez votre accès à Internet.';
+      return 'google_auth.network'.tr();
     }
 
     // 12500 : Play Services absent, obsolète, ou compte Google indisponible.
     if (details.contains('12500')) {
-      return 'Google Play Services est indisponible ou doit être mis à jour.';
+      return 'google_auth.play_services'.tr();
     }
 
-    return "La connexion Google a échoué. Réessayez dans un instant.";
+    return 'google_auth.failed'.tr();
   }
 
   Future<void> signOut() => _googleSignIn.signOut();

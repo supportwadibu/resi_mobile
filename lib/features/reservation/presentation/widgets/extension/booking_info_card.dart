@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
@@ -22,8 +23,8 @@ class BookingInfoCard extends StatelessWidget {
       icon: AppSectionIcons.properties,
       child: DetailList(
         items: [
-          DetailItem('Date d\'arrivée', checkIn),
-          DetailItem('Fin prévue', checkOut),
+          DetailItem('stay_extension.arrival_date'.tr(), checkIn),
+          DetailItem('stay_extension.planned_end'.tr(), checkOut),
         ],
       ),
     );

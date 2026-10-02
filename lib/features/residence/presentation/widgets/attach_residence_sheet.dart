@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
@@ -148,7 +149,7 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppSheetHeader(
-            title: 'Rattacher à une résidence',
+            title: 'residence.attach_to'.tr(),
             description: widget.propertyTitle,
           ),
           Flexible(
@@ -178,8 +179,8 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
           // « Aucune » en tête, et non en fin de liste : c'est le choix qui
           // détache, on doit le trouver sans parcourir les résidences.
           AppOptionTile(
-            title: 'Aucune — bien autonome',
-            description: 'Le bien se loue pour lui-même.',
+            title: 'residence.none_standalone'.tr(),
+            description: 'residence.none_standalone_hint'.tr(),
             icon: LucideIcons.house,
             selected: _residenceId == null,
             onTap: () => setState(() => _residenceId = null),
@@ -191,8 +192,13 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
               title: residence.name,
               description: switch (residence.unitsCount) {
                 0 => residence.address.city,
-                1 => '${residence.address.city} · 1 logement',
-                final count => '${residence.address.city} · $count logements',
+                final count => 'residence.city_units'.plural(
+                  count,
+                  namedArgs: {
+                    'city': residence.address.city,
+                    'count': '$count',
+                  },
+                ),
               },
               icon: AppSectionIcons.residences,
               selected: _residenceId == residence.id,
@@ -215,14 +221,14 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
           if (_residenceId != null) ...[
             const SizedBox(height: 20),
             AppTextField(
-              label: 'Nom du logement',
-              hint: 'Ex: Studio 1',
+              label: 'residence.unit_name'.tr(),
+              hint: 'residence.unit_name_hint'.tr(),
               controller: _labelController,
               prefixIcon: const Icon(LucideIcons.doorOpen, size: 16),
             ),
             const SizedBox(height: 6),
             Text(
-              'Distinct du titre de l’annonce.',
+              'residence.unit_name_note'.tr(),
               style: context.text.bodySmall,
             ),
             const SizedBox(height: 16),
@@ -249,7 +255,7 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
             children: [
               Expanded(
                 child: AppButton(
-                  label: 'Annuler',
+                  label: 'common.cancel'.tr(),
                   variant: AppButtonVariant.secondary,
                   expand: true,
                   onPressed: () => Navigator.of(context).pop(),
@@ -259,7 +265,9 @@ class _AttachResidenceSheetState extends State<AttachResidenceSheet> {
               Expanded(
                 flex: 2,
                 child: AppButton(
-                  label: _residenceId == null ? 'Détacher' : 'Rattacher',
+                  label: _residenceId == null
+                      ? 'residence.detach'.tr()
+                      : 'property_detail.attach'.tr(),
                   expand: true,
                   onPressed: _isLoading || !_canSubmit ? null : _submit,
                 ),
@@ -294,12 +302,12 @@ class _CopyAddressToggle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Reprendre l’adresse de la résidence',
+                  'residence.use_residence_address'.tr(),
                   style: context.text.titleSmall,
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Remplace l’adresse actuelle du logement.',
+                  'residence.use_residence_address_hint'.tr(),
                   style: context.text.bodySmall,
                 ),
               ],
@@ -321,7 +329,7 @@ class _CreateResidenceButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      label: 'Nouvelle résidence',
+      label: 'residence.new_title'.tr(),
       icon: LucideIcons.plus,
       variant: AppButtonVariant.secondary,
       expand: true,
@@ -368,12 +376,10 @@ class _EmptyView extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         children: [
-          const EmptyState(
+          EmptyState(
             icon: AppSectionIcons.residences,
-            title: 'Aucune résidence pour le moment',
-            message:
-                'Une résidence regroupe plusieurs logements loués séparément, '
-                'qui partagent une adresse.',
+            title: 'residence.empty_yet'.tr(),
+            message: 'residence.empty_yet_body'.tr(),
           ),
           _CreateResidenceButton(
             onPressed: () => Navigator.of(

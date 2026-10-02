@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -91,9 +92,8 @@ class GerantCard extends StatelessWidget {
                     // compte existe mais le gérant ne voit rien.
                     AppBadge(
                       label: switch (count) {
-                        0 => 'Aucun logement',
-                        1 => '1 logement',
-                        _ => '$count logements',
+                        0 => 'residence.no_unit'.tr(),
+                        _ => 'residence.unit_count'.plural(count),
                       },
                       icon: count == 0 ? LucideIcons.info : LucideIcons.doorOpen,
                       tone: count == 0 ? AppAccent.amber : AppAccent.neutral,
@@ -102,7 +102,10 @@ class GerantCard extends StatelessWidget {
                     // « Actif » sur chaque ligne d'une liste où presque tout
                     // l'est n'apprend rien et charge la carte.
                     if (!gerant.isActive)
-                      StatusBadge(label: 'Suspendu', tone: StatusTone.stopped),
+                      StatusBadge(
+                        label: 'gerant.status_suspended'.tr(),
+                        tone: StatusTone.stopped,
+                      ),
                   ],
                 ),
               ],
@@ -111,7 +114,9 @@ class GerantCard extends StatelessWidget {
           if (onToggleStatus != null)
             AppIconButton(
               icon: gerant.isActive ? LucideIcons.ban : LucideIcons.circleCheck,
-              label: gerant.isActive ? 'Suspendre' : 'Réactiver',
+              label: gerant.isActive
+                  ? 'gerant.suspend'.tr()
+                  : 'gerant.reactivate'.tr(),
               danger: gerant.isActive,
               onPressed: onToggleStatus,
             ),

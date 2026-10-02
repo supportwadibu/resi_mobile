@@ -54,7 +54,7 @@ class _ReservationTabView extends StatelessWidget {
             bottom: MediaQuery.paddingOf(context).bottom + 16,
           ),
           children: [
-            const PageHeader(title: 'Réservations'),
+            PageHeader(title: 'home.bookings_title'.tr()),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -64,8 +64,8 @@ class _ReservationTabView extends StatelessWidget {
                   // sans cet intitulé, une tuile de comptage posée à côté
                   // d'un revenu mensuel se lit comme un total de tous les
                   // temps.
-                  const SectionHeading(
-                    title: 'Ce mois-ci',
+                  SectionHeading(
+                    title: 'common.this_month'.tr(),
                     icon: AppSectionIcons.stats,
                   ),
                   const SizedBox(height: 8),

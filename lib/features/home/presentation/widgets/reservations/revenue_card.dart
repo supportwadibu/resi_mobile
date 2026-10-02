@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -26,12 +27,16 @@ class RevenueCard extends StatelessWidget {
     final note = previous == null
         ? null
         : growth == null
-        ? 'Mois dernier : $previous'
-        : '${growth.round() >= 0 ? '+' : ''}${growth.round()} % '
-              'par rapport au mois dernier ($previous)';
+        ? 'home.last_month'.tr(args: [previous])
+        : 'home.growth'.tr(
+            namedArgs: {
+              'growth': '${growth.round() >= 0 ? '+' : ''}${growth.round()}',
+              'previous': previous,
+            },
+          );
 
     return StatTile(
-      label: 'Revenus ce mois',
+      label: 'home.revenue_month'.tr(),
       value: revenue == null
           ? '—'
           : CurrencyFormatter.short(revenue.currentMonth),

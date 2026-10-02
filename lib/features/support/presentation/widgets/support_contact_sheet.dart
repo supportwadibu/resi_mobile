@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -34,8 +35,8 @@ class _SupportContactSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     return AppSheet(
-      title: 'Besoin d\'aide ?',
-      description: 'Choisissez comment nous joindre',
+      title: 'support.need_help'.tr(),
+      description: 'support.how_to_reach'.tr(),
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [
@@ -44,10 +45,10 @@ class _SupportContactSheet extends StatelessWidget {
             // sans masquer les autres.
             AppSheetAction(
               icon: LucideIcons.messagesSquare,
-              label: 'Chat en direct',
-              description: 'Réponse immédiate, sans quitter l\'application',
-              trailing: const AppBadge(
-                label: 'Recommandé',
+              label: 'support.live_chat'.tr(),
+              description: 'support.live_chat_hint'.tr(),
+              trailing: AppBadge(
+                label: 'support.recommended'.tr(),
                 tone: AppAccent.green,
               ),
               onTap: () {
@@ -63,7 +64,7 @@ class _SupportContactSheet extends StatelessWidget {
           AppSheetAction(
             // Logo de marque : WhatsApp reste reconnaissable d'un coup d'œil.
             iconWidget: FaIcon(FontAwesomeIcons.whatsapp, size: 16, color: t.muted),
-            label: 'WhatsApp',
+            label: 'support.whatsapp'.tr(),
             description: _formatPhone(AppConfig.supportWhatsApp),
             onTap: () => _run(
               context,
@@ -75,9 +76,10 @@ class _SupportContactSheet extends StatelessWidget {
           ),
           AppSheetAction(
             icon: LucideIcons.phone,
-            label: 'Appeler le support',
+            label: 'support.call'.tr(),
             description:
-                '${_formatPhone(AppConfig.supportPhone)} · ${AppConfig.supportHours}',
+                '${_formatPhone(AppConfig.supportPhone)} · '
+                '${AppConfig.supportHours.isEmpty ? 'support.hours'.tr() : AppConfig.supportHours}',
             onTap: () => _run(
               context,
               () => LauncherHelper.makeCall('+${AppConfig.supportPhone}'),
@@ -85,19 +87,19 @@ class _SupportContactSheet extends StatelessWidget {
           ),
           AppSheetAction(
             icon: LucideIcons.mail,
-            label: 'Envoyer un e-mail',
+            label: 'support.email'.tr(),
             description: AppConfig.supportEmail,
             onTap: () => _run(
               context,
               () => LauncherHelper.openUrl(
                 'mailto:${AppConfig.supportEmail}'
-                '?subject=${Uri.encodeComponent('Demande d\'assistance Resi')}',
+                '?subject=${Uri.encodeComponent('support.email_subject'.tr())}',
               ),
             ),
           ),
           AppSheetAction(
             icon: LucideIcons.globe,
-            label: 'Site web',
+            label: 'support.website'.tr(),
             description: _formatWebsite(AppConfig.supportWebsite),
             onTap: () => _run(
               context,
@@ -112,9 +114,9 @@ class _SupportContactSheet extends StatelessWidget {
   String _whatsAppGreeting() {
     final name = visitorName?.trim();
     if (name == null || name.isEmpty) {
-      return 'Bonjour, j\'ai besoin d\'aide sur Resi.';
+      return 'support.greeting'.tr();
     }
-    return 'Bonjour, je suis $name. J\'ai besoin d\'aide sur Resi.';
+    return 'support.greeting_named'.tr(args: [name]);
   }
 
   Future<void> _run(
@@ -127,7 +129,7 @@ class _SupportContactSheet extends StatelessWidget {
     } on LauncherException {
       // Sans `context` : la feuille est déjà refermée quand l'échec survient,
       // le toast se pose alors sur l'`Overlay` du routeur racine.
-      AppToast.error('Aucune application disponible pour ce canal.');
+      AppToast.error('support.no_app'.tr());
     }
   }
 

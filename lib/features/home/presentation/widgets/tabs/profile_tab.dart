@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -30,7 +31,9 @@ import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/shared/widgets/skeletons/profile_skeleton.dart';
+import 'package:resi_africa/shared/widgets/language_switcher.dart';
 import 'package:resi_africa/shared/widgets/theme_switcher.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 @RoutePage()
 class ProfileScreen extends StatelessWidget {
@@ -52,7 +55,7 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppTopBar(title: 'Mon profil'),
+      appBar: AppTopBar(title: 'profile.title'.tr()),
       body: BlocBuilder<OwnerProfileCubit, OwnerProfileState>(
         builder: (context, state) {
           if (state is OwnerProfileLoading || state is OwnerProfileInitial) {
@@ -81,7 +84,7 @@ class ProfileView extends StatelessWidget {
             return ErrorState(
               message: state is OwnerProfileError
                   ? state.message
-                  : 'Profil indisponible.',
+                  : 'profile.unavailable'.tr(),
               onRetry: () => context.read<OwnerProfileCubit>().load(),
             );
           }
@@ -171,16 +174,24 @@ class _ProfileContent extends StatelessWidget {
     // vide laisserait croire à une donnée manquante côté serveur.
     final items = <DetailItem>[
       if (profile.fullName.trim().isNotEmpty)
-        DetailItem('Nom complet', profile.fullName, icon: LucideIcons.user),
+        DetailItem(
+          'common.full_name'.tr(),
+          profile.fullName,
+          icon: LucideIcons.user,
+        ),
       if (profile.email != null && profile.email!.trim().isNotEmpty)
-        DetailItem('Email', profile.email, icon: LucideIcons.mail),
+        DetailItem('common.email'.tr(), profile.email, icon: LucideIcons.mail),
       if (_phone != null)
-        DetailItem('Téléphone', _phone, icon: LucideIcons.phone),
+        DetailItem('common.phone'.tr(), _phone, icon: LucideIcons.phone),
       if (_fullAddress != null)
-        DetailItem('Adresse', _fullAddress, icon: LucideIcons.mapPin),
+        DetailItem(
+          'common.address'.tr(),
+          _fullAddress,
+          icon: LucideIcons.mapPin,
+        ),
       if (_identityDocument != null)
         DetailItem(
-          'Pièce d’identité',
+          'profile.id_document'.tr(),
           _identityDocument,
           icon: LucideIcons.idCard,
         ),
@@ -193,7 +204,7 @@ class _ProfileContent extends StatelessWidget {
       if (isGestureAllowed(_currentRole(), 'profile_edit'))
         AppSheetAction(
           icon: LucideIcons.squarePen,
-          label: 'Modifier mes informations',
+          label: 'profile.edit_info'.tr(),
           onTap: () => _editProfile(context),
         ),
       // Réservée au propriétaire : le gérant n'ouvre pas de compte gérant, et
@@ -202,7 +213,7 @@ class _ProfileContent extends StatelessWidget {
       if (_currentRole() != 'gerant')
         AppSheetAction(
           icon: AppSectionIcons.managers,
-          label: 'Mes gérants',
+          label: 'profile.my_managers'.tr(),
           trailing: hasFullPlan() ? null : const PremiumBadge(),
           onTap: () {
             if (ensureFullPlan(context, PremiumFeature.managers)) {
@@ -221,8 +232,8 @@ class _ProfileContent extends StatelessWidget {
           _Identity(
             name: profile.fullName,
             subtitle: _locationSummary == null
-                ? 'Propriétaire'
-                : 'Propriétaire · $_locationSummary',
+                ? 'profile.owner'.tr()
+                : 'profile.owner_with_location'.tr(args: [_locationSummary!]),
             avatarUrl: profile.avatarUrl,
           ),
           const SizedBox(height: 16),
@@ -235,33 +246,38 @@ class _ProfileContent extends StatelessWidget {
           if (_currentRole() != 'gerant') ...[
             const SizedBox(height: 12),
             PlanStatusCard(
-              onTap: () => context.router.push(SubscriptionPlansRoute()),
+              onTap: () async {
+                if (!await ensureOnline(context) || !context.mounted) return;
+                context.router.push(SubscriptionPlansRoute());
+              },
             ),
           ],
           if (items.isNotEmpty) ...[
             const SizedBox(height: 24),
             Section(
-              title: 'Informations personnelles',
+              title: 'profile.personal_info'.tr(),
               icon: AppSectionIcons.profile,
               child: DetailList(items: items),
             ),
           ],
           if (settings.isNotEmpty) ...[
             const SizedBox(height: 16),
-            _LinkGroup(title: 'Paramètres', children: settings),
+            _LinkGroup(title: 'profile.settings'.tr(), children: settings),
           ],
           const SizedBox(height: 16),
           const _AppearanceSection(),
+          const SizedBox(height: 16),
+          const _LanguageSection(),
           // L'entrée ne dépend plus de Tawk.to : la feuille propose aussi le
           // téléphone, WhatsApp et le courriel, qui restent joignables même
           // sans widget de chat configuré au build.
           const SizedBox(height: 16),
           _LinkGroup(
-            title: 'Assistance',
+            title: 'profile.assistance'.tr(),
             children: [
               AppSheetAction(
                 icon: AppSectionIcons.support,
-                label: 'Aide & support',
+                label: 'common.help_support'.tr(),
                 onTap: () => showSupportContactSheet(
                   context,
                   visitorName: profile.fullName,
@@ -286,9 +302,9 @@ class _ProfileContent extends StatelessWidget {
 Future<void> _confirmLogout(BuildContext context) async {
   final confirmed = await showConfirmDialog(
     context: context,
-    title: 'Se déconnecter',
-    message: 'Voulez-vous vraiment quitter votre session ?',
-    confirmLabel: 'Se déconnecter',
+    title: 'common.sign_out'.tr(),
+    message: 'profile.sign_out_confirm'.tr(),
+    confirmLabel: 'common.sign_out'.tr(),
     danger: true,
   );
 
@@ -311,7 +327,7 @@ class _LogoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      label: 'Se déconnecter',
+      label: 'common.sign_out'.tr(),
       icon: LucideIcons.logOut,
       variant: AppButtonVariant.secondary,
       expand: true,
@@ -326,10 +342,24 @@ class _AppearanceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Section(
-      title: 'Apparence',
+    return Section(
+      title: 'profile.appearance'.tr(),
       icon: LucideIcons.sunMoon,
-      child: ThemeSwitcher(),
+      child: const ThemeSwitcher(),
+    );
+  }
+}
+
+/// Langue de l'application, commune aux deux rôles.
+class _LanguageSection extends StatelessWidget {
+  const _LanguageSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Section(
+      title: 'profile.language'.tr(),
+      icon: LucideIcons.languages,
+      child: const LanguageSwitcher(),
     );
   }
 }
@@ -380,8 +410,8 @@ class _ManagerProfileContent extends StatelessWidget {
   /// périmètre doit comprendre pourquoi ses écrans sont vides.
   String get _subtitle {
     final count = account.propertiesCount;
-    if (count == 0) return 'Gérant · aucun logement confié';
-    return 'Gérant · $count logement${count > 1 ? 's' : ''}';
+    if (count == 0) return 'profile.manager_no_unit'.tr();
+    return 'profile.manager_units'.plural(count);
   }
 
   @override
@@ -391,11 +421,19 @@ class _ManagerProfileContent extends StatelessWidget {
     // des deux coordonnées existe, jamais les deux.
     final items = <DetailItem>[
       if (account.fullName.trim().isNotEmpty)
-        DetailItem('Nom complet', account.fullName, icon: LucideIcons.user),
+        DetailItem(
+          'common.full_name'.tr(),
+          account.fullName,
+          icon: LucideIcons.user,
+        ),
       if (account.email != null)
-        DetailItem('Email', account.email, icon: LucideIcons.mail),
+        DetailItem('common.email'.tr(), account.email, icon: LucideIcons.mail),
       if (account.phone != null)
-        DetailItem('Téléphone', account.phone, icon: LucideIcons.phone),
+        DetailItem(
+          'common.phone'.tr(),
+          account.phone,
+          icon: LucideIcons.phone,
+        ),
     ];
 
     final active = account.isActive;
@@ -415,10 +453,12 @@ class _ManagerProfileContent extends StatelessWidget {
           AppCallout(
             icon: active ? LucideIcons.circleCheck : LucideIcons.circleAlert,
             tone: active ? AppAccent.green : AppAccent.red,
-            title: active ? 'Compte actif' : 'Compte suspendu',
+            title: active
+                ? 'profile.account_active'.tr()
+                : 'profile.account_suspended'.tr(),
             message: active
-                ? 'Vous gérez les logements qui vous sont confiés.'
-                : 'Contactez le propriétaire pour retrouver l’accès.',
+                ? 'profile.manager_active'.tr()
+                : 'profile.manager_suspended'.tr(),
           ),
           if (items.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -427,7 +467,7 @@ class _ManagerProfileContent extends StatelessWidget {
             // et rien à l'écran ne doit laisser croire au gérant qu'il peut
             // les corriger.
             Section(
-              title: 'Mes informations',
+              title: 'profile.my_info'.tr(),
               icon: AppSectionIcons.profile,
               child: DetailList(items: items),
             ),
@@ -435,12 +475,14 @@ class _ManagerProfileContent extends StatelessWidget {
           const SizedBox(height: 16),
           const _AppearanceSection(),
           const SizedBox(height: 16),
+          const _LanguageSection(),
+          const SizedBox(height: 16),
           _LinkGroup(
-            title: 'Assistance',
+            title: 'profile.assistance'.tr(),
             children: [
               AppSheetAction(
                 icon: AppSectionIcons.support,
-                label: 'Aide & support',
+                label: 'common.help_support'.tr(),
                 onTap: () => showSupportContactSheet(
                   context,
                   visitorName: account.fullName,
@@ -510,7 +552,7 @@ class _Identity extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                name.trim().isEmpty ? 'Sans nom' : name,
+                name.trim().isEmpty ? 'common.no_name'.tr() : name,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.titleLarge,
               ),
@@ -549,7 +591,7 @@ class _StatusCard extends StatelessWidget {
       return (
         tone: AppAccent.green,
         icon: LucideIcons.circleCheck,
-        message: 'Votre compte est vérifié.',
+        message: 'profile.verified'.tr(),
       );
     }
     if (profile.isRejected) {
@@ -558,7 +600,7 @@ class _StatusCard extends StatelessWidget {
         tone: AppAccent.red,
         icon: LucideIcons.circleAlert,
         message: reason == null || reason.isEmpty
-            ? 'Corrigez votre dossier et renvoyez-le.'
+            ? 'profile.fix_profile'.tr()
             : reason,
       );
     }
@@ -566,20 +608,20 @@ class _StatusCard extends StatelessWidget {
       return (
         tone: AppAccent.red,
         icon: LucideIcons.ban,
-        message: 'Complétez votre dossier pour retrouver l’accès.',
+        message: 'profile.complete_to_regain'.tr(),
       );
     }
     if (profile.isSubmitted) {
       return (
         tone: AppAccent.blue,
         icon: LucideIcons.clock,
-        message: 'Votre dossier est en cours de vérification.',
+        message: 'profile.under_review'.tr(),
       );
     }
     return (
       tone: AppAccent.amber,
       icon: LucideIcons.info,
-      message: 'Déposez votre pièce d’identité pour valider votre compte.',
+      message: 'profile.upload_document'.tr(),
     );
   }
 
@@ -596,7 +638,7 @@ class _StatusCard extends StatelessWidget {
       message: style.message,
       action: needsAction
           ? AppButton(
-              label: 'Compléter mon dossier',
+              label: 'owner_profile.banner_action'.tr(),
               size: AppButtonSize.sm,
               trailingIcon: LucideIcons.arrowRight,
               onPressed: onComplete,

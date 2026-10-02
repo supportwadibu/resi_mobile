@@ -29,7 +29,7 @@ typedef InvoiceLine = ({String labelKey, String value, bool strong});
 class InvoicePdfService {
   const InvoicePdfService();
 
-  static final _amountFormat = NumberFormat.decimalPattern('fr');
+  static NumberFormat get _amountFormat => NumberFormat.decimalPattern();
 
   static String _fcfa(double amount) =>
       '${_amountFormat.format(amount.round())} F';
@@ -47,7 +47,7 @@ class InvoicePdfService {
   /// d'argent remis au client, et une ligne manquante ne se voit qu'à la
   /// lecture.
   static List<InvoiceLine> lines(ReservationModel reservation) {
-    final dateTime = DateFormat('d MMM y, HH:mm', 'fr');
+    final dateTime = DateFormat('d MMM y, HH:mm');
 
     return [
       (
@@ -131,10 +131,7 @@ class InvoicePdfService {
   }) async {
     final pdf = pw.Document();
     final number = invoiceNumber(reservation);
-    final issued = DateFormat(
-      'd MMMM y',
-      'fr',
-    ).format(issuedAt ?? DateTime.now());
+    final issued = DateFormat('d MMMM y').format(issuedAt ?? DateTime.now());
     final client = reservation.client;
     final property = reservation.property;
 

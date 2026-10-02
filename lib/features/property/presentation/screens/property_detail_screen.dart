@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -24,6 +25,7 @@ import '../../../home/presentation/widgets/details/list_images_widget.dart';
 import '../../../residence/data/repositories/residence_repository.dart';
 import '../../../residence/presentation/widgets/attach_residence_sheet.dart';
 import '../../data/models/property_model.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 @RoutePage()
 class PropertyDetailScreen extends StatefulWidget {
@@ -83,7 +85,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     children: [
                       AppIconButton(
                         icon: LucideIcons.chevronLeft,
-                        label: 'Retour',
+                        label: 'common.back'.tr(),
                         bordered: true,
                         onPressed: () => context.router.maybePop(),
                       ),
@@ -91,7 +93,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       if (cover != null)
                         AppIconButton(
                           icon: LucideIcons.expand,
-                          label: 'Plein écran',
+                          label: 'property_page.fullscreen'.tr(),
                           bordered: true,
                           onPressed: () => ImageViewerUtils.showFullScreenImage(
                             context,
@@ -169,6 +171,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   }
 
   Future<void> _openEditor() async {
+    if (!await ensureOnline(context) || !mounted) return;
     final updated = await context.router.push<PropertyModel>(
       AddPropertyRoute(property: property),
     );
@@ -192,6 +195,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     if (!mounted) return;
 
     if (result is AttachResidenceCreateRequested) {
+      if (!await ensureOnline(context) || !mounted) return;
       await context.router.push(AddResidenceRoute());
       // La feuille se réouvre sur la liste rechargée, résidence neuve comprise.
       if (mounted) await _attachResidence();
@@ -214,8 +218,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
       AppToast.success(
         result.residenceId == null
-            ? 'Bien détaché de sa résidence'
-            : 'Bien rattaché à la résidence',
+            ? 'property_page.detached'.tr()
+            : 'property_page.attached'.tr(),
         context: context,
       );
     } on AppFailure catch (f) {
@@ -240,10 +244,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       // Le retrait est un succès, signalé en avertissement : l'annonce cesse
       // d'être visible, et c'est la conséquence qui compte pour le lecteur.
       if (publish) {
-        AppToast.success('L’annonce est en ligne.', context: context);
+        AppToast.success('property_page.published'.tr(), context: context);
       } else {
         AppToast.warning(
-          'L’annonce est retirée de la vitrine.',
+          'property_page.unpublished'.tr(),
           context: context,
         );
       }
@@ -268,38 +272,38 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       if (details.bedrooms > 0)
         PropertyFeature(
           icon: LucideIcons.bed,
-          label: details.bedrooms > 1 ? 'Chambres' : 'Chambre',
+          label: 'property_page.bedrooms'.plural(details.bedrooms),
           count: details.bedrooms,
         ),
       if (details.bathrooms > 0)
         PropertyFeature(
           icon: LucideIcons.bath,
-          label: details.bathrooms > 1 ? 'Salles de bain' : 'Salle de bain',
+          label: 'property_page.bathrooms'.plural(details.bathrooms),
           count: details.bathrooms,
         ),
       if (details.livingRooms > 0)
         PropertyFeature(
           icon: LucideIcons.sofa,
-          label: details.livingRooms > 1 ? 'Salons' : 'Salon',
+          label: 'property_page.living_rooms'.plural(details.livingRooms),
           count: details.livingRooms,
         ),
       if (details.parkingSpaces > 0)
         PropertyFeature(
           icon: LucideIcons.squareParking,
-          label: 'Parking',
+          label: 'amenities.parking'.tr(),
           count: details.parkingSpaces,
         ),
       if (property.amenities.contains(Amenity.wifi))
         PropertyFeature(
           icon: LucideIcons.wifi,
-          label: 'Wifi',
+          label: 'amenities.wifi'.tr(),
           count: 1,
           countable: false,
         ),
       if (property.amenities.contains(Amenity.pool))
         PropertyFeature(
           icon: LucideIcons.waves,
-          label: 'Piscine',
+          label: 'amenities.pool'.tr(),
           count: 1,
           countable: false,
         ),

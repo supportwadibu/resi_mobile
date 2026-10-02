@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
@@ -27,7 +28,7 @@ class StatsRow extends StatelessWidget {
           Expanded(
             child: StatTile(
               compact: true,
-              label: 'Occupation',
+              label: 'common.occupancy'.tr(),
               value: '${(tauxOccupation * 100).toStringAsFixed(0)} %',
               icon: LucideIcons.chartPie,
               accent: AppAccent.amber,
@@ -37,7 +38,7 @@ class StatsRow extends StatelessWidget {
           Expanded(
             child: StatTile(
               compact: true,
-              label: 'Réservations',
+              label: 'finance_page.bookings'.tr(),
               value: '$reservations',
               icon: AppSectionIcons.bookings,
               accent: AppAccent.violet,
@@ -47,8 +48,10 @@ class StatsRow extends StatelessWidget {
           Expanded(
             child: StatTile(
               compact: true,
-              label: 'Séjour moyen',
-              value: '${moyenSejour.toStringAsFixed(1)} j',
+              label: 'finance_page.average_stay'.tr(),
+              value: 'finance_page.days_short'.tr(
+                args: [moyenSejour.toStringAsFixed(1)],
+              ),
               icon: LucideIcons.clock,
               accent: AppAccent.blue,
             ),

@@ -13,7 +13,10 @@ import '../../../../core/sync/sync_service.dart';
 /// atteint le serveur.
 ///
 /// La synchronisation démarre au `bootstrap`, sans `BuildContext` — elle
-/// publie son rapport et cet écouteur, monté dans l'arbre, l'affiche.
+/// publie son rapport et cet écouteur l'affiche. Il est monté une seule fois,
+/// à la racine de l'application : la synchronisation part au retour du réseau,
+/// quel que soit l'écran ouvert, et deux écouteurs montés en même temps
+/// annonceraient deux fois la même passe.
 class SyncResultListener extends StatefulWidget {
   const SyncResultListener({super.key, required this.child});
 
@@ -48,10 +51,12 @@ class _SyncResultListenerState extends State<SyncResultListener> {
     final hasProblem =
         report.conflicts > 0 || report.rejected > 0 || report.failed > 0;
 
+    // Sans `context` : monté au-dessus du navigateur, l'écouteur n'a pas
+    // d'`Overlay` à portée ; le toast prend celui du routeur racine.
     if (hasProblem) {
-      AppToast.warning(_message(report), context: context);
+      AppToast.warning(_message(report));
     } else {
-      AppToast.success(_message(report), context: context);
+      AppToast.success(_message(report));
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 class PhoneHelper {
@@ -62,14 +63,14 @@ class PhoneHelper {
   }
 
   static String? validate(String? input, String iso2) {
-    if (input == null || input.trim().isEmpty) return 'Ce champ est requis';
+    if (input == null || input.trim().isEmpty) return 'common.field_required'.tr();
     if (isoCodeOf(iso2) == null) return null;
-    if (!isValid(input, iso2)) return 'Numéro invalide pour ce pays';
+    if (!isValid(input, iso2)) return 'fields.phone_invalid'.tr();
     return null;
   }
 
   static String hintFor(String iso2) => switch (isoCodeOf(iso2)) {
     IsoCode.CI => '07 00 00 00 00',
-    _ => 'Numéro sans indicatif',
+    _ => 'fields.phone_hint_generic'.tr(),
   };
 }

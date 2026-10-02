@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
@@ -28,22 +29,26 @@ class PriceSummaryCard extends StatelessWidget {
     return AppCard(
       child: Column(
         children: [
-          _row(context, 'Coût par jour', pricePerDay),
+          _row(context, 'stay_extension.daily_cost'.tr(), pricePerDay),
           const SizedBox(height: 8),
           _row(
             context,
-            days > 1 ? 'Sous-total ($days jours)' : 'Sous-total (1 jour)',
+            'stay_extension.subtotal'.plural(days),
             subtotal,
           ),
           if (discountPercent > 0) ...[
             const SizedBox(height: 8),
-            _row(context, 'Remise durée', '-$discountPercent %'),
+            _row(
+              context,
+              'stay_extension.length_discount'.tr(),
+              '-$discountPercent %',
+            ),
           ],
           const Divider(height: 24),
           Row(
             children: [
               Text(
-                'Total à payer',
+                'stay_extension.total_due'.tr(),
                 style: context.text.titleSmall!.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

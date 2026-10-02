@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -83,11 +84,13 @@ class _PropertyResidenceSectionState extends State<PropertyResidenceSection> {
     final unitLabel = widget.unitLabel?.trim() ?? '';
 
     return Section(
-      title: 'Résidence',
+      title: 'property_detail.residence'.tr(),
       icon: AppSectionIcons.residences,
       actions: [
         AppButton(
-          label: isAttached ? 'Modifier' : 'Rattacher',
+          label: isAttached
+              ? 'common.edit'.tr()
+              : 'property_detail.attach'.tr(),
           variant: AppButtonVariant.secondary,
           size: AppButtonSize.sm,
           onPressed: widget.onAttachPressed,
@@ -105,8 +108,10 @@ class _PropertyResidenceSectionState extends State<PropertyResidenceSection> {
           const SizedBox(height: 2),
           Text(
             isAttached
-                ? (unitLabel.isEmpty ? 'Logement sans libellé' : unitLabel)
-                : 'Non rattaché à une résidence',
+                ? (unitLabel.isEmpty
+                      ? 'property_detail.unit_no_label'.tr()
+                      : unitLabel)
+                : 'property_detail.not_attached'.tr(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.bodySmall,
@@ -118,8 +123,8 @@ class _PropertyResidenceSectionState extends State<PropertyResidenceSection> {
 
   /// Nom de la résidence, ou le repli qui convient à l'étape où l'on est.
   String _title(bool isAttached) {
-    if (!isAttached) return 'Bien autonome';
-    if (_isLoading) return 'Chargement…';
-    return _residenceName ?? 'Résidence';
+    if (!isAttached) return 'property_detail.standalone'.tr();
+    if (_isLoading) return 'common.loading_ellipsis'.tr();
+    return _residenceName ?? 'property_detail.residence'.tr();
   }
 }

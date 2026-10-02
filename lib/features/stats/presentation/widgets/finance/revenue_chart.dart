@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -11,6 +12,9 @@ const double _kChartLeft = _kLabelWidth + _kLabelGap;
 const double _kTopPadding = 14;
 const int _kDivisions = 4;
 
+/// Libellés de mois tels que l'API les renvoie dans `revenue_points` : ils
+/// servent de clé d'appariement, pas de texte affiché. L'affichage passe par
+/// [_displayMonth], dans la langue de l'application.
 const _kMonthLabels = [
   'Jan',
   'Fév',
@@ -40,6 +44,38 @@ List<RevenuePointModel> buildSixMonthWindow(
   });
 }
 
+/// Les douze mois d'une année civile, de janvier à décembre.
+///
+/// Les libellés de l'API ne portent pas l'année : l'appariement n'est sûr que
+/// parce que le relevé d'une année ne contient qu'un mois de chaque nom.
+List<RevenuePointModel> buildYearWindow(List<RevenuePointModel> data) {
+  final byMonth = {for (final p in data) p.month: p};
+
+  return [
+    for (final label in _kMonthLabels)
+      byMonth[label] ?? RevenuePointModel(month: label, value: 0),
+  ];
+}
+
+/// Dernier mois tracé d'une année : la courbe s'arrête au mois courant, comme
+/// sur la fenêtre de six mois — au-delà, seules des réservations à venir.
+int yearLastDataIndex(int year, DateTime now) {
+  if (year < now.year) return 11;
+  if (year > now.year) return -1;
+  return now.month - 1;
+}
+
+/// Mois abrégé dans la langue de l'application ; un libellé inconnu de
+/// l'API est rendu tel quel plutôt que perdu.
+///
+/// [narrow] rend l'initiale seule : douze libellés abrégés ne tiennent pas
+/// sous le graphique d'une année sur un écran de téléphone.
+String _displayMonth(String apiLabel, {bool narrow = false}) {
+  final index = _kMonthLabels.indexOf(apiLabel);
+  if (index < 0) return apiLabel;
+  return DateFormat(narrow ? 'MMMMM' : 'MMM').format(DateTime(2000, index + 1));
+}
+
 double _niceStep(double raw) {
   if (raw <= 0) return 1000;
   final exp = math.pow(10, (math.log(raw) / math.ln10).floor()).toDouble();
@@ -66,11 +102,19 @@ String _formatK(double v) {
 class RevenueChart extends StatelessWidget {
   final List<RevenuePointModel> points;
 
-  const RevenueChart({super.key, required this.points});
+  /// Année civile tracée mois par mois ; `null` pour les six mois entourant
+  /// le mois courant.
+  final int? year;
+
+  const RevenueChart({super.key, required this.points, this.year});
 
   @override
   Widget build(BuildContext context) {
-    final window = buildSixMonthWindow(points);
+    final now = DateTime.now();
+    final year = this.year;
+    final window = year == null
+        ? buildSixMonthWindow(points, now: now)
+        : buildYearWindow(points);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +124,7 @@ class RevenueChart extends StatelessWidget {
           child: CustomPaint(
             painter: _ChartPainter(
               points: window,
-              lastDataIndex: 3,
+              lastDataIndex: year == null ? 3 : yearLastDataIndex(year, now),
               tokens: context.tokens,
               labelStyle: context.text.bodySmall!,
             ),
@@ -88,7 +132,7 @@ class RevenueChart extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _MonthLabels(points: window),
+        _MonthLabels(points: window, narrow: year != null),
       ],
     );
   }
@@ -96,8 +140,9 @@ class RevenueChart extends StatelessWidget {
 
 class _MonthLabels extends StatelessWidget {
   final List<RevenuePointModel> points;
+  final bool narrow;
 
-  const _MonthLabels({required this.points});
+  const _MonthLabels({required this.points, this.narrow = false});
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +159,7 @@ class _MonthLabels extends StatelessWidget {
                   left: (i / (points.length - 1)) * c.maxWidth - 24,
                   width: 48,
                   child: Text(
-                    points[i].month,
+                    _displayMonth(points[i].month, narrow: narrow),
                     textAlign: TextAlign.center,
                     style: context.text.bodySmall,
                   ),
@@ -165,10 +210,7 @@ class _ChartPainter extends CustomPainter {
 
     for (int i = 0; i <= _kDivisions; i++) {
       final y = yOf(step * i);
-      labelPainter.text = TextSpan(
-        text: _formatK(step * i),
-        style: labelStyle,
-      );
+      labelPainter.text = TextSpan(text: _formatK(step * i), style: labelStyle);
       labelPainter.layout();
       labelPainter.paint(
         canvas,
@@ -234,7 +276,10 @@ class _ChartPainter extends CustomPainter {
         Rect.fromCenter(center: o, width: 10, height: 10),
         borderPaint,
       );
-      canvas.drawRect(Rect.fromCenter(center: o, width: 6, height: 6), dotPaint);
+      canvas.drawRect(
+        Rect.fromCenter(center: o, width: 6, height: 6),
+        dotPaint,
+      );
     }
   }
 

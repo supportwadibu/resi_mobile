@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
@@ -8,7 +9,6 @@ import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../business_logic/add_client_cubit.dart';
 import '../../business_logic/add_client_state.dart';
-import '../../data/repositories/clients_repository.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import '../../data/models/identity_document_model.dart';
 import '../../data/services/id_card_reading.dart';
@@ -28,7 +28,7 @@ class AddClientScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => AddClientCubit(sl<ClientsRepository>()),
+      create: (_) => sl<AddClientCubit>(),
       child: const _AddClientView(),
     );
   }
@@ -93,22 +93,24 @@ class _AddClientViewState extends State<_AddClientView> {
           // Sans `context` : l'écran se referme dans la foulée, et le toast
           // doit survivre à sa disparition.
           AppToast.success(
-            state.alreadyExisted
-                ? 'Ce client était déjà au carnet'
-                : 'Client enregistré avec succès',
+            state.queued
+                ? 'offline_queue.saved'.tr()
+                : state.alreadyExisted
+                ? 'clients.already_in_book'.tr()
+                : 'clients.saved'.tr(),
           );
           Navigator.pop(context);
         }
 
         if (state.status == AddClientStatus.error) {
           AppToast.error(
-            state.errorMessage ?? 'Une erreur est survenue',
+            state.errorMessage ?? 'clients.error'.tr(),
             context: context,
           );
         }
       },
       child: Scaffold(
-        appBar: AppTopBar(title: 'Nouveau client'),
+        appBar: AppTopBar(title: 'clients.new_client'.tr()),
         bottomNavigationBar: BlocBuilder<AddClientCubit, AddClientState>(
           builder: (context, state) {
             return SubmitClientButton(
@@ -127,29 +129,29 @@ class _AddClientViewState extends State<_AddClientView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const FormSectionLabel(text: 'Nom complet'),
+                  FormSectionLabel(text: 'clients.full_name'.tr()),
                   ClientTextField(
                     controller: _nameController,
-                    hint: 'Ex : Mohamed Traoré',
+                    hint: 'clients.name_hint'.tr(),
                     prefixIcon: LucideIcons.user,
                     onChanged: cubit.setFullName,
                     errorText: submitted && state.fullName.trim().length < 2
-                        ? 'Nom trop court'
+                        ? 'clients.name_too_short'.tr()
                         : null,
                   ),
                   const SizedBox(height: 20),
-                  const FormSectionLabel(text: 'Numéro de téléphone'),
+                  FormSectionLabel(text: 'clients.phone'.tr()),
                   ClientTextField(
-                    hint: 'Ex : +225 07 XX XX XX XX',
+                    hint: 'clients.phone_hint'.tr(),
                     prefixIcon: LucideIcons.phone,
                     keyboardType: TextInputType.phone,
                     onChanged: cubit.setPhone,
                     errorText: submitted && state.phone.trim().length < 8
-                        ? 'Numéro invalide'
+                        ? 'clients.phone_invalid'.tr()
                         : null,
                   ),
                   const SizedBox(height: 20),
-                  const FormSectionLabel(text: "Pièce d'identité"),
+                  FormSectionLabel(text: 'clients.id_document'.tr()),
                   // Un scan est explicite : ce qu'il lit remplace la saisie.
                   // La photo devient le verso, face de la bande MRZ.
                   IdScanButton(

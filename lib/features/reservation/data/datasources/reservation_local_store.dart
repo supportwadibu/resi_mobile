@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/storage/app_database.dart';
@@ -531,6 +532,138 @@ class ReservationLocalStore {
       'WHERE client_request_id = ?',
       [status.code, error, clientRequestId],
     );
+  }
+
+  /// Réservations de la file, tous états confondus, mises en forme de réponse
+  /// d'API — pour que les listes les affichent avant leur envoi.
+  ///
+  /// Le nom du client et le titre du bien sont joints ici depuis les caches :
+  /// une ligne de liste sans eux ne dirait rien au propriétaire.
+  Future<List<Map<String, dynamic>>> pendingBookingsAsJson() async {
+    final db = await _db;
+    final rows = await db.rawQuery('''
+      SELECT b.*,
+             pc.full_name AS pending_client_name,
+             pc.phone     AS pending_client_phone,
+             cc.full_name AS cached_client_name,
+             cc.phone     AS cached_client_phone,
+             p.title      AS property_title
+      FROM pending_bookings b
+      LEFT JOIN pending_clients pc ON pc.local_id = b.local_client_id
+      LEFT JOIN cached_clients cc ON cc.id = b.remote_client_id
+      LEFT JOIN cached_properties p ON p.id = b.property_id
+      ORDER BY b.created_at ASC
+    ''');
+    return rows.map(pendingBookingJson).toList(growable: false);
+  }
+
+  /// Remet une réservation refusée dans la file d'envoi, à la demande du
+  /// propriétaire — après avoir libéré la période, par exemple.
+  Future<void> requeue(String clientRequestId) async {
+    final db = await _db;
+    await db.update(
+      'pending_bookings',
+      {'sync_status': PendingSyncStatus.pending.code, 'last_error': null},
+      where: 'client_request_id = ?',
+      whereArgs: [clientRequestId],
+    );
+  }
+
+  /// Abandonne une réservation refusée, sur décision du propriétaire.
+  ///
+  /// Son client local part avec elle s'il n'est rattaché à aucune autre
+  /// saisie : une fiche orpheline en file serait créée au serveur sans
+  /// raison.
+  Future<void> discard(String clientRequestId) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'pending_bookings',
+        columns: ['local_client_id'],
+        where: 'client_request_id = ?',
+        whereArgs: [clientRequestId],
+        limit: 1,
+      );
+      await txn.delete(
+        'pending_bookings',
+        where: 'client_request_id = ?',
+        whereArgs: [clientRequestId],
+      );
+
+      final localClient = rows.isEmpty
+          ? null
+          : rows.first['local_client_id'] as String?;
+      if (localClient == null) return;
+
+      final others = await txn.query(
+        'pending_bookings',
+        columns: ['client_request_id'],
+        where: 'local_client_id = ?',
+        whereArgs: [localClient],
+        limit: 1,
+      );
+      if (others.isEmpty) {
+        await txn.delete(
+          'pending_clients',
+          where: 'local_id = ?',
+          whereArgs: [localClient],
+        );
+      }
+    });
+  }
+
+  /// Identifiant affiché d'une réservation en file, avant que le serveur ne
+  /// lui en donne un.
+  static String localBookingId(String clientRequestId) =>
+      'local-$clientRequestId';
+
+  /// Ligne jointe de la file, au format d'une réservation de l'API.
+  @visibleForTesting
+  static Map<String, dynamic> pendingBookingJson(Map<String, Object?> row) {
+    final booking = PendingBooking.fromRow(row);
+    final checkIn = booking.checkInAt.toUtc().toIso8601String();
+    // Un passage peut partir sans heure de sortie : il occupe le bien à
+    // l'entrée seulement, comme dans le contrôle de chevauchement.
+    final checkOut = (booking.checkOutAt ?? booking.checkInAt)
+        .toUtc()
+        .toIso8601String();
+    final amount = booking.receivedAmount ?? 0;
+    final clientId = booking.remoteClientId ?? booking.localClientId ?? '';
+
+    return {
+      'id': localBookingId(booking.clientRequestId),
+      'property_id': booking.propertyId,
+      'property': {
+        'id': booking.propertyId,
+        'title': row['property_title'] as String? ?? '',
+        'city': '',
+      },
+      'client_id': clientId,
+      'client': {
+        'id': clientId,
+        'full_name':
+            row['pending_client_name'] ?? row['cached_client_name'] ?? '',
+        'phone': row['pending_client_phone'] ?? row['cached_client_phone'] ?? '',
+      },
+      'status': booking.isCheckIn ? 'in_progress' : 'confirmed',
+      'source': 'offline',
+      'stay_type': booking.stayType.code,
+      'start_date': checkIn,
+      'check_in_at': checkIn,
+      'end_date': checkOut,
+      'check_out_at': checkOut,
+      'total_amount': amount,
+      'expected_amount': amount,
+      'received_amount': amount,
+      'deposit_amount': booking.depositAmount,
+      'message': booking.message,
+      if (booking.referrerName != null)
+        'referrer': {'name': booking.referrerName, 'phone': booking.referrerPhone},
+      'sync_status': booking.syncStatus.code,
+      // Pour l'arbitrage : le motif d'un refus et l'heure de la saisie.
+      'last_error': booking.lastError,
+      'created_at': booking.createdAt.toUtc().toIso8601String(),
+    };
   }
 
   Future<int> pendingCount() async {

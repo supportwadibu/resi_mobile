@@ -54,6 +54,11 @@ dependencies:
   # serveur envoie par le compte de service qu'il a déjà — aucun fournisseur
   # de plus.
   firebase_messaging: ^16.7.0
+  # Affichage des notifications quand l'application est ouverte : FCM ne les
+  # montre pas lui-même au premier plan sur Android. Crée aussi le canal
+  # `resi_default` à importance haute, sans lequel une notification reçue en
+  # arrière-plan n'apparaît qu'en icône discrète, sans bannière ni son.
+  flutter_local_notifications: ^22.3.1
 
 dev_dependencies:
   flutter_test:

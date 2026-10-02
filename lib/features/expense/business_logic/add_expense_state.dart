@@ -14,9 +14,13 @@ final class AddExpenseSubmitting extends AddExpenseState {
 }
 
 final class AddExpenseSuccess extends AddExpenseState {
-  const AddExpenseSuccess(this.expense);
+  const AddExpenseSuccess(this.expense, {this.queued = false});
 
-  final ExpenseModel expense;
+  /// Dépense enregistrée par le serveur, `null` quand elle est en file.
+  final ExpenseModel? expense;
+
+  /// Saisie hors ligne, envoyée au retour du réseau.
+  final bool queued;
 }
 
 final class AddExpenseFailure extends AddExpenseState {

@@ -45,6 +45,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: DetailsReservationRoute.page),
     AutoRoute(page: StayExtensionRoute.page),
     AutoRoute(page: EditReservationRoute.page),
+    AutoRoute(page: SyncReviewRoute.page),
     AutoRoute(page: FinanceRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ReportRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ClientsRoute.page),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/empty_state.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
@@ -21,9 +22,11 @@ import '../../../expense/presentation/widgets/stats/expense_breakdown_card.dart'
 import '../../business_logic/finance_cubit.dart';
 import '../../business_logic/finance_state.dart';
 import '../../data/models/finance/finance_overview_model.dart';
+import '../../data/models/finance/finance_period.dart';
 import '../../../residence/data/models/residence_model.dart';
 import '../../../residence/data/repositories/residence_repository.dart';
 import '../widgets/finance/finance_app_bar.dart';
+import '../widgets/finance/finance_period_sheet.dart';
 import '../widgets/finance/finance_residence_sheet.dart';
 import '../widgets/finance/revenue_chart.dart';
 import '../widgets/finance/stats_row.dart';
@@ -37,7 +40,18 @@ class FinanceScreen extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => sl<FinanceCubit>()..load()),
-        BlocProvider(create: (_) => sl<ExpenseCubit>()..load()),
+        BlocProvider(
+          create: (_) {
+            // La ventilation porte sur la fenêtre du relevé. Sans bornes, elle
+            // couvrait tout l'historique sous un relevé de douze mois, et ses
+            // catégories ne sommaient pas au total « Dépenses » affiché
+            // au-dessus.
+            final bounds = const FinancePeriod.rolling().bounds(DateTime.now());
+            return sl<ExpenseCubit>()..load(
+              filters: ExpenseFilters(from: bounds.from, to: bounds.to),
+            );
+          },
+        ),
       ],
       child: const _FinanceView(),
     );
@@ -100,61 +114,128 @@ class _FinanceViewState extends State<_FinanceView>
     );
   }
 
+  Future<void> _pickPeriod() async {
+    final cubit = context.read<FinanceCubit>();
+
+    final period = await FinancePeriodSheet.show(
+      context,
+      selected: cubit.period,
+    );
+
+    if (period == null || !mounted) return;
+
+    await cubit.filterByPeriod(period);
+
+    if (!mounted) return;
+
+    // Bornes lues sur le cubit, celles-là mêmes qui ont servi au relevé : la
+    // ventilation des dépenses doit sommer au total « Dépenses » affiché.
+    final expenses = context.read<ExpenseCubit>();
+    await expenses.applyFilters(
+      expenses.filters.copyWith(from: cubit.from, to: cubit.to),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: FinanceAppBar(onFilterTap: _pickScope, scopeLabel: _scopeLabel),
-      body: BlocBuilder<FinanceCubit, FinanceState>(
-        builder: (context, state) => switch (state) {
-          FinanceInitial() ||
-          FinanceLoading() => const Center(child: AppLoader()),
-          FinanceError(:final message) => ErrorState(
-            message: message,
-            onRetry: () => context.read<FinanceCubit>().load(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Hors de la liste : la période reste lisible, et modifiable,
+          // pendant le chargement comme après une erreur.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: _PeriodHeader(onChange: _pickPeriod),
           ),
-          FinanceLoaded(:final overview) => _Content(overview: overview),
-        },
+          Expanded(
+            child: BlocBuilder<FinanceCubit, FinanceState>(
+              builder: (context, state) => switch (state) {
+                FinanceInitial() ||
+                FinanceLoading() => const Center(child: AppLoader()),
+                FinanceError(:final message) => ErrorState(
+                  message: message,
+                  onRetry: () => context.read<FinanceCubit>().load(),
+                ),
+                FinanceLoaded(:final overview) => _Content(overview: overview),
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Période couverte par le relevé, telle que le cubit l'a demandée.
+/// Période couverte par le relevé, et le bouton qui la change.
 ///
-/// Lue sur le cubit plutôt que recalculée : une seconde formule dériverait du
-/// jour au lendemain et annoncerait une fenêtre différente de celle des
-/// chiffres affichés juste en dessous.
-class _PeriodLabel extends StatelessWidget {
-  const _PeriodLabel();
+/// Les bornes sont lues sur le cubit plutôt que recalculées : une seconde
+/// formule dériverait du jour au lendemain et annoncerait une fenêtre
+/// différente de celle des chiffres affichés juste en dessous.
+///
+/// Annoncée avant les montants : les douze mois glissants par défaut diffèrent
+/// de l'onglet Statistiques, qui n'affiche que le mois courant. Le même
+/// `ca_brut` y prend deux valeurs, et sans cette mention les deux écrans
+/// semblent se contredire.
+class _PeriodHeader extends StatelessWidget {
+  const _PeriodHeader({required this.onChange});
 
-  static const _months = [
-    'janvier',
-    'février',
-    'mars',
-    'avril',
-    'mai',
-    'juin',
-    'juillet',
-    'août',
-    'septembre',
-    'octobre',
-    'novembre',
-    'décembre',
-  ];
+  final VoidCallback onChange;
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<FinanceCubit>();
+    // `watch` : chaque changement de période passe par un nouvel état.
+    final cubit = context.watch<FinanceCubit>();
+    final period = cubit.period;
     final from = cubit.from;
     final to = cubit.to;
 
-    if (from == null || to == null) return const SizedBox.shrink();
+    // Nom du mois dans la langue de l'application ; le français l'écrit en
+    // minuscule, d'où la majuscule ajoutée en tête de libellé.
+    String monthYear(DateTime d) => DateFormat('MMMM y').format(d);
 
-    String label(DateTime d) => '${_months[d.month - 1]} ${d.year}';
+    final label = switch ((period.year, period.month)) {
+      (final int year, null) => 'finance_page.year_label'.tr(
+        namedArgs: {'year': '$year'},
+      ),
+      (final int year, final int month) => toBeginningOfSentenceCase(
+        monthYear(DateTime(year, month)),
+      ),
+      _ when from != null && to != null => 'finance_page.range'.tr(
+        namedArgs: {'from': monthYear(from), 'to': monthYear(to)},
+      ),
+      _ => '',
+    };
 
-    return Text(
-      'Du ${label(from)} à ${label(to)}',
-      style: context.text.bodySmall,
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('stats.period'.tr(), style: context.text.bodySmall),
+              Text(
+                label,
+                style: context.text.titleMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        AppButton(
+          label: 'stats.change'.tr(),
+          icon: LucideIcons.calendarRange,
+          // Période restreinte : le bouton passe en noir, comme celui du
+          // périmètre, pour qu'on lise que le relevé n'est pas celui par
+          // défaut.
+          variant: period.isRolling
+              ? AppButtonVariant.secondary
+              : AppButtonVariant.primary,
+          size: AppButtonSize.sm,
+          onPressed: onChange,
+        ),
+      ],
     );
   }
 }
@@ -168,6 +249,7 @@ class _Content extends StatelessWidget {
   Widget build(BuildContext context) {
     final summary = overview.summary;
     final isLoss = summary.beneficeNet < 0;
+    final period = context.read<FinanceCubit>().period;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -180,31 +262,25 @@ class _Content extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          // La période est annoncée avant les montants : ce relevé porte sur
-          // douze mois glissants, là où l'onglet Statistiques n'affiche que
-          // le mois courant. Le même `ca_brut` y prend deux valeurs, et sans
-          // cette mention les deux écrans semblent se contredire.
-          const _PeriodLabel(),
-          const SizedBox(height: 12),
           StatTile(
-            label: 'Bénéfice net',
+            label: 'finance_page.net_profit'.tr(),
             value: CurrencyFormatter.format(summary.beneficeNet),
             icon: LucideIcons.wallet,
             accent: isLoss ? AppAccent.red : AppAccent.green,
-            note: isLoss ? 'Période en perte' : null,
+            note: isLoss ? 'finance_page.period_loss'.tr() : null,
             noteTone: isLoss ? StatNoteTone.down : null,
           ),
           const SizedBox(height: 12),
           StatGrid(
             children: [
               StatTile(
-                label: 'CA brut',
+                label: 'finance_page.gross_revenue'.tr(),
                 value: CurrencyFormatter.short(summary.caBrut),
                 icon: LucideIcons.trendingUp,
                 accent: AppAccent.green,
               ),
               StatTile(
-                label: 'Dépenses',
+                label: 'finance_page.expenses'.tr(),
                 value: CurrencyFormatter.short(summary.depenses),
                 icon: LucideIcons.trendingDown,
                 accent: AppAccent.red,
@@ -234,17 +310,24 @@ class _Content extends StatelessWidget {
             reservations: summary.reservations,
             moyenSejour: summary.moyenSejour,
           ),
-          const SizedBox(height: 16),
-          Section(
-            title: 'Revenus mensuels',
-            icon: LucideIcons.chartLine,
-            child: overview.revenuePoints.isEmpty
-                ? const EmptyState(
-                    message: 'Aucun revenu sur la période.',
-                    icon: LucideIcons.chartLine,
-                  )
-                : RevenueChart(points: overview.revenuePoints),
-          ),
+          // Sur un mois seul, la courbe n'aurait qu'un point : le CA brut
+          // ci-dessus dit déjà tout.
+          if (period.month == null) ...[
+            const SizedBox(height: 16),
+            Section(
+              title: 'finance_page.monthly_revenue'.tr(),
+              icon: LucideIcons.chartLine,
+              child: overview.revenuePoints.isEmpty
+                  ? EmptyState(
+                      message: 'finance_page.no_revenue'.tr(),
+                      icon: LucideIcons.chartLine,
+                    )
+                  : RevenueChart(
+                      points: overview.revenuePoints,
+                      year: period.year,
+                    ),
+            ),
+          ],
           const SizedBox(height: 16),
           BlocBuilder<ExpenseCubit, ExpenseState>(
             builder: (context, state) => ExpenseBreakdownCard(
@@ -253,7 +336,7 @@ class _Content extends StatelessWidget {
                   : const [],
               onExport: () {
                 AppToast.info(
-                  'Export disponible depuis l’historique des dépenses',
+                  'finance_page.export_from_history'.tr(),
                   context: context,
                 );
               },

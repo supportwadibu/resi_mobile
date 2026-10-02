@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
@@ -18,6 +19,7 @@ import '../../../../core/session/session_role.dart';
 import '../../business_logic/residence_cubit.dart';
 import '../../business_logic/residence_state.dart';
 import '../widgets/residence_card.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Résidences du propriétaire — les lieux regroupant plusieurs logements.
 @RoutePage()
@@ -48,11 +50,11 @@ class _ResidenceView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Mes résidences',
+        title: 'residence.my_residences'.tr(),
         actions: [
           if (canCreate)
             AppButton(
-              label: 'Nouvelle',
+              label: 'residence.new_short'.tr(),
               icon: LucideIcons.plus,
               size: AppButtonSize.sm,
               onPressed: () => _openForm(context),
@@ -109,6 +111,7 @@ class _ResidenceView extends StatelessWidget {
 
   Future<void> _openForm(BuildContext context, {String? id}) async {
     final cubit = context.read<ResidenceCubit>();
+    if (!await ensureOnline(context) || !context.mounted) return;
     await context.router.push(AddResidenceRoute(residenceId: id));
     // La liste est rechargée au retour : le formulaire a son propre cubit, et
     // ses écritures n'atteignent donc pas celui de cette page.
@@ -125,11 +128,9 @@ class _ResidenceView extends StatelessWidget {
 
     final confirmed = await showConfirmDialog(
       context: context,
-      title: 'Supprimer cette résidence ?',
-      message:
-          'Les logements qu’elle contient ne sont pas supprimés. '
-          'Détachez-les d’abord si la suppression est refusée.',
-      confirmLabel: 'Supprimer',
+      title: 'residence.delete_title'.tr(),
+      message: 'residence.delete_body'.tr(),
+      confirmLabel: 'common.delete'.tr(),
       danger: true,
     );
 
@@ -141,7 +142,7 @@ class _ResidenceView extends StatelessWidget {
       return;
     }
 
-    AppToast.success('Résidence supprimée');
+    AppToast.success('residence.deleted'.tr());
   }
 }
 
@@ -161,12 +162,9 @@ class _EmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyState(
       icon: AppSectionIcons.residences,
-      title: 'Aucune résidence',
-      message:
-          'Une résidence regroupe plusieurs logements loués séparément — '
-          'un studio, une chambre-salon — qui partagent une adresse et des '
-          'charges communes.',
-      actionLabel: onCreate == null ? null : 'Créer une résidence',
+      title: 'residence.empty_title'.tr(),
+      message: 'residence.empty_body'.tr(),
+      actionLabel: onCreate == null ? null : 'residence.create_one'.tr(),
       actionIcon: LucideIcons.plus,
       onAction: onCreate,
     );

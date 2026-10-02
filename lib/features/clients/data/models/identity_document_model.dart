@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
 enum DocumentSlot { recto, verso, photo }
@@ -6,22 +7,22 @@ extension DocumentSlotExt on DocumentSlot {
   String get label {
     switch (this) {
       case DocumentSlot.recto:
-        return 'Recto CNI';
+        return 'document_slot.recto'.tr();
       case DocumentSlot.verso:
-        return 'Verso CNI';
+        return 'document_slot.verso'.tr();
       case DocumentSlot.photo:
-        return 'Photo identité';
+        return 'document_slot.photo'.tr();
     }
   }
 
   String get hint {
     switch (this) {
       case DocumentSlot.recto:
-        return 'Scan ou galerie';
+        return 'document_slot.scan_or_gallery'.tr();
       case DocumentSlot.verso:
-        return 'Scan ou galerie';
+        return 'document_slot.scan_or_gallery'.tr();
       case DocumentSlot.photo:
-        return 'Appareil photo uniquement';
+        return 'document_slot.camera_only'.tr();
     }
   }
 }

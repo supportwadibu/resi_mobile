@@ -123,8 +123,8 @@ void main() {
 
       final state = built.cubit.state;
       expect(state, isA<StayExtensionSuccess>());
-      expect((state as StayExtensionSuccess).reservation.daysCount, 7);
-      expect(state.reservation.receivedAmount, 175000);
+      expect((state as StayExtensionSuccess).reservation!.daysCount, 7);
+      expect(state.reservation!.receivedAmount, 175000);
     });
 
     test('un 409 est un conflit de période, pas une panne', () async {

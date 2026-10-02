@@ -1,5 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/offline/pending_action.dart';
+import 'package:resi_africa/core/offline/pending_overlay.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 /// Catégorie de dépense, alignée sur `EXPENSE_CATEGORIES` du serveur.
@@ -7,31 +10,21 @@ import 'package:resi_africa/core/theme/resi_tokens.dart';
 /// Le code part à l'API, le libellé et l'icône restent côté client : traduire
 /// côté serveur imposerait de redéployer pour corriger un intitulé.
 enum ExpenseCategory {
-  electricity(
-    'electricity',
-    'Électricité',
-    LucideIcons.zap
-  ),
-  water('water', 'Eau / SODECI', LucideIcons.droplet),
-  internet('internet', 'Internet', LucideIcons.wifi),
-  tv('tv', 'Canal+ / TV', LucideIcons.tv),
-  cleaning(
-    'cleaning',
-    'Ménage',
-    LucideIcons.sprayCan
-  ),
-  maintenance(
-    'maintenance',
-    'Maintenance',
-    LucideIcons.wrench
-  ),
-  taxes('taxes', 'Taxes', LucideIcons.receiptText),
-  other('other', 'Autre', LucideIcons.ellipsis);
+  electricity('electricity', LucideIcons.zap),
+  water('water', LucideIcons.droplet),
+  internet('internet', LucideIcons.wifi),
+  tv('tv', LucideIcons.tv),
+  cleaning('cleaning', LucideIcons.sprayCan),
+  maintenance('maintenance', LucideIcons.wrench),
+  taxes('taxes', LucideIcons.receiptText),
+  other('other', LucideIcons.ellipsis);
 
-  const ExpenseCategory(this.code, this.label, this.icon);
+  const ExpenseCategory(this.code, this.icon);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'expense_categories.$code'.tr();
   final IconData icon;
 
   /// Couleur de la catégorie dans l'anneau et sa légende, fixée par catégorie
@@ -123,6 +116,7 @@ class ExpenseModel {
     this.property,
     this.residence,
     this.note,
+    this.syncState,
   });
 
   final String id;
@@ -147,6 +141,10 @@ class ExpenseModel {
   final ExpenseResidence? residence;
   final String? note;
 
+  /// Dépense saisie hors ligne, pas encore acceptée par le serveur ; `null`
+  /// sinon. Posée par la superposition de la file.
+  final PendingActionState? syncState;
+
   /// Vrai pour une charge commune du lieu, réparties sur aucune unité.
   bool get isCommonCharge => residenceId != null;
 
@@ -157,7 +155,9 @@ class ExpenseModel {
   String get targetLabel {
     if (residence != null) return residence!.name;
     if (property != null) return property!.title;
-    return isCommonCharge ? 'Résidence supprimée' : 'Bien supprimé';
+    return isCommonCharge
+        ? 'expense.deleted_residence'.tr()
+        : 'home.deleted_property'.tr();
   }
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
@@ -179,6 +179,7 @@ class ExpenseModel {
           ? ExpenseResidence.fromJson(json['residence'] as Map<String, dynamic>)
           : null,
       note: json['note'] as String?,
+      syncState: localSyncState(json['sync_status']),
     );
   }
 
@@ -223,6 +224,36 @@ class CreateExpensePayload {
     required this.spentAt,
     this.note,
   }) : propertyId = null;
+
+  /// Relit une charge utile mise en file hors ligne, telle que [toJson] l'a
+  /// écrite. Une saisie sans bien vaut charge de résidence : c'est la seule
+  /// autre forme que [toJson] produit.
+  factory CreateExpensePayload.fromJson(Map<String, dynamic> json) {
+    final category =
+        ExpenseCategory.fromCode(json['category'] as String?) ??
+        ExpenseCategory.other;
+    final amount = (json['amount'] as num?)?.toDouble() ?? 0;
+    final spentAt =
+        DateTime.tryParse(json['spent_at'] as String? ?? '') ?? DateTime.now();
+    final note = json['note'] as String?;
+    final propertyId = json['property_id'] as String?;
+
+    return propertyId != null
+        ? CreateExpensePayload.forProperty(
+            propertyId: propertyId,
+            category: category,
+            amount: amount,
+            spentAt: spentAt,
+            note: note,
+          )
+        : CreateExpensePayload.forResidence(
+            residenceId: json['residence_id'] as String? ?? '',
+            category: category,
+            amount: amount,
+            spentAt: spentAt,
+            note: note,
+          );
+  }
 
   final String? propertyId;
   final String? residenceId;

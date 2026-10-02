@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
@@ -34,7 +35,10 @@ class ResidenceDropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      hint: Text(hint ?? 'Choisir un bien', style: context.mutedText),
+      hint: Text(
+        hint ?? 'expense.choose_property_hint'.tr(),
+        style: context.mutedText,
+      ),
       style: context.text.bodyMedium,
       icon: Icon(
         LucideIcons.chevronDown,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -33,10 +34,12 @@ class PropertyVisibilitySwitch extends StatelessWidget {
         AppCallout(
           icon: isPublished ? LucideIcons.eye : LucideIcons.eyeOff,
           tone: isPublished ? AppAccent.green : AppAccent.neutral,
-          title: isPublished ? 'En ligne' : 'Hors ligne',
+          title: isPublished
+              ? 'property_detail.online'.tr()
+              : 'property_detail.offline'.tr(),
           message: isPublished
-              ? 'Visible par les clients'
-              : 'Masquée dans la vitrine',
+              ? 'property_detail.visible'.tr()
+              : 'property_detail.hidden'.tr(),
         ),
         Padding(
           padding: const EdgeInsets.only(right: 8),

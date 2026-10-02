@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/offline/offline_prefetcher.dart';
 import '../../../../core/router/role_guard.dart';
 import '../../../../core/session/session_role.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -14,6 +17,8 @@ import '../../../feedback/presentation/widgets/feedback_sheet.dart';
 import '../../../reservation/presentation/widgets/create/reservation_mode_sheet.dart';
 import '../../../../shared/widgets/app_bottom_nav.dart';
 import '../../../../shared/widgets/floating_action_card.dart';
+import '../../../../shared/widgets/offline_banner.dart';
+import '../../../reservation/presentation/widgets/sync_status_banner.dart';
 import '../../../subscription/business_logic/plan_cubit.dart';
 import '../../../subscription/presentation/widgets/plan_gate.dart';
 import '../../../subscription/presentation/widgets/plan_style.dart';
@@ -21,6 +26,7 @@ import '../widgets/tabs/home_tab.dart';
 import '../widgets/tabs/property_tab.dart';
 import '../widgets/tabs/reservation_tab.dart';
 import '../widgets/tabs/stats_tab.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 @RoutePage()
 class HomeScreen extends StatefulWidget {
@@ -49,26 +55,26 @@ class _HomeScreenState extends State<HomeScreen>
   static const _actions = [
     FloatingFeature(
       icon: AppSectionIcons.properties,
-      label: 'Ajouter un bien',
-      description: 'Publier un logement',
+      label: 'home_actions.add_property',
+      description: 'home_actions.add_property_hint',
       action: 'add_property',
     ),
     FloatingFeature(
       icon: AppSectionIcons.bookings,
-      label: 'Nouvelle réservation',
-      description: 'Au comptoir ou pour un client',
+      label: 'home_actions.add_reservation',
+      description: 'home_actions.add_reservation_hint',
       action: 'add_reservation',
     ),
     FloatingFeature(
       icon: AppSectionIcons.clients,
-      label: 'Nouveau client',
-      description: 'Ajouter une fiche au carnet',
+      label: 'home_actions.add_client',
+      description: 'home_actions.add_client_hint',
       action: 'add_client',
     ),
     FloatingFeature(
       icon: AppSectionIcons.expenses,
-      label: 'Nouvelle dépense',
-      description: 'Une charge liée à un bien',
+      label: 'home_actions.add_expense',
+      description: 'home_actions.add_expense_hint',
       action: 'add_expense',
     ),
     // Pas une création, mais une saisie comme les autres : la carte la garde
@@ -76,8 +82,8 @@ class _HomeScreenState extends State<HomeScreen>
     // sous la grille des biens.
     FloatingFeature(
       icon: AppSectionIcons.reviews,
-      label: 'Donner mon avis',
-      description: 'Une idée, un problème : dites-le à l\'équipe RESI',
+      label: 'home_actions.feedback',
+      description: 'home_actions.feedback_hint',
       action: 'feedback',
     ),
   ];
@@ -119,6 +125,10 @@ class _HomeScreenState extends State<HomeScreen>
     // L'accueil est la porte d'entrée après la connexion : l'accès y est relu,
     // et un compte inactif est aussitôt redirigé par l'écoute de `App`.
     sl<PlanCubit>().refresh();
+
+    // Garnit le cache pour le mode hors ligne, en tâche de fond : l'accueil
+    // est le premier écran ouvert en ligne après la connexion.
+    unawaited(sl<OfflinePrefetcher>().run());
   }
 
   @override
@@ -151,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen>
     _closeMenu();
     switch (action) {
       case 'add_property':
+        if (!await ensureOnline(context) || !mounted) return;
         await context.router.push(AddPropertyRoute());
         if (mounted) _showProperties();
       case 'add_reservation':
@@ -168,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen>
       case 'add_client':
         context.router.push(const AddClientRoute());
       case 'feedback':
+        if (!await ensureOnline(context) || !mounted) return;
         showFeedbackSheet(context);
     }
   }
@@ -203,6 +215,11 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Column(
                     children: [
                       const ProfileCompletionBanner(),
+                      // Au-dessus des onglets : chacun peut afficher des
+                      // données gardées sur l'appareil, et la saisie en file
+                      // concerne tout le parc, pas la seule liste des séjours.
+                      const OfflineBanner(),
+                      const SyncStatusBanner(),
                       Expanded(
                         child: MultiBlocProvider(
                           providers: [

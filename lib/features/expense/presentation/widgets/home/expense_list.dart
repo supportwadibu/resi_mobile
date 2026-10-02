@@ -1,8 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
-import 'package:intl/intl.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
@@ -45,7 +45,7 @@ class ExpenseList extends StatelessWidget {
     this.isLoadingMore = false,
   });
 
-  static final _monthFormat = DateFormat('MMMM yyyy', 'fr');
+  static DateFormat get _monthFormat => DateFormat('MMMM yyyy');
 
   /// Regroupe les dépenses par mois, en conservant l'ordre du serveur.
   ///
@@ -192,9 +192,9 @@ class _DismissibleExpense extends StatelessWidget {
   Future<bool> _confirm(BuildContext context) {
     return showConfirmDialog(
       context: context,
-      title: 'Supprimer cette dépense ?',
-      message: 'Cette action est définitive.',
-      confirmLabel: 'Supprimer',
+      title: 'expense.delete_title'.tr(),
+      message: 'expense.delete_body'.tr(),
+      confirmLabel: 'common.delete'.tr(),
       danger: true,
     );
   }

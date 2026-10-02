@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
@@ -67,7 +68,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
       // Même raison que dans `EditPropertyCubit` : l'écran neutralise toute
       // interaction pendant l'envoi, si bien qu'une exception imprévue qui
       // s'échapperait d'ici figerait le formulaire pour de bon.
-      _fail('L’enregistrement a échoué. Veuillez réessayer.');
+      _fail('property_form.save_failed'.tr());
     }
   }
 

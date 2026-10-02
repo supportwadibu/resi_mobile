@@ -15,7 +15,8 @@ import 'plan_style.dart';
 
 /// Durée d'un essai à l'ouverture, pour la jauge des jours restants. Un essai
 /// prolongé par l'équipe peut la dépasser : la jauge est alors pleine.
-const _trialDays = 14;
+/// Recopie de `TRIAL_DURATION_DAYS` côté API : à reporter à la main.
+const _trialDays = 30;
 
 /// Carte « Mon forfait » : le forfait en cours, son échéance, et pour un essai
 /// les jours qui restent.
@@ -129,7 +130,7 @@ class _ActiveContent extends StatelessWidget {
               if (days != null) 'plans.days_left'.plural(days),
               if (end != null)
                 'plans.until'.tr(
-                  args: [DateFormat('d MMMM y', 'fr').format(end.toLocal())],
+                  args: [DateFormat('d MMMM y').format(end.toLocal())],
                 ),
             ].join(' · '),
             style: context.text.bodySmall,

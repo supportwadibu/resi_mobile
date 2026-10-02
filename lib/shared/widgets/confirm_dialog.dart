@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/error/failures.dart';
@@ -20,8 +21,8 @@ Future<bool> showConfirmDialog({
   required BuildContext context,
   required String title,
   String? message,
-  String confirmLabel = 'Confirmer',
-  String cancelLabel = 'Annuler',
+  String? confirmLabel,
+  String? cancelLabel,
   bool danger = false,
   Future<void> Function()? onConfirm,
 }) async {
@@ -30,8 +31,8 @@ Future<bool> showConfirmDialog({
     builder: (_) => _ConfirmDialog(
       title: title,
       message: message,
-      confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
+      confirmLabel: confirmLabel ?? 'common.confirm'.tr(),
+      cancelLabel: cancelLabel ?? 'common.cancel'.tr(),
       danger: danger,
       onConfirm: onConfirm,
     ),
@@ -88,7 +89,7 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
       if (mounted) {
         setState(() {
           _pending = false;
-          _error = 'L\'action n\'a pas abouti. Réessayez.';
+          _error = 'common.action_failed'.tr();
         });
       }
     }

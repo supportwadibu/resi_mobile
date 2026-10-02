@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
@@ -19,7 +20,7 @@ class ExpenseBreakdownCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Section(
-      title: 'Répartition des dépenses',
+      title: 'expense.breakdown'.tr(),
       icon: LucideIcons.chartPie,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

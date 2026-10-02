@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -53,12 +54,15 @@ class ReviewsHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Excellent',
+                'reviews.excellent'.tr(),
                 style: context.text.titleSmall!.copyWith(
                   color: context.tokens.foreground,
                 ),
               ),
-              Text('Basé sur 128 avis', style: context.text.bodySmall),
+              Text(
+                'reviews.based_on'.tr(args: ['128']),
+                style: context.text.bodySmall,
+              ),
             ],
           ),
         ),
@@ -79,7 +83,7 @@ class ReviewsHeader extends StatelessWidget {
         }
       },
       child: AppButton(
-        label: 'Voir tous',
+        label: 'reviews.see_all'.tr(),
         variant: AppButtonVariant.secondary,
         onPressed: () => context.router.push(const AllReviewsRoute()),
         size: AppButtonSize.sm,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -11,15 +12,15 @@ import 'package:resi_africa/shared/widgets/app_sheet.dart';
 Future<String?> showAppOptionPicker({
   required BuildContext context,
   required List<String> options,
-  String searchHint = 'Rechercher',
-  String emptyLabel = 'Aucun résultat',
+  String? searchHint,
+  String? emptyLabel,
 }) {
   return showAppSheet<String>(
     context: context,
     builder: (_) => _OptionPickerSheet(
       options: options,
-      searchHint: searchHint,
-      emptyLabel: emptyLabel,
+      searchHint: searchHint ?? 'common.search'.tr(),
+      emptyLabel: emptyLabel ?? 'common.no_results'.tr(),
     ),
   );
 }

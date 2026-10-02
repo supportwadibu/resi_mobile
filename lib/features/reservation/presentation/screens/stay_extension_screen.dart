@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,7 +7,6 @@ import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../shared/utils/currency_formatter.dart';
@@ -45,7 +45,7 @@ class _StayExtensionView extends StatefulWidget {
 class _StayExtensionViewState extends State<_StayExtensionView> {
   int _extraDays = 1;
 
-  static final _dateFormat = DateFormat('d MMMM y', 'fr');
+  static DateFormat get _dateFormat => DateFormat('d MMMM y');
 
   ReservationModel get _reservation => widget.reservation;
 
@@ -68,10 +68,14 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
 
   void _onStateChanged(BuildContext context, StayExtensionState state) {
     switch (state) {
-      case StayExtensionSuccess():
+      case StayExtensionSuccess(:final queued):
         // Sans `context` : l'écran se referme juste après, et le toast doit
         // survivre à sa disparition pour être lu sur la fiche.
-        AppToast.success('Séjour prolongé');
+        AppToast.success(
+          queued
+              ? 'offline_queue.saved'.tr()
+              : 'stay_extension.extended'.tr(),
+        );
         // `true` signale à l'écran de détail que la réservation a changé : il
         // affiche des dates et un montant que cet envoi vient de réécrire.
         context.router.maybePop(true);
@@ -99,7 +103,7 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
         final isSubmitting = state is StayExtensionSubmitting;
 
         return Scaffold(
-          appBar: const AppTopBar(title: 'Prolonger le séjour'),
+          appBar: AppTopBar(title: 'stay_extension.title'.tr()),
           bottomNavigationBar: PaymentLinkButton(
             isLoading: isSubmitting,
             onPressed: isSubmitting ? null : _submit,
@@ -108,7 +112,7 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
               BookingInfoCard(
-                residence: property?.title ?? 'Bien supprimé',
+                residence: property?.title ?? 'home.deleted_property'.tr(),
                 checkIn: _dateFormat.format(_reservation.startDate),
                 checkOut: _dateFormat.format(_reservation.endDate),
               ),
@@ -128,7 +132,7 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
               AppCallout(
                 icon: LucideIcons.calendarCheck,
                 tone: AppAccent.blue,
-                title: 'Nouveau départ',
+                title: 'stay_extension.new_departure'.tr(),
                 message: _dateFormat.format(_newEndDate),
               ),
               const SizedBox(height: 12),

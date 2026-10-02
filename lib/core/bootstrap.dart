@@ -33,9 +33,10 @@ Future<void> bootstrap(AppConfig config) async {
 
   await EasyLocalization.ensureInitialized();
 
-  // Sans ces données, tout `DateFormat(..., 'fr')` lève une `LocaleDataException`
-  // à la première mise en forme d'une date.
-  await initializeDateFormatting('fr');
+  // Les données de toutes les langues, et pas du seul français : les dates
+  // suivent la langue du téléphone, et une locale non chargée lève une
+  // `LocaleDataException` à la première mise en forme.
+  await initializeDateFormatting();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 

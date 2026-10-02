@@ -1,12 +1,24 @@
 import 'package:dio/dio.dart';
+import '../../error/failures.dart';
 import '../../session/session_role.dart';
 import '../../storage/app_database.dart';
 import '../../storage/secure_storage.dart';
 import '../api_endpoints.dart';
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._storage, this._sessionRole, this._database);
+  AuthInterceptor(
+    this._storage,
+    this._sessionRole,
+    this._database, {
+    Dio Function(String baseUrl)? refreshClient,
+  }) : _refreshClient =
+           refreshClient ?? ((baseUrl) => Dio(BaseOptions(baseUrl: baseUrl)));
   final SecureStorage _storage;
+
+  /// Client du rafraîchissement, sans intercepteur : un 401 sur
+  /// `/auth/refresh` ne doit pas relancer un rafraîchissement. Injectable pour
+  /// que les tests distinguent un refus du serveur d'une coupure réseau.
+  final Dio Function(String baseUrl) _refreshClient;
 
   /// Purgé avec les jetons : une session perdue ici ne repasse pas par
   /// `AuthService.logout`, et un rôle gérant qui survivrait serait ressuscité
@@ -54,14 +66,13 @@ class AuthInterceptor extends Interceptor {
     try {
       final refresh = await _storage.refreshToken;
       if (refresh == null) {
-        await _storage.clear();
-        await _sessionRole.clear();
-        await _database.clearCaches();
+        await _endSession();
+        _rejectQueue(err);
         handler.next(err);
         return;
       }
 
-      final freshDio = Dio(BaseOptions(baseUrl: err.requestOptions.baseUrl));
+      final freshDio = _refreshClient(err.requestOptions.baseUrl);
       final res = await freshDio.post(
         ApiEndpoints.refresh,
         data: {'refresh_token': refresh},
@@ -77,14 +88,42 @@ class AuthInterceptor extends Interceptor {
         p.options.headers['Authorization'] = 'Bearer $newAccess';
         p.handler.resolve(await freshDio.fetch(p.options));
       }
-    } catch (_) {
-      await _storage.clear();
-      await _sessionRole.clear();
-      await _database.clearCaches();
-      handler.next(err);
+    } catch (e) {
+      // Seul un refus du serveur clôt la session. Une coupure pendant le
+      // rafraîchissement — le contexte même du mode hors ligne — laissait
+      // l'utilisateur déconnecté sur un simple aller-retour perdu, alors que
+      // son refresh token restait valide.
+      if (e is DioException && e.response != null) {
+        await _endSession();
+        _rejectQueue(err);
+        handler.next(err);
+      } else {
+        final offline = DioException(
+          requestOptions: err.requestOptions,
+          type: DioExceptionType.connectionError,
+          error: AppFailure.noInternet(),
+        );
+        _rejectQueue(offline);
+        handler.next(offline);
+      }
     } finally {
       _isRefreshing = false;
       _queue.clear();
+    }
+  }
+
+  Future<void> _endSession() async {
+    await _storage.clear();
+    await _sessionRole.clear();
+    await _database.clearCaches();
+  }
+
+  /// Les requêtes mises en attente pendant le rafraîchissement doivent
+  /// aboutir à un échec : vidée sans réponse, la file laissait leurs écrans
+  /// attendre indéfiniment.
+  void _rejectQueue(DioException err) {
+    for (final pending in _queue) {
+      pending.handler.next(err.copyWith(requestOptions: pending.options));
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -17,7 +18,7 @@ class PropertyFeatures extends StatelessWidget {
     final t = context.tokens;
 
     return Section(
-      title: 'Caractéristiques',
+      title: 'property_detail.features'.tr(),
       icon: LucideIcons.listChecks,
       child: Wrap(
         spacing: 8,

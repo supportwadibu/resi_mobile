@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -42,7 +43,9 @@ class ResidenceUnitTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${CurrencyFormatter.short(unit.pricing.dailyPrice)} /jour',
+                    'residence.price_per_day'.tr(
+                      args: [CurrencyFormatter.short(unit.pricing.dailyPrice)],
+                    ),
                     style: context.text.bodySmall,
                   ),
                 ],

@@ -1,14 +1,17 @@
+import 'package:easy_localization/easy_localization.dart';
 /// Statut d'un séjour, aligné sur `BOOKING_STATUSES` du serveur.
 enum ReservationStatus {
-  confirmed('confirmed', 'Confirmé'),
-  inProgress('in_progress', 'En cours'),
-  completed('completed', 'Terminé'),
-  cancelled('cancelled', 'Annulé');
+  confirmed('confirmed'),
+  inProgress('in_progress'),
+  completed('completed'),
+  cancelled('cancelled');
 
-  const ReservationStatus(this.code, this.label);
+  const ReservationStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'client_stay_status.$code'.tr();
 
   static ReservationStatus fromCode(String? code) {
     for (final status in ReservationStatus.values) {

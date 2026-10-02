@@ -298,6 +298,63 @@ void main() {
     });
   });
 
+  group('Migration → v5', () {
+    test('les files existantes survivent, les tables hors ligne apparaissent',
+        () async {
+      final db = await _openV1();
+      addTearDown(db.close);
+
+      // Une réservation encaissée attend le réseau au moment de la mise à
+      // jour : elle porte de l'argent, la migration ne doit pas y toucher.
+      await db.insert('pending_bookings', {
+        'client_request_id': 'req-v5',
+        'property_id': 'villa',
+        'stay_type': 'full_day',
+        'check_in_at': 1000,
+        'received_amount': 45000,
+        'created_at': 1000,
+      });
+
+      await AppDatabase.instance.upgradeSchema(
+        db,
+        1,
+        AppDatabase.schemaVersion,
+      );
+
+      expect(
+        await db.query(
+          'pending_bookings',
+          where: 'client_request_id = ?',
+          whereArgs: ['req-v5'],
+        ),
+        hasLength(1),
+      );
+
+      await db.insert('http_cache', {
+        'cache_key': 'u1|/p?',
+        'path': '/p',
+        'body': '{"data":[]}',
+        'cached_at': 1,
+      });
+      await db.insert('pending_actions', {
+        'id': 'a1',
+        'type': 'booking_check_out',
+        'target_ref': 'b1',
+        'payload': '{}',
+        'created_at': 2,
+      });
+      await db.insert('local_refs', {
+        'local_id': 'local-v5',
+        'remote_id': 'r1',
+      });
+
+      final action = (await db.query('pending_actions')).single;
+      expect(action['state'], 'pending');
+      expect(await db.query('http_cache'), hasLength(1));
+      expect(await db.query('local_refs'), hasLength(1));
+    });
+  });
+
   group('Schéma neuf', () {
     test(
       'une base créée de zéro porte les mêmes colonnes qu’une base migrée',
@@ -322,6 +379,9 @@ void main() {
             'cached_properties',
             'pending_bookings',
             'pending_clients',
+            'http_cache',
+            'pending_actions',
+            'local_refs',
           ]) {
             final rows = await db.rawQuery('PRAGMA table_info($table)');
             columns.addAll(rows.map((c) => '$table.${c['name']}'));

@@ -44,7 +44,8 @@ class ClientDetailScreen extends StatelessWidget {
       // La fiche venue de la liste s'affiche sans attendre, puis est remplacée
       // par celle du serveur : le propriétaire doit pouvoir appeler son client
       // avant la fin du chargement.
-      create: (_) => ClientDetailCubit(sl())..load(client.id, known: client),
+      create: (_) =>
+          sl<ClientDetailCubit>()..load(client.id, known: client),
       child: _ClientDetailView(onArchiveToggle: onArchiveToggle),
     );
   }
@@ -59,14 +60,14 @@ class _ClientDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Fiche client',
+        title: 'clients.record'.tr(),
         actions: [
           BlocBuilder<ClientDetailCubit, ClientDetailState>(
             builder: (context, state) {
               if (state is! ClientDetailLoaded) return const SizedBox.shrink();
               return AppIconButton(
                 icon: LucideIcons.pencil,
-                label: 'Modifier',
+                label: 'common.edit'.tr(),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => EditClientScreen(
@@ -118,13 +119,13 @@ class _LoadedView extends StatelessWidget {
         StatGrid(
           children: [
             StatTile(
-              label: 'Séjours',
+              label: 'clients.stays'.tr(),
               value: '${client.stats.totalStays}',
               icon: AppSectionIcons.bookings,
               accent: AppAccent.violet,
             ),
             StatTile(
-              label: 'Total payé',
+              label: 'clients.total_paid'.tr(),
               value: CurrencyFormatter.short(client.stats.totalPaid),
               icon: LucideIcons.banknote,
               accent: AppAccent.green,
@@ -133,23 +134,28 @@ class _LoadedView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Section(
-          title: 'Coordonnées',
+          title: 'clients.contact'.tr(),
           icon: AppSectionIcons.profile,
           child: DetailList(
             items: [
-              DetailItem('Téléphone', client.phone, icon: LucideIcons.phone),
               DetailItem(
-                'Pièce d’identité',
+                'common.phone'.tr(),
+                client.phone,
+                icon: LucideIcons.phone,
+              ),
+              DetailItem(
+                'clients.id_document'.tr(),
                 client.documentsComplete
-                    ? (client.idDocumentType?.label ?? 'Déposée')
-                    : 'Incomplète',
+                    ? (client.idDocumentType?.label ??
+                          'clients.document_deposited'.tr())
+                    : 'clients.document_incomplete'.tr(),
                 icon: LucideIcons.idCard,
               ),
               DetailItem(
-                'Dernier séjour',
+                'clients.last_stay'.tr(),
                 lastStay == null
-                    ? 'Aucun séjour'
-                    : DateFormat('dd MMMM yyyy', 'fr_FR').format(lastStay),
+                    ? 'clients.no_stay'.tr()
+                    : DateFormat('dd MMMM yyyy').format(lastStay),
                 icon: LucideIcons.calendar,
               ),
             ],
@@ -161,7 +167,7 @@ class _LoadedView extends StatelessWidget {
         IdentityDocumentsCard(client: client),
         const SizedBox(height: 16),
         Section(
-          title: 'Historique des séjours',
+          title: 'clients.stay_history'.tr(),
           icon: AppSectionIcons.bookings,
           padding: EdgeInsets.zero,
           child: _History(state: state),
@@ -255,8 +261,8 @@ class _History extends StatelessWidget {
     }
 
     if (state.reservations.isEmpty) {
-      return const EmptyState(
-        message: 'Aucun séjour enregistré',
+      return EmptyState(
+        message: 'clients.no_stay_recorded'.tr(),
         icon: LucideIcons.calendarX,
       );
     }
@@ -320,7 +326,7 @@ class _QuickActions extends StatelessWidget {
       children: [
         Expanded(
           child: AppButton(
-            label: 'Appeler',
+            label: 'clients.call'.tr(),
             icon: LucideIcons.phone,
             variant: AppButtonVariant.secondary,
             expand: true,
@@ -330,7 +336,7 @@ class _QuickActions extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: AppButton(
-            label: 'WhatsApp',
+            label: 'clients.whatsapp'.tr(),
             icon: LucideIcons.messageCircle,
             variant: AppButtonVariant.secondary,
             expand: true,
@@ -340,7 +346,9 @@ class _QuickActions extends StatelessWidget {
         const SizedBox(width: 8),
         AppIconButton(
           icon: isArchived ? LucideIcons.archiveRestore : LucideIcons.archive,
-          label: isArchived ? 'Restaurer' : 'Archiver',
+          label: isArchived
+              ? 'clients.restore'.tr()
+              : 'clients.archive'.tr(),
           bordered: true,
           onPressed: onArchiveToggle,
         ),

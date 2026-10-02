@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -33,7 +34,9 @@ class OwnerProfileHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  profile.fullName.isEmpty ? 'Sans nom' : profile.fullName,
+                  profile.fullName.isEmpty
+                      ? 'owner_profile.no_name'.tr()
+                      : profile.fullName,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.titleMedium,
                 ),

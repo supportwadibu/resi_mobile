@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
@@ -10,20 +11,20 @@ class SubmitClientButton extends StatelessWidget {
 
   /// Le défaut porte l'enregistrement d'un nouveau client ; l'édition d'une
   /// fiche existante le remplace.
-  final String label;
+  final String? label;
 
   const SubmitClientButton({
     super.key,
     required this.isLoading,
     required this.enabled,
     required this.onTap,
-    this.label = 'Enregistrer le client',
+    this.label,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBottomActionBar(
-      primaryLabel: label,
+      primaryLabel: label ?? 'clients.save_client'.tr(),
       primaryIcon: LucideIcons.check,
       isLoading: isLoading,
       onPrimary: enabled ? onTap : null,

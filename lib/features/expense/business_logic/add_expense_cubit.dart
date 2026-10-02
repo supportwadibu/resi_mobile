@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../../../core/offline/offline_action_queue.dart';
+import '../../../../core/offline/pending_action.dart';
 import '../data/models/expense_model.dart';
 import '../data/repositories/expense_repository.dart';
 import 'add_expense_state.dart';
@@ -10,15 +12,23 @@ import 'add_expense_state.dart';
 /// Séparé de `ExpenseCubit` : lister et écrire ont des cycles de vie distincts,
 /// et un échec d'écriture ne doit pas vider la liste affichée.
 class AddExpenseCubit extends Cubit<AddExpenseState> {
-  AddExpenseCubit(this._repository) : super(const AddExpenseIdle());
+  AddExpenseCubit(this._repository, {OfflineActionQueue? queue})
+    : _queue = queue,
+      super(const AddExpenseIdle());
 
   final ExpenseRepository _repository;
+
+  /// File hors ligne. Sans elle, une panne réseau s'affiche comme un échec.
+  final OfflineActionQueue? _queue;
 
   /// Enregistre une dépense.
   ///
   /// Exactement un de [propertyId] et [residenceId] doit être fourni : une
   /// charge de logement, ou une charge commune du lieu. Le serveur refuse en
   /// 422 les deux autres cas.
+  ///
+  /// [targetTitle] et [targetCity] nomment le logement ou la résidence : une
+  /// dépense mise en file s'affiche avant que le serveur ne les joigne.
   Future<void> submit({
     required ExpenseCategory category,
     required double amount,
@@ -26,31 +36,56 @@ class AddExpenseCubit extends Cubit<AddExpenseState> {
     String? propertyId,
     String? residenceId,
     String? note,
+    String? targetTitle,
+    String? targetCity,
   }) async {
     emit(const AddExpenseSubmitting());
 
-    try {
-      final expense = await _repository.create(
-        residenceId != null
-            ? CreateExpensePayload.forResidence(
-                residenceId: residenceId,
-                category: category,
-                amount: amount,
-                spentAt: spentAt,
-                note: note,
-              )
-            : CreateExpensePayload.forProperty(
-                propertyId: propertyId ?? '',
-                category: category,
-                amount: amount,
-                spentAt: spentAt,
-                note: note,
-              ),
-      );
+    final payload = residenceId != null
+        ? CreateExpensePayload.forResidence(
+            residenceId: residenceId,
+            category: category,
+            amount: amount,
+            spentAt: spentAt,
+            note: note,
+          )
+        : CreateExpensePayload.forProperty(
+            propertyId: propertyId ?? '',
+            category: category,
+            amount: amount,
+            spentAt: spentAt,
+            note: note,
+          );
 
+    try {
+      final expense = await _repository.create(payload);
       if (!isClosed) emit(AddExpenseSuccess(expense));
     } on AppFailure catch (f) {
-      if (!isClosed) emit(AddExpenseFailure(f.userMessage));
+      if (isClosed) return;
+
+      final queue = _queue;
+      if (queue != null && OfflineActionQueue.isNetworkFailure(f)) {
+        final target = {
+          'id': residenceId ?? propertyId,
+          if (residenceId != null) 'name': targetTitle else 'title': targetTitle,
+          'city': targetCity ?? '',
+        };
+        await queue.enqueue(
+          PendingActionType.expenseCreate,
+          payload: {
+            ...payload.toJson(),
+            // Jamais envoyé : il nomme la cible tant que le serveur ne l'a pas
+            // jointe à la dépense.
+            '_display': {
+              if (residenceId != null) 'residence': target else 'property': target,
+            },
+          },
+        );
+        if (!isClosed) emit(const AddExpenseSuccess(null, queued: true));
+        return;
+      }
+
+      emit(AddExpenseFailure(f.userMessage));
     }
   }
 

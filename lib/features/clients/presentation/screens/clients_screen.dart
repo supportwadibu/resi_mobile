@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -41,10 +42,10 @@ class _ClientsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        title: 'Clients',
+        title: 'clients.title'.tr(),
         actions: [
           AppButton(
-            label: 'Nouveau',
+            label: 'clients.new_short'.tr(),
             icon: LucideIcons.plus,
             size: AppButtonSize.sm,
             // La liste est relue au retour : sans cela, le client tout juste

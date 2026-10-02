@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -29,13 +30,13 @@ class OccupancyCard extends StatelessWidget {
     final rented = this.rented;
     final available = this.available;
     return StatTile(
-      label: 'Taux d\'occupation',
+      label: 'stats.occupancy_rate'.tr(),
       value: '${(occupancyRate * 100).round()} %',
       icon: LucideIcons.chartPie,
       accent: AppAccent.amber,
       note: rented != null && available != null
-          ? '$rented ${rented > 1 ? 'unités louées' : 'unité louée'} · '
-                '$available ${available > 1 ? 'disponibles' : 'disponible'}'
+          ? '${'stats.units_rented'.plural(rented)} · '
+                '${'stats.units_available'.plural(available)}'
           : null,
     );
   }

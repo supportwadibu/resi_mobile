@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
+import '../../../core/offline/offline_action_queue.dart';
+import '../../../core/offline/pending_action.dart';
 import '../data/models/client_creation_result.dart';
 import '../data/models/identity_document_model.dart';
 import '../data/repositories/clients_repository.dart';
@@ -15,9 +17,14 @@ import 'add_client_state.dart';
 /// facultatives, comme au comptoir — un client peut ne pas avoir la sienne,
 /// et la fiche se complète plus tard.
 class AddClientCubit extends Cubit<AddClientState> {
-  AddClientCubit(this._clients) : super(const AddClientState());
+  AddClientCubit(this._clients, {OfflineActionQueue? queue})
+    : _queue = queue,
+      super(const AddClientState());
 
   final ClientsRepository _clients;
+
+  /// File hors ligne. Sans elle, une panne réseau s'affiche comme un échec.
+  final OfflineActionQueue? _queue;
 
   void setFullName(String value) => emit(state.copyWith(fullName: value));
 
@@ -78,14 +85,54 @@ class AddClientCubit extends Cubit<AddClientState> {
         ),
       );
     } on AppFailure catch (f) {
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            status: AddClientStatus.error,
-            errorMessage: f.userMessage,
-          ),
-        );
+      if (isClosed) return;
+
+      final queue = _queue;
+      if (queue != null && OfflineActionQueue.isNetworkFailure(f)) {
+        await _enqueue(queue, documentType, documentNumber, identity);
+        return;
       }
+
+      emit(
+        state.copyWith(
+          status: AddClientStatus.error,
+          errorMessage: f.userMessage,
+        ),
+      );
+    }
+  }
+
+  /// Met la fiche en file, sous un identifiant local : choisie ensuite pour
+  /// une réservation ou modifiée, elle sera visée par lui jusqu'à son envoi.
+  ///
+  /// Un doublon de téléphone ne se voit qu'à l'envoi : le serveur rend alors
+  /// la fiche existante, à laquelle l'identifiant local est rattaché.
+  Future<void> _enqueue(
+    OfflineActionQueue queue,
+    ClientIdDocumentType? documentType,
+    String? documentNumber,
+    ClientIdentity identity,
+  ) async {
+    final front = state.documents[DocumentSlot.recto]?.file.path;
+    final back = state.documents[DocumentSlot.verso]?.file.path;
+
+    await queue.enqueue(
+      PendingActionType.clientCreate,
+      targetRef: OfflineActionQueue.newLocalId(),
+      payload: {
+        'full_name': state.fullName.trim(),
+        'phone': state.phone.trim(),
+        'id_document_type': ?documentType?.code,
+        'id_document_number': ?documentNumber,
+        'identity': identity.toFormFields(),
+      },
+      filePaths: {
+        'id_document_front': ?front,
+        'id_document_back': ?back,
+      },
+    );
+    if (!isClosed) {
+      emit(state.copyWith(status: AddClientStatus.success, queued: true));
     }
   }
 }

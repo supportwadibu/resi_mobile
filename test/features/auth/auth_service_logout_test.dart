@@ -86,6 +86,9 @@ class _StubAuthRepository implements AuthRepository {
   @override
   Future<SubscriptionStatusModel> fetchSubscriptionStatus() =>
       throw UnimplementedError();
+
+  @override
+  Future<AuthUser> fetchMe() => throw UnimplementedError();
 }
 
 /// Le SDK Google exige le binding natif : seul `signOut` est simulé.
@@ -124,6 +127,7 @@ void main() {
         google,
         sessionRoleFixture('gerant'),
         database,
+        MemoryLocalStorage(),
       );
 
       await service.logout();
@@ -134,6 +138,24 @@ void main() {
       // La file part avec le reste : la déconnexion est volontaire, donc le
       // moment convenu pour tout effacer.
       expect(database.clearedAll, isTrue);
+    });
+
+    test('le nom du compte part avec la session', () async {
+      // L'accueil salue avec ce nom : resté en place, il accueillerait le
+      // gérant qui se connecte ensuite sous le nom du propriétaire.
+      final local = MemoryLocalStorage()..accountName = 'Stéphane Konan';
+      final service = AuthService(
+        _StubAuthRepository(),
+        _MemorySecureStorage(refresh: 'rt-valide'),
+        _StubGoogleAuthService(),
+        sessionRoleFixture(),
+        SpyDatabase(),
+        local,
+      );
+
+      await service.logout();
+
+      expect(local.accountName, isNull);
     });
 
     test(
@@ -149,6 +171,7 @@ void main() {
           _StubGoogleAuthService(),
           sessionRoleFixture('gerant'),
           database,
+          MemoryLocalStorage(),
         );
 
         await expectLater(service.logout(), throwsA(isA<StateError>()));
@@ -174,6 +197,7 @@ void main() {
           google,
           session,
           SpyDatabase(throwOnClear: true),
+          MemoryLocalStorage(),
         );
 
         await expectLater(service.logout(), throwsA(isA<StateError>()));

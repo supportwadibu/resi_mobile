@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
@@ -142,13 +143,13 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
   /// immédiat et situé qu'une erreur 422 après coup.
   String? _validate() {
     if (_nameController.text.trim().length < 2) {
-      return 'Donnez un nom à la résidence.';
+      return 'residence.name_required'.tr();
     }
     if (_streetController.text.trim().length < 2) {
-      return 'Indiquez la rue.';
+      return 'residence.street_required'.tr();
     }
     if (_cityController.text.trim().length < 2) {
-      return 'Indiquez la ville.';
+      return 'residence.city_required'.tr();
     }
     return null;
   }
@@ -196,7 +197,7 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
 
     if (result != null) {
       AppToast.success(
-        _isEditing ? 'Résidence modifiée' : 'Résidence créée',
+        _isEditing ? 'residence.updated'.tr() : 'residence.created'.tr(),
         context: context,
       );
       context.router.maybePop();
@@ -211,7 +212,9 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
 
     final state = cubit.state;
     _showMessage(
-      state is ResidenceError ? state.message : 'Enregistrement impossible.',
+      state is ResidenceError
+          ? state.message
+          : 'residence.save_impossible'.tr(),
     );
   }
 
@@ -243,8 +246,8 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
             children: [
               AppStepHeader(
                 title: _isEditing
-                    ? 'Modifier la résidence'
-                    : 'Nouvelle résidence',
+                    ? 'residence.edit_title'.tr()
+                    : 'residence.new_title'.tr(),
                 onBack: () => context.router.maybePop(),
               ),
 
@@ -268,8 +271,10 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
               if (_loadError == null)
                 AppBottomActionBar(
                   primaryLabel: _isSubmitting
-                      ? 'Enregistrement...'
-                      : (_isEditing ? 'Enregistrer' : 'Créer la résidence'),
+                      ? 'property_form.saving'.tr()
+                      : (_isEditing
+                            ? 'common.save'.tr()
+                            : 'residence.create'.tr()),
                   onPrimary: _isLoading ? null : _submit,
                   primaryIcon: LucideIcons.check,
                   isLoading: _isSubmitting,
@@ -285,30 +290,30 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(
-          title: 'Comment s’appelle cette résidence ?',
-          subtitle: 'Le nom du lieu, celui que vous employez pour en parler.',
+        _SectionTitle(
+          title: 'residence.name_question'.tr(),
+          subtitle: 'residence.name_question_hint'.tr(),
         ),
         const SizedBox(height: 20),
 
         AppTextField(
-          label: 'Nom de la résidence',
-          hint: 'Ex: Resi Adja, Résidence les Palmiers...',
+          label: 'residence.name'.tr(),
+          hint: 'residence.name_hint'.tr(),
           controller: _nameController,
           prefixIcon: const Icon(LucideIcons.building2, size: 18),
         ),
         const SizedBox(height: 16),
         AppTextField(
-          label: 'Description (facultatif)',
-          hint: 'Ex: Trois logements à Cocody, cour commune...',
+          label: 'residence.description_optional'.tr(),
+          hint: 'residence.description_hint'.tr(),
           controller: _descriptionController,
           maxLines: 4,
         ),
 
         const SizedBox(height: 32),
-        const _SectionTitle(
-          title: 'Où se trouve la résidence ?',
-          subtitle: 'Cette adresse est celle de tous les logements du lieu.',
+        _SectionTitle(
+          title: 'residence.where'.tr(),
+          subtitle: 'residence.where_hint'.tr(),
         ),
         const SizedBox(height: 20),
 
@@ -318,18 +323,19 @@ class _AddResidenceViewState extends State<_AddResidenceView> {
         AppCityField(countryIso2: _countryIso2, controller: _cityController),
         const SizedBox(height: 16),
         AppTextField(
-          label: 'Adresse complète',
-          hint: 'Ex: Rue des Jardins, Cocody...',
+          label: 'property_form.full_address'.tr(),
+          hint: 'property_form.full_address_hint'.tr(),
           controller: _streetController,
           prefixIcon: const Icon(LucideIcons.mapPin, size: 18),
         ),
 
         const SizedBox(height: 32),
         _SectionTitle(
-          title: 'Parties communes',
-          subtitle:
-              'Ce qui appartient au lieu, et non à un logement en particulier.',
-          trailing: '${_amenities.length} sélectionnée(s)',
+          title: 'residence.common_areas'.tr(),
+          subtitle: 'residence.common_areas_hint'.tr(),
+          trailing: 'property_form.selected_count'.tr(
+            args: ['${_amenities.length}'],
+          ),
         ),
         const SizedBox(height: 16),
 

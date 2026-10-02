@@ -123,14 +123,16 @@ class _AddReservationViewState extends State<_AddReservationView> {
 
         return Scaffold(
           appBar: AppTopBar(
-            title: isCheckIn ? 'Check-in immédiat' : 'Réservation future',
+            title: isCheckIn
+                ? 'booking_form.title_check_in'.tr()
+                : 'booking_form.title_future'.tr(),
           ),
           // Barre fixe : l'enregistrement reste atteignable sans dérouler un
           // formulaire long, au comptoir, client en face.
           bottomNavigationBar: AppBottomActionBar(
             primaryLabel: isCheckIn
-                ? 'Enregistrer le check-in'
-                : 'Enregistrer la réservation',
+                ? 'booking_form.save_check_in'.tr()
+                : 'booking_form.save_booking'.tr(),
             primaryIcon: LucideIcons.check,
             isLoading: state.status == AddReservationStatus.submitting,
             onPrimary: state.isValid ? _submit : null,
@@ -140,7 +142,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ReservationSectionTitle(title: 'Client'),
+                ReservationSectionTitle(title: 'booking_form.client'.tr()),
                 ClientFieldGroup(
                   selected: state.selectedClient,
                   nameController: _nameController,
@@ -165,8 +167,8 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 // fiche existante sont déjà au dossier.
                 if (state.selectedClient == null) ...[
                   const SizedBox(height: 20),
-                  const ReservationSectionTitle(
-                    title: 'Pièce d’identité (facultative)',
+                  ReservationSectionTitle(
+                    title: 'booking_form.id_optional'.tr(),
                   ),
                   // Tout ce qui est lu voyage avec la réservation, file hors
                   // ligne comprise : le registre de police en dépend.
@@ -196,7 +198,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 ],
 
                 const SizedBox(height: 24),
-                const ReservationSectionTitle(title: 'Résidence'),
+                ReservationSectionTitle(title: 'booking_form.residence'.tr()),
                 PropertySelector(
                   selectedId: state.propertyId,
                   onSelected: (property) => cubit.setProperty(
@@ -207,7 +209,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 ),
 
                 const SizedBox(height: 24),
-                const ReservationSectionTitle(title: 'Type de séjour'),
+                ReservationSectionTitle(title: 'booking_form.stay_type'.tr()),
                 StayTypePicker(
                   selected: state.stayType,
                   dailyPrice: state.dailyPrice,
@@ -220,7 +222,9 @@ class _AddReservationViewState extends State<_AddReservationView> {
 
                 const SizedBox(height: 24),
                 ReservationSectionTitle(
-                  title: isCheckIn ? 'Entrée (maintenant)' : 'Date d’entrée',
+                  title: isCheckIn
+                      ? 'booking_form.check_in_now'.tr()
+                      : 'booking_form.check_in_date'.tr(),
                 ),
                 DateTimeField(
                   value: state.checkInAt,
@@ -229,7 +233,9 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   onChanged: cubit.setCheckIn,
                 ),
                 const SizedBox(height: 12),
-                const ReservationSectionTitle(title: 'Sortie prévue'),
+                ReservationSectionTitle(
+                  title: 'booking_form.planned_check_out'.tr(),
+                ),
                 DateTimeField(
                   value: state.checkOutAt,
                   firstDate: state.checkInAt,
@@ -242,7 +248,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 ],
 
                 const SizedBox(height: 24),
-                const ReservationSectionTitle(title: 'Paiement'),
+                ReservationSectionTitle(title: 'booking_form.payment'.tr()),
                 _AmountSummary(state: state),
                 const SizedBox(height: 12),
                 // « Prix convenu » et non « Montant reçu » : le serveur en fait
@@ -321,17 +327,17 @@ class _AddReservationViewState extends State<_AddReservationView> {
     router.replace(
       SuccessRoute(
         title: isQueued
-            ? 'Enregistrée sur l’appareil'
-            : 'Réservation enregistrée',
+            ? 'booking_form.saved_on_device'.tr()
+            : 'booking_form.saved'.tr(),
         // Une saisie hors réseau ne doit pas passer pour confirmée : le
         // propriétaire doit savoir qu'elle attend encore d'être transmise.
         subtitle: isQueued
-            ? 'Elle sera transmise dès le retour de la connexion.'
+            ? 'booking_form.queued_hint'.tr()
             : state.mode == ReservationMode.checkIn
-            ? 'Le séjour est en cours.'
-            : 'La réservation est confirmée.',
-        buttonText: 'Retour à l’accueil',
-        secondaryButtonText: 'Nouvelle réservation',
+            ? 'booking_form.stay_in_progress'.tr()
+            : 'booking_form.confirmed'.tr(),
+        buttonText: 'booking_form.back_home'.tr(),
+        secondaryButtonText: 'booking_form.new_booking'.tr(),
         onPrimaryAction: () => router.replaceAll([const HomeRoute()]),
         onSecondaryAction: () =>
             router.replace(AddReservationRoute(mode: mode)),
@@ -370,12 +376,17 @@ class _AmountSummary extends StatelessWidget {
             // les milliers sur les chiffres seuls et décalerait l'espace sur
             // un nombre négatif.
             _Row(
-              label: 'Remise durée (−${state.discountPercent} %)',
+              label: 'booking_form.length_discount'.tr(
+                args: ['${state.discountPercent}'],
+              ),
               value: state.fullAmount - state.expectedAmount,
             ),
             const Divider(height: 20),
           ],
-          _Row(label: 'Montant attendu', value: state.expectedAmount),
+          _Row(
+            label: 'booking_form.expected_amount'.tr(),
+            value: state.expectedAmount,
+          ),
           if (state.receivedAmount != null &&
               state.receivedAmount != state.expectedAmount) ...[
             // La remise est montrée avant l'envoi : c'est elle qui trahit un
@@ -402,9 +413,13 @@ class _AmountSummary extends StatelessWidget {
           ],
           if (state.depositAmount > 0) ...[
             const SizedBox(height: 8),
-            _Row(label: 'Acompte', value: state.depositAmount),
+            _Row(label: 'booking_form.deposit'.tr(), value: state.depositAmount),
             const Divider(height: 20),
-            _Row(label: 'Reste dû', value: state.balanceDue, strong: true),
+            _Row(
+              label: 'booking_amounts.balance_due'.tr(),
+              value: state.balanceDue,
+              strong: true,
+            ),
           ],
         ],
       ),

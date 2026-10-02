@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -27,7 +28,7 @@ class PropertyLocationSection extends StatelessWidget {
     final propertyLocation = LatLng(latitude, longitude);
 
     return Section(
-      title: 'Adresse',
+      title: 'common.address'.tr(),
       icon: LucideIcons.mapPin,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,7 +83,7 @@ class PropertyLocationSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           AppButton(
-            label: 'Ouvrir l\'itinéraire',
+            label: 'property_detail.open_directions'.tr(),
             icon: LucideIcons.navigation,
             variant: AppButtonVariant.secondary,
             expand: true,

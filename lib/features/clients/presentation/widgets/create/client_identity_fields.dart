@@ -110,7 +110,7 @@ class _DateField extends StatelessWidget {
       onTap: () => _pick(context),
       style: context.text.bodyMedium,
       decoration: InputDecoration(
-        hintText: 'jj/mm/aaaa',
+        hintText: 'common.date_placeholder'.tr(),
         prefixIcon: const Icon(LucideIcons.calendar, size: 16),
         suffixIcon: date == null
             ? null

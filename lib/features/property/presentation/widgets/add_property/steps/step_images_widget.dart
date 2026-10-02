@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -42,7 +43,10 @@ class StepImagesWidget extends StatelessWidget {
     onChanged(updated);
 
     if (picked.length > remaining && context.mounted) {
-      AppToast.warning('$maxImages photos au maximum.', context: context);
+      AppToast.warning(
+        'property_form.max_photos'.tr(args: ['$maxImages']),
+        context: context,
+      );
     }
   }
 
@@ -57,12 +61,12 @@ class StepImagesWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ajoutez des photos de votre bien',
+          'property_form.add_photos'.tr(),
           style: context.text.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
-          'Minimum 3 photos recommandées · ${images.length} ajoutée(s)',
+          'property_form.photos_hint'.tr(args: ['${images.length}']),
           style: context.text.bodySmall,
         ),
         const SizedBox(height: 16),
@@ -95,7 +99,7 @@ class StepImagesWidget extends StatelessWidget {
                         color: context.tokens.muted,
                       ),
                       const SizedBox(height: 6),
-                      Text('Ajouter', style: context.text.bodySmall),
+                      Text('common.add'.tr(), style: context.text.bodySmall),
                     ],
                   ),
                 ),
@@ -113,7 +117,7 @@ class StepImagesWidget extends StatelessWidget {
                   top: 4,
                   right: 4,
                   child: Tooltip(
-                    message: 'Retirer',
+                    message: 'property_form.remove'.tr(),
                     child: Material(
                       color: context.tokens.surface,
                       shape: RoundedRectangleBorder(
@@ -150,7 +154,7 @@ class StepImagesWidget extends StatelessWidget {
                         borderRadius: AppRadius.pill,
                       ),
                       child: Text(
-                        'Couverture',
+                        'property_form.cover'.tr(),
                         style: context.text.labelMedium!.copyWith(
                           color: context.tokens.onOverlay,
                         ),

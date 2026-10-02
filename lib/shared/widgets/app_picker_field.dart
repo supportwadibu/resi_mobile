@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -11,7 +12,7 @@ class AppPickerField extends StatelessWidget {
   const AppPickerField({
     required this.onTap,
     this.value,
-    this.placeholder = 'Choisir',
+    this.placeholder,
     this.label,
     this.icon,
     this.onClear,
@@ -20,7 +21,7 @@ class AppPickerField extends StatelessWidget {
 
   /// Valeur choisie ; `null` affiche [placeholder] en texte secondaire.
   final String? value;
-  final String placeholder;
+  final String? placeholder;
   final String? label;
   final IconData? icon;
   final VoidCallback? onTap;
@@ -48,7 +49,7 @@ class AppPickerField extends StatelessWidget {
               ],
               Expanded(
                 child: Text(
-                  hasValue ? value! : placeholder,
+                  hasValue ? value! : placeholder ?? 'common.choose'.tr(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: hasValue ? context.text.bodyMedium : context.mutedText,

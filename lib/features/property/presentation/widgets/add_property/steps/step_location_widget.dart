@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -89,9 +90,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
     if (position == null) {
       setState(() {
         _isLocating = false;
-        _locationNotice =
-            'Position indisponible. Placez le repère sur la carte ou '
-            'saisissez l’adresse.';
+        _locationNotice = 'property_form.location_unavailable'.tr();
       });
       return;
     }
@@ -119,7 +118,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
         widget.onStreetChanged(address.street!);
       }
       _locationNotice = address.isEmpty
-          ? 'Position relevée. Complétez l’adresse à la main.'
+          ? 'property_form.location_found'.tr()
           : null;
     });
   }
@@ -149,23 +148,23 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
         const SizedBox(height: 20),
 
         AppTextField(
-          label: 'Ville',
-          hint: 'Ex: Abidjan, Bouaké, Yamoussoukro...',
+          label: 'fields.city'.tr(),
+          hint: 'property_form.city_hint'.tr(),
           controller: _communeCtrl,
           prefixIcon: const Icon(LucideIcons.building, size: 16),
           onChanged: widget.onCityChanged,
         ),
         const SizedBox(height: 16),
         AppTextField(
-          label: 'Adresse complète',
-          hint: 'Ex: Rue des Jardins, Cocody...',
+          label: 'property_form.full_address'.tr(),
+          hint: 'property_form.full_address_hint'.tr(),
           controller: _addressCtrl,
           prefixIcon: const Icon(LucideIcons.mapPin, size: 16),
           onChanged: widget.onStreetChanged,
         ),
         const SizedBox(height: 20),
 
-        Text('Position sur la carte', style: context.text.titleSmall),
+        Text('property_form.map_position'.tr(), style: context.text.titleSmall),
         const SizedBox(height: 6),
 
         DecoratedBox(
@@ -215,7 +214,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Appuyez sur la carte pour ajuster la position de votre bien',
+          'property_form.map_hint'.tr(),
           style: context.text.bodySmall,
         ),
       ],
@@ -233,7 +232,9 @@ class _CurrentPositionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      label: isLoading ? 'Localisation en cours…' : 'Utiliser ma position',
+      label: isLoading
+          ? 'property_form.locating'.tr()
+          : 'property_form.use_my_location'.tr(),
       icon: LucideIcons.locateFixed,
       variant: AppButtonVariant.secondary,
       isLoading: isLoading,

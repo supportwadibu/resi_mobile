@@ -1,18 +1,21 @@
+import 'package:easy_localization/easy_localization.dart';
 /// Type de bien, tel que l'API le nomme.
 ///
 /// Le code est ce qui transite (`apartment`), le libellé ce qui s'affiche
 /// (« Appartement ») : les confondre enverrait du français à un validateur qui
 /// n'accepte que les valeurs de l'énumération.
 enum PropertyType {
-  apartment('apartment', 'Appartement'),
-  studio('studio', 'Studio'),
-  villa('villa', 'Villa'),
-  duplex('duplex', 'Duplex');
+  apartment('apartment'),
+  studio('studio'),
+  villa('villa'),
+  duplex('duplex');
 
-  const PropertyType(this.code, this.label);
+  const PropertyType(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'property_types.$code'.tr();
 
   static PropertyType? fromCode(String? code) {
     if (code == null) return null;
@@ -25,17 +28,19 @@ enum PropertyType {
 
 /// Statut d'une annonce côté serveur.
 enum PropertyStatus {
-  draft('draft', 'Brouillon'),
-  published('published', 'Publiée'),
-  reserved('reserved', 'Réservée'),
-  rented('rented', 'Louée'),
-  maintenance('maintenance', 'En travaux'),
-  inactive('inactive', 'Inactive');
+  draft('draft'),
+  published('published'),
+  reserved('reserved'),
+  rented('rented'),
+  maintenance('maintenance'),
+  inactive('inactive');
 
-  const PropertyStatus(this.code, this.label);
+  const PropertyStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'property_status.$code'.tr();
 
   static PropertyStatus? fromCode(String? code) {
     if (code == null) return null;
@@ -151,25 +156,27 @@ class PropertyDetails {
 /// libre : les commodités affichées côté mobile doivent donc se rattacher à
 /// l'une de ces clés, ou n'être pas transmises.
 enum Amenity {
-  airConditioning('air_conditioning', 'Climatisation'),
-  heating('heating', 'Chauffe-eau'),
-  elevator('elevator', 'Ascenseur'),
-  balcony('balcony', 'Balcon'),
-  terrace('terrace', 'Terrasse'),
-  garden('garden', 'Jardin'),
-  pool('pool', 'Piscine'),
-  gym('gym', 'Salle de sport'),
-  security('security', 'Sécurité 24h'),
-  concierge('concierge', 'Concierge'),
-  wifi('wifi', 'Wifi'),
-  parking('parking', 'Parking'),
-  petFriendly('pet_friendly', 'Animaux acceptés'),
-  smokingAllowed('smoking_allowed', 'Fumeurs acceptés');
+  airConditioning('air_conditioning'),
+  heating('heating'),
+  elevator('elevator'),
+  balcony('balcony'),
+  terrace('terrace'),
+  garden('garden'),
+  pool('pool'),
+  gym('gym'),
+  security('security'),
+  concierge('concierge'),
+  wifi('wifi'),
+  parking('parking'),
+  petFriendly('pet_friendly'),
+  smokingAllowed('smoking_allowed');
 
-  const Amenity(this.code, this.label);
+  const Amenity(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'amenities.$code'.tr();
 
   static Amenity? fromCode(String? code) {
     if (code == null) return null;

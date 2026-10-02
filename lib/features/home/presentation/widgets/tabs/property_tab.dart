@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,7 @@ import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/shared/widgets/property_card.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Onglet « Mes biens » : les annonces du propriétaire connecté.
 class PropertyTab extends StatelessWidget {
@@ -43,6 +45,7 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
   /// Relance la liste au retour de l'écran de dépôt, pour que l'annonce
   /// tout juste créée y figure sans que l'utilisateur ait à rafraîchir.
   Future<void> _openAddProperty() async {
+    if (!await ensureOnline(context) || !mounted) return;
     await context.router.push(AddPropertyRoute());
     if (mounted) context.read<PropertyCubit>().load();
   }
@@ -83,16 +86,16 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
         children: [
           // L'encoche est déjà traitée par le `SafeArea` de l'écran hôte.
           PageHeader(
-            title: 'Mes biens',
+            title: 'home.my_properties'.tr(),
             actions: [
               AppIconButton(
                 icon: AppSectionIcons.residences,
-                label: 'Mes résidences',
+                label: 'property_tab.my_residences'.tr(),
                 bordered: true,
                 onPressed: _openResidences,
               ),
               AppButton(
-                label: 'Ajouter',
+                label: 'common.add'.tr(),
                 icon: LucideIcons.plus,
                 onPressed: _openAddProperty,
               ),
@@ -108,12 +111,10 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
                   onRetry: () => context.read<PropertyCubit>().load(),
                 ),
                 PropertyLoaded(:final items) when items.isEmpty => EmptyState(
-                  title: 'Aucun bien enregistré',
-                  message:
-                      'Déposez votre première annonce pour la voir '
-                      'apparaître ici.',
+                  title: 'property_tab.empty_title'.tr(),
+                  message: 'property_tab.empty_body'.tr(),
                   icon: AppSectionIcons.properties,
-                  actionLabel: 'Ajouter un bien',
+                  actionLabel: 'home_actions.add_property'.tr(),
                   actionIcon: LucideIcons.plus,
                   onAction: _openAddProperty,
                 ),
@@ -144,8 +145,8 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
           TextField(
             onChanged: (value) => setState(() => _query = value),
             style: context.text.bodyMedium,
-            decoration: const InputDecoration(
-              hintText: 'Rechercher par nom ou ville',
+            decoration: InputDecoration(
+              hintText: 'property_tab.search_hint'.tr(),
               prefixIcon: Icon(LucideIcons.search, size: 16),
             ),
           ),
@@ -154,9 +155,7 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
             children: [
               Expanded(
                 child: Text(
-                  items.length > 1
-                      ? '${items.length} biens'
-                      : '${items.length} bien',
+                  'property_tab.count'.plural(items.length),
                   style: context.text.bodyMedium!.copyWith(color: t.muted),
                 ),
               ),
@@ -168,10 +167,10 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
           ),
           const SizedBox(height: 12),
           if (items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 24),
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
               child: EmptyState(
-                message: 'Aucun bien ne correspond à cette recherche.',
+                message: 'property_tab.no_match'.tr(),
                 icon: LucideIcons.searchX,
               ),
             )
@@ -262,8 +261,8 @@ class _ViewToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          button(LucideIcons.layoutGrid, 'Grille', isGrid, true),
-          button(LucideIcons.list, 'Liste', !isGrid, false),
+          button(LucideIcons.layoutGrid, 'property_tab.grid'.tr(), isGrid, true),
+          button(LucideIcons.list, 'property_tab.list'.tr(), !isGrid, false),
         ],
       ),
     );

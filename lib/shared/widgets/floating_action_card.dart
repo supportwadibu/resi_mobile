@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/resi_tokens.dart';
@@ -48,8 +49,8 @@ class FloatingActionCard extends StatelessWidget {
                   Divider(height: 1, color: context.tokens.border),
                 AppSheetAction(
                   icon: feature.icon,
-                  label: feature.label,
-                  description: feature.description,
+                  label: feature.label.tr(),
+                  description: feature.description?.tr(),
                   onTap: () => onSelect(feature.action),
                 ),
               ],

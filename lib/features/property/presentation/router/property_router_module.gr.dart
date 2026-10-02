@@ -139,10 +139,10 @@ class PropertyRoute extends _i5.PageRouteInfo<void> {
 class SuccessRoute extends _i5.PageRouteInfo<SuccessRouteArgs> {
   SuccessRoute({
     _i6.Key? key,
-    String title = 'Félicitations !',
-    String subtitle = 'Votre bien a été enregistré avec succès',
-    String buttonText = 'Voir mes biens',
-    String secondaryButtonText = 'Ajouter un autre bien',
+    String? title,
+    String? subtitle,
+    String? buttonText,
+    String? secondaryButtonText,
     int autoRedirectDuration = 5,
     _i6.VoidCallback? onPrimaryAction,
     _i6.VoidCallback? onSecondaryAction,
@@ -187,10 +187,10 @@ class SuccessRoute extends _i5.PageRouteInfo<SuccessRouteArgs> {
 class SuccessRouteArgs {
   const SuccessRouteArgs({
     this.key,
-    this.title = 'Félicitations !',
-    this.subtitle = 'Votre bien a été enregistré avec succès',
-    this.buttonText = 'Voir mes biens',
-    this.secondaryButtonText = 'Ajouter un autre bien',
+    this.title,
+    this.subtitle,
+    this.buttonText,
+    this.secondaryButtonText,
     this.autoRedirectDuration = 5,
     this.onPrimaryAction,
     this.onSecondaryAction,
@@ -198,13 +198,13 @@ class SuccessRouteArgs {
 
   final _i6.Key? key;
 
-  final String title;
+  final String? title;
 
-  final String subtitle;
+  final String? subtitle;
 
-  final String buttonText;
+  final String? buttonText;
 
-  final String secondaryButtonText;
+  final String? secondaryButtonText;
 
   final int autoRedirectDuration;
 

@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:typed_data';
 
-import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -10,9 +10,9 @@ import '../models/expense_model.dart';
 class ExpensePdfService {
   const ExpensePdfService();
 
-  static final _dateFormat = DateFormat('dd/MM/yyyy', 'fr');
-  static final _longDate = DateFormat('d MMMM y', 'fr');
-  static final _amountFormat = NumberFormat.decimalPattern('fr');
+  static DateFormat get _dateFormat => DateFormat('dd/MM/yyyy');
+  static DateFormat get _longDate => DateFormat('d MMMM y');
+  static NumberFormat get _amountFormat => NumberFormat.decimalPattern();
 
   String _fcfa(double amount) => '${_amountFormat.format(amount.round())} F';
 
@@ -28,7 +28,10 @@ class ExpensePdfService {
     );
 
     final stamp = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    await Printing.sharePdf(bytes: document, filename: 'depenses-$stamp.pdf');
+    await Printing.sharePdf(
+      bytes: document,
+      filename: 'expense.pdf_filename'.tr(args: [stamp]),
+    );
   }
 
   Future<Uint8List> build({
@@ -46,7 +49,12 @@ class ExpensePdfService {
         footer: (context) => pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Text(
-            'Page ${context.pageNumber} / ${context.pagesCount}',
+            'expense.pdf_page'.tr(
+              namedArgs: {
+                'current': '${context.pageNumber}',
+                'total': '${context.pagesCount}',
+              },
+            ),
             style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
           ),
         ),
@@ -72,16 +80,16 @@ class ExpensePdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'Rapport de dépenses',
+          'expense.pdf_title'.tr(),
           style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 4),
         pw.Text(
-          scopeLabel ?? 'Toutes les dépenses',
+          scopeLabel ?? 'expense.pdf_all'.tr(),
           style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
         ),
         pw.Text(
-          'Édité le ${_longDate.format(DateTime.now())}',
+          'expense.pdf_issued'.tr(args: [_longDate.format(DateTime.now())]),
           style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
         ),
         pw.SizedBox(height: 12),
@@ -105,7 +113,7 @@ class ExpensePdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                'Total des dépenses',
+                'expense.pdf_total'.tr(),
                 style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
@@ -125,7 +133,7 @@ class ExpensePdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text(
-                'Écritures',
+                'expense.pdf_entries'.tr(),
                 style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
@@ -151,12 +159,17 @@ class ExpensePdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'Répartition par catégorie',
+          'expense.pdf_breakdown'.tr(),
           style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 8),
         pw.TableHelper.fromTextArray(
-          headers: const ['Catégorie', 'Écritures', 'Montant', 'Part'],
+          headers: [
+            'expense.pdf_category'.tr(),
+            'expense.pdf_entries'.tr(),
+            'expense.pdf_amount'.tr(),
+            'expense.pdf_share'.tr(),
+          ],
           headerStyle: pw.TextStyle(
             fontSize: 9,
             fontWeight: pw.FontWeight.bold,
@@ -186,7 +199,7 @@ class ExpensePdfService {
   pw.Widget _detail(List<ExpenseModel> expenses) {
     if (expenses.isEmpty) {
       return pw.Text(
-        'Aucune dépense sur la période.',
+        'expense.pdf_none'.tr(),
         style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
       );
     }
@@ -195,12 +208,18 @@ class ExpensePdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'Détail',
+          'expense.pdf_detail'.tr(),
           style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 8),
         pw.TableHelper.fromTextArray(
-          headers: const ['Date', 'Bien', 'Catégorie', 'Note', 'Montant'],
+          headers: [
+            'expense.pdf_date'.tr(),
+            'expense.pdf_property'.tr(),
+            'expense.pdf_category'.tr(),
+            'expense.pdf_note'.tr(),
+            'expense.pdf_amount'.tr(),
+          ],
           headerStyle: pw.TextStyle(
             fontSize: 9,
             fontWeight: pw.FontWeight.bold,
@@ -219,7 +238,7 @@ class ExpensePdfService {
             for (final expense in expenses)
               [
                 _dateFormat.format(expense.spentAt),
-                expense.property?.title ?? 'Bien supprimé',
+                expense.property?.title ?? 'home.deleted_property'.tr(),
                 expense.category.label,
                 expense.note?.trim() ?? '',
                 _fcfa(expense.amount),

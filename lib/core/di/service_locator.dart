@@ -24,6 +24,7 @@ import 'package:resi_africa/features/rapport/data/repositories/rapport_repositor
 import 'package:resi_africa/features/expense/business_logic/expense_cubit.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_extension_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/sync_review_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/edit_reservation_cubit.dart';
 import 'package:resi_africa/features/reservation/data/models/reservation_model.dart';
 import 'package:resi_africa/features/reservation/business_logic/early_check_out_cubit.dart';
@@ -37,6 +38,7 @@ import 'package:resi_africa/features/property/business_logic/edit_property_cubit
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/data/repositories/property_repository.dart';
 import 'package:resi_africa/features/property/data/services/location_service.dart';
+import 'package:resi_africa/features/clients/business_logic/add_client_cubit.dart';
 import 'package:resi_africa/features/clients/business_logic/client_detail_cubit.dart';
 import 'package:resi_africa/features/clients/business_logic/clients_cubit.dart';
 import 'package:resi_africa/features/clients/data/repositories/clients_repository.dart';
@@ -59,6 +61,7 @@ import 'package:resi_africa/features/subscription/data/repositories/subscription
 
 import '../api/api_client.dart';
 import '../storage/app_database.dart';
+import '../sync/pending_action_sender.dart';
 import '../sync/sync_service.dart';
 import '../api/interceptors/auth_interceptor.dart';
 import '../api/interceptors/connectivity_interceptor.dart';
@@ -68,6 +71,14 @@ import '../api/interceptors/retry_interceptor.dart';
 import '../config/app_config.dart';
 import '../notifications/device_token_repository.dart';
 import '../notifications/push_notification_service.dart';
+import '../offline/http_cache_store.dart';
+import '../offline/offline_action_queue.dart';
+import '../offline/offline_cache_interceptor.dart';
+import '../offline/offline_prefetcher.dart';
+import '../offline/offline_status.dart';
+import '../offline/pending_action_store.dart';
+import '../offline/pending_overlay.dart';
+import '../offline/session_owner.dart';
 import '../router/app_router.dart';
 import '../session/session_role.dart';
 import '../storage/local_storage.dart';
@@ -127,7 +138,37 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerSingleton<ConnectivityInterceptor>(ConnectivityInterceptor(sl()));
   sl.registerSingleton<PlanSignals>(PlanSignals());
   sl.registerSingleton<PlanInterceptor>(PlanInterceptor(sl()));
-  sl.registerSingleton<Dio>(buildDioClient(config, sl(), sl(), sl(), sl()));
+
+  // ── Hors ligne ─────────────────────────────────────────────────────────────
+  // Singleton : le bandeau « hors ligne » et l'intercepteur partagent le même
+  // signal.
+  sl.registerSingleton<OfflineStatus>(OfflineStatus());
+  sl.registerSingleton<HttpCacheStore>(HttpCacheStore(sl<AppDatabase>()));
+  sl.registerSingleton<PendingActionStore>(
+    PendingActionStore(sl<AppDatabase>()),
+  );
+  sl.registerSingleton<OfflineCacheInterceptor>(
+    OfflineCacheInterceptor(
+      store: sl<HttpCacheStore>(),
+      status: sl<OfflineStatus>(),
+      isOffline: () async {
+        final results = await sl<Connectivity>().checkConnectivity();
+        return results.every((r) => r == ConnectivityResult.none);
+      },
+      sessionOwner: () async =>
+          jwtSubject(await sl<SecureStorage>().accessToken),
+      // Résolu à l'appel : le store des réservations est déclaré plus bas.
+      pendingSnapshot: () async => OverlaySnapshot(
+        actions: await sl<PendingActionStore>().all(),
+        pendingBookings: await sl<ReservationLocalStore>()
+            .pendingBookingsAsJson(),
+      ),
+    ),
+  );
+
+  sl.registerSingleton<Dio>(
+    buildDioClient(config, sl(), sl(), sl(), sl(), sl()),
+  );
 
   // ── Router ─────────────────────────────────────────────────────────────────
   sl.registerSingleton<AppRouter>(AppRouter());
@@ -173,6 +214,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
       sl<GoogleAuthService>(),
       sl<SessionRole>(),
       sl<AppDatabase>(),
+      sl<LocalStorage>(),
       // Résolus à l'appel : le service push dépend lui-même d'`AuthService`.
       onSignedIn: () => sl<PushNotificationService>().registerDevice(),
       beforeSignOut: () => sl<PushNotificationService>().unregisterDevice(),
@@ -206,6 +248,36 @@ Future<void> setupServiceLocator(AppConfig config) async {
       sl<ReservationRepository>(),
       sl<ClientsRepository>(),
       sl<Connectivity>(),
+      afterSync: () => sl<OfflinePrefetcher>().run(),
+      actions: sl<PendingActionStore>(),
+      sender: PendingActionSender(
+        sl<ReservationRepository>(),
+        sl<ClientsRepository>(),
+        sl<ExpenseRepository>(),
+      ),
+    ),
+  );
+
+  // Les cubits d'action y déposent ce qu'ils ne peuvent envoyer ; le bandeau
+  // de synchronisation compte aussitôt la saisie.
+  sl.registerLazySingleton(
+    () => OfflineActionQueue(
+      sl<PendingActionStore>(),
+      onQueued: () => sl<SyncService>().refreshCounters(),
+    ),
+  );
+
+  // Singleton : deux passes concurrentes doubleraient la consommation de
+  // données sans rien apporter.
+  sl.registerLazySingleton(
+    () => OfflinePrefetcher(
+      isOnline: () async {
+        final results = await sl<Connectivity>().checkConnectivity();
+        return results.any((r) => r != ConnectivityResult.none);
+      },
+      // La synchronisation démarre au lancement, session ouverte ou non :
+      // précharger sans jeton n'essuierait que des refus.
+      isSignedIn: () => sl<AuthService>().isLoggedIn(),
     ),
   );
 
@@ -240,19 +312,49 @@ Future<void> setupServiceLocator(AppConfig config) async {
       options: options ?? const ReservationListOptions(),
     ),
   );
-  sl.registerFactory(() => StayExtensionCubit(sl<ReservationRepository>()));
+  sl.registerFactory(
+    () => StayExtensionCubit(
+      sl<ReservationRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
   // La réservation à modifier est passée à la création : le formulaire part
   // de ses valeurs, et le cubit ne la relit pas.
   sl.registerFactoryParam<EditReservationCubit, ReservationModel, void>(
     (reservation, _) =>
-        EditReservationCubit(sl<ReservationRepository>(), reservation),
+        EditReservationCubit(
+          sl<ReservationRepository>(),
+          reservation,
+          queue: sl<OfflineActionQueue>(),
+        ),
   );
-  sl.registerFactory(() => StayCheckOutCubit(sl<ReservationRepository>()));
-  sl.registerFactory(() => EarlyCheckOutCubit(sl<ReservationRepository>()));
+  sl.registerFactory(
+    () => StayCheckOutCubit(
+      sl<ReservationRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
+  sl.registerFactory(
+    () => EarlyCheckOutCubit(
+      sl<ReservationRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
   sl.registerFactory(
     () => ClientsCubit(sl<ClientsRepository>(), sl<ReservationLocalStore>()),
   );
-  sl.registerFactory(() => ClientDetailCubit(sl<ClientsRepository>()));
+  sl.registerFactory(
+    () => ClientDetailCubit(
+      sl<ClientsRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
+  sl.registerFactory(
+    () => AddClientCubit(
+      sl<ClientsRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
   // Le mode est propre à chaque ouverture du formulaire : check-in immédiat ou
   // réservation future, choisi dans la boîte de dialogue d'entrée.
   sl.registerFactoryParam<AddReservationCubit, ReservationMode, void>(
@@ -265,7 +367,19 @@ Future<void> setupServiceLocator(AppConfig config) async {
     ),
   );
   sl.registerFactory(() => ExpenseCubit(sl<ExpenseRepository>()));
-  sl.registerFactory(() => AddExpenseCubit(sl<ExpenseRepository>()));
+  sl.registerFactory(
+    () => SyncReviewCubit(
+      sl<ReservationLocalStore>(),
+      sl<PendingActionStore>(),
+      sl<SyncService>(),
+    ),
+  );
+  sl.registerFactory(
+    () => AddExpenseCubit(
+      sl<ExpenseRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
   sl.registerFactory(() => ResidenceCubit(sl<ResidenceRepository>()));
   sl.registerFactory(
     () => ResidenceDetailCubit(

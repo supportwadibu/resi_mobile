@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/models/review_model.dart';
@@ -107,7 +108,7 @@ class AllReviewsList extends StatelessWidget {
       ),
     ];
 
-    if (selectedFilter != 'Tous') {
+    if (selectedFilter != 'reviews.all'.tr()) {
       int rating = int.parse(selectedFilter.split(' ')[0]);
       allReviews = allReviews
           .where((review) => review.rating == rating)

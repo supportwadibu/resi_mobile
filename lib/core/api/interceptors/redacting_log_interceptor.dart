@@ -7,13 +7,6 @@ import 'package:flutter/foundation.dart';
 class RedactingLogInterceptor extends Interceptor {
   const RedactingLogInterceptor();
 
-  static const _sensitiveHeaders = {
-    'authorization',
-    'cookie',
-    'set-cookie',
-    'x-api-key',
-  };
-
   static const _sensitiveFields = {
     'password',
     'password_confirmation',
@@ -41,34 +34,9 @@ class RedactingLogInterceptor extends Interceptor {
 
   bool get _enabled => kDebugMode;
 
-  @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (_enabled) {
-      debugPrint('→ ${options.method} ${options.uri}');
-      debugPrint('  headers: ${_redactHeaders(options.headers)}');
-
-      if (options.data != null) {
-        debugPrint('  body: ${_redactBody(options.data)}');
-      }
-    }
-
-    handler.next(options);
-  }
-
-  @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (_enabled) {
-      debugPrint(
-        '← ${response.statusCode} ${response.requestOptions.method} '
-        '${response.requestOptions.uri}',
-      );
-      if (response.data != null) {
-        debugPrint('  body: ${_redactBody(response.data)}');
-      }
-    }
-
-    handler.next(response);
-  }
+  // Seuls les échecs sont journalisés : chaque requête et chaque réponse
+  // réussie noyaient la console sans rien apprendre. Une erreur, elle, l'est
+  // dans `onError`, avec le corps de la réponse.
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
@@ -83,15 +51,6 @@ class RedactingLogInterceptor extends Interceptor {
     }
 
     handler.next(err);
-  }
-
-  Map<String, dynamic> _redactHeaders(Map<String, dynamic> headers) {
-    return {
-      for (final entry in headers.entries)
-        entry.key: _sensitiveHeaders.contains(entry.key.toLowerCase())
-            ? _redacted
-            : entry.value,
-    };
   }
 
   /// Rend le corps lisible, valeurs sensibles masquées.

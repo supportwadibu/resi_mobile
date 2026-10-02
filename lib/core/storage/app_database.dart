@@ -39,7 +39,12 @@ class AppDatabase {
   /// 4 — `pending_clients` porte la pièce (nature, numéro) et l’identité du
   /// registre de police, lues au comptoir : sans elles, un client saisi hors
   /// ligne arrivait au carnet sans rien de ce que le registre exige.
-  static const _version = 4;
+  ///
+  /// 5 — `http_cache` garde la dernière réponse de chaque lecture, pour que
+  /// tout écran déjà ouvert en ligne s'affiche hors ligne ; `pending_actions`
+  /// et `local_refs` étendent la file aux autres actions du comptoir
+  /// (départ, prolongation, fiche client, dépense).
+  static const _version = 5;
 
   /// Version courante du schéma, lue par les tests de migration.
   @visibleForTesting
@@ -181,7 +186,55 @@ class AppDatabase {
       'ON pending_bookings (sync_status, created_at)',
     );
 
+    _createV5Tables(batch);
+
     await batch.commit(noResult: true);
+  }
+
+  /// Tables apparues en version 5, partagées par la création et la migration
+  /// pour qu'un appareil migré ait exactement le schéma d'une installation
+  /// neuve.
+  static void _createV5Tables(Batch batch) {
+    // Corps JSON tel que reçu : le repository le parse comme une réponse
+    // réseau, sans savoir d'où il vient.
+    batch.execute('''
+      CREATE TABLE http_cache (
+        cache_key  TEXT PRIMARY KEY,
+        path       TEXT NOT NULL,
+        body       TEXT NOT NULL,
+        cached_at  INTEGER NOT NULL
+      )
+    ''');
+
+    // Actions du comptoir saisies hors réseau, hors création de réservation
+    // qui garde sa propre file. `id` sert aussi d'identifiant d'idempotence.
+    batch.execute('''
+      CREATE TABLE pending_actions (
+        id             TEXT PRIMARY KEY,
+        type           TEXT NOT NULL,
+        target_ref     TEXT,
+        payload        TEXT NOT NULL,
+        file_paths     TEXT,
+        created_at     INTEGER NOT NULL,
+        state          TEXT NOT NULL DEFAULT 'pending',
+        error_code     TEXT,
+        error_message  TEXT
+      )
+    ''');
+
+    batch.execute(
+      'CREATE INDEX idx_pending_actions_queue '
+      'ON pending_actions (state, created_at)',
+    );
+
+    // Identifiant serveur d'un élément créé hors ligne : une action qui le
+    // vise par son identifiant local se résout ici au moment de l'envoi.
+    batch.execute('''
+      CREATE TABLE local_refs (
+        local_id   TEXT PRIMARY KEY,
+        remote_id  TEXT NOT NULL
+      )
+    ''');
   }
 
   /// Fait évoluer un schéma déjà installé.
@@ -237,6 +290,14 @@ class AppDatabase {
         'ALTER TABLE pending_clients ADD COLUMN identity_fields TEXT',
       );
     }
+
+    if (from < 5) {
+      // Tables nouvelles seulement : les files existantes restent en place,
+      // elles portent de l'argent encaissé.
+      final batch = db.batch();
+      _createV5Tables(batch);
+      await batch.commit(noResult: true);
+    }
   }
 
   /// Tables jetables : leur contenu se reconstruit d'un appel réseau.
@@ -244,13 +305,21 @@ class AppDatabase {
     'cached_properties',
     'cached_clients',
     'cached_bookings',
+    'http_cache',
   ];
 
   /// Tables de la file hors ligne, à ne vider qu'à la déconnexion.
   ///
   /// `pending_clients` suit `pending_bookings` : la clé étrangère les lie, et
   /// garder les clients sans leurs réservations n'aurait aucun sens.
-  static const _queueTables = ['pending_bookings', 'pending_clients'];
+  /// `local_refs` suit la file : sans elle, une action visant un élément créé
+  /// hors ligne ne saurait plus où partir.
+  static const _queueTables = [
+    'pending_bookings',
+    'pending_clients',
+    'pending_actions',
+    'local_refs',
+  ];
 
   /// Vide les caches et la file — à la déconnexion.
   ///

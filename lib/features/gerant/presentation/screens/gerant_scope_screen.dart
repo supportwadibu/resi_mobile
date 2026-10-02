@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
@@ -52,7 +53,7 @@ class _GerantScopeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppTopBar(title: 'Logements confiés'),
+      appBar: AppTopBar(title: 'gerant.assigned_units'.tr()),
       body: BlocBuilder<GerantScopeCubit, GerantScopeState>(
         builder: (context, state) => switch (state) {
           GerantScopeInitial() ||
@@ -66,11 +67,9 @@ class _GerantScopeView extends StatelessWidget {
                 context.read<GerantScopeCubit>().load(gerantId: gerantId),
           ),
           GerantScopeLoaded(:final totalCount) when totalCount == 0 =>
-            const EmptyState(
+            EmptyState(
               icon: LucideIcons.doorOpen,
-              message:
-                  'Vous n’avez aucun logement à confier. Ajoutez un bien '
-                  'avant de composer un périmètre.',
+              message: 'gerant.no_unit_owned'.tr(),
             ),
           GerantScopeLoaded() => _ScopeBody(
             state: state,
@@ -124,7 +123,7 @@ class _ScopeBody extends StatelessWidget {
           ),
         ),
         AppBottomActionBar(
-          primaryLabel: 'Enregistrer',
+          primaryLabel: 'common.save'.tr(),
           isLoading: state.isSaving,
           onPrimary: state.isSaving ? null : () => _save(context),
         ),
@@ -142,7 +141,7 @@ class _ScopeBody extends StatelessWidget {
       return;
     }
 
-    AppToast.success('Périmètre enregistré');
+    AppToast.success('gerant.scope_saved'.tr());
     router.maybePop();
   }
 }
@@ -173,15 +172,24 @@ class ScopeSummary extends StatelessWidget {
       icon: isEmpty ? LucideIcons.info : LucideIcons.doorOpen,
       tone: isEmpty ? AppAccent.amber : AppAccent.blue,
       title: gerantName == null
-          ? '$selectedCount logement${selectedCount > 1 ? 's' : ''} '
-                'sur $totalCount'
-          : '$selectedCount logement${selectedCount > 1 ? 's' : ''} '
-                'sur $totalCount confié${selectedCount > 1 ? 's' : ''} '
-                'à $gerantName',
+          ? 'gerant.scope_count'.plural(
+              selectedCount,
+              namedArgs: {
+                'selected': '$selectedCount',
+                'total': '$totalCount',
+              },
+            )
+          : 'gerant.scope_count_named'.plural(
+              selectedCount,
+              namedArgs: {
+                'selected': '$selectedCount',
+                'total': '$totalCount',
+                'name': gerantName!,
+              },
+            ),
       message: isEmpty
-          ? 'Sans logement, le gérant se connecte mais ne voit rien.'
-          : 'Il encaisse les réservations et suit les dépenses de ces '
-                'logements seulement.',
+          ? 'gerant.scope_empty'.tr()
+          : 'gerant.scope_body'.tr(),
     );
   }
 }

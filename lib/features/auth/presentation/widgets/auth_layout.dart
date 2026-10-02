@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -65,7 +66,7 @@ class AuthLayout extends StatelessWidget {
                             children: [
                               if (onBack != null) ...[
                                 Tooltip(
-                                  message: 'Retour',
+                                  message: 'common.back'.tr(),
                                   child: InkWell(
                                     onTap: onBack,
                                     child: Padding(
@@ -85,15 +86,14 @@ class AuthLayout extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            'Toute votre gestion locative, depuis votre '
-                            'téléphone.',
+                            'auth.tagline'.tr(),
                             style: context.text.titleLarge!.copyWith(
                               color: t.onOverlay,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Réservations, clients, dépenses et revenus.',
+                            'auth.tagline_sub'.tr(),
                             style: context.text.bodyMedium!.copyWith(
                               color: t.onOverlay.withValues(alpha: 0.75),
                             ),
@@ -173,7 +173,7 @@ class OrDivider extends StatelessWidget {
         const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('ou', style: context.text.bodySmall),
+          child: Text('auth.or'.tr(), style: context.text.bodySmall),
         ),
         const Expanded(child: Divider()),
       ],

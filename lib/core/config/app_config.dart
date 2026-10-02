@@ -53,10 +53,9 @@ class AppConfig {
     defaultValue: 'https://resi.africa',
   );
 
-  static const String supportHours = String.fromEnvironment(
-    'SUPPORT_HOURS',
-    defaultValue: 'Lun – Sam, 8h – 20h',
-  );
+  /// Vide par défaut : l'écran affiche alors les horaires traduits
+  /// (`support.hours`). Fournie au build, la valeur s'affiche telle quelle.
+  static const String supportHours = String.fromEnvironment('SUPPORT_HOURS');
 
   bool get isProduction => flavor == AppFlavor.prod;
   bool get isDevelopment => flavor == AppFlavor.dev;

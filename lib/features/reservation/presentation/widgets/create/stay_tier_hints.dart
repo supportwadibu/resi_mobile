@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -46,7 +47,10 @@ class StayTierHints extends StatelessWidget {
             children: [
               Icon(LucideIcons.tag, size: 14, color: context.tokens.muted),
               const SizedBox(width: 8),
-              Text('Remises sur la durée', style: context.text.bodySmall),
+              Text(
+                'booking_form.length_discounts'.tr(),
+                style: context.text.bodySmall,
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -98,7 +102,7 @@ class _TierChip extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Text(
-            'dès ${tier.minDays} j',
+            'booking_form.from_days_short'.tr(args: ['${tier.minDays}']),
             style: context.text.labelMedium!.copyWith(
               color: active
                   ? context.tokens.accentGreen

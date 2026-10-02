@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -7,6 +8,7 @@ import 'package:resi_africa/shared/widgets/page_header.dart';
 import '../../data/models/client_model.dart';
 import 'client_avatar.dart';
 import 'client_status_badge.dart';
+import 'package:resi_africa/shared/widgets/sync_state_badge.dart';
 
 /// Ligne du carnet : initiales, nom, statut, téléphone, séjours et total
 /// réglé.
@@ -45,6 +47,10 @@ class ClientCard extends StatelessWidget {
                     ClientStatusBadge(status: client.status),
                   ],
                 ),
+                if (client.syncState case final syncState?) ...[
+                  const SizedBox(height: 4),
+                  SyncStateBadge(state: syncState),
+                ],
                 const SizedBox(height: 2),
                 // Le téléphone plutôt qu'une résidence : il identifie le
                 // client, là où un habitué a séjourné dans plusieurs biens.
@@ -58,8 +64,9 @@ class ClientCard extends StatelessWidget {
                   children: [
                     _Stat(
                       icon: LucideIcons.calendar,
-                      label:
-                          '${client.stats.totalStays} séjour${client.stats.totalStays > 1 ? 's' : ''}',
+                      label: 'clients.stays_count'.plural(
+                        client.stats.totalStays,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     _Stat(
@@ -73,7 +80,7 @@ class ClientCard extends StatelessWidget {
                       Icon(LucideIcons.idCard, size: 12, color: t.accentAmber),
                       const SizedBox(width: 4),
                       Text(
-                        'Pièces à compléter',
+                        'clients.documents_to_complete'.tr(),
                         style: context.text.bodySmall!.copyWith(
                           color: t.accentAmber,
                         ),

@@ -65,7 +65,10 @@ class _PropertyManagerProfileViewState
 
   final ImagePicker _imagePicker = ImagePicker();
 
-  static const _stepTitles = ['Informations personnelles', 'Pièce d’identité'];
+  static const _stepTitles = [
+    'owner_profile.step_personal',
+    'owner_profile.step_document',
+  ];
 
   /// Marché principal de l'application : le pays est présélectionné pour
   /// éviter une manipulation à la très grande majorité des utilisateurs.
@@ -179,7 +182,9 @@ class _PropertyManagerProfileViewState
     final source = await showAppSheet<ImageSource>(
       context: context,
       builder: (sheetContext) => AppSheet(
-        title: isFront ? 'Recto de la pièce' : 'Verso de la pièce',
+        title: isFront
+            ? 'owner_profile.front'.tr()
+            : 'owner_profile.back'.tr(),
         description: 'ocr.owner_hint'.tr(),
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
@@ -276,15 +281,15 @@ class _PropertyManagerProfileViewState
     if (!_documentFormKey.currentState!.validate()) return;
 
     if (_documentType == null) {
-      _showMessage('Sélectionnez le type de pièce d’identité.');
+      _showMessage('owner_profile.select_type'.tr());
       return;
     }
     if (!_hasFront) {
-      _showMessage('Ajoutez le recto de votre pièce d’identité.');
+      _showMessage('owner_profile.add_front'.tr());
       return;
     }
     if (_backRequired && !_hasBack) {
-      _showMessage('Ajoutez le verso de votre pièce d’identité.');
+      _showMessage('owner_profile.add_back'.tr());
       return;
     }
 
@@ -338,7 +343,7 @@ class _PropertyManagerProfileViewState
           case OwnerProfileSubmitted(:final profile):
             setState(() => _profile = profile);
             AppToast.success(
-              'Dossier transmis. Vous serez informé de sa validation.',
+              'owner_profile.submitted'.tr(),
               context: context,
             );
             _continue();
@@ -361,7 +366,7 @@ class _PropertyManagerProfileViewState
               child: Column(
                 children: [
                   AppStepHeader(
-                    title: _stepTitles.first,
+                    title: _stepTitles.first.tr(),
                     onBack: widget.isOnboarding ? null : _back,
                     currentStep: 0,
                     totalSteps: _stepTitles.length,
@@ -389,7 +394,7 @@ class _PropertyManagerProfileViewState
               child: Column(
                 children: [
                   AppStepHeader(
-                    title: _stepTitles[_currentStep],
+                    title: _stepTitles[_currentStep].tr(),
                     onBack: widget.isOnboarding && _isFirstStep ? null : _back,
                     currentStep: _currentStep,
                     totalSteps: _stepTitles.length,
@@ -405,20 +410,20 @@ class _PropertyManagerProfileViewState
                   AppBottomActionBar(
                     primaryLabel: _isLastStep
                         ? (widget.isOnboarding
-                              ? 'Envoyer mon dossier'
-                              : 'Enregistrer')
-                        : 'Suivant',
+                              ? 'owner_profile.send'.tr()
+                              : 'common.save'.tr())
+                        : 'owner_profile.next'.tr(),
                     onPrimary: _next,
                     primaryIcon: _isLastStep
                         ? LucideIcons.check
                         : LucideIcons.arrowRight,
-                    secondaryLabel: _isFirstStep ? null : 'Retour',
+                    secondaryLabel: _isFirstStep ? null : 'common.back'.tr(),
                     onSecondary: _isFirstStep ? null : _back,
                     secondaryIcon: LucideIcons.chevronLeft,
                     isLoading: isSubmitting,
                     footer: widget.isOnboarding
                         ? AppButton(
-                            label: 'Plus tard',
+                            label: 'owner_profile.later'.tr(),
                             variant: AppButtonVariant.ghost,
                             onPressed: isSubmitting ? null : _continue,
                           )
