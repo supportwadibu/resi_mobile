@@ -93,6 +93,8 @@
     "extend_alone": "Extend stay",
     "confirm_title": "Did the guest use the full stay?",
     "confirm_body": "Yes: the stay is marked as completed, dates and amount unchanged. No: check-out and amount are brought back to actual use, the difference is refunded.",
+    "overdue_title": "End the stay?",
+    "overdue_body": "The planned check-out has passed: the stay is marked as completed, dates and amount unchanged.",
     "success": "Stay ended",
     "answer_full": "Yes, full stay",
     "answer_early": "No, left early",
@@ -196,6 +198,13 @@
     "agreed_label": "Agreed stay price",
     "agreed_hint": "Rate: {} F",
     "agreed_helper": "Total price of the stay. Leave empty to apply the rate. Money already paid goes in the deposit.",
+    "agreed_unit_label": {
+      "full_day": "Agreed price per day",
+      "half_day": "Agreed price per half-day",
+      "passage": "Agreed price per short stay"
+    },
+    "agreed_unit_helper": "Price negotiated with the guest; the total follows the length of stay. Leave empty to apply the rate. Money already paid goes in the deposit.",
+    "agreed_breakdown": "{count} d × {price} F",
     "suspicious": "This price is far below the rate ({} F). If it is a first payment, enter it as the deposit and leave the price empty.",
     "deposit_label": "Deposit paid",
     "deposit_hint": "Optional",

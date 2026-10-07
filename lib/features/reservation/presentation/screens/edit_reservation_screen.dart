@@ -74,7 +74,9 @@ class _EditReservationViewState extends State<_EditReservationView> {
     super.initState();
     final state = context.read<EditReservationCubit>().state;
     _agreedController = TextEditingController(
-      text: state.agreedAmount == null ? '' : _digits(state.agreedAmount!),
+      text: state.agreedUnitPrice == null
+          ? ''
+          : _digits(state.agreedUnitPrice!),
     );
     _depositController = TextEditingController(
       text: state.depositAmount > 0 ? _digits(state.depositAmount) : '',
@@ -223,14 +225,18 @@ class _EditReservationViewState extends State<_EditReservationView> {
                   ReservationSectionTitle(title: 'booking_edit.payment'.tr()),
                   _Summary(state: state),
                   const SizedBox(height: 12),
+                  // Saisi à l'unité, comme à la création : le total suit les
+                  // dates modifiées sans ressaisie.
                   _AmountField(
                     controller: _agreedController,
-                    label: 'booking_amounts.agreed_label'.tr(),
+                    label:
+                        'booking_amounts.agreed_unit_label.${state.stayType.code}'
+                            .tr(),
                     hint: 'booking_amounts.agreed_hint'.tr(
-                      args: [_digits(state.expectedAmount)],
+                      args: [_digits(state.quote.unitPrice)],
                     ),
-                    helper: 'booking_amounts.agreed_helper'.tr(),
-                    onChanged: (v) => cubit.setAgreedAmount(_parse(v)),
+                    helper: 'booking_amounts.agreed_unit_helper'.tr(),
+                    onChanged: (v) => cubit.setAgreedUnitPrice(_parse(v)),
                   ),
                   if (state.looksLikePayment) ...[
                     const SizedBox(height: 8),
@@ -238,7 +244,7 @@ class _EditReservationViewState extends State<_EditReservationView> {
                       icon: LucideIcons.triangleAlert,
                       tone: AppAccent.amber,
                       message: 'booking_amounts.suspicious'.tr(
-                        args: [_digits(state.expectedAmount)],
+                        args: [_digits(state.quote.unitPrice)],
                       ),
                     ),
                   ],
@@ -323,6 +329,19 @@ class _Summary extends StatelessWidget {
             _Row(
               label: 'booking_amounts.negotiated_discount'.tr(),
               value: state.negotiatedDiscount,
+            ),
+          ],
+          if (state.agreedUnitPrice != null &&
+              state.stayType == StayType.fullDay) ...[
+            const SizedBox(height: 8),
+            _Row(
+              label: 'booking_amounts.agreed_breakdown'.tr(
+                namedArgs: {
+                  'count': '${quote.daysCount}',
+                  'price': _digits(state.agreedUnitPrice!),
+                },
+              ),
+              value: state.effectiveAmount,
             ),
           ],
           const Divider(height: 20),

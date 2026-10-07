@@ -22,6 +22,7 @@ import '../../../property/business_logic/property_cubit.dart';
 import '../../business_logic/add_reservation_cubit.dart';
 import '../../business_logic/agreed_price.dart';
 import '../../business_logic/add_reservation_state.dart';
+import '../../data/models/reservation_model.dart';
 import '../widgets/create/client_field_group.dart';
 import '../widgets/create/date_time_field.dart';
 import '../widgets/create/property_selector.dart';
@@ -254,26 +255,29 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 // « Prix convenu » et non « Montant reçu » : le serveur en fait
                 // le montant du séjour, et l'écart au tarif une remise. Libellé
                 // « reçu », il recueillait l'argent versé ce jour-là — un
-                // séjour de onze jours enregistré à 15 000 F.
+                // séjour de onze jours enregistré à 15 000 F. Saisi à l'unité,
+                // le total se calcule seul et suit les dates.
                 _AmountField(
                   controller: _amountController,
-                  label: 'booking_amounts.agreed_label'.tr(),
+                  label:
+                      'booking_amounts.agreed_unit_label.${state.stayType.code}'
+                          .tr(),
                   hint: 'booking_amounts.agreed_hint'.tr(
-                    args: [_money(state.expectedAmount)],
+                    args: [_money(state.unitPrice)],
                   ),
-                  helper: 'booking_amounts.agreed_helper'.tr(),
-                  onChanged: (v) => cubit.setReceivedAmount(_parse(v)),
+                  helper: 'booking_amounts.agreed_unit_helper'.tr(),
+                  onChanged: (v) => cubit.setAgreedUnitPrice(_parse(v)),
                 ),
                 if (AgreedPrice.looksLikePayment(
-                  expected: state.expectedAmount,
-                  agreed: state.receivedAmount,
+                  expected: state.unitPrice,
+                  agreed: state.agreedUnitPrice,
                 )) ...[
                   const SizedBox(height: 8),
                   AppCallout(
                     icon: LucideIcons.triangleAlert,
                     tone: AppAccent.amber,
                     message: 'booking_amounts.suspicious'.tr(
-                      args: [_money(state.expectedAmount)],
+                      args: [_money(state.unitPrice)],
                     ),
                   ),
                 ],
@@ -406,14 +410,26 @@ class _AmountSummary extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 8),
+            // Le calcul est montré : c'est lui qui rend le total vérifiable
+            // d'un coup d'œil, client en face.
             _Row(
-              label: 'booking_amounts.agreed_label'.tr(),
+              label: state.stayType == StayType.fullDay
+                  ? 'booking_amounts.agreed_breakdown'.tr(
+                      namedArgs: {
+                        'count': '${state.daysCount}',
+                        'price': _money(state.agreedUnitPrice ?? 0),
+                      },
+                    )
+                  : 'booking_amounts.agreed_label'.tr(),
               value: state.effectiveAmount,
             ),
           ],
           if (state.depositAmount > 0) ...[
             const SizedBox(height: 8),
-            _Row(label: 'booking_form.deposit'.tr(), value: state.depositAmount),
+            _Row(
+              label: 'booking_form.deposit'.tr(),
+              value: state.depositAmount,
+            ),
             const Divider(height: 20),
             _Row(
               label: 'booking_amounts.balance_due'.tr(),

@@ -52,7 +52,8 @@ void main() {
   group('AddReservationState — commission annoncée', () {
     const base = AddReservationState(
       mode: ReservationMode.checkIn,
-      receivedAmount: 45000,
+      // Sans dates, le séjour vaut une unité : le total est le prix unitaire.
+      agreedUnitPrice: 45000,
     );
 
     test('10 % du montant convenu, arrondi au franc', () {

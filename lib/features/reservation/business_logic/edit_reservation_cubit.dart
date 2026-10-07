@@ -67,10 +67,11 @@ class EditReservationCubit extends Cubit<EditReservationState> {
 
   void setCheckOut(DateTime value) => emit(state.copyWith(checkOutAt: value));
 
-  void setAgreedAmount(double? value) => emit(
+  /// Prix convenu par unité : le total se recalcule avec les dates.
+  void setAgreedUnitPrice(double? value) => emit(
     value == null
-        ? state.copyWith(clearAgreedAmount: true)
-        : state.copyWith(agreedAmount: value),
+        ? state.copyWith(clearAgreedUnitPrice: true)
+        : state.copyWith(agreedUnitPrice: value),
   );
 
   void setDepositAmount(double value) =>

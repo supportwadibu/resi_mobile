@@ -242,10 +242,11 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
   // ── Montants ──────────────────────────────────────────────────────────────
 
-  void setReceivedAmount(double? value) => emit(
+  /// Prix convenu par unité : le total se recalcule avec les dates.
+  void setAgreedUnitPrice(double? value) => emit(
     value == null
-        ? state.copyWith(clearReceivedAmount: true)
-        : state.copyWith(receivedAmount: value),
+        ? state.copyWith(clearAgreedUnitPrice: true)
+        : state.copyWith(agreedUnitPrice: value),
   );
 
   void setDepositAmount(double value) =>
@@ -386,8 +387,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         emit(
           state.copyWith(
             status: AddReservationStatus.failure,
-            errorMessage:
-                'booking_form.local_save_failed'.tr(),
+            errorMessage: 'booking_form.local_save_failed'.tr(),
           ),
         );
       }

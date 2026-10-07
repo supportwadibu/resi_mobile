@@ -93,6 +93,8 @@
     "extend_alone": "Prolonger le séjour",
     "confirm_title": "Le client a-t-il utilisé tout son séjour ?",
     "confirm_body": "Oui : le séjour passe en terminé, dates et montant inchangés. Non : la sortie et le montant sont ramenés à l'usage réel, l'écart est remboursé.",
+    "overdue_title": "Terminer le séjour ?",
+    "overdue_body": "La sortie prévue est passée : le séjour passe en terminé, dates et montant inchangés.",
     "success": "Séjour terminé",
     "answer_full": "Oui, séjour complet",
     "answer_early": "Non, départ anticipé",
@@ -196,6 +198,13 @@
     "agreed_label": "Prix convenu du séjour",
     "agreed_hint": "Tarif : {} F",
     "agreed_helper": "Prix total du séjour. Laissez vide pour appliquer le tarif. L'argent déjà versé se saisit dans l'acompte.",
+    "agreed_unit_label": {
+      "full_day": "Prix convenu par jour",
+      "half_day": "Prix convenu par demi-journée",
+      "passage": "Prix convenu par passage"
+    },
+    "agreed_unit_helper": "Prix négocié avec le client ; le total se calcule sur la durée du séjour. Laissez vide pour appliquer le tarif. L'argent déjà versé se saisit dans l'acompte.",
+    "agreed_breakdown": "{count} j × {price} F",
     "suspicious": "Ce prix est très inférieur au tarif ({} F). S'il s'agit d'un premier versement, saisissez-le dans l'acompte et laissez le prix vide.",
     "deposit_label": "Acompte versé",
     "deposit_hint": "Facultatif",

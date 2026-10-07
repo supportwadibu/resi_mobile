@@ -35,6 +35,7 @@ AppFailure _fromResponse(Response? response) {
     422 => AppFailure.validation(
       errors: parseValidationErrors(data),
       code: businessCode,
+      message: _parseMessage(data),
     ),
     // `serverError` porte le code : la synchronisation hors ligne distingue un
     // 409 (periode deja reservee, a arbitrer) d'une panne a reessayer.

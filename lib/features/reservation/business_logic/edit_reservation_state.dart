@@ -31,7 +31,7 @@ class EditReservationState {
     required this.stayType,
     required this.checkInAt,
     required this.checkOutAt,
-    this.agreedAmount,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
     this.message = '',
     this.status = EditReservationStatus.idle,
@@ -47,6 +47,11 @@ class EditReservationState {
   /// l'ancien montant ferait facturer trois jours au prix de deux. Un prix
   /// négocié, lui, est repris tel quel — y compris un prix aberrant, que
   /// l'avertissement signale alors à la réouverture.
+  ///
+  /// Il est ramené à l'unité sans arrondi : 100 000 F sur trois jours donnent
+  /// 33 333,33 F, et le total recalculé retombe sur 100 000 F tant que les
+  /// dates ne bougent pas. Arrondir ici décalerait d'un franc un séjour que
+  /// le propriétaire n'a fait qu'ouvrir.
   factory EditReservationState.from(ReservationModel reservation) {
     return EditReservationState(
       original: reservation,
@@ -57,8 +62,9 @@ class EditReservationState {
       // affichent heures et jours tels que le propriétaire les a choisis.
       checkInAt: reservation.checkInAt.toLocal(),
       checkOutAt: reservation.checkOutAt.toLocal(),
-      agreedAmount: reservation.discountAmount > 0
-          ? reservation.totalAmount
+      agreedUnitPrice: reservation.discountAmount > 0
+          ? reservation.totalAmount /
+                (reservation.daysCount > 0 ? reservation.daysCount : 1)
           : null,
       depositAmount: reservation.depositAmount,
       message: reservation.message ?? '',
@@ -74,8 +80,8 @@ class EditReservationState {
   final DateTime checkInAt;
   final DateTime checkOutAt;
 
-  /// Prix convenu du séjour. `null` : le tarif s'applique.
-  final double? agreedAmount;
+  /// Prix convenu par unité du type de séjour. `null` : le tarif s'applique.
+  final double? agreedUnitPrice;
   final double depositAmount;
   final String message;
 
@@ -98,13 +104,25 @@ class EditReservationState {
 
   double get expectedAmount => quote.expectedAmount;
 
+  /// Prix convenu du séjour : prix unitaire convenu × unités facturées.
+  /// Suit les dates — même règle que la prolongation côté serveur
+  /// (`extendedAgreedAmount`), qui facture les jours ajoutés au tarif
+  /// journalier convenu.
+  double? get agreedAmount {
+    final unit = agreedUnitPrice;
+    if (unit == null) return null;
+    return (unit * quote.daysCount).roundToDouble();
+  }
+
   double get effectiveAmount => agreedAmount ?? expectedAmount;
 
   double get negotiatedDiscount =>
       AgreedPrice.discount(expected: expectedAmount, agreed: agreedAmount);
 
-  bool get looksLikePayment =>
-      AgreedPrice.looksLikePayment(expected: expectedAmount, agreed: agreedAmount);
+  bool get looksLikePayment => AgreedPrice.looksLikePayment(
+    expected: quote.unitPrice,
+    agreed: agreedUnitPrice,
+  );
 
   /// Reste dû après l'acompte, jamais négatif.
   double get balanceDue =>
@@ -124,8 +142,8 @@ class EditReservationState {
     StayType? stayType,
     DateTime? checkInAt,
     DateTime? checkOutAt,
-    double? agreedAmount,
-    bool clearAgreedAmount = false,
+    double? agreedUnitPrice,
+    bool clearAgreedUnitPrice = false,
     double? depositAmount,
     String? message,
     EditReservationStatus? status,
@@ -141,9 +159,9 @@ class EditReservationState {
       stayType: stayType ?? this.stayType,
       checkInAt: checkInAt ?? this.checkInAt,
       checkOutAt: checkOutAt ?? this.checkOutAt,
-      agreedAmount: clearAgreedAmount
+      agreedUnitPrice: clearAgreedUnitPrice
           ? null
-          : (agreedAmount ?? this.agreedAmount),
+          : (agreedUnitPrice ?? this.agreedUnitPrice),
       depositAmount: depositAmount ?? this.depositAmount,
       message: message ?? this.message,
       status: status ?? this.status,

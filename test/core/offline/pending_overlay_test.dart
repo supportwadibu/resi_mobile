@@ -165,11 +165,7 @@ void main() {
               state: PendingActionState.conflict,
               payload: {'check_out_at': '2026-10-06T12:00:00.000Z'},
             ),
-            _action(
-              PendingActionType.bookingCheckOut,
-              target: 'b1',
-              id: 'a2',
-            ),
+            _action(PendingActionType.bookingCheckOut, target: 'b1', id: 'a2'),
           ],
         ),
       );
@@ -186,7 +182,10 @@ void main() {
         },
         snapshot: OverlaySnapshot(
           pendingBookings: [
-            {..._booking('local-r1', status: 'confirmed'), 'sync_status': 'pending'},
+            {
+              ..._booking('local-r1', status: 'confirmed'),
+              'sync_status': 'pending',
+            },
           ],
           actions: [_action(PendingActionType.bookingCheckOut, target: 'b1')],
         ),
@@ -297,6 +296,40 @@ void main() {
       expect(added['property'], isA<Map<String, dynamic>>());
       expect(added.containsKey('_display'), isFalse);
       expect(((summary as Map)['data'] as Map)['total'], 6000);
+    });
+
+    test('la ventilation par catégorie somme au total affiché', () {
+      final summary = applyOverlay(
+        path: '/api/v1/proprio/expenses/summary',
+        query: const {},
+        data: const {
+          'data': {
+            'total': 1000,
+            'count': 1,
+            'by_category': [
+              {
+                'category': 'water',
+                'amount': 1000,
+                'count': 1,
+                'share_percent': 100,
+              },
+            ],
+          },
+        },
+        snapshot: snapshot,
+      );
+
+      final data = (summary as Map)['data'] as Map;
+      final buckets = (data['by_category'] as List).cast<Map>();
+
+      expect(data['total'], 6000);
+      expect(buckets.map((b) => b['category']), ['cleaning', 'water']);
+      expect(
+        buckets.fold<num>(0, (sum, b) => sum + (b['amount'] as num)),
+        6000,
+      );
+      expect(buckets.first['share_percent'], 83);
+      expect(buckets.last['share_percent'], 17);
     });
 
     test('une dépense hors de la période filtrée n’apparaît pas', () {

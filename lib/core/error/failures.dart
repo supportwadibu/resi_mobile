@@ -136,6 +136,7 @@ class AppFailure implements Exception {
           return AppFailure.validation(
             errors: parseValidationErrors(data),
             code: businessCode,
+            message: data is Map ? data['message'] as String? : null,
           );
         }
 
@@ -227,10 +228,18 @@ class AppFailure implements Exception {
   /// un 422 comme une coupure reseau, mettait la saisie en file et affichait
   /// un ecran de succes — l'argent etait encaisse, la reservation n'existait
   /// nulle part, et chaque synchronisation rejouait le meme refus.
+  ///
+  /// [message] : explication d'un refus métier (`DomainError`), rédigée en
+  /// français par l'API. Sans lui, un code absent des traductions — une API
+  /// plus récente que l'application installée — tombait sur « Les
+  /// informations saisies ont été refusées », qui ne dit pas quoi corriger :
+  /// un départ anticipé refusé parce que la sortie prévue était déjà passée
+  /// s'affichait ainsi, sans issue pour le propriétaire.
   factory AppFailure.validation({
     required Map<String, List<String>> errors,
     int statusCode = 422,
     String? code,
+    String? message,
   }) => AppFailure._(
     // Les erreurs de champ viennent de VineJS, qui les rédige en anglais :
     // elles ne s'affichent que là où elles sont dans la langue de l'écran.
@@ -238,12 +247,13 @@ class AppFailure implements Exception {
     // message générique vaut mieux qu'une bulle vide ou dans une autre langue.
     userMessage: errors.isNotEmpty && !_isFrench
         ? errors.values.expand((e) => e).join('\n')
-        : localizedServerMessage(code, null) ??
+        : localizedServerMessage(code, message) ??
               'errors.validation_rejected'.tr(),
     debugMessage: 'HTTP $statusCode - $errors',
     statusCode: statusCode,
     code: code,
   );
+
   /// Refus dont le message est déjà rédigé dans la langue de l'application.
   ///
   /// Distinct de [AppFailure.validation], qui écarte en français les erreurs

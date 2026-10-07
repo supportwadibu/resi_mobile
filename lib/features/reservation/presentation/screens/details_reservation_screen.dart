@@ -83,14 +83,27 @@ class DetailsReservationScreen extends StatelessWidget {
   ///
   /// Un séjour complet ne change que de statut ; un départ anticipé ouvre la
   /// feuille qui ramène la période et le montant à l'usage réel.
+  ///
+  /// Une fois la sortie prévue passée, il n'y a plus de départ anticipé
+  /// possible — le serveur le refuse (`not_early_departure`) : la question
+  /// n'est pas posée, seule la clôture complète est proposée.
   Future<void> _confirmCheckOut(BuildContext context) async {
     final cubit = context.read<StayCheckOutCubit>();
+    final isOverdue = !DateTime.now().isBefore(reservation.checkOutAt);
 
     final fullStay = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('stay_checkout.confirm_title'.tr()),
-        content: Text('stay_checkout.confirm_body'.tr()),
+        title: Text(
+          isOverdue
+              ? 'stay_checkout.overdue_title'.tr()
+              : 'stay_checkout.confirm_title'.tr(),
+        ),
+        content: Text(
+          isOverdue
+              ? 'stay_checkout.overdue_body'.tr()
+              : 'stay_checkout.confirm_body'.tr(),
+        ),
         // Trois issues : fermer la boîte sans choisir (`null`) annule, et ne
         // doit pas valoir « non ». Les deux réponses s'empilent en pleine
         // largeur : côte à côte, leurs libellés ne tiennent pas.
@@ -100,17 +113,21 @@ class DetailsReservationScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AppButton(
-                label: 'stay_checkout.answer_full'.tr(),
+                label: isOverdue
+                    ? 'stay_checkout.action'.tr()
+                    : 'stay_checkout.answer_full'.tr(),
                 expand: true,
                 onPressed: () => Navigator.of(dialogContext).pop(true),
               ),
-              const SizedBox(height: 8),
-              AppButton(
-                label: 'stay_checkout.answer_early'.tr(),
-                variant: AppButtonVariant.secondary,
-                expand: true,
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-              ),
+              if (!isOverdue) ...[
+                const SizedBox(height: 8),
+                AppButton(
+                  label: 'stay_checkout.answer_early'.tr(),
+                  variant: AppButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
+              ],
               const SizedBox(height: 8),
               AppButton(
                 label: 'common.cancel'.tr(),
@@ -149,9 +166,7 @@ class DetailsReservationScreen extends StatelessWidget {
         // Sans `context` : la fiche se referme juste après, et le toast doit
         // survivre à sa disparition pour être lu sur la liste.
         AppToast.success(
-          queued
-              ? 'offline_queue.saved'.tr()
-              : 'stay_checkout.success'.tr(),
+          queued ? 'offline_queue.saved'.tr() : 'stay_checkout.success'.tr(),
         );
         // Même contrat que la prolongation : le `true` fait recharger la
         // liste, qui afficherait sinon le séjour comme encore actif.
@@ -230,8 +245,7 @@ class DetailsReservationScreen extends StatelessWidget {
   }
 
   /// Date longue : « 12 mai 2026 ».
-  static String _longDate(DateTime date) =>
-      DateFormat('d MMMM y').format(date);
+  static String _longDate(DateTime date) => DateFormat('d MMMM y').format(date);
 
   @override
   Widget build(BuildContext context) {

@@ -48,7 +48,7 @@ class AddReservationState {
     this.stayType = StayType.fullDay,
     this.checkInAt,
     this.checkOutAt,
-    this.receivedAmount,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
     this.message,
     this.status = AddReservationStatus.idle,
@@ -101,9 +101,26 @@ class AddReservationState {
   final DateTime? checkInAt;
   final DateTime? checkOutAt;
 
-  /// Montant convenu avec le client. `null` tant qu'il n'a pas été saisi : le
-  /// montant attendu s'applique alors.
-  final double? receivedAmount;
+  /// Prix convenu **par unité** du type de séjour — par jour, par
+  /// demi-journée ou par passage. `null` tant qu'il n'a pas été saisi : le
+  /// tarif s'applique alors.
+  ///
+  /// Saisi à l'unité et non au total : au comptoir, le prix se négocie « à
+  /// tant la nuit ». Demander le total faisait multiplier de tête, et un
+  /// changement de dates laissait l'ancien total en place.
+  final double? agreedUnitPrice;
+
+  /// Montant convenu du séjour : prix unitaire convenu × unités facturées,
+  /// arrondi au franc comme au serveur. Suit les dates sans ressaisie.
+  ///
+  /// La remise de durée de la grille ne s'y ajoute pas : un prix négocié la
+  /// remplace, il ne la cumule pas.
+  double? get receivedAmount {
+    final unit = agreedUnitPrice;
+    if (unit == null) return null;
+    return (unit * daysCount).roundToDouble();
+  }
+
   final double depositAmount;
   final String? message;
 
@@ -200,8 +217,8 @@ class AddReservationState {
     StayType? stayType,
     DateTime? checkInAt,
     DateTime? checkOutAt,
-    double? receivedAmount,
-    bool clearReceivedAmount = false,
+    double? agreedUnitPrice,
+    bool clearAgreedUnitPrice = false,
     double? depositAmount,
     String? message,
     AddReservationStatus? status,
@@ -239,9 +256,9 @@ class AddReservationState {
       stayType: stayType ?? this.stayType,
       checkInAt: checkInAt ?? this.checkInAt,
       checkOutAt: checkOutAt ?? this.checkOutAt,
-      receivedAmount: clearReceivedAmount
+      agreedUnitPrice: clearAgreedUnitPrice
           ? null
-          : (receivedAmount ?? this.receivedAmount),
+          : (agreedUnitPrice ?? this.agreedUnitPrice),
       depositAmount: depositAmount ?? this.depositAmount,
       message: message ?? this.message,
       status: status ?? this.status,

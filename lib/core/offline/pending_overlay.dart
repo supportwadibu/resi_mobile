@@ -380,8 +380,55 @@ Map<String, dynamic> _expenseSummary(
       ...summary,
       'total': total,
       'count': ((summary['count'] as num?)?.toInt() ?? 0) + added.length,
+      'by_category': _withPendingCategories(
+        summary['by_category'],
+        added,
+        total,
+      ),
     },
   };
+}
+
+/// Ventilation complétée des dépenses en attente, parts recalculées.
+///
+/// Sans elle, le total intégrait une saisie hors ligne que la ventilation
+/// ignorait : les catégories ne sommaient plus au total affiché au-dessus, et
+/// la dépense semblait n'avoir été comptée qu'à moitié.
+List<Map<String, dynamic>> _withPendingCategories(
+  Object? raw,
+  Iterable<Map<String, dynamic>> pending,
+  double total,
+) {
+  final buckets = <String, Map<String, dynamic>>{
+    if (raw is List)
+      for (final entry in raw.whereType<Map<String, dynamic>>())
+        if (entry['category'] is String)
+          entry['category'] as String: Map<String, dynamic>.of(entry),
+  };
+
+  for (final expense in pending) {
+    final category = expense['category'] as String? ?? 'other';
+    final bucket = buckets.putIfAbsent(
+      category,
+      () => {'category': category, 'amount': 0, 'count': 0},
+    );
+    bucket['amount'] =
+        ((bucket['amount'] as num?) ?? 0) + ((expense['amount'] as num?) ?? 0);
+    bucket['count'] = ((bucket['count'] as num?)?.toInt() ?? 0) + 1;
+  }
+
+  // Même règle que le serveur : part arrondie au pourcent, nulle sur un
+  // total nul, catégories les plus lourdes d'abord.
+  final list = buckets.values.toList()
+    ..sort(
+      (a, b) =>
+          ((b['amount'] as num?) ?? 0).compareTo((a['amount'] as num?) ?? 0),
+    );
+  for (final bucket in list) {
+    final amount = ((bucket['amount'] as num?) ?? 0).toDouble();
+    bucket['share_percent'] = total > 0 ? (amount / total * 100).round() : 0;
+  }
+  return list;
 }
 
 // ── Outils ──────────────────────────────────────────────────────────────────

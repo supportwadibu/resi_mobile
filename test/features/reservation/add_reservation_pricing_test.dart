@@ -104,9 +104,41 @@ void main() {
       final state = _stay(
         days: 10,
         tiers: const [PriceTier(minDays: 7, discountPercent: 10)],
-      ).copyWith(receivedAmount: 150000);
+      ).copyWith(agreedUnitPrice: 15000);
 
       expect(state.effectiveAmount, 150000);
+    });
+  });
+
+  group('AddReservationState : prix convenu par unité', () {
+    test('le total est le prix par jour multiplié par les jours', () {
+      final state = _stay(days: 3).copyWith(agreedUnitPrice: 12000);
+
+      expect(state.receivedAmount, 36000);
+      expect(state.effectiveAmount, 36000);
+    });
+
+    test('le total suit les dates sans ressaisie', () {
+      final state = _stay(days: 3).copyWith(agreedUnitPrice: 12000);
+      final longer = state.copyWith(
+        checkOutAt: state.checkInAt!.add(const Duration(days: 5)),
+      );
+
+      expect(longer.receivedAmount, 60000);
+    });
+
+    test('une demi-journée ou un passage valent une unité', () {
+      final state = _stay(
+        days: 1,
+        stayType: StayType.halfDay,
+      ).copyWith(agreedUnitPrice: 7000);
+
+      expect(state.receivedAmount, 7000);
+    });
+
+    test('sans prix convenu, le tarif s’applique', () {
+      expect(_stay(days: 3).receivedAmount, isNull);
+      expect(_stay(days: 3).effectiveAmount, 60000);
     });
   });
 }
