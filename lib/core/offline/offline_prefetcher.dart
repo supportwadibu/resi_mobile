@@ -64,7 +64,9 @@ class OfflinePrefetcher {
   Future<void> run({bool force = false}) async {
     if (_running) return;
     final last = _lastRun;
-    if (!force && last != null && DateTime.now().difference(last) < minInterval) {
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < minInterval) {
       return;
     }
 

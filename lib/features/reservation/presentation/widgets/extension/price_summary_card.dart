@@ -31,11 +31,7 @@ class PriceSummaryCard extends StatelessWidget {
         children: [
           _row(context, 'stay_extension.daily_cost'.tr(), pricePerDay),
           const SizedBox(height: 8),
-          _row(
-            context,
-            'stay_extension.subtotal'.plural(days),
-            subtotal,
-          ),
+          _row(context, 'stay_extension.subtotal'.plural(days), subtotal),
           if (discountPercent > 0) ...[
             const SizedBox(height: 8),
             _row(

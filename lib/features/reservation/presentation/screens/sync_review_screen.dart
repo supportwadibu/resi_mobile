@@ -137,7 +137,9 @@ class _ReviewCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'arbitration.saved_at'.tr(
-              args: [DateFormat.yMd().add_Hm().format(item.createdAt.toLocal())],
+              args: [
+                DateFormat.yMd().add_Hm().format(item.createdAt.toLocal()),
+              ],
             ),
             style: context.mutedText,
           ),

@@ -146,9 +146,10 @@ class SyncReviewCubit extends Cubit<SyncReviewState> {
   static String? _bookingDetail(Map<String, dynamic> booking) {
     final property = (booking['property'] as Map?)?['title'] as String?;
     final client = (booking['client'] as Map?)?['full_name'] as String?;
-    final parts = [property, client].whereType<String>().where(
-      (p) => p.isNotEmpty,
-    );
+    final parts = [
+      property,
+      client,
+    ].whereType<String>().where((p) => p.isNotEmpty);
     return parts.isEmpty ? null : parts.join(' · ');
   }
 

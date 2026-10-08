@@ -145,10 +145,7 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
       if (state is! ResidenceLoaded) return null;
       final residence = state.items.where((r) => r.id == _residenceId);
       if (residence.isEmpty) return null;
-      return (
-        title: residence.first.name,
-        city: residence.first.address.city,
-      );
+      return (title: residence.first.name, city: residence.first.address.city);
     }
 
     final state = context.read<PropertyCubit>().state;
@@ -339,9 +336,8 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   Widget _residenceTargetPicker() {
     return BlocBuilder<ResidenceCubit, ResidenceState>(
       builder: (context, state) => switch (state) {
-        ResidenceLoading() || ResidenceInitial() => _PickerLoading(
-          'expense.loading_residences'.tr(),
-        ),
+        ResidenceLoading() ||
+        ResidenceInitial() => _PickerLoading('expense.loading_residences'.tr()),
         ResidenceError(:final message) => _PickerNotice(message, isError: true),
         ResidenceLoaded(:final items) when items.isEmpty => _PickerNotice(
           'expense.create_residence_first'.tr(),

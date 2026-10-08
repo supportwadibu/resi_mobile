@@ -52,15 +52,13 @@ CacheKeys cacheKeysFor({
 
   String join(List<String> parts) => '$owner|$path?${parts.join('&')}';
 
-  return CacheKeys(
-    exact: join(exact),
-    loose: hasTemporal ? join(loose) : null,
-  );
+  return CacheKeys(exact: join(exact), loose: hasTemporal ? join(loose) : null);
 }
 
 /// Jour (`2026-10-01`) d'un paramètre daté, `null` pour tout autre paramètre.
 String? _asDay(Object value) {
-  if (value is DateTime) return value.toUtc().toIso8601String().substring(0, 10);
+  if (value is DateTime)
+    return value.toUtc().toIso8601String().substring(0, 10);
   if (value is String && _isoInstant.hasMatch(value)) {
     return value.substring(0, 10);
   }

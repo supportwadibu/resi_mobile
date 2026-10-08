@@ -72,9 +72,7 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
         // Sans `context` : l'écran se referme juste après, et le toast doit
         // survivre à sa disparition pour être lu sur la fiche.
         AppToast.success(
-          queued
-              ? 'offline_queue.saved'.tr()
-              : 'stay_extension.extended'.tr(),
+          queued ? 'offline_queue.saved'.tr() : 'stay_extension.extended'.tr(),
         );
         // `true` signale à l'écran de détail que la réservation a changé : il
         // affiche des dates et un montant que cet envoi vient de réécrire.

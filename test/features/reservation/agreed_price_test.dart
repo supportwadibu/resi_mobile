@@ -17,15 +17,17 @@ void main() {
   });
 
   group('AgreedPrice.looksLikePayment', () {
-    test('15 000 F convenus pour 220 000 F attendus : sans doute un versement',
-        () {
-      // Le cas de la fiche signalée : un séjour de 11 jours enregistré à
-      // 15 000 F, avec 205 000 F de « remise ».
-      expect(
-        AgreedPrice.looksLikePayment(expected: 220000, agreed: 15000),
-        isTrue,
-      );
-    });
+    test(
+      '15 000 F convenus pour 220 000 F attendus : sans doute un versement',
+      () {
+        // Le cas de la fiche signalée : un séjour de 11 jours enregistré à
+        // 15 000 F, avec 205 000 F de « remise ».
+        expect(
+          AgreedPrice.looksLikePayment(expected: 220000, agreed: 15000),
+          isTrue,
+        );
+      },
+    );
 
     test('une remise ordinaire ne déclenche rien', () {
       expect(

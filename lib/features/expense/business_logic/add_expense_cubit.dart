@@ -67,7 +67,10 @@ class AddExpenseCubit extends Cubit<AddExpenseState> {
       if (queue != null && OfflineActionQueue.isNetworkFailure(f)) {
         final target = {
           'id': residenceId ?? propertyId,
-          if (residenceId != null) 'name': targetTitle else 'title': targetTitle,
+          if (residenceId != null)
+            'name': targetTitle
+          else
+            'title': targetTitle,
           'city': targetCity ?? '',
         };
         await queue.enqueue(
@@ -77,7 +80,10 @@ class AddExpenseCubit extends Cubit<AddExpenseState> {
             // Jamais envoyé : il nomme la cible tant que le serveur ne l'a pas
             // jointe à la dépense.
             '_display': {
-              if (residenceId != null) 'residence': target else 'property': target,
+              if (residenceId != null)
+                'residence': target
+              else
+                'property': target,
             },
           },
         );

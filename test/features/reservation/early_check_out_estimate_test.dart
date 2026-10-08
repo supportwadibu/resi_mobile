@@ -79,7 +79,11 @@ void main() {
         now: now,
       ),
       throwsA(
-        isA<EarlyCheckOutRefusal>().having((e) => e.code, 'code', 'invalid_departure'),
+        isA<EarlyCheckOutRefusal>().having(
+          (e) => e.code,
+          'code',
+          'invalid_departure',
+        ),
       ),
     );
   });
@@ -92,7 +96,11 @@ void main() {
         now: now,
       ),
       throwsA(
-        isA<EarlyCheckOutRefusal>().having((e) => e.code, 'code', 'departure_in_future'),
+        isA<EarlyCheckOutRefusal>().having(
+          (e) => e.code,
+          'code',
+          'departure_in_future',
+        ),
       ),
     );
     expect(
@@ -113,7 +121,11 @@ void main() {
         now: DateTime.utc(2026, 10, 7),
       ),
       throwsA(
-        isA<EarlyCheckOutRefusal>().having((e) => e.code, 'code', 'not_early_departure'),
+        isA<EarlyCheckOutRefusal>().having(
+          (e) => e.code,
+          'code',
+          'not_early_departure',
+        ),
       ),
     );
   });

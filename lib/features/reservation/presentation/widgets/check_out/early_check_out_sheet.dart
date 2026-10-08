@@ -42,11 +42,8 @@ class EarlyCheckOutSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          sl<EarlyCheckOutCubit>()..quote(
-            reservation.id,
-            DateTime.now(),
-            reservation: reservation,
-          ),
+          sl<EarlyCheckOutCubit>()
+            ..quote(reservation.id, DateTime.now(), reservation: reservation),
       child: _EarlyCheckOutForm(reservation: reservation),
     );
   }

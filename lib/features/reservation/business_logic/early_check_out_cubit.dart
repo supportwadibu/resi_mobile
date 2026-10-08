@@ -67,7 +67,8 @@ class EarlyCheckOutCubit extends Cubit<EarlyCheckOutState> {
     };
     if (current == null) return;
 
-    final estimated = state is EarlyCheckOutLoaded &&
+    final estimated =
+        state is EarlyCheckOutLoaded &&
         (state as EarlyCheckOutLoaded).isEstimate;
     emit(
       EarlyCheckOutLoaded(current, isSubmitting: true, isEstimate: estimated),
