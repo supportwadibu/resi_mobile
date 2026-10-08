@@ -15,6 +15,9 @@ import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../../property/business_logic/property_state.dart';
+import '../../../../core/error/failures.dart';
+import '../../../residence/data/models/residence_model.dart';
+import '../../../residence/data/repositories/residence_repository.dart';
 import '../../business_logic/expense_cubit.dart';
 import '../../business_logic/expense_state.dart';
 import '../../data/models/expense_model.dart';
@@ -23,6 +26,7 @@ import '../../data/services/expense_pdf_service.dart';
 import '../widgets/home/expense_filter_bar.dart';
 import '../widgets/home/expense_filter_sheet.dart';
 import '../widgets/home/expense_list.dart';
+import '../widgets/home/expense_month_stepper.dart';
 import '../widgets/home/expense_total.dart';
 
 @RoutePage()
@@ -54,10 +58,25 @@ class _ExpenseViewState extends State<_ExpenseView>
   final _scrollController = ScrollController();
   bool _isExporting = false;
 
+  /// Résidences proposées au filtre. Vide tant qu'elles ne sont pas lues, ou
+  /// si la lecture échoue : la feuille reste utilisable sur les seuls biens.
+  List<ResidenceModel> _residences = const [];
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadResidences();
+  }
+
+  Future<void> _loadResidences() async {
+    try {
+      final residences = await sl<ResidenceRepository>().getAllResidences();
+      if (mounted) setState(() => _residences = residences);
+    } on AppFailure {
+      // Hors réseau ou rôle sans accès : le filtre par résidence manque, le
+      // reste de l'écran n'en dépend pas.
+    }
   }
 
   /// L'écran redevient visible : la liste est rechargée.
@@ -99,6 +118,7 @@ class _ExpenseViewState extends State<_ExpenseView>
       properties: propertyState is PropertyLoaded
           ? propertyState.items
           : const [],
+      residences: _residences,
     );
 
     // `null` : la feuille a été fermée sans valider, les filtres ne bougent pas.
@@ -135,6 +155,7 @@ class _ExpenseViewState extends State<_ExpenseView>
     try {
       final expenses = await sl<ExpenseRepository>().getAllExpenses(
         propertyId: filters.propertyId,
+        residenceId: filters.residenceId,
         category: filters.category,
         from: filters.from,
         to: filters.to,
@@ -153,11 +174,20 @@ class _ExpenseViewState extends State<_ExpenseView>
   }
 
   /// Décrit le périmètre exporté, pour l'en-tête du document.
+  ///
+  /// La période y figure : un relevé du mois en cours exporté sans elle se
+  /// lirait comme l'historique complet.
   String? _scopeLabel(ExpenseLoaded state) {
     final filters = state.filters;
     if (filters.isEmpty) return null;
 
     final parts = <String>[];
+    if (filters.residenceId != null) {
+      final match = _residences
+          .where((r) => r.id == filters.residenceId)
+          .firstOrNull;
+      if (match != null) parts.add(match.name);
+    }
     if (filters.propertyId != null) {
       final propertyState = context.read<PropertyCubit>().state;
       if (propertyState is PropertyLoaded) {
@@ -168,6 +198,7 @@ class _ExpenseViewState extends State<_ExpenseView>
       }
     }
     if (filters.category != null) parts.add(filters.category!.label);
+    if (_periodLabel(filters) case final period?) parts.add(period);
 
     return parts.isEmpty
         ? 'expense.filtered_selection'.tr()
@@ -177,6 +208,12 @@ class _ExpenseViewState extends State<_ExpenseView>
   /// Période couverte par les filtres, ou `null` quand aucune borne n'est
   /// posée — le total porte alors sur tout l'historique.
   String? _periodLabel(ExpenseFilters filters) {
+    if (filters.month case final month?) {
+      return toBeginningOfSentenceCase(
+        DateFormat('MMMM yyyy', context.locale.toString()).format(month),
+      );
+    }
+
     final from = filters.from;
     final to = filters.to;
     if (from == null && to == null) return null;
@@ -222,11 +259,31 @@ class _ExpenseViewState extends State<_ExpenseView>
               child: ExpenseTotal(
                 total: state is ExpenseLoaded ? state.summary.total : 0,
                 count: state is ExpenseLoaded ? state.summary.count : 0,
-                periodLabel: state is ExpenseLoaded
+                // Un mois est déjà affiché par le sélecteur placé dessous.
+                periodLabel:
+                    state is ExpenseLoaded && state.filters.month == null
                     ? _periodLabel(state.filters)
                     : null,
               ),
             ),
+          ),
+          // Le mois se change d'un geste, sans ouvrir les filtres : c'est la
+          // lecture la plus courante — « et le mois dernier ? ».
+          BlocBuilder<ExpenseCubit, ExpenseState>(
+            builder: (context, state) {
+              final month = context.read<ExpenseCubit>().filters.month;
+              if (month == null) return const SizedBox.shrink();
+
+              final cubit = context.read<ExpenseCubit>();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: ExpenseMonthStepper(
+                  month: month,
+                  onPrevious: () => cubit.shiftMonth(-1),
+                  onNext: () => cubit.shiftMonth(1),
+                ),
+              );
+            },
           ),
           BlocBuilder<ExpenseCubit, ExpenseState>(
             builder: (context, state) => Padding(
@@ -236,7 +293,7 @@ class _ExpenseViewState extends State<_ExpenseView>
                     ? state.filters.activeCount
                     : 0,
                 onTap: _openFilters,
-                onClear: state is ExpenseLoaded && !state.filters.isEmpty
+                onClear: state is ExpenseLoaded && !state.filters.isDefault
                     ? () => context.read<ExpenseCubit>().clearFilters()
                     : null,
                 onExport: state is ExpenseLoaded && state.items.isNotEmpty
@@ -247,7 +304,16 @@ class _ExpenseViewState extends State<_ExpenseView>
             ),
           ),
           Expanded(
-            child: BlocBuilder<ExpenseCubit, ExpenseState>(
+            child: BlocConsumer<ExpenseCubit, ExpenseState>(
+              // Une page qui ne remplit pas l'écran ne se fait jamais
+              // défiler : la suivante est demandée dès qu'elle est posée.
+              listener: (_, state) {
+                if (state is ExpenseLoaded && !state.isLoadingMore) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _onScroll(),
+                  );
+                }
+              },
               builder: (context, state) => switch (state) {
                 ExpenseInitial() ||
                 ExpenseLoading() => const SimpleListSkeleton(itemCount: 5),
@@ -257,12 +323,12 @@ class _ExpenseViewState extends State<_ExpenseView>
                 ),
                 ExpenseLoaded(:final items) when items.isEmpty => EmptyState(
                   icon: AppSectionIcons.expenses,
-                  title: state.filters.isEmpty
-                      ? 'expense.empty_title'.tr()
+                  title: state.filters.isDefault
+                      ? 'expense.empty_month_title'.tr()
                       : 'expense.empty_filtered'.tr(),
                   // Un écran vide oriente vers l'action suivante plutôt que
                   // de constater le vide.
-                  message: state.filters.isEmpty
+                  message: state.filters.isDefault
                       ? 'expense.empty_body'.tr()
                       : 'expense.empty_filtered_body'.tr(),
                 ),

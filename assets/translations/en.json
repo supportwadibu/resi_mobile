@@ -1204,6 +1204,16 @@
     "property": "Property",
     "period": "Period",
     "all_dates": "All dates",
+    "all_dates_hint": "Total and list cover your whole history.",
+    "choose_dates": "Choose two dates",
+    "period_kind": {
+      "month": "By month",
+      "range": "Between two dates",
+      "all": "All history"
+    },
+    "previous_month": "Previous month",
+    "next_month": "Next month",
+    "empty_month_title": "No expense this month",
     "no_property": "No property registered",
     "delete_title": "Delete this expense?",
     "delete_body": "This action cannot be undone.",

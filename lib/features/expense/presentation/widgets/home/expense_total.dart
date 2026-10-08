@@ -24,8 +24,9 @@ class ExpenseTotal extends StatelessWidget {
   /// seul ne dit pas s'il résume trois lignes ou deux cents.
   final int count;
 
-  /// Période couverte, quand un filtre de dates est posé. Sans elle, le total
-  /// porte sur tout l'historique et le dire serait un bruit permanent.
+  /// Période couverte, quand une plage de dates est posée. Absente sur tout
+  /// l'historique, où la dire serait un bruit permanent, et sur un mois, que
+  /// le sélecteur placé dessous affiche déjà.
   final String? periodLabel;
 
   @override

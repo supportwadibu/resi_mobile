@@ -1204,6 +1204,16 @@
     "property": "Bien",
     "period": "Période",
     "all_dates": "Toutes les dates",
+    "all_dates_hint": "Le total et la liste portent sur tout votre historique.",
+    "choose_dates": "Choisir deux dates",
+    "period_kind": {
+      "month": "Par mois",
+      "range": "Entre deux dates",
+      "all": "Tout l’historique"
+    },
+    "previous_month": "Mois précédent",
+    "next_month": "Mois suivant",
+    "empty_month_title": "Aucune dépense ce mois-ci",
     "no_property": "Aucun bien enregistré",
     "delete_title": "Supprimer cette dépense ?",
     "delete_body": "Cette action est définitive.",

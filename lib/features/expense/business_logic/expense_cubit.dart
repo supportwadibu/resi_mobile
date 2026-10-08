@@ -12,7 +12,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
   /// Filtres courants, conservés hors de l'état : un rechargement après
   /// suppression ou création doit les réappliquer, y compris depuis un état
   /// d'erreur où aucun `ExpenseLoaded` ne les porte plus.
-  ExpenseFilters _filters = const ExpenseFilters();
+  ExpenseFilters _filters = ExpenseFilters.initial();
 
   ExpenseFilters get filters => _filters;
 
@@ -26,7 +26,19 @@ class ExpenseCubit extends Cubit<ExpenseState> {
   /// Applique un nouveau jeu de filtres et recharge depuis la première page.
   Future<void> applyFilters(ExpenseFilters filters) => load(filters: filters);
 
-  Future<void> clearFilters() => load(filters: const ExpenseFilters());
+  /// Revient à l'état d'ouverture — le mois en cours —, et non à tout
+  /// l'historique : « effacer » ramène à ce que l'écran montre d'emblée.
+  Future<void> clearFilters() => load(filters: ExpenseFilters.initial());
+
+  /// Passe au mois voisin en gardant les autres filtres. Sans effet hors d'une
+  /// période mensuelle.
+  Future<void> shiftMonth(int offset) {
+    final month = _filters.month;
+    if (month == null) return Future.value();
+    return load(
+      filters: _filters.withMonth(DateTime(month.year, month.month + offset)),
+    );
+  }
 
   /// Réapplique les filtres en place — après une création ou une modification.
   Future<void> refresh() => _fetchFirstPage();

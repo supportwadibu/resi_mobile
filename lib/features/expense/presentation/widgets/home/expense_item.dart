@@ -21,9 +21,9 @@ class ExpenseItem extends StatelessWidget {
     this.showChevron = false,
   });
 
-  /// Jour seul : le mois et l'année sont portés par l'en-tête du groupe, les
-  /// répéter sur chaque ligne noierait la date utile.
-  static DateFormat get _dayFormat => DateFormat('d MMM');
+  /// Date complète : la liste n'est plus groupée par mois, et une plage de
+  /// dates peut franchir le nouvel an.
+  static DateFormat get _dayFormat => DateFormat('d MMM y');
 
   @override
   Widget build(BuildContext context) {

@@ -2,25 +2,18 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
-import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
-import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import 'expense_item.dart';
 
-/// Un mois de dépenses, avec son sous-total.
-class _MonthGroup {
-  _MonthGroup(this.label, this.expenses);
-
-  final String label;
-  final List<ExpenseModel> expenses;
-
-  double get total => expenses.fold(0, (sum, e) => sum + e.amount);
-}
-
+/// Historique des dépenses, à plat, la plus récente d'abord.
+///
+/// Sans regroupement par mois : la période se choisit dans les filtres et son
+/// total ouvre l'écran. Des sous-totaux mensuels calculés sur les seules pages
+/// chargées grandissaient en défilant, et faisaient double emploi avec lui.
 class ExpenseList extends StatelessWidget {
   final List<ExpenseModel> expenses;
 
@@ -45,102 +38,38 @@ class ExpenseList extends StatelessWidget {
     this.isLoadingMore = false,
   });
 
-  static DateFormat get _monthFormat => DateFormat('MMMM yyyy');
-
-  /// Regroupe les dépenses par mois, en conservant l'ordre du serveur.
-  ///
-  /// Le sous-total ne porte que sur les dépenses **chargées** : la pagination
-  /// peut couper un mois en deux, et un mois incomplet afficherait un total
-  /// qui grandit en défilant. Le total général, lui, vient du serveur.
-  List<_MonthGroup> get _groups {
-    final groups = <_MonthGroup>[];
-
-    for (final expense in expenses) {
-      final label = _monthFormat.format(expense.spentAt);
-
-      if (groups.isNotEmpty && groups.last.label == label) {
-        groups.last.expenses.add(expense);
-      } else {
-        groups.add(_MonthGroup(label, [expense]));
-      }
-    }
-
-    return groups;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final groups = _groups;
-
     // Une entrée de plus quand un chargement est en cours : elle porte
     // l'indicateur, en pied de liste.
-    final itemCount = groups.length + (isLoadingMore ? 1 : 0);
+    final itemCount = expenses.length + (isLoadingMore ? 1 : 0);
 
-    return ListView.builder(
+    return ListView.separated(
       controller: controller,
+      // Toujours défilable : sans cela, une première page qui ne remplit pas
+      // l'écran ne produirait aucun défilement, et la suivante ne serait
+      // jamais demandée.
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: itemCount,
       padding: const EdgeInsets.only(bottom: 24),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, index) {
-        if (index >= groups.length) {
+        if (index >= expenses.length) {
           return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+            padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(child: AppLoader(size: 24)),
           );
         }
 
-        return _MonthSection(
-          group: groups[index],
-          onEdit: onEdit,
-          onDelete: onDelete,
-          isFirst: index == 0,
+        return AppCard(
+          padding: EdgeInsets.zero,
+          child: _DismissibleExpense(
+            expense: expenses[index],
+            onEdit: onEdit,
+            onDelete: onDelete,
+          ),
         );
       },
-    );
-  }
-}
-
-/// Un mois : son en-tête, son sous-total, ses dépenses.
-class _MonthSection extends StatelessWidget {
-  const _MonthSection({
-    required this.group,
-    required this.isFirst,
-    this.onEdit,
-    this.onDelete,
-  });
-
-  final _MonthGroup group;
-  final bool isFirst;
-  final Future<void> Function(ExpenseModel expense)? onEdit;
-  final Future<void> Function(ExpenseModel expense)? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(top: isFirst ? 0 : 16),
-      child: Section(
-        // Le mois en titre, son sous-total à droite : chaque bloc se lit
-        // comme une section de fiche.
-        title: toBeginningOfSentenceCase(group.label),
-        actions: [
-          Text(
-            CurrencyFormatter.short(group.total),
-            style: context.text.amount,
-          ),
-        ],
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            for (var i = 0; i < group.expenses.length; i++) ...[
-              if (i > 0) const Divider(height: 1),
-              _DismissibleExpense(
-                expense: group.expenses[i],
-                onEdit: onEdit,
-                onDelete: onDelete,
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

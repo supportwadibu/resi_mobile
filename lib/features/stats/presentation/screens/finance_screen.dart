@@ -48,7 +48,11 @@ class FinanceScreen extends StatelessWidget {
             // au-dessus.
             final bounds = const FinancePeriod.rolling().bounds(DateTime.now());
             return sl<ExpenseCubit>()..load(
-              filters: ExpenseFilters(from: bounds.from, to: bounds.to),
+              filters: ExpenseFilters(
+                periodKind: ExpensePeriodKind.range,
+                from: bounds.from,
+                to: bounds.to,
+              ),
             );
           },
         ),
