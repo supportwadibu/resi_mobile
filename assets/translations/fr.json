@@ -144,7 +144,8 @@
     "name_hint": "Nom de l'apporteur",
     "phone_hint": "Téléphone de l'apporteur (facultatif)",
     "commission": "Commission apporteur ({} %)",
-    "label": "Apporteur"
+    "label": "Apporteur",
+    "net_amount": "Net après commission"
   },
   "reservation": {
     "title": "Réservations",

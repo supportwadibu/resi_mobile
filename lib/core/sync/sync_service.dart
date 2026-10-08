@@ -392,6 +392,7 @@ class SyncService {
         checkInAt: booking.checkInAt,
         checkOutAt: booking.checkOutAt,
         receivedAmount: booking.receivedAmount,
+        agreedUnitPrice: booking.agreedUnitPrice,
         depositAmount: booking.depositAmount,
         message: booking.message,
         isCheckIn: booking.isCheckIn,

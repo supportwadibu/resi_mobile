@@ -48,10 +48,17 @@ class EditReservationState {
   /// négocié, lui, est repris tel quel — y compris un prix aberrant, que
   /// l'avertissement signale alors à la réouverture.
   ///
-  /// Il est ramené à l'unité sans arrondi : 100 000 F sur trois jours donnent
-  /// 33 333,33 F, et le total recalculé retombe sur 100 000 F tant que les
-  /// dates ne bougent pas. Arrondir ici décalerait d'un franc un séjour que
-  /// le propriétaire n'a fait qu'ouvrir.
+  /// Le prix unitaire figé par le serveur est repris tel quel. À défaut —
+  /// réservation antérieure à son introduction —, le prix convenu est ramené
+  /// à l'unité sans arrondi : 100 000 F sur trois jours donnent 33 333,33 F,
+  /// et le total recalculé retombe sur 100 000 F tant que les dates ne bougent
+  /// pas. Arrondir ici décalerait d'un franc un séjour que le propriétaire
+  /// n'a fait qu'ouvrir.
+  ///
+  /// La négociation se lit sur [ReservationModel.hasNegotiatedPrice] et non
+  /// sur la remise : un prix convenu **au-dessus** de la grille n'a pas de
+  /// remise, et n'était pas prérempli — l'enregistrement le remettait au
+  /// tarif sans que le propriétaire l'ait touché.
   factory EditReservationState.from(ReservationModel reservation) {
     return EditReservationState(
       original: reservation,
@@ -62,10 +69,11 @@ class EditReservationState {
       // affichent heures et jours tels que le propriétaire les a choisis.
       checkInAt: reservation.checkInAt.toLocal(),
       checkOutAt: reservation.checkOutAt.toLocal(),
-      agreedUnitPrice: reservation.discountAmount > 0
-          ? reservation.totalAmount /
-                (reservation.daysCount > 0 ? reservation.daysCount : 1)
-          : null,
+      agreedUnitPrice:
+          reservation.agreedUnitPrice ??
+          (reservation.hasNegotiatedPrice
+              ? reservation.receivedAmount / reservation.daysCount
+              : null),
       depositAmount: reservation.depositAmount,
       message: reservation.message ?? '',
     );

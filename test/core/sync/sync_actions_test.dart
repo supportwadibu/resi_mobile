@@ -41,6 +41,7 @@ class _Reservations extends ReservationRepository {
     required DateTime checkInAt,
     DateTime? checkOutAt,
     double? receivedAmount,
+    double? agreedUnitPrice,
     double? depositAmount,
     String? message,
     bool isCheckIn = false,

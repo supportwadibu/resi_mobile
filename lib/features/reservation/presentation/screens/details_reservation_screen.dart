@@ -337,6 +337,12 @@ class DetailsReservationScreen extends StatelessWidget {
           ),
           formatAmount(reservation.referrerCommissionAmount),
         ),
+        // Ce qui revient au propriétaire : la commission montrée seule ne
+        // disait pas qu'elle s'imputait sur le montant du séjour.
+        DetailItem(
+          'referrer.net_amount'.tr(),
+          formatAmount(reservation.netAfterCommission),
+        ),
       ],
     ];
 

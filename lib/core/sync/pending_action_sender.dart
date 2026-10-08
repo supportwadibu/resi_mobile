@@ -59,6 +59,9 @@ class PendingActionSender {
           checkInAt: _date(p['check_in_at'])!,
           checkOutAt: _date(p['check_out_at'])!,
           agreedAmount: (p['received_amount'] as num?)?.toDouble(),
+          // Absent des modifications mises en file avant le prix unitaire : le
+          // total seul part alors, comme à l'époque.
+          agreedUnitPrice: (p['agreed_unit_price'] as num?)?.toDouble(),
           depositAmount: (p['deposit_amount'] as num?)?.toDouble() ?? 0,
           message: p['message'] as String? ?? '',
         );

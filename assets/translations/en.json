@@ -144,7 +144,8 @@
     "name_hint": "Referrer name",
     "phone_hint": "Referrer phone (optional)",
     "commission": "Referrer commission ({} %)",
-    "label": "Referrer"
+    "label": "Referrer",
+    "net_amount": "Net after commission"
   },
   "reservation": {
     "title": "Bookings",

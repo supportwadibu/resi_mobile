@@ -21,6 +21,7 @@ class PendingBooking {
     this.remoteClientId,
     this.checkOutAt,
     this.receivedAmount,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
     this.message,
     this.isCheckIn = false,
@@ -45,6 +46,9 @@ class PendingBooking {
   final DateTime checkInAt;
   final DateTime? checkOutAt;
   final double? receivedAmount;
+
+  /// Prix convenu par unité, transmis pour que le serveur le fige.
+  final double? agreedUnitPrice;
   final double depositAmount;
   final String? message;
   final bool isCheckIn;
@@ -70,6 +74,8 @@ class PendingBooking {
           ? null
           : DateTime.fromMillisecondsSinceEpoch(row['check_out_at'] as int),
       receivedAmount: (row['received_amount'] as num?)?.toDouble(),
+      // Colonne ajoutée en version 6 : `NULL` sur les saisies plus anciennes.
+      agreedUnitPrice: (row['agreed_unit_price'] as num?)?.toDouble(),
       depositAmount: (row['deposit_amount'] as num?)?.toDouble() ?? 0,
       message: row['message'] as String?,
       isCheckIn: (row['is_check_in'] as int? ?? 0) == 1,
@@ -451,6 +457,7 @@ class ReservationLocalStore {
         'check_in_at': booking.checkInAt.millisecondsSinceEpoch,
         'check_out_at': booking.checkOutAt?.millisecondsSinceEpoch,
         'received_amount': booking.receivedAmount,
+        'agreed_unit_price': booking.agreedUnitPrice,
         'deposit_amount': booking.depositAmount,
         'message': booking.message,
         'is_check_in': booking.isCheckIn ? 1 : 0,
@@ -643,7 +650,8 @@ class ReservationLocalStore {
         'id': clientId,
         'full_name':
             row['pending_client_name'] ?? row['cached_client_name'] ?? '',
-        'phone': row['pending_client_phone'] ?? row['cached_client_phone'] ?? '',
+        'phone':
+            row['pending_client_phone'] ?? row['cached_client_phone'] ?? '',
       },
       'status': booking.isCheckIn ? 'in_progress' : 'confirmed',
       'source': 'offline',
@@ -655,10 +663,15 @@ class ReservationLocalStore {
       'total_amount': amount,
       'expected_amount': amount,
       'received_amount': amount,
+      // Une prolongation saisie avant l'envoi s'annonce ainsi au prix convenu.
+      'agreed_unit_price': booking.agreedUnitPrice,
       'deposit_amount': booking.depositAmount,
       'message': booking.message,
       if (booking.referrerName != null)
-        'referrer': {'name': booking.referrerName, 'phone': booking.referrerPhone},
+        'referrer': {
+          'name': booking.referrerName,
+          'phone': booking.referrerPhone,
+        },
       'sync_status': booking.syncStatus.code,
       // Pour l'arbitrage : le motif d'un refus et l'heure de la saisie.
       'last_error': booking.lastError,

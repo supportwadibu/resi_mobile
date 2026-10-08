@@ -172,6 +172,7 @@ class ReservationModel {
     DateTime? checkOutAt,
     this.expectedAmount = 0,
     this.receivedAmount = 0,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
     this.refundedAmount = 0,
     this.plannedTotalAmount,
@@ -228,6 +229,10 @@ class ReservationModel {
   /// Montant réellement convenu avec le client, saisi par le propriétaire.
   final double receivedAmount;
 
+  /// Prix négocié par unité du type de séjour, figé par le serveur. `null` au
+  /// tarif, et sur les réservations antérieures à son introduction.
+  final double? agreedUnitPrice;
+
   /// Acompte versé à la réservation.
   final double depositAmount;
 
@@ -272,10 +277,12 @@ class ReservationModel {
   /// facturera (`extendedAgreedAmount`).
   ///
   /// Un prix négocié à la réservation reste le prix de ce client : le jour
-  /// ajouté vaut le prix convenu divisé par les jours vendus, pas le tarif de
-  /// la grille. Sans négociation, la grille s'applique, remise de durée
-  /// comprise.
+  /// ajouté vaut le prix par jour convenu, pas le tarif de la grille. Le prix
+  /// unitaire figé fait foi ; le quotient prix convenu ÷ jours vendus n'est
+  /// qu'un repli pour l'historique, qui ne le porte pas. Sans négociation, la
+  /// grille s'applique, remise de durée comprise.
   double get extensionDailyRate {
+    if (agreedUnitPrice case final unit?) return unit;
     if (hasNegotiatedPrice) return receivedAmount / daysCount;
     return dailyPrice * (1 - durationDiscountPercent / 100);
   }
@@ -283,8 +290,12 @@ class ReservationModel {
   /// Le prix du séjour a été convenu hors grille, au comptoir.
   bool get hasNegotiatedPrice =>
       source == ReservationSource.offline &&
-      receivedAmount != expectedAmount &&
-      daysCount > 0;
+      (agreedUnitPrice != null ||
+          (receivedAmount != expectedAmount && daysCount > 0));
+
+  /// Montant du séjour revenant au propriétaire, commission de l'apporteur
+  /// retranchée — la règle du bénéfice net de Finance.
+  double get netAfterCommission => totalAmount - referrerCommissionAmount;
 
   /// Reste dû après l'acompte, jamais négatif.
   double get balanceDue =>
@@ -333,6 +344,9 @@ class ReservationModel {
           (json['received_amount'] as num?)?.toDouble() ??
           (json['total_amount'] as num?)?.toDouble() ??
           0,
+      // Absent de l'historique, d'un séjour au tarif et d'un serveur antérieur
+      // au prix unitaire : la prolongation retombe alors sur le quotient.
+      agreedUnitPrice: (json['agreed_unit_price'] as num?)?.toDouble(),
       depositAmount: (json['deposit_amount'] as num?)?.toDouble() ?? 0,
       // Absents tant que le séjour n'a pas été écourté, et sur les réponses
       // d'un serveur antérieur au départ anticipé.

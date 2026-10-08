@@ -53,7 +53,11 @@ class _FakeServer extends Interceptor {
   }
 }
 
-ReservationModel _reservation({double discount = 0, double total = 60000}) {
+ReservationModel _reservation({
+  double discount = 0,
+  double total = 60000,
+  double? agreedUnitPrice,
+}) {
   return ReservationModel(
     id: 'b1',
     propertyId: 'p1',
@@ -67,6 +71,9 @@ ReservationModel _reservation({double discount = 0, double total = 60000}) {
     dailyPrice: 20000,
     totalAmount: total,
     expectedAmount: 60000,
+    // Comme le serveur : le prix convenu porte le total.
+    receivedAmount: total,
+    agreedUnitPrice: agreedUnitPrice,
     discountAmount: discount,
     source: ReservationSource.offline,
   );
@@ -96,6 +103,21 @@ void main() {
       );
       expect(state.agreedAmount, 15000);
       expect(state.looksLikePayment, isTrue);
+    });
+
+    test('un prix négocié au-dessus de la grille est repris lui aussi', () {
+      // 25 000 F/j sur une grille à 20 000 F : pas de remise, mais un prix
+      // convenu que l'enregistrement ne doit pas remettre au tarif.
+      final state = EditReservationState.from(_reservation(total: 75000));
+      expect(state.agreedUnitPrice, 25000);
+      expect(state.agreedAmount, 75000);
+    });
+
+    test('le prix par jour figé par le serveur est repris tel quel', () {
+      final state = EditReservationState.from(
+        _reservation(total: 45000, discount: 15000, agreedUnitPrice: 15000),
+      );
+      expect(state.agreedUnitPrice, 15000);
     });
   });
 

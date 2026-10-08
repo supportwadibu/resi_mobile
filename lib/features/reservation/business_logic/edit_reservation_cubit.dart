@@ -94,6 +94,7 @@ class EditReservationCubit extends Cubit<EditReservationState> {
         checkInAt: state.checkInAt,
         checkOutAt: state.checkOutAt,
         agreedAmount: state.agreedAmount,
+        agreedUnitPrice: state.agreedUnitPrice,
         depositAmount: state.depositAmount,
         message: state.message,
       );
@@ -139,6 +140,7 @@ class EditReservationCubit extends Cubit<EditReservationState> {
         'check_in_at': state.checkInAt.toUtc().toIso8601String(),
         'check_out_at': state.checkOutAt.toUtc().toIso8601String(),
         'received_amount': ?state.agreedAmount,
+        'agreed_unit_price': ?state.agreedUnitPrice,
         'deposit_amount': state.depositAmount,
         'message': state.message.trim().isEmpty ? null : state.message.trim(),
       },

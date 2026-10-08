@@ -99,6 +99,7 @@ class ReservationRepository {
     required DateTime checkInAt,
     DateTime? checkOutAt,
     double? receivedAmount,
+    double? agreedUnitPrice,
     double? depositAmount,
     String? message,
     bool isCheckIn = false,
@@ -119,6 +120,9 @@ class ReservationRepository {
           // `?` plutôt qu'un `if` : la clé n'est posée que si la valeur
           // existe, et le serveur applique alors sa propre valeur par défaut.
           'received_amount': ?receivedAmount,
+          // Le prix unitaire prime sur le total : le serveur le multiplie par
+          // sa propre durée et le fige pour tarifer une prolongation.
+          'agreed_unit_price': ?agreedUnitPrice,
           'deposit_amount': ?depositAmount,
           if (message != null && message.isNotEmpty) 'message': message,
           'is_check_in': isCheckIn,
@@ -268,7 +272,8 @@ class ReservationRepository {
   /// pas s'il est inchangé ou oublié. Le client, lui, ne change pas : il est
   /// figé dans l'instantané de la réservation.
   ///
-  /// [agreedAmount] `null` : le serveur applique le montant attendu.
+  /// [agreedAmount] et [agreedUnitPrice] `null` : le serveur applique le
+  /// montant attendu. Le prix unitaire prime sur le total.
   /// [message] vide efface le message.
   ///
   /// Comme la prolongation, la modification n'est pas mise en file hors
@@ -281,6 +286,7 @@ class ReservationRepository {
     required DateTime checkInAt,
     required DateTime checkOutAt,
     double? agreedAmount,
+    double? agreedUnitPrice,
     required double depositAmount,
     required String message,
   }) async {
@@ -293,6 +299,7 @@ class ReservationRepository {
           'check_in_at': checkInAt.toUtc().toIso8601String(),
           'check_out_at': checkOutAt.toUtc().toIso8601String(),
           'received_amount': ?agreedAmount,
+          'agreed_unit_price': ?agreedUnitPrice,
           'deposit_amount': depositAmount,
           'message': message.trim().isEmpty ? null : message.trim(),
         },

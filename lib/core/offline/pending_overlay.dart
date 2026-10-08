@@ -122,7 +122,10 @@ Map<String, dynamic> applyBookingAction(
         ..['check_out_at'] = p['check_out_at']
         ..['end_date'] = p['check_out_at']
         ..['deposit_amount'] = p['deposit_amount']
-        ..['message'] = p['message'];
+        ..['message'] = p['message']
+        // La modification renvoie tout, prix unitaire compris : son absence
+        // remet le séjour au tarif, comme le fera le serveur.
+        ..['agreed_unit_price'] = p['agreed_unit_price'];
       final amount = p['received_amount'];
       if (amount != null) {
         next

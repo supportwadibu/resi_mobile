@@ -33,14 +33,21 @@ class StayQuote {
   };
 
   /// Nombre de jours facturés, au minimum un.
+  ///
+  /// Compté à la milliseconde, comme `countStayDays` côté serveur. En minutes
+  /// entières, une entrée enregistrée à 10 h 15 min 42 s et une sortie le
+  /// lendemain à 10 h 16 donnaient 1 jour ici et 2 au serveur : l'écran
+  /// annonçait un total que la réservation ne portait pas.
   int get daysCount {
     if (stayType != StayType.fullDay) return 1;
     final start = checkInAt;
     final end = checkOutAt;
     if (start == null || end == null) return 1;
 
-    final hours = end.difference(start).inMinutes / 60;
-    return hours <= 0 ? 1 : (hours / 24).ceil().clamp(1, 3650);
+    final millis = end.difference(start).inMilliseconds;
+    return millis <= 0
+        ? 1
+        : (millis / Duration.millisecondsPerDay).ceil().clamp(1, 3650);
   }
 
   /// Remise de durée applicable au séjour saisi, en pourcentage.

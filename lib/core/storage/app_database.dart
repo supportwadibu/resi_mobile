@@ -44,7 +44,10 @@ class AppDatabase {
   /// tout écran déjà ouvert en ligne s'affiche hors ligne ; `pending_actions`
   /// et `local_refs` étendent la file aux autres actions du comptoir
   /// (départ, prolongation, fiche client, dépense).
-  static const _version = 5;
+  ///
+  /// 6 — `pending_bookings` porte le prix convenu par jour, que le serveur
+  /// fige pour tarifer une prolongation.
+  static const _version = 6;
 
   /// Version courante du schéma, lue par les tests de migration.
   @visibleForTesting
@@ -163,6 +166,7 @@ class AppDatabase {
         check_in_at        INTEGER NOT NULL,
         check_out_at       INTEGER,
         received_amount    REAL,
+        agreed_unit_price  REAL,
         deposit_amount     REAL NOT NULL DEFAULT 0,
         message            TEXT,
         is_check_in        INTEGER NOT NULL DEFAULT 0,
@@ -297,6 +301,14 @@ class AppDatabase {
       final batch = db.batch();
       _createV5Tables(batch);
       await batch.commit(noResult: true);
+    }
+
+    if (from < 6) {
+      // Même règle que la version 3 : la file ne se recrée pas. Les saisies
+      // déjà en file valent `NULL` et partent avec leur seul total.
+      await db.execute(
+        'ALTER TABLE pending_bookings ADD COLUMN agreed_unit_price REAL',
+      );
     }
   }
 
