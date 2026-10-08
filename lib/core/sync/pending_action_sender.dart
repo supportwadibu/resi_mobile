@@ -28,6 +28,13 @@ class PendingActionSender {
     final p = action.payload;
 
     switch (action.type) {
+      case PendingActionType.bookingCheckIn:
+        await _reservations.checkIn(
+          _required(target),
+          actualCheckInAt: _date(p['actual_check_in_at']),
+        );
+        return null;
+
       case PendingActionType.bookingCheckOut:
         await _reservations.checkOut(
           _required(target),

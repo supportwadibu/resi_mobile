@@ -15,18 +15,24 @@ import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import '../../../clients/presentation/widgets/client_avatar.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/offline/pending_action.dart';
 import '../../../../core/storage/local_storage.dart';
+import '../../../../core/utils/phone_helper.dart';
+import '../../../../shared/utils/launcher_helper.dart';
 import '../../../subscription/presentation/widgets/plan_gate.dart';
 import '../../../subscription/presentation/widgets/plan_style.dart';
 import '../../data/services/invoice_pdf_service.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../clients/presentation/screens/client_detail_screen.dart';
+import '../../business_logic/stay_check_in_cubit.dart';
+import '../../business_logic/stay_check_in_state.dart';
 import '../../business_logic/stay_check_out_cubit.dart';
 import '../../business_logic/stay_check_out_state.dart';
 import '../../data/models/reservation_model.dart';
@@ -244,18 +250,110 @@ class DetailsReservationScreen extends StatelessWidget {
     }
   }
 
+  /// Ouvre la conversation WhatsApp du client, reçu du séjour prérempli.
+  ///
+  /// Le numéro WhatsApp de la fiche prime sur le téléphone : un client peut
+  /// avoir l'un sans l'autre. La fiche est relue au serveur ; hors réseau, ou
+  /// sur un forfait sans carnet, le téléphone figé à la réservation suffit.
+  ///
+  /// Hors forfait : ce n'est que du texte, là où la facture PDF reste réservée
+  /// au forfait complet.
+  Future<void> _sendReceipt(BuildContext context) async {
+    final snapshot = reservation.client;
+    if (snapshot == null) return;
+
+    String? number = snapshot.phone;
+    if (reservation.clientId.isNotEmpty && !isLocalId(reservation.clientId)) {
+      try {
+        final client = await sl<ClientsRepository>().getClient(
+          reservation.clientId,
+        );
+        final whatsapp = client.whatsapp?.trim();
+        number = whatsapp != null && whatsapp.isNotEmpty
+            ? whatsapp
+            : client.phone;
+      } on AppFailure {
+        // Le téléphone de l'instantané reste disponible.
+      }
+    }
+
+    final target = PhoneHelper.toWhatsApp(number, 'CI');
+    if (target == null) {
+      AppToast.warning('invoice.no_whatsapp'.tr());
+      return;
+    }
+
+    final owner = await sl<LocalStorage>().getPropertyManager();
+
+    try {
+      await LauncherHelper.openWhatsApp(
+        target,
+        message: InvoicePdfService.receiptText(
+          reservation,
+          issuer: owner == null
+              ? null
+              : InvoiceIssuer(name: owner.name, phone: owner.phoneNumber),
+        ),
+      );
+    } on LauncherException {
+      AppToast.error('invoice.whatsapp_error'.tr());
+    }
+  }
+
   /// Date longue : « 12 mai 2026 ».
   static String _longDate(DateTime date) => DateFormat('d MMMM y').format(date);
 
+  /// Confirme l'arrivée avant de l'enregistrer : le geste fait passer le
+  /// séjour « en cours » et n'a pas d'annulation.
+  Future<void> _confirmCheckIn(BuildContext context) async {
+    final cubit = context.read<StayCheckInCubit>();
+
+    final confirmed = await showConfirmDialog(
+      context: context,
+      title: 'stay_checkin.confirm_title'.tr(),
+      message: 'stay_checkin.confirm_body'.tr(),
+      confirmLabel: 'stay_checkin.confirm'.tr(),
+    );
+
+    if (confirmed) cubit.submit(reservation.id);
+  }
+
+  void _onCheckInChanged(BuildContext context, StayCheckInState state) {
+    switch (state) {
+      case StayCheckInSuccess(:final queued):
+        // Même contrat que la clôture : la fiche ne sait pas se relire, elle
+        // se referme et le `true` fait recharger la liste.
+        AppToast.success(
+          queued ? 'offline_queue.saved'.tr() : 'stay_checkin.success'.tr(),
+        );
+        context.router.maybePop(true);
+
+      case StayCheckInFailure(:final message):
+        AppToast.error(message, context: context);
+
+      case StayCheckInIdle() || StayCheckInSubmitting():
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<StayCheckOutCubit>(),
-      child: BlocConsumer<StayCheckOutCubit, StayCheckOutState>(
-        listener: _onCheckOutChanged,
-        builder: (context, state) => _buildScaffold(
-          context,
-          isSubmitting: state is StayCheckOutSubmitting,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<StayCheckOutCubit>()),
+        BlocProvider(create: (_) => sl<StayCheckInCubit>()),
+      ],
+      child: BlocListener<StayCheckInCubit, StayCheckInState>(
+        listener: _onCheckInChanged,
+        child: BlocConsumer<StayCheckOutCubit, StayCheckOutState>(
+          listener: _onCheckOutChanged,
+          builder: (context, state) => _buildScaffold(
+            context,
+            isSubmitting:
+                state is StayCheckOutSubmitting ||
+                context.watch<StayCheckInCubit>().state
+                    is StayCheckInSubmitting,
+          ),
         ),
       ),
     );
@@ -275,6 +373,11 @@ class DetailsReservationScreen extends StatelessWidget {
         _longDate(reservation.endDate),
       ),
       DetailItem('booking_detail.duration'.tr(), reservation.durationLabel),
+      if (reservation.actualCheckInAt case final arrivedAt?)
+        DetailItem(
+          'stay_checkin.arrived_at'.tr(),
+          DateFormat('d MMMM y, HH:mm').format(arrivedAt.toLocal()),
+        ),
     ];
 
     // Les libellés disent ce que les champs portent : `totalAmount` est le
@@ -452,18 +555,31 @@ class DetailsReservationScreen extends StatelessWidget {
 
           // Un séjour annulé n'a rien à facturer.
           if (reservation.status != ReservationStatus.cancelled) ...[
-            const SizedBox(height: 16),
+            // Le reçu part dans la conversation du client : seule une
+            // réservation comptoir porte son téléphone.
+            if (reservation.client != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _sendReceipt(context),
+                  // Logo de marque : WhatsApp reste reconnaissable, là où une
+                  // bulle générique ne dirait pas où part le reçu.
+                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                  label: Text('invoice.send_client'.tr()),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () => _sendInvoice(context),
-                // Logo de marque : WhatsApp reste reconnaissable, là où une
-                // bulle générique ne dirait pas où part la facture.
-                icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                icon: const Icon(LucideIcons.fileText, size: 16),
                 label: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('invoice.send'.tr()),
+                    Text('invoice.share_pdf'.tr()),
                     if (!hasFullPlan()) ...[
                       const SizedBox(width: 8),
                       const PremiumBadge(),
@@ -486,10 +602,24 @@ class DetailsReservationScreen extends StatelessWidget {
     );
   }
 
-  /// Avant l'entrée du client, seule la prolongation est proposée : le
-  /// serveur refuse de clôturer un séjour qui n'a pas commencé — il s'annule.
+  /// À partir du jour J, une réservation à venir propose d'abord d'enregistrer
+  /// l'arrivée : elle ne passe plus « en cours » toute seule. Avant, seule la
+  /// prolongation est proposée : le serveur refuse de clôturer un séjour qui
+  /// n'a pas commencé — il s'annule.
   Widget _buildActions(BuildContext context, {required bool isSubmitting}) {
-    if (!reservation.hasStarted(DateTime.now())) {
+    final now = DateTime.now();
+
+    if (reservation.canCheckIn(now)) {
+      return AppBottomActionBar(
+        primaryLabel: 'stay_checkin.action'.tr(),
+        onPrimary: isSubmitting ? null : () => _confirmCheckIn(context),
+        secondaryLabel: 'stay_checkout.extend'.tr(),
+        onSecondary: () => _extend(context),
+        isLoading: isSubmitting,
+      );
+    }
+
+    if (!reservation.hasStarted(now)) {
       return AppBottomActionBar(
         primaryLabel: 'stay_checkout.extend_alone'.tr(),
         onPrimary: () => _extend(context),

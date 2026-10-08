@@ -3,6 +3,7 @@ import 'dart:convert';
 /// Action du comptoir saisie sans réseau, autre qu'une création de
 /// réservation — qui garde sa propre file, `pending_bookings`.
 enum PendingActionType {
+  bookingCheckIn('booking_check_in'),
   bookingCheckOut('booking_check_out'),
   bookingCheckOutEarly('booking_check_out_early'),
   bookingExtend('booking_extend'),

@@ -87,6 +87,14 @@
     "submit": "Envoyer",
     "success": "Merci, votre avis a bien été transmis."
   },
+  "stay_checkin": {
+    "action": "Enregistrer l’arrivée",
+    "confirm_title": "Le client est-il arrivé ?",
+    "confirm_body": "Le séjour passe en cours. L’heure d’arrivée est consignée ; les dates et le montant ne changent pas.",
+    "confirm": "Oui, il est arrivé",
+    "success": "Arrivée enregistrée",
+    "arrived_at": "Arrivée constatée"
+  },
   "stay_checkout": {
     "action": "Terminer le séjour",
     "extend": "Prolonger",
@@ -166,6 +174,11 @@
   },
   "invoice": {
     "send": "Envoyer la facture",
+    "send_client": "Envoyer le reçu au client",
+    "share_pdf": "Partager la facture PDF",
+    "receipt_title": "Reçu de réservation",
+    "no_whatsapp": "Aucun numéro valide pour joindre ce client sur WhatsApp.",
+    "whatsapp_error": "Impossible d’ouvrir WhatsApp sur ce téléphone.",
     "title": "FACTURE",
     "number": "N° {}",
     "issued": "Émise le {}",
@@ -1379,6 +1392,7 @@
     "discarded": "Saisie abandonnée.",
     "kind": {
       "booking": "Réservation",
+      "booking_check_in": "Arrivée",
       "booking_check_out": "Départ",
       "booking_check_out_early": "Départ anticipé",
       "booking_extend": "Prolongation",

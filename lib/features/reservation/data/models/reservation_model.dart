@@ -177,6 +177,7 @@ class ReservationModel {
     this.refundedAmount = 0,
     this.plannedTotalAmount,
     this.plannedCheckOutAt,
+    this.actualCheckInAt,
     this.referrer,
     this.referrerCommissionRate = 0,
     this.referrerCommissionAmount = 0,
@@ -244,6 +245,10 @@ class ReservationModel {
   final double? plannedTotalAmount;
   final DateTime? plannedCheckOutAt;
 
+  /// Arrivée enregistrée au comptoir, `null` tant qu'elle ne l'est pas.
+  /// Informative : la période facturée reste [checkInAt].
+  final DateTime? actualCheckInAt;
+
   /// Apporteur d'affaire, `null` sans apporteur.
   final ReservationReferrer? referrer;
 
@@ -272,6 +277,19 @@ class ReservationModel {
   /// Lit [checkInAt] et non [startDate] : un passage saisi pour 14 h a une date
   /// de début dépassée dès minuit, alors que le client n'est pas encore là.
   bool hasStarted(DateTime now) => !checkInAt.isAfter(now);
+
+  /// L'arrivée peut-elle s'enregistrer à [now] ?
+  ///
+  /// À partir du jour J — minuit du jour d'entrée, en heure locale — et
+  /// jusqu'à la sortie prévue, sur une réservation à venir. Même règle que le
+  /// serveur (`buildCheckInPatch`), qui raisonne en UTC : la Côte d'Ivoire est
+  /// à UTC+0, les deux jours coïncident.
+  bool canCheckIn(DateTime now) {
+    if (status != ReservationStatus.confirmed) return false;
+    final local = checkInAt.toLocal();
+    final dayStart = DateTime(local.year, local.month, local.day);
+    return !now.isBefore(dayStart) && now.isBefore(checkOutAt);
+  }
 
   /// Tarif d'un jour ajouté par une prolongation, tel que le serveur le
   /// facturera (`extendedAgreedAmount`).
@@ -353,6 +371,8 @@ class ReservationModel {
       refundedAmount: (json['refunded_amount'] as num?)?.toDouble() ?? 0,
       plannedTotalAmount: (json['planned_total_amount'] as num?)?.toDouble(),
       plannedCheckOutAt: _date(json['planned_check_out_at']),
+      // Absente tant que l'arrivée n'est pas enregistrée, et de l'historique.
+      actualCheckInAt: _date(json['actual_check_in_at']),
       // Absents de l'historique et d'un serveur antérieur aux apporteurs.
       referrer: json['referrer'] is Map<String, dynamic>
           ? ReservationReferrer.fromJson(

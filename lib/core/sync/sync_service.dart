@@ -532,11 +532,14 @@ class SyncService {
 ///
 /// Un départ dont la réponse s'est perdue est rejoué au retour du réseau, et
 /// le serveur répond alors « séjour déjà clôturé » : c'est le succès du
-/// premier envoi, pas un refus à arbitrer.
+/// premier envoi, pas un refus à arbitrer. Même chose pour une arrivée
+/// rejouée, « déjà enregistrée ».
 bool isAlreadyApplied(PendingActionType type, AppFailure failure) =>
-    (type == PendingActionType.bookingCheckOut ||
-        type == PendingActionType.bookingCheckOutEarly) &&
-    failure.code == 'booking_already_completed';
+    ((type == PendingActionType.bookingCheckOut ||
+            type == PendingActionType.bookingCheckOutEarly) &&
+        failure.code == 'booking_already_completed') ||
+    (type == PendingActionType.bookingCheckIn &&
+        failure.code == 'booking_already_checked_in');
 
 enum _SendOutcome { sent, conflict, rejected, retry, waiting }
 

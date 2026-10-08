@@ -76,6 +76,10 @@ Map<String, dynamic> applyBookingAction(
   final next = Map<String, dynamic>.of(booking);
 
   switch (action.type) {
+    case PendingActionType.bookingCheckIn:
+      next['status'] = 'in_progress';
+      next['actual_check_in_at'] = p['actual_check_in_at'];
+
     case PendingActionType.bookingCheckOut:
       next['status'] = 'completed';
       next['actual_check_out_at'] = p['actual_check_out_at'];
@@ -219,12 +223,23 @@ Map<String, dynamic> _bookingStats(
   );
   inProgress -= checkOuts.length;
 
+  // Une arrivée en file fait passer une réservation à venir « en cours ».
+  final checkIns = snapshot.actions
+      .where(
+        (a) =>
+            a.state == PendingActionState.pending &&
+            a.type == PendingActionType.bookingCheckIn,
+      )
+      .length;
+  inProgress += checkIns;
+  upcoming -= checkIns;
+
   return {
     ...response,
     'data': {
       ...stats,
       'in_progress': inProgress < 0 ? 0 : inProgress,
-      'upcoming': upcoming,
+      'upcoming': upcoming < 0 ? 0 : upcoming,
     },
   };
 }

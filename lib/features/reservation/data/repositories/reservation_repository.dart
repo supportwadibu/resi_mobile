@@ -147,6 +147,31 @@ class ReservationRepository {
     }
   }
 
+  /// Enregistre l'arrivée du client sur une réservation à venir.
+  ///
+  /// [actualCheckInAt] : heure saisie hors ligne. Sans elle, le serveur
+  /// consigne l'heure de l'envoi. Un 422 signale une arrivée hors du séjour —
+  /// avant le jour J ou après la sortie prévue.
+  Future<ReservationModel> checkIn(
+    String id, {
+    DateTime? actualCheckInAt,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.bookingCheckIn(_role.value, id),
+        data: actualCheckInAt == null
+            ? null
+            : {'actual_check_in_at': actualCheckInAt.toUtc().toIso8601String()},
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
   /// Clôture un séjour mené à terme : le serveur consigne la sortie réelle
   /// sans toucher à la période facturée, qui porte la répartition du revenu.
   ///

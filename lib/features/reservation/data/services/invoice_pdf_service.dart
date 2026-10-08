@@ -113,6 +113,41 @@ class InvoicePdfService {
     ];
   }
 
+  /// Reçu en texte, prêt à partir dans la conversation WhatsApp du client.
+  ///
+  /// Du texte et non le PDF : `wa.me` ouvre la conversation d'un numéro mais
+  /// n'accepte pas de pièce jointe, et c'est le seul moyen d'atteindre le
+  /// client sans le chercher dans ses contacts. Mêmes lignes que la facture,
+  /// tirées de [lines] : les deux documents ne peuvent pas diverger. Le gras
+  /// suit la syntaxe de WhatsApp (`*…*`).
+  static String receiptText(
+    ReservationModel reservation, {
+    InvoiceIssuer? issuer,
+  }) {
+    final client = reservation.client;
+    final property = reservation.property;
+
+    return [
+      '*${'invoice.receipt_title'.tr()}* — ${'invoice.number'.tr(args: [invoiceNumber(reservation)])}',
+      if (issuer != null)
+        [
+          issuer.name,
+          if (issuer.phone case final phone? when phone.isNotEmpty) phone,
+        ].join(' · '),
+      '',
+      if (client != null && client.fullName.trim().isNotEmpty)
+        '${'invoice.client'.tr()} : ${client.fullName.trim()}',
+      if (property != null && property.title.isNotEmpty)
+        '${'invoice.lodging'.tr()} : ${property.title}',
+      for (final line in lines(reservation))
+        line.strong
+            ? '*${line.labelKey.tr()} : ${line.value}*'
+            : '${line.labelKey.tr()} : ${line.value}',
+      '',
+      'invoice.thanks'.tr(),
+    ].join('\n');
+  }
+
   Future<void> share({
     required ReservationModel reservation,
     InvoiceIssuer? issuer,

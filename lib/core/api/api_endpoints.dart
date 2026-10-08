@@ -122,6 +122,10 @@ abstract final class ApiEndpoints {
   static String bookingStats(String role) =>
       '${basePathForRole(role)}/bookings/stats';
 
+  /// Arrivée du client, enregistrée à partir du jour J.
+  static String bookingCheckIn(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/check-in';
+
   /// Clôture d'un séjour, mené à terme ou écourté par un départ anticipé.
   static String bookingCheckOut(String role, String id) =>
       '${basePathForRole(role)}/bookings/$id/check-out';

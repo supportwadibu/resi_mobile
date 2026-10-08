@@ -52,6 +52,23 @@ class PhoneHelper {
     return toE164(trimmed, iso2) ?? trimmed;
   }
 
+  /// Numéro au format attendu par `wa.me` : indicatif et numéro, chiffres
+  /// seuls, sans `+`.
+  ///
+  /// Le carnet garde les numéros tels que saisis — national (`07 12 34 56 78`)
+  /// ou international (`+225…`) ; préfixer `225` à l'aveugle doublait
+  /// l'indicatif des seconds. `null` pour un numéro illisible : mieux vaut ne
+  /// rien ouvrir que la conversation d'un inconnu.
+  static String? toWhatsApp(String? input, String iso2) {
+    final raw = input?.trim() ?? '';
+    if (raw.isEmpty) return null;
+
+    final parsed = tryParse(raw, iso2);
+    if (parsed == null || !parsed.isValid()) return null;
+
+    return '${parsed.countryCode}${parsed.nsn}';
+  }
+
   static String toNational(String? e164, String iso2) {
     final raw = e164?.trim() ?? '';
     if (raw.isEmpty) return '';
@@ -63,7 +80,9 @@ class PhoneHelper {
   }
 
   static String? validate(String? input, String iso2) {
-    if (input == null || input.trim().isEmpty) return 'common.field_required'.tr();
+    if (input == null || input.trim().isEmpty) {
+      return 'common.field_required'.tr();
+    }
     if (isoCodeOf(iso2) == null) return null;
     if (!isValid(input, iso2)) return 'fields.phone_invalid'.tr();
     return null;

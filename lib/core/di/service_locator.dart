@@ -28,6 +28,7 @@ import 'package:resi_africa/features/reservation/business_logic/sync_review_cubi
 import 'package:resi_africa/features/reservation/business_logic/edit_reservation_cubit.dart';
 import 'package:resi_africa/features/reservation/data/models/reservation_model.dart';
 import 'package:resi_africa/features/reservation/business_logic/early_check_out_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/stay_check_in_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_check_out_cubit.dart';
 import 'package:resi_africa/features/home/business_logic/home_stats_cubit.dart';
 import 'package:resi_africa/features/residence/business_logic/residence_cubit.dart';
@@ -321,15 +322,20 @@ Future<void> setupServiceLocator(AppConfig config) async {
   // La réservation à modifier est passée à la création : le formulaire part
   // de ses valeurs, et le cubit ne la relit pas.
   sl.registerFactoryParam<EditReservationCubit, ReservationModel, void>(
-    (reservation, _) =>
-        EditReservationCubit(
-          sl<ReservationRepository>(),
-          reservation,
-          queue: sl<OfflineActionQueue>(),
-        ),
+    (reservation, _) => EditReservationCubit(
+      sl<ReservationRepository>(),
+      reservation,
+      queue: sl<OfflineActionQueue>(),
+    ),
   );
   sl.registerFactory(
     () => StayCheckOutCubit(
+      sl<ReservationRepository>(),
+      queue: sl<OfflineActionQueue>(),
+    ),
+  );
+  sl.registerFactory(
+    () => StayCheckInCubit(
       sl<ReservationRepository>(),
       queue: sl<OfflineActionQueue>(),
     ),
