@@ -249,5 +249,60 @@ void main() {
         expect(database.clearedAll, isFalse);
       },
     );
+
+    test(
+      'un refus métier de la requête rejouée garde la session',
+      () async {
+        // Jeton expiré, rafraîchi, puis la réservation rejouée rend 409
+        // (période déjà prise) : c'est un refus à présenter, pas une session
+        // perdue. Le rejeu partageait le bloc du rafraîchissement, et ce 409
+        // déconnectait le propriétaire.
+        final storage = _MemorySecureStorage(refresh: 'rt-valide');
+        final session = sessionRoleFixture('gerant');
+        final interceptor = AuthInterceptor(
+          storage,
+          session,
+          SpyDatabase(),
+          refreshClient: (baseUrl) =>
+              Dio(BaseOptions(baseUrl: baseUrl))
+                ..httpClientAdapter = _RefreshThenConflictAdapter(),
+        );
+        DioException? passed;
+
+        interceptor.onError(
+          _unauthorized(),
+          _CapturingHandler((e) => passed = e),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+
+        expect(storage.cleared, isFalse);
+        expect(session.value, 'gerant');
+        expect(passed?.response?.statusCode, 409);
+      },
+    );
   });
+}
+
+/// Rafraîchissement accepté, puis requête rejouée refusée en 409.
+class _RefreshThenConflictAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    final refresh = options.path.endsWith('/auth/refresh');
+    return ResponseBody.fromString(
+      refresh
+          ? '{"access_token":"at-neuf","refresh_token":"rt-neuf"}'
+          : '{"code":"booking_period_conflict","message":"Période prise."}',
+      refresh ? 200 : 409,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

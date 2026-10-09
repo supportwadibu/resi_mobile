@@ -63,31 +63,25 @@ class AuthInterceptor extends Interceptor {
     }
     _isRefreshing = true;
 
+    final Dio freshDio;
+    final String newAccess;
     try {
       final refresh = await _storage.refreshToken;
       if (refresh == null) {
         await _endSession();
-        _rejectQueue(err);
-        handler.next(err);
+        _finish(err, handler);
         return;
       }
 
-      final freshDio = _refreshClient(err.requestOptions.baseUrl);
+      freshDio = _refreshClient(err.requestOptions.baseUrl);
       final res = await freshDio.post(
         ApiEndpoints.refresh,
         data: {'refresh_token': refresh},
       );
-      final newAccess = res.data['access_token'] as String;
+      newAccess = res.data['access_token'] as String;
       final newRefresh = res.data['refresh_token'] as String? ?? refresh;
 
       await _storage.saveTokens(access: newAccess, refresh: newRefresh);
-      err.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
-      handler.resolve(await freshDio.fetch(err.requestOptions));
-
-      for (final p in _queue) {
-        p.options.headers['Authorization'] = 'Bearer $newAccess';
-        p.handler.resolve(await freshDio.fetch(p.options));
-      }
     } catch (e) {
       // Seul un refus du serveur clôt la session. Une coupure pendant le
       // rafraîchissement — le contexte même du mode hors ligne — laissait
@@ -95,35 +89,53 @@ class AuthInterceptor extends Interceptor {
       // son refresh token restait valide.
       if (e is DioException && e.response != null) {
         await _endSession();
-        _rejectQueue(err);
-        handler.next(err);
+        _finish(err, handler);
       } else {
-        final offline = DioException(
-          requestOptions: err.requestOptions,
-          type: DioExceptionType.connectionError,
-          error: AppFailure.noInternet(),
+        _finish(
+          DioException(
+            requestOptions: err.requestOptions,
+            type: DioExceptionType.connectionError,
+            error: AppFailure.noInternet(),
+          ),
+          handler,
         );
-        _rejectQueue(offline);
-        handler.next(offline);
       }
-    } finally {
-      _isRefreshing = false;
-      _queue.clear();
+      return;
     }
+
+    // Rejeu hors du bloc du rafraîchissement : un refus métier de la requête
+    // rejouée (409 période prise, 422…) remonte tel quel. Dans le même bloc,
+    // il passait pour un refus du rafraîchissement et déconnectait.
+    final pending = [
+      (options: err.requestOptions, handler: handler),
+      ..._queue,
+    ];
+    _isRefreshing = false;
+    _queue.clear();
+    for (final request in pending) {
+      request.options.headers['Authorization'] = 'Bearer $newAccess';
+      try {
+        request.handler.resolve(await freshDio.fetch(request.options));
+      } on DioException catch (e) {
+        request.handler.next(e);
+      }
+    }
+  }
+
+  /// Termine la requête en échec avec la file mise en attente : vidée sans
+  /// réponse, la file laissait ses écrans attendre indéfiniment.
+  void _finish(DioException err, ErrorInterceptorHandler handler) {
+    for (final pending in _queue) {
+      pending.handler.next(err.copyWith(requestOptions: pending.options));
+    }
+    _isRefreshing = false;
+    _queue.clear();
+    handler.next(err);
   }
 
   Future<void> _endSession() async {
     await _storage.clear();
     await _sessionRole.clear();
     await _database.clearCaches();
-  }
-
-  /// Les requêtes mises en attente pendant le rafraîchissement doivent
-  /// aboutir à un échec : vidée sans réponse, la file laissait leurs écrans
-  /// attendre indéfiniment.
-  void _rejectQueue(DioException err) {
-    for (final pending in _queue) {
-      pending.handler.next(err.copyWith(requestOptions: pending.options));
-    }
   }
 }
