@@ -53,6 +53,13 @@ class AppConfig {
     defaultValue: 'https://resi.africa',
   );
 
+  static const String googlePlacesApiKey = String.fromEnvironment(
+    'GOOGLE_PLACES_API_KEY',
+    defaultValue: '',
+  );
+
+  static bool get isGooglePlacesEnabled => googlePlacesApiKey.isNotEmpty;
+
   /// Vide par défaut : l'écran affiche alors les horaires traduits
   /// (`support.hours`). Fournie au build, la valeur s'affiche telle quelle.
   static const String supportHours = String.fromEnvironment('SUPPORT_HOURS');

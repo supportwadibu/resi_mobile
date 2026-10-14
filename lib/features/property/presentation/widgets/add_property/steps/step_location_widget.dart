@@ -8,6 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/features/property/data/services/location_service.dart';
+import 'package:resi_africa/features/property/presentation/widgets/add_property/city_picker_widget.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
@@ -123,6 +124,21 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
     });
   }
 
+  /// Ouvre le sélecteur de ville via Google Places.
+  void _openCityPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => CityPickerWidget(
+        onCitySelected: (cityName, coordinates) {
+          _communeCtrl.text = cityName;
+          widget.onCityChanged(cityName);
+          _applyPoint(coordinates, moveMap: true);
+        },
+      ),
+    );
+  }
+
   /// Déplace le repère et remonte les coordonnées.
   void _applyPoint(LatLng point, {bool moveMap = false}) {
     setState(() => _markerPos = point);
@@ -139,6 +155,8 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
           isLoading: _isLocating,
           onPressed: _isLocating ? null : _useCurrentPosition,
         ),
+        const SizedBox(height: 12),
+        _SearchCityButton(onPressed: _openCityPicker),
 
         if (_locationNotice != null) ...[
           const SizedBox(height: 10),
@@ -238,6 +256,24 @@ class _CurrentPositionButton extends StatelessWidget {
       icon: LucideIcons.locateFixed,
       variant: AppButtonVariant.secondary,
       isLoading: isLoading,
+      expand: true,
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// Bouton de recherche de ville.
+class _SearchCityButton extends StatelessWidget {
+  const _SearchCityButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      label: 'property_form.search_city'.tr(),
+      icon: LucideIcons.search,
+      variant: AppButtonVariant.secondary,
       expand: true,
       onPressed: onPressed,
     );

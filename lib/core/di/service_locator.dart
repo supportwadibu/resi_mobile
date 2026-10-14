@@ -39,6 +39,7 @@ import 'package:resi_africa/features/property/business_logic/edit_property_cubit
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/data/repositories/property_repository.dart';
 import 'package:resi_africa/features/property/data/services/location_service.dart';
+import 'package:resi_africa/features/property/data/services/google_places_service.dart';
 import 'package:resi_africa/features/clients/business_logic/add_client_cubit.dart';
 import 'package:resi_africa/features/clients/business_logic/client_detail_cubit.dart';
 import 'package:resi_africa/features/clients/business_logic/clients_cubit.dart';
@@ -236,6 +237,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   // Client HTTP propre : Nominatim ne doit pas recevoir le jeton Resi.
   sl.registerLazySingleton(() => LocationService());
+  sl.registerLazySingleton(() => GooglePlacesService());
   // Singleton : la version de l'application ne change pas en cours de session,
   // et le service la garde en cache après la première lecture.
   sl.registerLazySingleton(() => FeedbackContextService(sl<AppConfig>()));

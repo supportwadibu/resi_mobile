@@ -35,6 +35,7 @@ dependencies:
   lottie: ^3.3.2
   phone_numbers_parser: ^9.0.5
   geolocator: ^14.0.3
+  http: ^1.1.0
   flutter_inappwebview: ^6.1.5
   pdf: ^3.11.1
   printing: ^5.13.4
