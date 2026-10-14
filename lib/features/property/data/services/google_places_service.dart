@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:logger/logger.dart';
 import '../../../../core/config/app_config.dart';
 
 class PlaceSuggestion {
@@ -33,6 +34,8 @@ class PlaceDetails {
 class GooglePlacesService {
   GooglePlacesService();
 
+  static final Logger _log = Logger();
+
   /// Vérifie si le service est disponible (clé API configurée).
   bool get isAvailable => AppConfig.isGooglePlacesEnabled;
 
@@ -47,21 +50,35 @@ class GooglePlacesService {
         'https://maps.googleapis.com/maps/api/place/autocomplete/json'
         '?input=${Uri.encodeComponent(query)}'
         '&types=(cities)'
+        '&language=fr'
         '&key=${AppConfig.googlePlacesApiKey}',
       );
 
+      _log.d('Google Places API request: $url');
       final response = await http.get(url);
+
+      _log.d('Google Places API response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
+        final status = data['status'] as String?;
+
+        if (status != 'OK') {
+          _log.w('Google Places API status: $status — error_message: ${data["error_message"]}');
+          return [];
+        }
+
+        _log.d('Google Places API successful response with status: $status');
         final predictions = data['predictions'] as List<dynamic>? ?? [];
 
         return predictions
             .map((prediction) => PlaceSuggestion.fromJson(prediction as Map<String, dynamic>))
             .toList();
+      } else {
+        _log.e('Google Places API HTTP error: ${response.statusCode} — body: ${response.body}');
       }
     } catch (e) {
-      // Erreur silencieuse pour le mode dégradé
+      _log.e('Google Places API searchCities error: $e');
     }
 
     return [];
@@ -78,13 +95,25 @@ class GooglePlacesService {
         'https://maps.googleapis.com/maps/api/place/details/json'
         '?place_id=${Uri.encodeComponent(placeId)}'
         '&fields=name,geometry'
+        '&language=fr'
         '&key=${AppConfig.googlePlacesApiKey}',
       );
 
+      _log.d('Google Places Details API request: $url');
       final response = await http.get(url);
+
+      _log.d('Google Places Details API response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
+        final status = data['status'] as String?;
+
+        if (status != 'OK') {
+          _log.w('Google Places Details API status: $status — error_message: ${data["error_message"]}');
+          return null;
+        }
+
+        _log.d('Google Places Details API successful response with status: $status');
         final result = data['result'] as Map<String, dynamic>?;
 
         if (result != null) {
@@ -104,9 +133,11 @@ class GooglePlacesService {
             }
           }
         }
+      } else {
+        _log.e('Google Places Details API HTTP error: ${response.statusCode} — body: ${response.body}');
       }
     } catch (e) {
-      // Erreur silencieuse pour le mode dégradé
+      _log.e('Google Places API getPlaceDetails error: $e');
     }
 
     return null;

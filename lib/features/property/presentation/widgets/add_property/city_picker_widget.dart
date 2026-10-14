@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/config/app_config.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
@@ -82,8 +83,11 @@ class _CityPickerWidgetState extends State<CityPickerWidget> {
 
   void _onManualSubmit(String value) {
     if (value.trim().isNotEmpty) {
-      // En mode dégradé, on utilise des coordonnées par défaut d'Abidjan
-      widget.onCitySelected(value.trim(), const LatLng(5.3364, -3.9772));
+      // En mode dégradé, on utilise les coordonnées par défaut d'Abidjan définies dans AppConfig
+      widget.onCitySelected(
+        value.trim(),
+        const LatLng(AppConfig.defaultLatitude, AppConfig.defaultLongitude),
+      );
       Navigator.of(context).pop();
     }
   }

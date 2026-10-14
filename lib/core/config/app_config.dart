@@ -55,10 +55,15 @@ class AppConfig {
 
   static const String googlePlacesApiKey = String.fromEnvironment(
     'GOOGLE_PLACES_API_KEY',
-    defaultValue: '',
+    defaultValue: '', // Temporairement désactivé
   );
 
   static bool get isGooglePlacesEnabled => googlePlacesApiKey.isNotEmpty;
+
+  /// Coordonnées par défaut d'Abidjan utilisées en mode dégradé
+  /// quand l'API Google Places n'est pas disponible
+  static const double defaultLatitude = 5.3364;
+  static const double defaultLongitude = -3.9772;
 
   /// Vide par défaut : l'écran affiche alors les horaires traduits
   /// (`support.hours`). Fournie au build, la valeur s'affiche telle quelle.
