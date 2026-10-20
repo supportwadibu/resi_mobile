@@ -214,9 +214,11 @@ class _ProfileContent extends StatelessWidget {
         AppSheetAction(
           icon: AppSectionIcons.managers,
           label: 'profile.my_managers'.tr(),
-          trailing: hasFullPlan() ? null : const PremiumBadge(),
+          trailing: hasPlanFor(PremiumFeature.managers)
+              ? null
+              : const PremiumBadge(feature: PremiumFeature.managers),
           onTap: () {
-            if (ensureFullPlan(context, PremiumFeature.managers)) {
+            if (ensurePlanFor(context, PremiumFeature.managers)) {
               context.router.push(const GerantListRoute());
             }
           },
@@ -429,11 +431,7 @@ class _ManagerProfileContent extends StatelessWidget {
       if (account.email != null)
         DetailItem('common.email'.tr(), account.email, icon: LucideIcons.mail),
       if (account.phone != null)
-        DetailItem(
-          'common.phone'.tr(),
-          account.phone,
-          icon: LucideIcons.phone,
-        ),
+        DetailItem('common.phone'.tr(), account.phone, icon: LucideIcons.phone),
     ];
 
     final active = account.isActive;

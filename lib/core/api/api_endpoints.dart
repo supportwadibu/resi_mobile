@@ -21,6 +21,20 @@ abstract final class ApiEndpoints {
   /// statut du dossier de validation).
   static const String proprioSubscription = '$_v1/proprio/subscription';
 
+  /// Portefeuilles des résidences : l'argent payé par Wave par les clients.
+  /// Propriétaire seulement — le gérant ne voit pas l'argent de la maison.
+  static const String proprioWallets = '$_v1/proprio/wallets';
+
+  static String proprioWalletTransactions(String walletId) =>
+      '$proprioWallets/$walletId/transactions';
+
+  /// Demande de retrait : débitée aussitôt, versée par l'équipe RESI.
+  static String proprioWalletWithdrawals(String walletId) =>
+      '$proprioWallets/$walletId/withdrawals';
+
+  /// Toutes les demandes de retrait du propriétaire.
+  static const String proprioWithdrawals = '$_v1/proprio/withdrawals';
+
   /// Forfaits proposés à la souscription, du moins cher au plus cher.
   static const String proprioPlans = '$_v1/proprio/plans';
 
@@ -121,6 +135,10 @@ abstract final class ApiEndpoints {
   /// perdait des compteurs auxquels il a droit.
   static String bookingStats(String role) =>
       '${basePathForRole(role)}/bookings/stats';
+
+  /// Annulation d'une réservation non close, avec le sort de l'acompte.
+  static String bookingCancel(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/cancel';
 
   /// Arrivée du client, enregistrée à partir du jour J.
   static String bookingCheckIn(String role, String id) =>

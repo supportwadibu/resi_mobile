@@ -20,6 +20,7 @@ class PendingBooking {
     this.localClientId,
     this.remoteClientId,
     this.checkOutAt,
+    this.daysCount,
     this.receivedAmount,
     this.agreedUnitPrice,
     this.depositAmount = 0,
@@ -45,6 +46,9 @@ class PendingBooking {
   final StayType stayType;
   final DateTime checkInAt;
   final DateTime? checkOutAt;
+
+  /// Durée explicite en jours choisie au comptoir.
+  final int? daysCount;
   final double? receivedAmount;
 
   /// Prix convenu par unité, transmis pour que le serveur le fige.
@@ -73,6 +77,8 @@ class PendingBooking {
       checkOutAt: row['check_out_at'] == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(row['check_out_at'] as int),
+      // Colonne ajoutée en version 7 : `NULL` sur les saisies plus anciennes.
+      daysCount: row['days_count'] as int?,
       receivedAmount: (row['received_amount'] as num?)?.toDouble(),
       // Colonne ajoutée en version 6 : `NULL` sur les saisies plus anciennes.
       agreedUnitPrice: (row['agreed_unit_price'] as num?)?.toDouble(),
@@ -456,6 +462,7 @@ class ReservationLocalStore {
         'stay_type': booking.stayType.code,
         'check_in_at': booking.checkInAt.millisecondsSinceEpoch,
         'check_out_at': booking.checkOutAt?.millisecondsSinceEpoch,
+        'days_count': booking.daysCount,
         'received_amount': booking.receivedAmount,
         'agreed_unit_price': booking.agreedUnitPrice,
         'deposit_amount': booking.depositAmount,

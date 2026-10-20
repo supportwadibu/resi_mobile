@@ -6,8 +6,6 @@ import '../home/header_propertys_widget.dart';
 import '../home/property_grid_widget.dart';
 import '../home/stats_row_widget.dart';
 import '../home/top_bar_widget.dart';
-import '../../../../subscription/presentation/widgets/plan_gate.dart';
-import '../../../../subscription/presentation/widgets/plan_style.dart';
 
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key, this.onSeeAllProperties});
@@ -35,13 +33,10 @@ class HomeTab extends StatelessWidget {
             icon: AppSectionIcons.home,
           ),
           const SizedBox(height: 8),
-          // Parc, séjours du mois et bénéfice sont des statistiques : forfait
-          // complet seulement.
-          const PlanGate(
-            feature: PremiumFeature.statistics,
-            compact: true,
-            child: StatsRowWidget(),
-          ),
+          // Ouverte à tous les paliers : le tableau de bord fait partie de
+          // RESI Basic. La rangée remplace d'elle-même le bénéfice par les
+          // revenus et l'occupation quand le palier ne suit pas les charges.
+          const StatsRowWidget(),
           const SizedBox(height: 24),
           HeaderPropertyWidget(onSeeAll: onSeeAllProperties),
           const SizedBox(height: 8),

@@ -17,6 +17,8 @@ enum ExpenseCategory {
   cleaning('cleaning', LucideIcons.sprayCan),
   maintenance('maintenance', LucideIcons.wrench),
   taxes('taxes', LucideIcons.receiptText),
+  commission('commission', LucideIcons.handshake),
+  subscription('subscription', LucideIcons.creditCard),
   other('other', LucideIcons.ellipsis);
 
   const ExpenseCategory(this.code, this.icon);
@@ -26,6 +28,14 @@ enum ExpenseCategory {
   /// Libellé dans la langue de l'application.
   String get label => 'expense_categories.$code'.tr();
   final IconData icon;
+
+  /// Catégories créées automatiquement par le serveur, non sélectionnables
+  /// dans le formulaire de saisie manuelle.
+  bool get isAutomatic => this == commission || this == subscription;
+
+  /// Catégories que le propriétaire peut saisir manuellement.
+  static List<ExpenseCategory> get manual =>
+      values.where((c) => !c.isAutomatic).toList();
 
   /// Couleur de la catégorie dans l'anneau et sa légende, fixée par catégorie
   /// pour qu'un poste garde la même teinte d'un écran à l'autre.
@@ -41,6 +51,8 @@ enum ExpenseCategory {
     ExpenseCategory.cleaning => t.accentGreen,
     ExpenseCategory.maintenance => t.muted,
     ExpenseCategory.taxes => t.accentRed,
+    ExpenseCategory.commission => t.accentAmberSoft,
+    ExpenseCategory.subscription => t.accentBlueSoft,
     ExpenseCategory.other => t.border,
   };
 

@@ -26,12 +26,20 @@ class StepPricingWidget extends StatefulWidget {
     required this.priceTiers,
     required this.onDailyChanged,
     required this.onTiersChanged,
+    required this.lateCheckoutGraceMinutes,
+    required this.lateCheckoutHalfDayHours,
+    required this.onLateCheckoutChanged,
   });
 
   final double dailyPrice;
   final List<PriceTier> priceTiers;
   final void Function(double) onDailyChanged;
   final void Function(List<PriceTier>) onTiersChanged;
+
+  /// Départ tardif : dépassement offert, puis facturé en demi-journée.
+  final int lateCheckoutGraceMinutes;
+  final int lateCheckoutHalfDayHours;
+  final void Function(int graceMinutes, int halfDayHours) onLateCheckoutChanged;
 
   @override
   State<StepPricingWidget> createState() => _StepPricingWidgetState();
@@ -165,6 +173,14 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
           ),
         ],
 
+        const SizedBox(height: 24),
+
+        _LateCheckoutCard(
+          graceMinutes: widget.lateCheckoutGraceMinutes,
+          halfDayHours: widget.lateCheckoutHalfDayHours,
+          onChanged: widget.onLateCheckoutChanged,
+        ),
+
         const SizedBox(height: 12),
 
         AppCallout(
@@ -173,6 +189,83 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
           message: 'property_form.pricing_rule'.tr(),
         ),
       ],
+    );
+  }
+}
+
+/// Règle de départ tardif du bien : tolérance, puis demi-journée.
+///
+/// Par crans — 15 minutes, une heure — plutôt qu'en saisie libre : ce sont
+/// des réglages qu'on ajuste rarement, et un chiffre tapé sans unité visible
+/// se confondrait entre minutes et heures.
+class _LateCheckoutCard extends StatelessWidget {
+  const _LateCheckoutCard({
+    required this.graceMinutes,
+    required this.halfDayHours,
+    required this.onChanged,
+  });
+
+  /// Bornes du serveur (`late_checkout_*` dans le validateur des biens).
+  static const _graceStep = 15;
+  static const _graceMax = 720;
+  static const _halfDayMax = 23;
+
+  final int graceMinutes;
+  final int halfDayHours;
+  final void Function(int graceMinutes, int halfDayHours) onChanged;
+
+  String _graceLabel() {
+    if (graceMinutes == 0) return 'late_checkout.none'.tr();
+    final hours = graceMinutes ~/ 60;
+    final minutes = graceMinutes % 60;
+    if (hours == 0) return '$minutes min';
+    return minutes == 0 ? '$hours h' : '$hours h $minutes';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PricingCard(
+      icon: LucideIcons.clockAlert,
+      title: 'late_checkout.title'.tr(),
+      subtitle: 'late_checkout.subtitle'.tr(),
+      color: context.tokens.primary,
+      child: Row(
+        children: [
+          Expanded(
+            child: _Stepper(
+              label: 'late_checkout.grace'.tr(),
+              value: _graceLabel(),
+              onDecrement: graceMinutes > 0
+                  ? () => onChanged(
+                      (graceMinutes - _graceStep).clamp(0, _graceMax),
+                      halfDayHours,
+                    )
+                  : null,
+              onIncrement: graceMinutes < _graceMax
+                  ? () => onChanged(
+                      (graceMinutes + _graceStep).clamp(0, _graceMax),
+                      halfDayHours,
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _Stepper(
+              label: 'late_checkout.half_day'.tr(),
+              value: halfDayHours == 0
+                  ? 'late_checkout.none'.tr()
+                  : '$halfDayHours h',
+              onDecrement: halfDayHours > 0
+                  ? () => onChanged(graceMinutes, halfDayHours - 1)
+                  : null,
+              onIncrement: halfDayHours < _halfDayMax
+                  ? () => onChanged(graceMinutes, halfDayHours + 1)
+                  : null,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

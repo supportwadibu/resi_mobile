@@ -47,6 +47,8 @@ class PendingActionSender {
           _required(target),
           actualCheckOutAt: _date(p['actual_check_out_at'])!,
           finalAmount: p['final_amount'] as num?,
+          earlyCheckoutOption: p['early_checkout_option'] as String?,
+          penaltyAmount: p['penalty_amount'] as num?,
         );
         return null;
 

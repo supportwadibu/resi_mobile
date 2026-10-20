@@ -1,5 +1,8 @@
 import '../../property/data/models/property_model.dart';
 import '../data/models/reservation_model.dart';
+import '../../../shared/models/late_checkout_policy.dart';
+
+export '../../../shared/models/late_checkout_policy.dart';
 
 /// Chiffrage d'un séjour comptoir, tel que le serveur le calculera.
 ///
@@ -14,6 +17,8 @@ class StayQuote {
     required this.stayType,
     required this.checkInAt,
     required this.checkOutAt,
+    this.explicitDaysCount,
+    this.lateCheckoutPolicy = const LateCheckoutPolicy(),
   });
 
   final double dailyPrice;
@@ -21,6 +26,10 @@ class StayQuote {
   final StayType stayType;
   final DateTime? checkInAt;
   final DateTime? checkOutAt;
+  final int? explicitDaysCount;
+
+  /// Règle de départ tardif du bien ; celle du serveur par défaut.
+  final LateCheckoutPolicy lateCheckoutPolicy;
 
   /// Tarif d'une unité du type de séjour choisi.
   ///
@@ -32,23 +41,38 @@ class StayQuote {
     StayType.passage => (dailyPrice * 0.3).roundToDouble(),
   };
 
-  /// Nombre de jours facturés, au minimum un.
+  /// Jours facturés et départ tardif, selon la règle du bien.
   ///
-  /// Compté à la milliseconde, comme `countStayDays` côté serveur. En minutes
-  /// entières, une entrée enregistrée à 10 h 15 min 42 s et une sortie le
-  /// lendemain à 10 h 16 donnaient 1 jour ici et 2 au serveur : l'écran
-  /// annonçait un total que la réservation ne portait pas.
-  int get daysCount {
-    if (stayType != StayType.fullDay) return 1;
+  /// Si le propriétaire a choisi un nombre de jours explicite (Option 1), ce
+  /// choix fait foi pour les jours : une sortie à 15h le lendemain d'une
+  /// entrée à 12h reste 1 jour, plus une demi-journée de départ tardif.
+  BilledStay get _billed {
+    if (stayType != StayType.fullDay) {
+      return const BilledStay(1, lateCheckout: false);
+    }
+    final explicit = explicitDaysCount != null && explicitDaysCount! >= 1
+        ? explicitDaysCount
+        : null;
     final start = checkInAt;
     final end = checkOutAt;
-    if (start == null || end == null) return 1;
-
-    final millis = end.difference(start).inMilliseconds;
-    return millis <= 0
-        ? 1
-        : (millis / Duration.millisecondsPerDay).ceil().clamp(1, 3650);
+    if (start == null || end == null || !end.isAfter(start)) {
+      return BilledStay(explicit ?? 1, lateCheckout: false);
+    }
+    return lateCheckoutPolicy.resolve(start, end, explicitDays: explicit);
   }
+
+  /// Nombre de jours facturés, au minimum un.
+  int get daysCount => _billed.days;
+
+  /// Le dépassement des jours facturés se paie en demi-journée.
+  bool get lateCheckout => _billed.lateCheckout;
+
+  /// Supplément de départ tardif au tarif de la grille ; 0 sans dépassement.
+  ///
+  /// Au tarif plein, comme au serveur : la remise de durée ne porte que sur
+  /// les jours.
+  double get lateCheckoutFee =>
+      lateCheckout ? LateCheckoutPolicy.feeFor(unitPrice) : 0;
 
   /// Remise de durée applicable au séjour saisi, en pourcentage.
   ///
@@ -77,8 +101,19 @@ class StayQuote {
   /// L'arrondi au franc reproduit celui du serveur : sans lui, l'écran
   /// annoncerait au comptoir un montant que la facture ne confirmerait pas.
   double get expectedAmount =>
-      (unitPrice * daysCount * (1 - discountPercent / 100)).roundToDouble();
+      (unitPrice * daysCount * (1 - discountPercent / 100)).roundToDouble() +
+      lateCheckoutFee;
 
-  /// Montant avant remise de durée, pour montrer ce que le palier fait gagner.
+  /// Montant des jours avant remise de durée, pour montrer ce que le palier
+  /// fait gagner. Hors départ tardif, que la remise ne touche pas.
   double get fullAmount => (unitPrice * daysCount).roundToDouble();
+
+  /// Remise de durée, en montant.
+  double get durationDiscount => fullAmount + lateCheckoutFee - expectedAmount;
+
+  /// Montant à un prix convenu par unité : les jours, et le départ tardif au
+  /// même prix — comme `resolveAgreedAmount` au serveur.
+  double agreedAmount(double unit) =>
+      (unit * daysCount).roundToDouble() +
+      (lateCheckout ? LateCheckoutPolicy.feeFor(unit) : 0);
 }

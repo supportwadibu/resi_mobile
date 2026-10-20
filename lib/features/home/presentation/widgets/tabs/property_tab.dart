@@ -261,7 +261,12 @@ class _ViewToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          button(LucideIcons.layoutGrid, 'property_tab.grid'.tr(), isGrid, true),
+          button(
+            LucideIcons.layoutGrid,
+            'property_tab.grid'.tr(),
+            isGrid,
+            true,
+          ),
           button(LucideIcons.list, 'property_tab.list'.tr(), !isGrid, false),
         ],
       ),

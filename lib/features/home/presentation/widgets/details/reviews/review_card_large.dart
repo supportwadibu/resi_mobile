@@ -105,11 +105,7 @@ class ReviewCardLarge extends StatelessWidget {
           const SizedBox(height: 8),
           _buildRatingRow(context, 'reviews.comfort'.tr(), review.comfort),
           const SizedBox(height: 8),
-          _buildRatingRow(
-            context,
-            'reviews.value'.tr(),
-            review.valueForMoney,
-          ),
+          _buildRatingRow(context, 'reviews.value'.tr(), review.valueForMoney),
         ],
       ),
     );

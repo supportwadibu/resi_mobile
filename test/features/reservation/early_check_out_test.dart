@@ -16,6 +16,11 @@ const _quote = {
   'paid_amount': 100000,
   'proposed_amount': 40000,
   'refund_amount': 60000,
+  'options': {
+    'prorata': {'amount': 40000, 'refund': 60000},
+    'with_penalty': {'amount': 50000, 'penalty': 10000, 'refund': 50000},
+    'full_amount': {'amount': 100000, 'refund': 0},
+  },
 };
 
 const _closed = {
@@ -26,11 +31,13 @@ const _closed = {
   'end_date': '2026-09-26T09:00:00.000Z',
   'days_count': 2,
   'daily_price': 20000,
-  'total_amount': 40000,
-  'received_amount': 40000,
-  'refunded_amount': 60000,
+  'total_amount': 50000,
+  'received_amount': 50000,
+  'refunded_amount': 50000,
   'planned_total_amount': 100000,
   'planned_check_out_at': '2026-09-29T09:00:00.000Z',
+  'early_checkout_option': 'with_penalty',
+  'early_checkout_penalty': 10000,
 };
 
 /// Répond au chiffrage et à la clôture, ou rejette avec [status].
@@ -100,6 +107,19 @@ void main() {
       expect(quote.refundFor(35000), 65000);
       expect(quote.refundFor(120000), 0);
     });
+    test('décode les 3 options de facturation depuis le JSON', () {
+      final quote = EarlyCheckOutQuote.fromJson(_quote);
+
+      expect(quote.options.keys, containsAll([
+        EarlyCheckOutOption.prorata,
+        EarlyCheckOutOption.withPenalty,
+        EarlyCheckOutOption.fullAmount,
+      ]));
+      expect(quote.options[EarlyCheckOutOption.prorata]?.amount, 40000);
+      expect(quote.options[EarlyCheckOutOption.withPenalty]?.penalty, 10000);
+      expect(quote.options[EarlyCheckOutOption.withPenalty]?.amount, 50000);
+      expect(quote.options[EarlyCheckOutOption.fullAmount]?.amount, 100000);
+    });
   });
 
   group('ReservationModel', () {
@@ -107,8 +127,10 @@ void main() {
       final reservation = ReservationModel.fromJson(_closed);
 
       expect(reservation.isEarlyCheckOut, isTrue);
-      expect(reservation.refundedAmount, 60000);
+      expect(reservation.refundedAmount, 50000);
       expect(reservation.plannedTotalAmount, 100000);
+      expect(reservation.earlyCheckoutOption, EarlyCheckOutOption.withPenalty);
+      expect(reservation.earlyCheckoutPenalty, 10000);
     });
 
     test('un séjour mené à terme n’a ni remboursement ni vente d’origine', () {
@@ -120,6 +142,8 @@ void main() {
 
       expect(reservation.isEarlyCheckOut, isFalse);
       expect(reservation.refundedAmount, 0);
+      expect(reservation.earlyCheckoutOption, isNull);
+      expect(reservation.earlyCheckoutPenalty, isNull);
     });
   });
 
@@ -163,6 +187,30 @@ void main() {
         'full_stay': false,
         'actual_check_out_at': '2026-09-26T09:00:00.000Z',
         'final_amount': 35000,
+      });
+      expect(built.cubit.state, isA<EarlyCheckOutSuccess>());
+    });
+
+    test('transmet l’option et la pénalité lors de la clôture', () async {
+      final built = _build();
+      await built.cubit.quote('book_1', DateTime.utc(2026, 9, 26, 9));
+
+      await built.cubit.submit(
+        'book_1',
+        50000,
+        option: EarlyCheckOutOption.withPenalty,
+        penaltyAmount: 10000,
+      );
+
+      final sent = built.spy.captured.last;
+      expect(sent.method, 'PATCH');
+      expect(sent.path, contains('/proprio/bookings/book_1/check-out'));
+      expect(sent.data, {
+        'full_stay': false,
+        'actual_check_out_at': '2026-09-26T09:00:00.000Z',
+        'final_amount': 50000,
+        'early_checkout_option': 'with_penalty',
+        'penalty_amount': 10000,
       });
       expect(built.cubit.state, isA<EarlyCheckOutSuccess>());
     });

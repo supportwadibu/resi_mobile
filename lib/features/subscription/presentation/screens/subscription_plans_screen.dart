@@ -24,6 +24,7 @@ import '../../business_logic/plan_cubit.dart';
 import '../../business_logic/plan_state.dart';
 import '../../business_logic/subscription_plans_cubit.dart';
 import '../../business_logic/subscription_plans_state.dart';
+import '../../data/models/plan_access.dart';
 import '../../data/models/subscription_plan_model.dart';
 import '../widgets/plan_status_card.dart';
 import '../widgets/plan_style.dart';
@@ -193,6 +194,12 @@ class _LoadedView extends StatelessWidget {
               const _TrialCard(),
               const SizedBox(height: 12),
             ],
+            // Même chose pour RESI Basic : il ne se paie pas, mais le
+            // propriétaire doit voir où il en est avant de choisir.
+            if (current == PlanStyle.free) ...[
+              const _FreeCard(),
+              const SizedBox(height: 12),
+            ],
 
             if (state.plans.isEmpty)
               _Notice.info('subscription.empty'.tr())
@@ -200,10 +207,7 @@ class _LoadedView extends StatelessWidget {
               for (final offer in state.plans) ...[
                 _PlanCard(
                   plan: offer,
-                  isCurrent:
-                      current != null &&
-                      current != PlanStyle.trial &&
-                      (current == PlanStyle.full) == offer.isFull,
+                  isCurrent: current == PlanStyle.of(offer.access),
                   isPaying: state.payingPlanId == offer.id,
                   onPay: state.payingPlanId == null ? () => onPay(offer) : null,
                 ),
@@ -235,10 +239,11 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = plan.isFull ? PlanStyle.full : PlanStyle.basic;
+    final style = PlanStyle.of(plan.access) ?? PlanStyle.pro;
+    final isRecommended = plan.access == PlanAccess.proPlus;
     // Forfait en cours ou recommandé : filet `primary`, comme toute option
     // mise en avant.
-    final highlight = isCurrent || plan.isFull;
+    final highlight = isCurrent || isRecommended;
     final t = context.tokens;
 
     return Container(
@@ -270,7 +275,7 @@ class _PlanCard extends StatelessWidget {
               ),
               if (isCurrent)
                 PlanChip(label: 'plans.current'.tr(), accent: style.accent)
-              else if (plan.isFull)
+              else if (isRecommended)
                 PlanChip(label: 'plans.recommended'.tr(), accent: style.accent),
             ],
           ),
@@ -366,6 +371,50 @@ class _TrialCard extends StatelessWidget {
             text: 'plans.trial_then'.tr(),
             color: style.colorOf(context),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// RESI Basic en cours, présenté comme un forfait : gratuit, sans bouton.
+class _FreeCard extends StatelessWidget {
+  const _FreeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    const style = PlanStyle.free;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: style.softOf(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const PlanIconBadge(style: style),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(style.label, style: context.text.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(style.tagline, style: context.text.bodySmall),
+                  ],
+                ),
+              ),
+              PlanChip(label: 'plans.current'.tr(), accent: style.accent),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (final key in const [
+            'plans.free_bookings',
+            'plans.free_dashboard',
+            'plans.free_wallet',
+          ])
+            _FeatureLine(text: key.tr(), color: style.colorOf(context)),
         ],
       ),
     );

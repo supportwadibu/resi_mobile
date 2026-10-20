@@ -13,9 +13,9 @@ import '../../data/models/plan_access.dart';
 /// Source unique : la carte « Mon forfait », l'écran des forfaits, le badge et
 /// la feuille de verrou lisent tous ici, si bien qu'un forfait garde la même
 /// allure partout. Les tons suivent la grammaire des statuts du backoffice
-/// (`PLAN_TIER_TONES`) : l'essai est en cours (violet), le forfait
-/// d'enregistrement actif mais réduit (bleu), le forfait complet en règle
-/// (vert).
+/// (`PLAN_TIER_TONES`) : l'essai est en cours (violet), le palier gratuit hors
+/// circuit payant (neutre), Pro actif mais réduit (bleu), Pro+ complet et en
+/// règle (vert).
 enum PlanStyle {
   trial(
     LucideIcons.gift,
@@ -23,18 +23,32 @@ enum PlanStyle {
     'plans.trial_name',
     'plans.trial_tagline',
   ),
-  basic(
+  free(
+    LucideIcons.house,
+    AppAccent.neutral,
+    'plans.free_name',
+    'plans.free_tagline',
+  ),
+  pro(
     LucideIcons.layers,
     AppAccent.blue,
-    'plans.basic_name',
-    'plans.basic_tagline',
+    'plans.pro_name',
+    'plans.pro_tagline',
   ),
-  full(
+  proPlus(
     LucideIcons.crown,
     AppAccent.green,
-    'plans.full_name',
-    'plans.full_tagline',
+    'plans.pro_plus_name',
+    'plans.pro_plus_tagline',
   );
+
+  /// Allure du palier [access] ; `null` pour un compte inactif.
+  static PlanStyle? of(PlanAccess access) => switch (access) {
+    PlanAccess.proPlus => PlanStyle.proPlus,
+    PlanAccess.pro => PlanStyle.pro,
+    PlanAccess.free => PlanStyle.free,
+    PlanAccess.inactive => null,
+  };
 
   const PlanStyle(this.icon, this.accent, this._nameKey, this._taglineKey);
 
@@ -60,30 +74,33 @@ enum PlanStyle {
 /// que le propriétaire a, pas celui qu'il a payé.
 PlanStyle? currentPlanStyle(PlanState state) {
   if (state is PlanKnown && state.isTrial) return PlanStyle.trial;
-  return switch (state.access) {
-    PlanAccess.full => PlanStyle.full,
-    PlanAccess.basic => PlanStyle.basic,
-    PlanAccess.inactive => null,
-  };
+  return PlanStyle.of(state.access);
 }
 
-/// Fonctions réservées au forfait Premium.
+/// Fonctions réservées à un palier payant, et le palier minimal qui les ouvre.
 ///
-/// Chaque verrou nomme la fonction demandée : « Rapports PDF, c'est avec
-/// Premium » dit ce qu'on obtient, là où un « Accès refusé » générique ne dit
-/// rien.
+/// Chaque verrou nomme la fonction demandée et l'offre qui l'ouvre :
+/// « Rapports PDF, c'est avec RESI Pro+ » dit ce qu'on obtient, là où un
+/// « Accès refusé » générique ne dit rien. Les paliers suivent les groupes de
+/// routes de l'API (`start/routes.ts`).
 enum PremiumFeature {
-  statistics(LucideIcons.chartLine),
-  finance(LucideIcons.scale),
-  reports(LucideIcons.fileText),
-  clients(LucideIcons.users),
-  expenses(LucideIcons.banknote),
-  managers(LucideIcons.userCog),
-  invoices(LucideIcons.receiptText);
+  statistics(LucideIcons.chartLine, PlanAccess.pro),
+  finance(LucideIcons.scale, PlanAccess.pro),
+  clients(LucideIcons.users, PlanAccess.pro),
+  expenses(LucideIcons.banknote, PlanAccess.pro),
+  reports(LucideIcons.fileText, PlanAccess.proPlus),
+  managers(LucideIcons.userCog, PlanAccess.proPlus),
+  invoices(LucideIcons.receiptText, PlanAccess.proPlus);
 
-  const PremiumFeature(this.icon);
+  const PremiumFeature(this.icon, this.requiredAccess);
 
   final IconData icon;
+
+  /// Palier minimal qui ouvre la fonction.
+  final PlanAccess requiredAccess;
+
+  /// Allure de l'offre qui ouvre la fonction.
+  PlanStyle get plan => PlanStyle.of(requiredAccess)!;
 
   String get title => 'premium.features.$name.title'.tr();
   String get body => 'premium.features.$name.body'.tr();
@@ -102,19 +119,23 @@ class PlanIconBadge extends StatelessWidget {
   }
 }
 
-/// Petite étiquette « Premium », posée sur une entrée verrouillée.
+/// Petite étiquette de l'offre — « Pro », « Pro+ » —, posée sur une entrée
+/// verrouillée.
 ///
 /// Remplace le cadenas : elle dit ce qui ouvre l'entrée, pas seulement
 /// qu'elle est fermée.
 class PremiumBadge extends StatelessWidget {
-  const PremiumBadge({super.key});
+  const PremiumBadge({required this.feature, super.key});
+
+  final PremiumFeature feature;
 
   @override
   Widget build(BuildContext context) {
+    final plan = feature.plan;
     return AppBadge(
-      label: 'premium.badge'.tr(),
-      icon: PlanStyle.full.icon,
-      tone: PlanStyle.full.accent,
+      label: 'premium.badge_${plan.name}'.tr(),
+      icon: plan.icon,
+      tone: plan.accent,
     );
   }
 }

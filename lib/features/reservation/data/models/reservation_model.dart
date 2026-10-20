@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../../../core/offline/pending_action.dart';
 import '../../../../core/offline/pending_overlay.dart';
+import 'early_check_out_quote.dart';
 
 /// Statut d'une réservation, aligné sur `BookingStatus` du serveur.
 enum ReservationStatus {
@@ -175,10 +176,15 @@ class ReservationModel {
     this.agreedUnitPrice,
     this.depositAmount = 0,
     this.refundedAmount = 0,
+    this.lateCheckoutFee = 0,
+    this.retainedAmount = 0,
+    this.cancellationRefundedAmount = 0,
     this.plannedTotalAmount,
     this.plannedCheckOutAt,
     this.actualCheckInAt,
     this.referrer,
+    this.earlyCheckoutOption,
+    this.earlyCheckoutPenalty,
     this.referrerCommissionRate = 0,
     this.referrerCommissionAmount = 0,
     this.syncState,
@@ -240,10 +246,26 @@ class ReservationModel {
   /// Somme rendue au client sur un départ anticipé.
   final double refundedAmount;
 
+  /// Supplément de départ tardif — une demi-journée —, déjà compris dans
+  /// [totalAmount].
+  final double lateCheckoutFee;
+
+  /// Acompte gardé par le propriétaire à l'annulation, compté en revenu.
+  final double retainedAmount;
+
+  /// Acompte rendu au client à l'annulation.
+  final double cancellationRefundedAmount;
+
   /// Montant et sortie vendus, présents seulement sur un séjour écourté :
   /// [totalAmount] et [checkOutAt] portent alors l'usage réel.
   final double? plannedTotalAmount;
   final DateTime? plannedCheckOutAt;
+
+  /// Option de facturation choisie pour un départ anticipé.
+  final EarlyCheckOutOption? earlyCheckoutOption;
+
+  /// Montant de pénalité appliqué, présent si l'option est `withPenalty`.
+  final double? earlyCheckoutPenalty;
 
   /// Arrivée enregistrée au comptoir, `null` tant qu'elle ne l'est pas.
   /// Informative : la période facturée reste [checkInAt].
@@ -301,7 +323,8 @@ class ReservationModel {
   /// grille s'applique, remise de durée comprise.
   double get extensionDailyRate {
     if (agreedUnitPrice case final unit?) return unit;
-    if (hasNegotiatedPrice) return receivedAmount / daysCount;
+    if (hasNegotiatedPrice)
+      return (receivedAmount - lateCheckoutFee) / daysCount;
     return dailyPrice * (1 - durationDiscountPercent / 100);
   }
 
@@ -369,10 +392,25 @@ class ReservationModel {
       // Absents tant que le séjour n'a pas été écourté, et sur les réponses
       // d'un serveur antérieur au départ anticipé.
       refundedAmount: (json['refunded_amount'] as num?)?.toDouble() ?? 0,
+      // Absents hors annulation, de l'historique et d'un serveur antérieur au
+      // choix sur l'acompte.
+      // Absent de l'historique et d'un serveur antérieur au départ tardif.
+      lateCheckoutFee: (json['late_checkout_fee'] as num?)?.toDouble() ?? 0,
+      retainedAmount: (json['retained_amount'] as num?)?.toDouble() ?? 0,
+      cancellationRefundedAmount:
+          (json['cancellation_refunded_amount'] as num?)?.toDouble() ?? 0,
       plannedTotalAmount: (json['planned_total_amount'] as num?)?.toDouble(),
       plannedCheckOutAt: _date(json['planned_check_out_at']),
       // Absente tant que l'arrivée n'est pas enregistrée, et de l'historique.
       actualCheckInAt: _date(json['actual_check_in_at']),
+      // Absents des séjours menés à terme et d'un serveur antérieur aux options.
+      earlyCheckoutOption: json['early_checkout_option'] is String
+          ? EarlyCheckOutOption.fromString(
+              json['early_checkout_option'] as String,
+            )
+          : null,
+      earlyCheckoutPenalty: (json['early_checkout_penalty'] as num?)
+          ?.toDouble(),
       // Absents de l'historique et d'un serveur antérieur aux apporteurs.
       referrer: json['referrer'] is Map<String, dynamic>
           ? ReservationReferrer.fromJson(

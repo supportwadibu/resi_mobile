@@ -28,7 +28,9 @@ class EditReservationState {
     required this.propertyId,
     required this.dailyPrice,
     this.priceTiers = const [],
+    this.lateCheckoutPolicy = const LateCheckoutPolicy(),
     required this.stayType,
+    this.explicitDaysCount,
     required this.checkInAt,
     required this.checkOutAt,
     this.agreedUnitPrice,
@@ -65,6 +67,9 @@ class EditReservationState {
       propertyId: reservation.propertyId,
       dailyPrice: reservation.dailyPrice,
       stayType: reservation.stayType,
+      explicitDaysCount: reservation.daysCount > 0
+          ? reservation.daysCount
+          : null,
       // Lues en UTC sur l'API, saisies en heure locale : les champs de date
       // affichent heures et jours tels que le propriétaire les a choisis.
       checkInAt: reservation.checkInAt.toLocal(),
@@ -72,7 +77,10 @@ class EditReservationState {
       agreedUnitPrice:
           reservation.agreedUnitPrice ??
           (reservation.hasNegotiatedPrice
-              ? reservation.receivedAmount / reservation.daysCount
+              // Supplément de départ tardif retiré : il ne relève pas du
+              // prix d'un jour.
+              ? (reservation.receivedAmount - reservation.lateCheckoutFee) /
+                    reservation.daysCount
               : null),
       depositAmount: reservation.depositAmount,
       message: reservation.message ?? '',
@@ -84,7 +92,11 @@ class EditReservationState {
   final String propertyId;
   final double dailyPrice;
   final List<PriceTier> priceTiers;
+
+  /// Règle de départ tardif du logement ; celle du serveur par défaut.
+  final LateCheckoutPolicy lateCheckoutPolicy;
   final StayType stayType;
+  final int? explicitDaysCount;
   final DateTime checkInAt;
   final DateTime checkOutAt;
 
@@ -108,7 +120,11 @@ class EditReservationState {
     stayType: stayType,
     checkInAt: checkInAt,
     checkOutAt: checkOutAt,
+    explicitDaysCount: stayType == StayType.fullDay ? explicitDaysCount : 1,
+    lateCheckoutPolicy: lateCheckoutPolicy,
   );
+
+  int get daysCount => quote.daysCount;
 
   double get expectedAmount => quote.expectedAmount;
 
@@ -119,7 +135,7 @@ class EditReservationState {
   double? get agreedAmount {
     final unit = agreedUnitPrice;
     if (unit == null) return null;
-    return (unit * quote.daysCount).roundToDouble();
+    return quote.agreedAmount(unit);
   }
 
   double get effectiveAmount => agreedAmount ?? expectedAmount;
@@ -147,7 +163,9 @@ class EditReservationState {
     String? propertyId,
     double? dailyPrice,
     List<PriceTier>? priceTiers,
+    LateCheckoutPolicy? lateCheckoutPolicy,
     StayType? stayType,
+    int? daysCount,
     DateTime? checkInAt,
     DateTime? checkOutAt,
     double? agreedUnitPrice,
@@ -159,12 +177,20 @@ class EditReservationState {
     ReservationModel? updated,
     bool? queued,
   }) {
+    final resolvedExplicitDays =
+        daysCount ??
+        (checkOutAt != null && checkOutAt != this.checkOutAt
+            ? null
+            : explicitDaysCount);
+
     return EditReservationState(
       original: original,
       propertyId: propertyId ?? this.propertyId,
       dailyPrice: dailyPrice ?? this.dailyPrice,
       priceTiers: priceTiers ?? this.priceTiers,
+      lateCheckoutPolicy: lateCheckoutPolicy ?? this.lateCheckoutPolicy,
       stayType: stayType ?? this.stayType,
+      explicitDaysCount: resolvedExplicitDays,
       checkInAt: checkInAt ?? this.checkInAt,
       checkOutAt: checkOutAt ?? this.checkOutAt,
       agreedUnitPrice: clearAgreedUnitPrice

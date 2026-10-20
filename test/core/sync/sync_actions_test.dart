@@ -40,6 +40,7 @@ class _Reservations extends ReservationRepository {
     required StayType stayType,
     required DateTime checkInAt,
     DateTime? checkOutAt,
+    int? daysCount,
     double? receivedAmount,
     double? agreedUnitPrice,
     double? depositAmount,

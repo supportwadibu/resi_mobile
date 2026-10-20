@@ -55,7 +55,7 @@ class AppConfig {
 
   static const String googlePlacesApiKey = String.fromEnvironment(
     'GOOGLE_PLACES_API_KEY',
-    defaultValue: '', // Temporairement désactivé
+    defaultValue: 'AIzaSyBGvCTV3gWWFALypi3IoVgYuYIT8iOpPNQ', // Temporairement désactivé
   );
 
   static bool get isGooglePlacesEnabled => googlePlacesApiKey.isNotEmpty;

@@ -28,8 +28,10 @@ import '../widgets/create/date_time_field.dart';
 import '../widgets/create/property_selector.dart';
 import '../widgets/create/referrer_fields.dart';
 import '../../../subscription/presentation/widgets/plan_gate.dart';
+import '../../../subscription/presentation/widgets/plan_style.dart';
 import '../widgets/create/reservation_document_picker.dart';
 import '../widgets/create/reservation_section_title.dart';
+import '../widgets/create/stay_duration_picker.dart';
 import '../widgets/create/stay_tier_hints.dart';
 import '../widgets/create/stay_type_picker.dart';
 
@@ -150,7 +152,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   phoneController: _phoneController,
                   onNameChanged: cubit.setFullName,
                   onPhoneChanged: cubit.setPhone,
-                  onPickFromBook: hasFullPlan()
+                  onPickFromBook: hasPlanFor(PremiumFeature.clients)
                       ? () => _pickClient(cubit)
                       : null,
                   onClearSelection: cubit.clearSelectedClient,
@@ -206,6 +208,7 @@ class _AddReservationViewState extends State<_AddReservationView> {
                     property.id,
                     dailyPrice: property.pricing.dailyPrice,
                     priceTiers: property.pricing.priceTiers,
+                    lateCheckoutPolicy: property.pricing.lateCheckoutPolicy,
                   ),
                 ),
 
@@ -220,6 +223,13 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   tiers: state.priceTiers,
                   activeDiscountPercent: state.discountPercent,
                 ),
+                if (state.stayType == StayType.fullDay) ...[
+                  const SizedBox(height: 12),
+                  StayDurationPicker(
+                    days: state.daysCount,
+                    onChanged: cubit.setDaysCount,
+                  ),
+                ],
 
                 const SizedBox(height: 24),
                 ReservationSectionTitle(
@@ -383,9 +393,18 @@ class _AmountSummary extends StatelessWidget {
               label: 'booking_form.length_discount'.tr(
                 args: ['${state.discountPercent}'],
               ),
-              value: state.fullAmount - state.expectedAmount,
+              value: state.quote.durationDiscount,
             ),
             const Divider(height: 20),
+          ],
+          // Annoncé avant l'envoi : sans lui, une sortie à 16h le lendemain
+          // ferait voir un montant attendu qui ne suit plus le nombre de jours.
+          if (state.quote.lateCheckout) ...[
+            _Row(
+              label: 'late_checkout.fee'.tr(),
+              value: state.quote.lateCheckoutFee,
+            ),
+            const SizedBox(height: 8),
           ],
           _Row(
             label: 'booking_form.expected_amount'.tr(),

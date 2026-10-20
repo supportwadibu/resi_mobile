@@ -24,7 +24,7 @@ class StatsTab extends StatelessWidget {
       // appels, et les chiffres ne s'affichent pas.
       create: (_) {
         final cubit = sl<DashboardCubit>();
-        if (hasFullPlan()) cubit.load();
+        if (hasPlanFor(PremiumFeature.statistics)) cubit.load();
         return cubit;
       },
       child: const _StatsView(),

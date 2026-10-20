@@ -95,6 +95,30 @@
     "success": "Arrivée enregistrée",
     "arrived_at": "Arrivée constatée"
   },
+  "stay_cancel": {
+    "action": "Annuler la réservation",
+    "title": "Annuler la réservation ?",
+    "body": "Le logement redevient disponible sur cette période. L’annulation est définitive.",
+    "confirm": "Annuler la réservation",
+    "deposit_question": "Un acompte de {amount} a été versé. Qu’en faites-vous ?",
+    "deposit_keep": "Garder l’acompte",
+    "deposit_keep_hint": "Il reste compté dans votre chiffre d’affaires.",
+    "deposit_refund": "Rembourser le client",
+    "deposit_refund_hint": "Vous rendez {amount} au client.",
+    "reason": "Motif (facultatif)",
+    "reason_hint": "Ex. : client empêché, double réservation…",
+    "success": "Réservation annulée",
+    "retained": "Acompte gardé",
+    "refunded": "Acompte remboursé"
+  },
+  "late_checkout": {
+    "fee": "Départ tardif (demi-journée)",
+    "title": "Départ tardif",
+    "subtitle": "Au-delà des jours entiers : dépassement offert, puis facturé en demi-journée.",
+    "grace": "Tolérance",
+    "half_day": "Demi-journée jusqu’à",
+    "none": "Aucune"
+  },
   "stay_checkout": {
     "action": "Terminer le séjour",
     "extend": "Prolonger",
@@ -125,7 +149,16 @@
       "invalid_departure": "L’heure de sortie doit être postérieure à l’entrée du client.",
       "departure_in_future": "L’heure de sortie ne peut pas être dans le futur.",
       "not_early_departure": "Cette sortie n’intervient pas avant la fin prévue : clôturez le séjour comme complet."
-    }
+    },
+    "option_label": "Mode de facturation",
+    "option_prorata": "Jours utilisés uniquement",
+    "option_prorata_desc": "Facturer au prorata des jours réellement occupés.",
+    "option_with_penalty": "Jours utilisés + pénalité",
+    "option_with_penalty_desc": "Facturer les jours utilisés et appliquer une pénalité supplémentaire.",
+    "option_full_amount": "Totalité du séjour",
+    "option_full_amount_desc": "Conserver l'intégralité du montant réglé, sans remboursement.",
+    "penalty_label": "Montant de la pénalité",
+    "penalty_hint": "Suggéré : {amount}"
   },
   "finance": {
     "refunds": "Remboursements (déjà déduits du CA)",
@@ -270,11 +303,7 @@
   },
   "plans": {
     "trial_name": "Essai gratuit",
-    "basic_name": "Pro",
-    "full_name": "Premium",
     "trial_tagline": "Tout RESI, offert pour démarrer",
-    "basic_tagline": "L'essentiel pour enregistrer",
-    "full_tagline": "Tout RESI, sans limite",
     "my_plan": "Mon forfait",
     "days_left": {
       "one": "1 jour restant",
@@ -287,18 +316,27 @@
     "in_progress": "En cours",
     "per_days": "/ {} jours",
     "trial_body": "Accès complet à toutes les fonctions, sans engagement ni paiement.",
-    "trial_then": "À la fin de l’essai, choisissez Pro ou Premium pour continuer.",
+    "trial_then": "À la fin de l’essai, vous passez sur RESI Basic, gratuit. Choisissez Pro ou Pro+ pour garder toutes les fonctions.",
     "see_plans": "Voir les forfaits",
     "renew": "Renouveler",
     "choose": "Choisissez votre forfait",
     "secure_note": "Paiement sécurisé par Wave. Aucun prélèvement automatique : vous renouvelez quand vous le souhaitez. Le changement de forfait se fait à l’échéance.",
-    "inactive_title": "Votre abonnement est terminé",
-    "inactive_body": "Choisissez un forfait pour continuer à utiliser RESI. Vos données sont conservées."
+    "inactive_title": "Votre compte est inactif",
+    "inactive_body": "Votre compte a été suspendu. Contactez l’équipe RESI pour le réactiver. Vos données sont conservées.",
+    "free_name": "RESI Basic",
+    "free_tagline": "L’essentiel pour gérer vos résidences, gratuit",
+    "pro_name": "RESI Pro",
+    "pro_tagline": "Le contrôle de votre activité et de vos finances",
+    "pro_plus_name": "RESI Pro+",
+    "pro_plus_tagline": "La solution complète des professionnels",
+    "per_month": "/ mois",
+    "free_bookings": "Réservations en ligne et au comptoir",
+    "free_dashboard": "Tableau de bord, revenus et taux d’occupation",
+    "free_wallet": "Portefeuille Wave, retrait avec 1 % de frais"
   },
   "premium": {
-    "badge": "Premium",
-    "title": "Disponible avec Premium",
-    "body": "{} fait partie du forfait Premium.",
+    "title": "Disponible avec {}",
+    "body": "{} fait partie de l’offre {}.",
     "see_plans": "Voir les forfaits",
     "later": "Plus tard",
     "manager_body": "Cette fonction n’est pas incluse dans le forfait de votre propriétaire.",
@@ -332,7 +370,9 @@
         "title": "Factures WhatsApp",
         "body": "Envoyez à votre client la facture de son séjour, en un geste."
       }
-    }
+    },
+    "badge_pro": "Pro",
+    "badge_proPlus": "Pro+"
   },
   "report_police": {
     "commune": "Commune (rapport police)",
@@ -641,7 +681,7 @@
     "in_progress": "En cours",
     "last_month": "Mois dernier : {}",
     "growth": "{growth} % par rapport au mois dernier ({previous})",
-    "revenue_month": "Revenus ce mois",
+    "revenue_month": "Revenus du mois",
     "bookings_title": "Réservations",
     "stats_title": "Statistiques",
     "management": "Gestion"
@@ -656,7 +696,9 @@
     "clients": "Clients",
     "clients_hint": "Carnet et historique des séjours",
     "residences": "Résidences",
-    "residences_hint": "Regrouper les logements d'un immeuble"
+    "residences_hint": "Regrouper les logements d'un immeuble",
+    "wallet": "Portefeuille",
+    "wallet_hint": "Paiements Wave reçus et retraits"
   },
   "stats": {
     "income": "Entrées",
@@ -973,6 +1015,9 @@
       "one": "{} jour",
       "other": "{} jours"
     },
+    "stay_duration": "Durée du séjour",
+    "remove_day": "Retirer un jour",
+    "add_day": "Ajouter un jour",
     "title_check_in": "Check-in immédiat",
     "title_future": "Réservation future",
     "save_check_in": "Enregistrer le check-in",
@@ -1154,6 +1199,8 @@
     "cleaning": "Ménage",
     "maintenance": "Maintenance",
     "taxes": "Taxes",
+    "commission": "Commission apporteur",
+    "subscription": "Abonnement",
     "other": "Autre"
   },
   "expense": {
@@ -1406,5 +1453,34 @@
       "expense_create": "Dépense"
     },
     "saved_at": "Saisie le {}"
+  },
+  "wallet": {
+    "title": "Portefeuille",
+    "total_balance": "Disponible au retrait",
+    "fee_note": "Retrait avec 1 % de frais",
+    "residences": "Par résidence",
+    "general": "Biens hors résidence",
+    "empty_title": "Aucun paiement en ligne",
+    "empty_body": "Les paiements Wave de vos clients s’ajoutent ici, résidence par résidence.",
+    "withdrawals": "Demandes de retrait",
+    "withdraw": "Retirer",
+    "withdraw_title": "Demander un retrait",
+    "withdraw_body": "Disponible : {balance}. L’équipe RESI vous verse le montant par Wave.",
+    "withdraw_confirm": "Envoyer la demande",
+    "withdraw_sent": "Demande de retrait envoyée",
+    "amount": "Montant à retirer (F)",
+    "payout_phone": "Numéro Wave",
+    "payout_phone_hint": "Ex. : 07 00 00 00 00",
+    "payout_name": "Nom du titulaire (facultatif)",
+    "fee": "Frais (1 %)",
+    "net": "Vous recevrez",
+    "amount_invalid": "Montant entre {min} et votre solde disponible.",
+    "pending_note": "{amount} en cours de versement.",
+    "withdrawal_line": "{net} vers {phone} · {date}",
+    "status": {
+      "pending": "En attente",
+      "paid": "Versé",
+      "rejected": "Refusé"
+    }
   }
 }

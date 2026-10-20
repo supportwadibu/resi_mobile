@@ -20,6 +20,7 @@ import '../../features/residence/business_logic/residence_state.dart';
 import '../../features/stats/business_logic/dashboard_cubit.dart';
 import '../../features/stats/business_logic/finance_cubit.dart';
 import '../../features/subscription/presentation/widgets/plan_gate.dart';
+import '../../features/subscription/presentation/widgets/plan_style.dart';
 import '../di/service_locator.dart';
 import 'offline_status.dart';
 
@@ -147,9 +148,9 @@ class OfflinePrefetcher {
       await _warm(sl<ResidenceDetailCubit>(), (c) => c.load(id));
     }
 
-    // Écrans du forfait complet : les lire sans y avoir droit déclencherait un
-    // refus de l'API, et le signal de forfait qui va avec.
-    if (!hasFullPlan()) return;
+    // Écrans de RESI Pro : les lire sans y avoir droit déclencherait un refus
+    // de l'API, et le signal de forfait qui va avec.
+    if (!hasPlanFor(PremiumFeature.finance)) return;
     if (!await _step()) return;
     await _warm(sl<DashboardCubit>(), (c) => c.load());
     if (!await _step()) return;

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
 import '../../gerant/data/repositories/gerant_repository.dart';
+import '../../reservation/data/models/booking_stats_model.dart';
 import '../../reservation/data/repositories/reservation_repository.dart';
 import '../../stats/data/repositories/finance_repository.dart';
 import '../../stats/data/repositories/property_stats_repository.dart';
@@ -20,17 +21,19 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
     this._bookings,
     this._finance,
     this._gerant,
-    this._roleOf,
-  ) : super(
-        // État initial déjà typé par le rôle, et non un `HomeStatsInitial`
-        // commun : `StatsRowWidget` choisit sa rangée sur le type du state, et
-        // un état neutre lui ferait rendre celle du propriétaire — « Mes
-        // biens » et « Bénéfice ce mois » sur l'écran d'un gérant, le temps du
-        // premier relevé.
-        _roleOf() == 'gerant'
-            ? const HomeStatsManagerLoaded()
-            : const HomeStatsInitial(),
-      );
+    this._roleOf, {
+    bool Function()? canReadFinance,
+  }) : _canReadFinance = canReadFinance ?? (() => true),
+       super(
+         // État initial déjà typé par le rôle, et non un `HomeStatsInitial`
+         // commun : `StatsRowWidget` choisit sa rangée sur le type du state, et
+         // un état neutre lui ferait rendre celle du propriétaire — « Mes
+         // biens » et « Bénéfice ce mois » sur l'écran d'un gérant, le temps du
+         // premier relevé.
+         _roleOf() == 'gerant'
+             ? const HomeStatsManagerLoaded()
+             : const HomeStatsInitial(),
+       );
 
   final PropertyStatsRepository _properties;
   final ReservationRepository _bookings;
@@ -40,6 +43,11 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
   /// Lecture du rôle courant, injectée pour rester testable hors widget —
   /// même forme que dans `OwnerRouteGuard`.
   final String Function() _roleOf;
+
+  /// Le palier ouvre-t-il le relevé financier (RESI Pro) ? Sous RESI Basic,
+  /// le bénéfice n'est pas demandé : l'API le refuserait, et le refus
+  /// relancerait la lecture du forfait à chaque retour sur l'accueil.
+  final bool Function() _canReadFinance;
 
   /// L'attente est émise dans chaque branche, et non avant elles.
   ///
@@ -71,28 +79,34 @@ class HomeStatsCubit extends Cubit<HomeStatsState> {
     //
     // Chacun est rattrapé séparément : une tuile manquante vaut mieux qu'une
     // rangée vide, et rien ici n'est indispensable à l'écran.
-    final results = await Future.wait([
+    final canReadFinance = _canReadFinance();
+    final results = await Future.wait<Object?>([
       _guard(() async => (await _properties.getStats()).total),
-      _guard(() async {
-        final stats = await _bookings.getStats();
-        return stats.upcoming + stats.inProgress;
-      }),
-      _guard(() async {
-        final overview = await _finance.getOverview(
-          from: _startOfMonth(),
-          to: DateTime.now(),
-        );
-        return overview.summary.beneficeNet;
-      }),
+      _guard(_bookings.getStats),
+      if (canReadFinance)
+        _guard(() async {
+          final overview = await _finance.getOverview(
+            from: _startOfMonth(),
+            to: DateTime.now(),
+          );
+          return overview.summary.beneficeNet;
+        }),
     ]);
 
     if (isClosed) return;
 
+    final bookingStats = results[1] as BookingStatsModel?;
     emit(
       HomeStatsLoaded(
-        propertiesCount: results[0]?.toInt(),
-        activeBookings: results[1]?.toInt(),
-        netIncome: results[2]?.toDouble(),
+        propertiesCount: (results[0] as num?)?.toInt(),
+        activeBookings: bookingStats == null
+            ? null
+            : bookingStats.upcoming + bookingStats.inProgress,
+        netIncome: canReadFinance ? (results[2] as num?)?.toDouble() : null,
+        // Servis à tous les paliers : c'est le suivi des revenus et de
+        // l'occupation de RESI Basic.
+        monthRevenue: bookingStats?.revenue.currentMonth,
+        occupancyRate: bookingStats?.tauxOccupation,
       ),
     );
   }

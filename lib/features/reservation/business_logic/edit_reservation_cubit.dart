@@ -37,18 +37,36 @@ class EditReservationCubit extends Cubit<EditReservationState> {
         propertyId: property.id,
         dailyPrice: property.pricing.dailyPrice,
         priceTiers: PriceTierList.sorted(property.pricing.priceTiers),
+        lateCheckoutPolicy: property.pricing.lateCheckoutPolicy,
       ),
     );
   }
 
   void setStayType(StayType type) {
+    final duration = type == StayType.fullDay
+        ? Duration(days: state.daysCount)
+        : type.defaultDuration;
     emit(
-      state.copyWith(
-        stayType: type,
-        // Même règle qu'à la création : la sortie suit le type choisi.
-        checkOutAt: state.checkInAt.add(type.defaultDuration),
-      ),
+      state.copyWith(stayType: type, checkOutAt: state.checkInAt.add(duration)),
     );
+  }
+
+  /// Modifie la durée en jours (pour séjour complet).
+  void setDaysCount(int count) {
+    if (count < 1) return;
+    final checkIn = state.checkInAt;
+    final currentOut = state.checkOutAt;
+
+    final newOut = DateTime(
+      checkIn.year,
+      checkIn.month,
+      checkIn.day + count,
+      currentOut.hour,
+      currentOut.minute,
+      currentOut.second,
+    );
+
+    emit(state.copyWith(daysCount: count, checkOutAt: newOut));
   }
 
   /// Déplace l'entrée en gardant la durée : décaler un séjour de trois jours
@@ -65,7 +83,22 @@ class EditReservationCubit extends Cubit<EditReservationState> {
     );
   }
 
-  void setCheckOut(DateTime value) => emit(state.copyWith(checkOutAt: value));
+  void setCheckOut(DateTime value) {
+    int newDays = state.daysCount;
+    if (state.stayType == StayType.fullDay) {
+      final calDiff = DateTime(value.year, value.month, value.day)
+          .difference(
+            DateTime(
+              state.checkInAt.year,
+              state.checkInAt.month,
+              state.checkInAt.day,
+            ),
+          )
+          .inDays;
+      newDays = calDiff > 0 ? calDiff : 1;
+    }
+    emit(state.copyWith(checkOutAt: value, daysCount: newDays));
+  }
 
   /// Prix convenu par unité : le total se recalcule avec les dates.
   void setAgreedUnitPrice(double? value) => emit(
@@ -93,6 +126,7 @@ class EditReservationCubit extends Cubit<EditReservationState> {
         stayType: state.stayType,
         checkInAt: state.checkInAt,
         checkOutAt: state.checkOutAt,
+        daysCount: state.stayType == StayType.fullDay ? state.daysCount : 1,
         agreedAmount: state.agreedAmount,
         agreedUnitPrice: state.agreedUnitPrice,
         depositAmount: state.depositAmount,

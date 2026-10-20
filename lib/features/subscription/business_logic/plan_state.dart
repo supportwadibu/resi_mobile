@@ -10,7 +10,7 @@ sealed class PlanState {
   /// fermerait l'application à tout abonné le temps du premier chargement —
   /// et hors ligne, jusqu'au retour du réseau. L'API reste l'autorité, et le
   /// moindre refus corrige l'état aussitôt.
-  PlanAccess get access => PlanAccess.full;
+  PlanAccess get access => PlanAccess.proPlus;
 }
 
 /// Rien de connu : ni réponse de l'API, ni valeur en cache.

@@ -11,6 +11,7 @@ import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../clients/data/services/id_card_reading.dart';
 import '../../property/data/models/property_model.dart';
+import '../../../shared/models/late_checkout_policy.dart';
 import '../data/datasources/reservation_local_store.dart';
 import '../data/models/occupied_period_model.dart';
 import '../data/models/reservation_model.dart';
@@ -186,11 +187,13 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     String propertyId, {
     required double dailyPrice,
     List<PriceTier> priceTiers = const [],
+    LateCheckoutPolicy lateCheckoutPolicy = const LateCheckoutPolicy(),
   }) async {
     emit(
       state.copyWith(
         propertyId: propertyId,
         dailyPrice: dailyPrice,
+        lateCheckoutPolicy: lateCheckoutPolicy,
         // Triés à l'entrée : le calcul de remise n'en dépend pas, mais l'écran
         // les présente dans l'ordre où le propriétaire les lit.
         priceTiers: PriceTierList.sorted(priceTiers),
@@ -214,29 +217,63 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
   void setStayType(StayType type) {
     final checkIn = state.checkInAt;
-    emit(
-      state.copyWith(
-        stayType: type,
-        // La sortie suit le type choisi tant que le propriétaire ne l'a pas
-        // fixée lui-même.
-        checkOutAt: checkIn?.add(type.defaultDuration),
-      ),
-    );
+    final duration = type == StayType.fullDay
+        ? Duration(days: state.daysCount)
+        : type.defaultDuration;
+    emit(state.copyWith(stayType: type, checkOutAt: checkIn?.add(duration)));
+    _revalidateDates();
+  }
+
+  /// Modifie la durée en jours (pour un séjour complet).
+  ///
+  /// Recalcule la date de sortie tout en préservant l'heure personnalisée
+  /// (par exemple si le propriétaire a fixé 15h00 au lieu de l'heure d'entrée).
+  void setDaysCount(int count) {
+    if (count < 1) return;
+    final checkIn = state.checkInAt;
+    final currentOut = state.checkOutAt;
+
+    DateTime? newOut;
+    if (checkIn != null) {
+      if (currentOut != null) {
+        newOut = DateTime(
+          checkIn.year,
+          checkIn.month,
+          checkIn.day + count,
+          currentOut.hour,
+          currentOut.minute,
+          currentOut.second,
+        );
+      } else {
+        newOut = checkIn.add(Duration(days: count));
+      }
+    }
+
+    emit(state.copyWith(daysCount: count, checkOutAt: newOut));
     _revalidateDates();
   }
 
   void setCheckIn(DateTime value) {
-    emit(
-      state.copyWith(
-        checkInAt: value,
-        checkOutAt: value.add(state.stayType.defaultDuration),
-      ),
-    );
+    final duration = state.stayType == StayType.fullDay
+        ? Duration(days: state.daysCount)
+        : state.stayType.defaultDuration;
+    emit(state.copyWith(checkInAt: value, checkOutAt: value.add(duration)));
     _revalidateDates();
   }
 
   void setCheckOut(DateTime value) {
-    emit(state.copyWith(checkOutAt: value));
+    int newDays = state.daysCount;
+    if (state.stayType == StayType.fullDay &&
+        state.checkInAt != null &&
+        value.isAfter(state.checkInAt!)) {
+      // Les jours suivent la règle de départ tardif du bien, comme au
+      // serveur : une sortie à 16h le lendemain d'une entrée à 12h reste un
+      // jour — plus une demi-journée —, une sortie à 20h en fait deux. Le
+      // décompte calendaire laissait un jour pour toute sortie du lendemain.
+      newDays = state.lateCheckoutPolicy.resolve(state.checkInAt!, value).days;
+    }
+
+    emit(state.copyWith(checkOutAt: value, daysCount: newDays));
     _revalidateDates();
   }
 
@@ -301,6 +338,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         stayType: state.stayType,
         checkInAt: state.checkInAt!,
         checkOutAt: state.checkOutAt,
+        daysCount: state.stayType == StayType.fullDay ? state.daysCount : 1,
         receivedAmount: state.effectiveAmount,
         agreedUnitPrice: state.agreedUnitPrice,
         depositAmount: state.depositAmount,
@@ -354,6 +392,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
           stayType: state.stayType,
           checkInAt: state.checkInAt!,
           checkOutAt: state.checkOutAt,
+          daysCount: state.stayType == StayType.fullDay ? state.daysCount : 1,
           receivedAmount: state.effectiveAmount,
           agreedUnitPrice: state.agreedUnitPrice,
           depositAmount: state.depositAmount,

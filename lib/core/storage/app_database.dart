@@ -47,7 +47,9 @@ class AppDatabase {
   ///
   /// 6 — `pending_bookings` porte le prix convenu par jour, que le serveur
   /// fige pour tarifer une prolongation.
-  static const _version = 6;
+  ///
+  /// 7 — `pending_bookings` porte la durée explicite en jours choisie au comptoir.
+  static const _version = 7;
 
   /// Version courante du schéma, lue par les tests de migration.
   @visibleForTesting
@@ -165,6 +167,7 @@ class AppDatabase {
         stay_type          TEXT NOT NULL,
         check_in_at        INTEGER NOT NULL,
         check_out_at       INTEGER,
+        days_count         INTEGER,
         received_amount    REAL,
         agreed_unit_price  REAL,
         deposit_amount     REAL NOT NULL DEFAULT 0,
@@ -308,6 +311,14 @@ class AppDatabase {
       // déjà en file valent `NULL` et partent avec leur seul total.
       await db.execute(
         'ALTER TABLE pending_bookings ADD COLUMN agreed_unit_price REAL',
+      );
+    }
+
+    if (from < 7) {
+      // Durée explicite en jours choisie au comptoir. Les saisies antérieures
+      // valent NULL et le serveur recalcule sur la différence des dates.
+      await db.execute(
+        'ALTER TABLE pending_bookings ADD COLUMN days_count INTEGER',
       );
     }
   }

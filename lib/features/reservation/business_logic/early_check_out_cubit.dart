@@ -59,7 +59,12 @@ class EarlyCheckOutCubit extends Cubit<EarlyCheckOutState> {
   ///
   /// L'heure envoyée est celle du chiffrage et non celle du champ : c'est sur
   /// elle que le propriétaire a lu le montant qu'il valide.
-  Future<void> submit(String bookingId, double finalAmount) async {
+  Future<void> submit(
+    String bookingId,
+    double finalAmount, {
+    EarlyCheckOutOption? option,
+    double? penaltyAmount,
+  }) async {
     final current = switch (state) {
       EarlyCheckOutLoaded(:final quote) => quote,
       EarlyCheckOutError(:final quote?) => quote,
@@ -76,7 +81,14 @@ class EarlyCheckOutCubit extends Cubit<EarlyCheckOutState> {
 
     final queue = _queue;
     if (queue != null && isLocalId(bookingId)) {
-      return _enqueue(queue, bookingId, current, finalAmount);
+      return _enqueue(
+        queue,
+        bookingId,
+        current,
+        finalAmount,
+        option,
+        penaltyAmount,
+      );
     }
 
     try {
@@ -84,12 +96,21 @@ class EarlyCheckOutCubit extends Cubit<EarlyCheckOutState> {
         bookingId,
         actualCheckOutAt: current.actualCheckOutAt,
         finalAmount: finalAmount.round(),
+        earlyCheckoutOption: option?.value,
+        penaltyAmount: penaltyAmount,
       );
       if (!isClosed) emit(EarlyCheckOutSuccess(reservation));
     } on AppFailure catch (f) {
       if (isClosed) return;
       if (queue != null && OfflineActionQueue.isNetworkFailure(f)) {
-        return _enqueue(queue, bookingId, current, finalAmount);
+        return _enqueue(
+          queue,
+          bookingId,
+          current,
+          finalAmount,
+          option,
+          penaltyAmount,
+        );
       }
       emit(EarlyCheckOutError(f.userMessage, quote: current));
     }
@@ -111,6 +132,8 @@ class EarlyCheckOutCubit extends Cubit<EarlyCheckOutState> {
     String bookingId,
     EarlyCheckOutQuote quote,
     double finalAmount,
+    EarlyCheckOutOption? option,
+    double? penaltyAmount,
   ) async {
     await queue.enqueue(
       PendingActionType.bookingCheckOutEarly,
@@ -120,6 +143,8 @@ class EarlyCheckOutCubit extends Cubit<EarlyCheckOutState> {
       payload: {
         'actual_check_out_at': quote.actualCheckOutAt.toUtc().toIso8601String(),
         'final_amount': finalAmount.round(),
+        if (option != null) 'early_checkout_option': option.value,
+        if (penaltyAmount != null) 'penalty_amount': penaltyAmount,
       },
     );
     if (!isClosed) emit(const EarlyCheckOutSuccess(null, queued: true));

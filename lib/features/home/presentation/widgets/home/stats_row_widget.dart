@@ -33,6 +33,15 @@ class StatsRowWidget extends StatelessWidget {
         if (state is HomeStatsManagerLoaded) return _managerTiles(state);
 
         final stats = state is HomeStatsLoaded ? state : null;
+
+        // Sans bénéfice — RESI Basic ne suit pas les charges —, la rangée
+        // montre ce que ce palier promet : revenus et occupation du mois.
+        if (stats != null &&
+            stats.netIncome == null &&
+            stats.monthRevenue != null) {
+          return _revenueTiles(stats);
+        }
+
         final netIncome = stats?.netIncome;
         // Un mois de travaux sans réservation est une perte : la montrer en
         // rouge vaut mieux que la masquer.
@@ -67,6 +76,37 @@ class StatsRowWidget extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  /// Tuiles du propriétaire sous RESI Basic : revenus, séjours et occupation
+  /// du mois — même disposition que celles du gérant.
+  Widget _revenueTiles(HomeStatsLoaded stats) {
+    final occupancyRate = stats.occupancyRate;
+
+    return _TileLayout(
+      lead: StatTile(
+        label: 'home.revenue_month'.tr(),
+        value: CurrencyFormatter.short(stats.monthRevenue!),
+        icon: LucideIcons.banknote,
+        accent: AppAccent.green,
+      ),
+      pair: [
+        StatTile(
+          label: 'home.bookings_month'.tr(),
+          value: stats.activeBookings?.toString() ?? _placeholder,
+          icon: AppSectionIcons.bookings,
+          accent: AppAccent.violet,
+        ),
+        StatTile(
+          label: 'common.occupancy'.tr(),
+          value: occupancyRate == null
+              ? _placeholder
+              : '${(occupancyRate * 100).toStringAsFixed(0)} %',
+          icon: LucideIcons.chartPie,
+          accent: AppAccent.amber,
+        ),
+      ],
     );
   }
 

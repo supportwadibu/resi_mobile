@@ -23,26 +23,27 @@ import 'plan_style.dart';
 PlanCubit? planCubitOrNull() =>
     sl.isRegistered<PlanCubit>() ? sl<PlanCubit>() : null;
 
-/// L'accès courant ouvre-t-il le forfait Premium ?
-bool hasFullPlan() => planCubitOrNull()?.access.isFull ?? true;
+/// L'accès courant ouvre-t-il [feature] ?
+bool hasPlanFor(PremiumFeature feature) =>
+    planCubitOrNull()?.access.allows(feature.requiredAccess) ?? true;
 
 /// Le gérant ne souscrit pas : c'est l'abonnement de son propriétaire qui
 /// compte, et lui proposer les forfaits le mènerait à un écran fermé.
 bool _canSubscribe() =>
     !sl.isRegistered<SessionRole>() || sl<SessionRole>().value != 'gerant';
 
-/// Laisse passer un geste Premium, ou explique le verrou.
+/// Laisse passer un geste réservé à une offre payante, ou explique le verrou.
 ///
-/// À appeler avant de naviguer : l'entrée reste visible au forfait Pro — la
-/// masquer cacherait ce que Premium apporte —, et l'appui ouvre l'explication
-/// plutôt qu'un écran que l'API refuserait.
-bool ensureFullPlan(BuildContext context, PremiumFeature feature) {
-  if (hasFullPlan()) return true;
+/// À appeler avant de naviguer : l'entrée reste visible sous un palier
+/// inférieur — la masquer cacherait ce que l'offre apporte —, et l'appui ouvre
+/// l'explication plutôt qu'un écran que l'API refuserait.
+bool ensurePlanFor(BuildContext context, PremiumFeature feature) {
+  if (hasPlanFor(feature)) return true;
   showLockedFeatureSheet(context, feature);
   return false;
 }
 
-/// Feuille « Disponible avec Premium », au format des feuilles du projet.
+/// Feuille « Disponible avec RESI Pro », au format des feuilles du projet.
 Future<void> showLockedFeatureSheet(
   BuildContext context,
   PremiumFeature feature,
@@ -52,13 +53,13 @@ Future<void> showLockedFeatureSheet(
   return showAppSheet<void>(
     context: context,
     builder: (sheetContext) => AppSheet(
-      title: 'premium.title'.tr(),
+      title: 'premium.title'.tr(args: [feature.plan.label]),
       footer: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppButton(
             label: (canSubscribe ? 'premium.see_plans' : 'premium.ok').tr(),
-            icon: canSubscribe ? PlanStyle.full.icon : null,
+            icon: canSubscribe ? feature.plan.icon : null,
             expand: true,
             onPressed: () {
               Navigator.of(sheetContext).pop();
@@ -84,7 +85,7 @@ Future<void> showLockedFeatureSheet(
           Expanded(
             child: Text(
               canSubscribe
-                  ? '${'premium.body'.tr(args: [feature.title])} ${feature.body}'
+                  ? '${'premium.body'.tr(args: [feature.title, feature.plan.label])} ${feature.body}'
                   : 'premium.manager_body'.tr(),
               style: context.mutedText.copyWith(height: 1.5),
             ),
@@ -134,7 +135,7 @@ class PlanGate extends StatelessWidget {
     return BlocBuilder<PlanCubit, PlanState>(
       bloc: plan,
       builder: (context, state) {
-        if (state.access.isFull) return child;
+        if (state.access.allows(feature.requiredAccess)) return child;
         return compact
             ? LockedFeatureBanner(feature: feature)
             : LockedFeatureCard(feature: feature);
@@ -166,7 +167,7 @@ class LockedFeatureCard extends StatelessWidget {
                 child: Text(feature.title, style: context.text.titleMedium),
               ),
               const SizedBox(width: 8),
-              const PremiumBadge(),
+              PremiumBadge(feature: feature),
             ],
           ),
           const SizedBox(height: 6),
@@ -179,7 +180,7 @@ class LockedFeatureCard extends StatelessWidget {
             const SizedBox(height: 16),
             AppButton(
               label: 'premium.see_plans'.tr(),
-              icon: PlanStyle.full.icon,
+              icon: feature.plan.icon,
               onPressed: () => context.router.push(SubscriptionPlansRoute()),
             ),
           ],
@@ -225,7 +226,7 @@ class LockedFeatureBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          const PremiumBadge(),
+          PremiumBadge(feature: feature),
         ],
       ),
     );
@@ -243,7 +244,7 @@ class _FeatureBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconChip(
       icon: feature.icon,
-      accent: PlanStyle.full.accent,
+      accent: feature.plan.accent,
       size: size,
     );
   }

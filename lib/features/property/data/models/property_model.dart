@@ -1,4 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
+
+import '../../../../shared/models/late_checkout_policy.dart';
+
 /// Type de bien, tel que l'API le nomme.
 ///
 /// Le code est ce qui transite (`apartment`), le libellé ce qui s'affiche
@@ -375,9 +378,21 @@ class PropertyPricing {
     this.priceTiers = const [],
     this.minimumStayDays,
     this.maximumStayDays,
+    this.lateCheckoutGraceMinutes = LateCheckoutPolicy.defaultGraceMinutes,
+    this.lateCheckoutHalfDayHours = LateCheckoutPolicy.defaultHalfDayHours,
   });
 
   final double dailyPrice;
+
+  /// Départ tardif : dépassement offert, en minutes, puis facturé en
+  /// demi-journée jusqu'à ce nombre d'heures.
+  final int lateCheckoutGraceMinutes;
+  final int lateCheckoutHalfDayHours;
+
+  LateCheckoutPolicy get lateCheckoutPolicy => LateCheckoutPolicy(
+    graceMinutes: lateCheckoutGraceMinutes,
+    halfDayHours: lateCheckoutHalfDayHours,
+  );
 
   /// Paliers de remise par durée, triés par durée croissante.
   ///
@@ -408,6 +423,14 @@ class PropertyPricing {
       priceTiers: tiers,
       minimumStayDays: (json['minimum_stay_days'] as num?)?.toInt(),
       maximumStayDays: (json['maximum_stay_days'] as num?)?.toInt(),
+      // Absents d'un serveur antérieur au départ tardif et du cache local
+      // écrit avant : la règle par défaut est celle que le serveur applique.
+      lateCheckoutGraceMinutes:
+          (json['late_checkout_grace_minutes'] as num?)?.toInt() ??
+          LateCheckoutPolicy.defaultGraceMinutes,
+      lateCheckoutHalfDayHours:
+          (json['late_checkout_half_day_hours'] as num?)?.toInt() ??
+          LateCheckoutPolicy.defaultHalfDayHours,
     );
   }
 
@@ -417,6 +440,8 @@ class PropertyPricing {
       'price_tiers': [for (final tier in priceTiers) tier.toJson()],
     if (minimumStayDays != null) 'minimum_stay_days': minimumStayDays,
     if (maximumStayDays != null) 'maximum_stay_days': maximumStayDays,
+    'late_checkout_grace_minutes': lateCheckoutGraceMinutes,
+    'late_checkout_half_day_hours': lateCheckoutHalfDayHours,
   };
 
   /// Remise applicable à [days] : le palier le plus avantageux atteint.

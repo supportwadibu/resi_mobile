@@ -369,6 +369,8 @@ void main() {
         'cleaning',
         'maintenance',
         'taxes',
+        'commission',
+        'subscription',
         'other',
       });
     });

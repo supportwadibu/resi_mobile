@@ -265,7 +265,7 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
                   const SizedBox(height: 20),
                   _FieldLabel('expense.category'.tr()),
                   CategoryGrid(
-                    categories: ExpenseCategory.values,
+                    categories: ExpenseCategory.manual,
                     selected: _category,
                     onSelected: (category) =>
                         setState(() => _category = category),

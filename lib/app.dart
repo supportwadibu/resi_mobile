@@ -48,11 +48,12 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   ///
   /// Écouté ici, au-dessus de toutes les routes, parce que le refus peut
   /// survenir sur n'importe quel écran. Sans effet s'il est déjà affiché.
-  /// Un gérant n'a rien à faire au forfait 3 000 F : tout son espace relève
-  /// du forfait complet, et chaque écran lui opposerait un refus.
+  /// Un gérant n'a rien à faire sous RESI Pro+ : tout son espace en relève,
+  /// et chaque écran lui opposerait un refus.
   static bool _isLockedOut(PlanAccess access) =>
       access == PlanAccess.inactive ||
-      (access == PlanAccess.basic && sl<SessionRole>().value == 'gerant');
+      (!access.allows(PlanAccess.proPlus) &&
+          sl<SessionRole>().value == 'gerant');
 
   void _onPlanChanged(BuildContext context, PlanState state) {
     if (_router.current.name == SubscriptionPlansRoute.name) return;

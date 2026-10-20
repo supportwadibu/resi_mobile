@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen>
           context.router.push(AddReservationRoute(mode: mode));
         }
       case 'add_expense':
-        if (!ensureFullPlan(context, PremiumFeature.expenses)) return;
+        if (!ensurePlanFor(context, PremiumFeature.expenses)) return;
         // Attendu, puis les chiffres relus : une dépense change le bénéfice
         // net affiché sur l'accueil, qui reste monté sous la pile.
         await context.router.push(AddExpenseRoute());

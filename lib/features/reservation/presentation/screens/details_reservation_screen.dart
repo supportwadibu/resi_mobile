@@ -35,8 +35,10 @@ import '../../business_logic/stay_check_in_cubit.dart';
 import '../../business_logic/stay_check_in_state.dart';
 import '../../business_logic/stay_check_out_cubit.dart';
 import '../../business_logic/stay_check_out_state.dart';
+import '../../data/models/early_check_out_quote.dart';
 import '../../data/models/reservation_model.dart';
 import '../../../home/presentation/widgets/reservations/reservation_item.dart';
+import '../widgets/cancel/cancel_reservation_sheet.dart';
 import '../widgets/check_out/early_check_out_sheet.dart';
 
 /// Fiche d'une réservation reçue.
@@ -93,6 +95,19 @@ class DetailsReservationScreen extends StatelessWidget {
   /// Une fois la sortie prévue passée, il n'y a plus de départ anticipé
   /// possible — le serveur le refuse (`not_early_departure`) : la question
   /// n'est pas posée, seule la clôture complète est proposée.
+  Future<void> _earlyCheckOut(BuildContext context) async {
+    final closed = await EarlyCheckOutSheet.show(context, reservation);
+    if (closed == null || !context.mounted) return;
+
+    AppToast.success(
+      closed.queued
+          ? 'offline_queue.saved'.tr()
+          : 'stay_checkout.early_success'.tr(),
+    );
+    // Même contrat que la clôture simple : le `true` fait recharger la liste.
+    context.router.maybePop(true);
+  }
+
   Future<void> _confirmCheckOut(BuildContext context) async {
     final cubit = context.read<StayCheckOutCubit>();
     final isOverdue = !DateTime.now().isBefore(reservation.checkOutAt);
@@ -110,9 +125,6 @@ class DetailsReservationScreen extends StatelessWidget {
               ? 'stay_checkout.overdue_body'.tr()
               : 'stay_checkout.confirm_body'.tr(),
         ),
-        // Trois issues : fermer la boîte sans choisir (`null`) annule, et ne
-        // doit pas valoir « non ». Les deux réponses s'empilent en pleine
-        // largeur : côte à côte, leurs libellés ne tiennent pas.
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         actions: [
           Column(
@@ -125,15 +137,13 @@ class DetailsReservationScreen extends StatelessWidget {
                 expand: true,
                 onPressed: () => Navigator.of(dialogContext).pop(true),
               ),
-              if (!isOverdue) ...[
-                const SizedBox(height: 8),
-                AppButton(
-                  label: 'stay_checkout.answer_early'.tr(),
-                  variant: AppButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                ),
-              ],
+              const SizedBox(height: 8),
+              AppButton(
+                label: 'stay_checkout.answer_early'.tr(),
+                variant: AppButtonVariant.secondary,
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+              ),
               const SizedBox(height: 8),
               AppButton(
                 label: 'common.cancel'.tr(),
@@ -153,16 +163,7 @@ class DetailsReservationScreen extends StatelessWidget {
     }
 
     if (fullStay == false && context.mounted) {
-      final closed = await EarlyCheckOutSheet.show(context, reservation);
-      if (closed == null || !context.mounted) return;
-
-      AppToast.success(
-        closed.queued
-            ? 'offline_queue.saved'.tr()
-            : 'stay_checkout.early_success'.tr(),
-      );
-      // Même contrat que la clôture simple : le `true` fait recharger la liste.
-      context.router.maybePop(true);
+      await _earlyCheckOut(context);
     }
   }
 
@@ -231,7 +232,7 @@ class DetailsReservationScreen extends StatelessWidget {
   ///
   /// Réservée au forfait 5 000 F : c'est un document PDF.
   Future<void> _sendInvoice(BuildContext context) async {
-    if (!ensureFullPlan(context, PremiumFeature.invoices)) return;
+    if (!ensurePlanFor(context, PremiumFeature.invoices)) return;
 
     // Le dossier du propriétaire, mis en cache à la connexion, sert d'en-tête.
     // Absent — un gérant, un cache vidé —, la facture part sans émetteur
@@ -298,6 +299,16 @@ class DetailsReservationScreen extends StatelessWidget {
     } on LauncherException {
       AppToast.error('invoice.whatsapp_error'.tr());
     }
+  }
+
+  /// Ouvre la feuille d'annulation, puis referme la fiche — même contrat que
+  /// la clôture : le `true` fait recharger la liste.
+  Future<void> _cancel(BuildContext context) async {
+    final cancelled = await CancelReservationSheet.show(context, reservation);
+    if (cancelled == null || !context.mounted) return;
+
+    AppToast.success('stay_cancel.success'.tr());
+    context.router.maybePop(true);
   }
 
   /// Date longue : « 12 mai 2026 ».
@@ -402,6 +413,13 @@ class DetailsReservationScreen extends StatelessWidget {
               .tr(),
           '- ${formatAmount(reservation.discountAmount)}',
         ),
+      // Déjà compris dans le montant du séjour : affiché pour justifier qu'il
+      // ne soit pas un multiple du prix d'un jour.
+      if (reservation.lateCheckoutFee > 0)
+        DetailItem(
+          'late_checkout.fee'.tr(),
+          formatAmount(reservation.lateCheckoutFee),
+        ),
       DetailItem(
         'booking_amounts.stay_amount'.tr(),
         formatAmount(reservation.totalAmount),
@@ -425,6 +443,27 @@ class DetailsReservationScreen extends StatelessWidget {
           'stay_checkout.refunded'.tr(),
           formatAmount(reservation.refundedAmount),
         ),
+      // Sort de l'acompte à l'annulation : gardé, il reste un revenu.
+      if (reservation.retainedAmount > 0)
+        DetailItem(
+          'stay_cancel.retained'.tr(),
+          formatAmount(reservation.retainedAmount),
+        ),
+      if (reservation.cancellationRefundedAmount > 0)
+        DetailItem(
+          'stay_cancel.refunded'.tr(),
+          formatAmount(reservation.cancellationRefundedAmount),
+        ),
+      if (reservation.earlyCheckoutOption case final option?)
+        DetailItem('stay_checkout.option_label'.tr(), switch (option) {
+          EarlyCheckOutOption.prorata => 'stay_checkout.option_prorata'.tr(),
+          EarlyCheckOutOption.withPenalty =>
+            'stay_checkout.option_with_penalty'.tr(),
+          EarlyCheckOutOption.fullAmount =>
+            'stay_checkout.option_full_amount'.tr(),
+        }),
+      if (reservation.earlyCheckoutPenalty case final penalty? when penalty > 0)
+        DetailItem('stay_checkout.penalty_label'.tr(), formatAmount(penalty)),
       // Commission due à l'apporteur, au taux figé à la réservation et
       // recalculée par le serveur quand le montant du séjour change.
       if (reservation.referrer case final referrer?) ...[
@@ -453,6 +492,14 @@ class DetailsReservationScreen extends StatelessWidget {
       appBar: AppTopBar(
         title: 'booking_detail.title'.tr(),
         actions: [
+          if (reservation.status == ReservationStatus.inProgress ||
+              (reservation.status.isActive &&
+                  reservation.hasStarted(DateTime.now())))
+            AppIconButton(
+              icon: LucideIcons.logOut,
+              label: 'stay_checkout.early_title'.tr(),
+              onPressed: () => _earlyCheckOut(context),
+            ),
           if (_isEditable)
             AppIconButton(
               icon: LucideIcons.pencil,
@@ -532,7 +579,7 @@ class DetailsReservationScreen extends StatelessWidget {
                 client: client,
                 // La fiche client relève du forfait 5 000 F.
                 onOpenFile: () {
-                  if (ensureFullPlan(context, PremiumFeature.clients)) {
+                  if (ensurePlanFor(context, PremiumFeature.clients)) {
                     _openClientFile(context, client.id);
                   }
                 },
@@ -580,13 +627,27 @@ class DetailsReservationScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('invoice.share_pdf'.tr()),
-                    if (!hasFullPlan()) ...[
+                    if (!hasPlanFor(PremiumFeature.invoices)) ...[
                       const SizedBox(width: 8),
-                      const PremiumBadge(),
+                      const PremiumBadge(feature: PremiumFeature.invoices),
                     ],
                   ],
                 ),
               ),
+            ),
+          ],
+
+          // En fin de fiche, hors de la barre d'actions : le geste est rare et
+          // sans retour, il ne doit pas voisiner avec l'arrivée ou la clôture.
+          // Une saisie encore en file n'existe pas au serveur.
+          if (reservation.status.isActive && !isLocalId(reservation.id)) ...[
+            const SizedBox(height: 24),
+            AppButton(
+              label: 'stay_cancel.action'.tr(),
+              variant: AppButtonVariant.ghost,
+              icon: LucideIcons.ban,
+              expand: true,
+              onPressed: isSubmitting ? null : () => _cancel(context),
             ),
           ],
         ],

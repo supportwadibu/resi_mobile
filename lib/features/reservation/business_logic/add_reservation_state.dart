@@ -45,7 +45,9 @@ class AddReservationState {
     this.propertyId,
     this.dailyPrice = 0,
     this.priceTiers = const [],
+    this.lateCheckoutPolicy = const LateCheckoutPolicy(),
     this.stayType = StayType.fullDay,
+    this.explicitDaysCount,
     this.checkInAt,
     this.checkOutAt,
     this.agreedUnitPrice,
@@ -97,7 +99,11 @@ class AddReservationState {
   /// durée.
   final List<PriceTier> priceTiers;
 
+  /// Règle de départ tardif du bien choisi ; celle du serveur par défaut.
+  final LateCheckoutPolicy lateCheckoutPolicy;
+
   final StayType stayType;
+  final int? explicitDaysCount;
   final DateTime? checkInAt;
   final DateTime? checkOutAt;
 
@@ -118,7 +124,7 @@ class AddReservationState {
   double? get receivedAmount {
     final unit = agreedUnitPrice;
     if (unit == null) return null;
-    return (unit * daysCount).roundToDouble();
+    return quote.agreedAmount(unit);
   }
 
   final double depositAmount;
@@ -164,6 +170,8 @@ class AddReservationState {
     stayType: stayType,
     checkInAt: checkInAt,
     checkOutAt: checkOutAt,
+    explicitDaysCount: stayType == StayType.fullDay ? explicitDaysCount : 1,
+    lateCheckoutPolicy: lateCheckoutPolicy,
   );
 
   double get unitPrice => quote.unitPrice;
@@ -214,7 +222,9 @@ class AddReservationState {
     String? propertyId,
     double? dailyPrice,
     List<PriceTier>? priceTiers,
+    LateCheckoutPolicy? lateCheckoutPolicy,
     StayType? stayType,
+    int? daysCount,
     DateTime? checkInAt,
     DateTime? checkOutAt,
     double? agreedUnitPrice,
@@ -237,6 +247,12 @@ class AddReservationState {
     String? idDocumentNumber,
     ClientIdentity? identity,
   }) {
+    final resolvedExplicitDays =
+        daysCount ??
+        (checkOutAt != null && checkOutAt != this.checkOutAt
+            ? null
+            : explicitDaysCount);
+
     return AddReservationState(
       mode: mode ?? this.mode,
       selectedClient: clearSelectedClient
@@ -253,7 +269,9 @@ class AddReservationState {
       propertyId: propertyId ?? this.propertyId,
       dailyPrice: dailyPrice ?? this.dailyPrice,
       priceTiers: priceTiers ?? this.priceTiers,
+      lateCheckoutPolicy: lateCheckoutPolicy ?? this.lateCheckoutPolicy,
       stayType: stayType ?? this.stayType,
+      explicitDaysCount: resolvedExplicitDays,
       checkInAt: checkInAt ?? this.checkInAt,
       checkOutAt: checkOutAt ?? this.checkOutAt,
       agreedUnitPrice: clearAgreedUnitPrice

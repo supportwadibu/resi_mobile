@@ -95,6 +95,30 @@
     "success": "Check-in recorded",
     "arrived_at": "Actual arrival"
   },
+  "stay_cancel": {
+    "action": "Cancel booking",
+    "title": "Cancel this booking?",
+    "body": "The unit becomes available again for this period. Cancellation cannot be undone.",
+    "confirm": "Cancel booking",
+    "deposit_question": "A deposit of {amount} was paid. What do you do with it?",
+    "deposit_keep": "Keep the deposit",
+    "deposit_keep_hint": "It stays in your revenue.",
+    "deposit_refund": "Refund the client",
+    "deposit_refund_hint": "You give {amount} back to the client.",
+    "reason": "Reason (optional)",
+    "reason_hint": "E.g. client unable to come, double booking…",
+    "success": "Booking cancelled",
+    "retained": "Deposit kept",
+    "refunded": "Deposit refunded"
+  },
+  "late_checkout": {
+    "fee": "Late check-out (half day)",
+    "title": "Late check-out",
+    "subtitle": "Beyond full days: free overrun, then billed as a half day.",
+    "grace": "Grace period",
+    "half_day": "Half day up to",
+    "none": "None"
+  },
   "stay_checkout": {
     "action": "End stay",
     "extend": "Extend",
@@ -125,7 +149,16 @@
       "invalid_departure": "The check-out time must be after the guest's check-in.",
       "departure_in_future": "The check-out time cannot be in the future.",
       "not_early_departure": "This check-out is not before the planned end: close the stay as complete."
-    }
+    },
+    "option_label": "Billing mode",
+    "option_prorata": "Used days only",
+    "option_prorata_desc": "Bill for the days actually used, prorated.",
+    "option_with_penalty": "Used days + penalty",
+    "option_with_penalty_desc": "Bill for the days used and apply an additional penalty.",
+    "option_full_amount": "Full stay amount",
+    "option_full_amount_desc": "Keep the full amount paid, no refund.",
+    "penalty_label": "Penalty amount",
+    "penalty_hint": "Suggested: {amount}"
   },
   "finance": {
     "refunds": "Refunds (already deducted from revenue)",
@@ -270,11 +303,7 @@
   },
   "plans": {
     "trial_name": "Free trial",
-    "basic_name": "Pro",
-    "full_name": "Premium",
     "trial_tagline": "All of RESI, free to get started",
-    "basic_tagline": "The essentials to record",
-    "full_tagline": "All of RESI, no limits",
     "my_plan": "My plan",
     "days_left": {
       "one": "1 day left",
@@ -287,18 +316,27 @@
     "in_progress": "Active",
     "per_days": "/ {} days",
     "trial_body": "Full access to every feature, no commitment, no payment.",
-    "trial_then": "When the trial ends, choose Pro or Premium to continue.",
+    "trial_then": "When the trial ends, you move to RESI Basic, free. Choose Pro or Pro+ to keep every feature.",
     "see_plans": "See plans",
     "renew": "Renew",
     "choose": "Choose your plan",
     "secure_note": "Secure payment with Wave. No automatic charge: you renew whenever you want. Plan changes take effect at the end of the period.",
-    "inactive_title": "Your subscription has ended",
-    "inactive_body": "Choose a plan to keep using RESI. Your data is kept."
+    "inactive_title": "Your account is inactive",
+    "inactive_body": "Your account has been suspended. Contact the RESI team to reactivate it. Your data is kept.",
+    "free_name": "RESI Basic",
+    "free_tagline": "The essentials to run your residences, free",
+    "pro_name": "RESI Pro",
+    "pro_tagline": "Control of your business and finances",
+    "pro_plus_name": "RESI Pro+",
+    "pro_plus_tagline": "The complete solution for professionals",
+    "per_month": "/ month",
+    "free_bookings": "Online and counter bookings",
+    "free_dashboard": "Dashboard, revenue and occupancy rate",
+    "free_wallet": "Wave wallet, withdrawals with a 1% fee"
   },
   "premium": {
-    "badge": "Premium",
-    "title": "Available with Premium",
-    "body": "{} is part of the Premium plan.",
+    "title": "Available with {}",
+    "body": "{} is part of the {} plan.",
     "see_plans": "See plans",
     "later": "Later",
     "manager_body": "This feature is not included in your owner’s plan.",
@@ -332,7 +370,9 @@
         "title": "WhatsApp invoices",
         "body": "Send your client the invoice for their stay, in one tap."
       }
-    }
+    },
+    "badge_pro": "Pro",
+    "badge_proPlus": "Pro+"
   },
   "report_police": {
     "commune": "Municipality (police report)",
@@ -656,7 +696,9 @@
     "clients": "Clients",
     "clients_hint": "Client book and stay history",
     "residences": "Residences",
-    "residences_hint": "Group the units of a building"
+    "residences_hint": "Group the units of a building",
+    "wallet": "Wallet",
+    "wallet_hint": "Wave payments received and withdrawals"
   },
   "stats": {
     "income": "Income",
@@ -973,6 +1015,9 @@
       "one": "{} day",
       "other": "{} days"
     },
+    "stay_duration": "Stay duration",
+    "remove_day": "Remove a day",
+    "add_day": "Add a day",
     "title_check_in": "Immediate check-in",
     "title_future": "Future booking",
     "save_check_in": "Save the check-in",
@@ -1154,6 +1199,8 @@
     "cleaning": "Cleaning",
     "maintenance": "Maintenance",
     "taxes": "Taxes",
+    "commission": "Referrer commission",
+    "subscription": "Subscription",
     "other": "Other"
   },
   "expense": {
@@ -1406,5 +1453,34 @@
       "expense_create": "Expense"
     },
     "saved_at": "Entered on {}"
+  },
+  "wallet": {
+    "title": "Wallet",
+    "total_balance": "Available to withdraw",
+    "fee_note": "Withdrawals carry a 1% fee",
+    "residences": "By residence",
+    "general": "Units outside a residence",
+    "empty_title": "No online payment yet",
+    "empty_body": "Your clients’ Wave payments add up here, residence by residence.",
+    "withdrawals": "Withdrawal requests",
+    "withdraw": "Withdraw",
+    "withdraw_title": "Request a withdrawal",
+    "withdraw_body": "Available: {balance}. The RESI team sends you the amount by Wave.",
+    "withdraw_confirm": "Send the request",
+    "withdraw_sent": "Withdrawal request sent",
+    "amount": "Amount to withdraw (F)",
+    "payout_phone": "Wave number",
+    "payout_phone_hint": "E.g. 07 00 00 00 00",
+    "payout_name": "Account holder (optional)",
+    "fee": "Fee (1%)",
+    "net": "You will receive",
+    "amount_invalid": "Amount between {min} and your available balance.",
+    "pending_note": "{amount} being paid out.",
+    "withdrawal_line": "{net} to {phone} · {date}",
+    "status": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "rejected": "Rejected"
+    }
   }
 }

@@ -48,6 +48,8 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: SyncReviewRoute.page),
     AutoRoute(page: FinanceRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ReportRoute.page, guards: [_ownerOnly]),
+    // L'argent de la maison : le gérant ne le voit ni ne le retire.
+    AutoRoute(page: WalletRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ClientsRoute.page),
     AutoRoute(page: AddClientRoute.page),
     AutoRoute(page: SupportChatRoute.page),

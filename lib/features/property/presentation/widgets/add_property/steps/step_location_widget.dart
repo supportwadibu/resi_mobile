@@ -155,8 +155,8 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
           isLoading: _isLocating,
           onPressed: _isLocating ? null : _useCurrentPosition,
         ),
-        const SizedBox(height: 12),
-        _SearchCityButton(onPressed: _openCityPicker),
+        // const SizedBox(height: 12),
+        // _SearchCityButton(onPressed: _openCityPicker),
 
         if (_locationNotice != null) ...[
           const SizedBox(height: 10),
@@ -206,7 +206,7 @@ class _StepLocationWidgetState extends State<StepLocationWidget> {
                   TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'ci.wadibu.resi_africa',
+                    userAgentPackageName: 'ci.resi.africa',
                   ),
                   MarkerLayer(
                     markers: [

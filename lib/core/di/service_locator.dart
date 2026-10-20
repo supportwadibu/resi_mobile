@@ -29,6 +29,7 @@ import 'package:resi_africa/features/reservation/business_logic/edit_reservation
 import 'package:resi_africa/features/reservation/data/models/reservation_model.dart';
 import 'package:resi_africa/features/reservation/business_logic/early_check_out_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_check_in_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/stay_cancel_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_check_out_cubit.dart';
 import 'package:resi_africa/features/home/business_logic/home_stats_cubit.dart';
 import 'package:resi_africa/features/residence/business_logic/residence_cubit.dart';
@@ -58,6 +59,9 @@ import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
 import 'package:resi_africa/features/stats/data/repositories/property_stats_repository.dart';
 import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
+import 'package:resi_africa/features/subscription/data/models/plan_access.dart';
+import 'package:resi_africa/features/wallet/business_logic/wallet_cubit.dart';
+import 'package:resi_africa/features/wallet/data/repositories/wallet_repository.dart';
 import 'package:resi_africa/features/subscription/business_logic/subscription_plans_cubit.dart';
 import 'package:resi_africa/features/subscription/data/repositories/subscription_repository.dart';
 
@@ -192,6 +196,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerLazySingleton(
     () => ExpenseRepository(sl<Dio>(), sl<SessionRole>()),
   );
+  sl.registerLazySingleton<WalletRepository>(() => WalletRepository(sl<Dio>()));
   sl.registerLazySingleton(
     () => ResidenceRepository(sl<Dio>(), sl<SessionRole>()),
   );
@@ -336,6 +341,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
       queue: sl<OfflineActionQueue>(),
     ),
   );
+  sl.registerFactory(() => StayCancelCubit(sl<ReservationRepository>()));
   sl.registerFactory(
     () => StayCheckInCubit(
       sl<ReservationRepository>(),
@@ -375,6 +381,8 @@ Future<void> setupServiceLocator(AppConfig config) async {
     ),
   );
   sl.registerFactory(() => ExpenseCubit(sl<ExpenseRepository>()));
+  sl.registerFactory(() => WalletCubit(sl<WalletRepository>()));
+  sl.registerFactory(() => WithdrawalRequestCubit(sl<WalletRepository>()));
   sl.registerFactory(
     () => SyncReviewCubit(
       sl<ReservationLocalStore>(),
@@ -414,6 +422,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
       // une fabrique, mais le rôle change à la reconnexion sans que le
       // conteneur soit reconstruit.
       () => sl<SessionRole>().value,
+      // Même lecture différée pour le palier : un paiement le change en cours
+      // de session.
+      canReadFinance: () => sl<PlanCubit>().access.allows(PlanAccess.pro),
     ),
   );
   sl.registerFactory(

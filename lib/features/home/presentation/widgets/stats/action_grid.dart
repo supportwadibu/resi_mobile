@@ -18,8 +18,9 @@ import '../../../../subscription/presentation/widgets/plan_gate.dart';
 import '../../../../subscription/presentation/widgets/plan_style.dart';
 import 'package:resi_africa/shared/utils/ensure_online.dart';
 
-/// Entrées réservées au forfait Premium, et la fonction que chacune ouvre.
-/// Les résidences restent ouvertes : leur enregistrement fait partie de Pro.
+/// Entrées réservées à une offre payante, et la fonction que chacune ouvre.
+/// Les résidences restent ouvertes : leur enregistrement fait partie de RESI
+/// Basic.
 const _premiumActions = <String, PremiumFeature>{
   'expenses': PremiumFeature.expenses,
   'finance': PremiumFeature.finance,
@@ -65,6 +66,13 @@ class ActionGrid extends StatelessWidget {
       route: ClientsRoute(),
     ),
     StatsAction(
+      key: 'wallet',
+      icon: LucideIcons.wallet,
+      label: 'stats_actions.wallet',
+      description: 'stats_actions.wallet_hint',
+      route: WalletRoute(),
+    ),
+    StatsAction(
       key: 'residences',
       icon: AppSectionIcons.residences,
       label: 'stats_actions.residences',
@@ -85,10 +93,16 @@ class ActionGrid extends StatelessWidget {
     return BlocBuilder<PlanCubit, PlanState>(
       bloc: sl<PlanCubit>(),
       builder: (context, plan) {
-        Widget card(StatsAction action) => ActionCard(
-          action: action,
-          locked: plan.access.isFull ? null : _premiumActions[action.key],
-        );
+        Widget card(StatsAction action) {
+          final feature = _premiumActions[action.key];
+          return ActionCard(
+            action: action,
+            locked:
+                feature == null || plan.access.allows(feature.requiredAccess)
+                ? null
+                : feature,
+          );
+        }
 
         return Column(
           children: [
@@ -162,12 +176,12 @@ class ActionCard extends StatelessWidget {
             children: [
               IconChip(icon: action.icon),
               const Spacer(),
-              if (locked != null)
-                const Flexible(
+              if (locked case final feature?)
+                Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.topRight,
-                    child: PremiumBadge(),
+                    child: PremiumBadge(feature: feature),
                   ),
                 ),
             ],

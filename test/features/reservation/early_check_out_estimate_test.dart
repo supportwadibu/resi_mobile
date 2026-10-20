@@ -129,4 +129,34 @@ void main() {
       ),
     );
   });
+
+  test('calcule les 3 options de facturation (prorata, pénalité, totalité)', () {
+    final quote = EarlyCheckOutQuote.estimate(
+      _booking(daysCount: 5, paid: 50000),
+      DateTime.utc(2026, 10, 3, 15),
+      now: now,
+    );
+
+    expect(quote.options.keys, containsAll([
+      EarlyCheckOutOption.prorata,
+      EarlyCheckOutOption.withPenalty,
+      EarlyCheckOutOption.fullAmount,
+    ]));
+
+    // Prorata : 3 jours sur 5 = 30 000 F, remboursement 20 000 F
+    final prorata = quote.options[EarlyCheckOutOption.prorata]!;
+    expect(prorata.amount, 30000);
+    expect(prorata.refund, 20000);
+
+    // Avec pénalité : prorata 30 000 F + 10 % de 50 000 = 5 000 F => 35 000 F
+    final withPenalty = quote.options[EarlyCheckOutOption.withPenalty]!;
+    expect(withPenalty.penalty, 5000);
+    expect(withPenalty.amount, 35000);
+    expect(withPenalty.refund, 15000);
+
+    // Totalité : 50 000 F, aucun remboursement
+    final full = quote.options[EarlyCheckOutOption.fullAmount]!;
+    expect(full.amount, 50000);
+    expect(full.refund, 0);
+  });
 }

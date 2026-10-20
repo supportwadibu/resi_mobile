@@ -1,6 +1,14 @@
 import 'dart:async';
 
-import '../../features/subscription/data/models/plan_access.dart';
+/// Refus d'abonnement renvoyé par l'API.
+enum PlanRefusal {
+  /// `subscription_required` : compte rejeté ou suspendu.
+  inactive,
+
+  /// `plan_upgrade_required` : la fonction exige un palier supérieur à celui
+  /// du propriétaire — lequel, le code ne le dit pas.
+  upgradeRequired,
+}
 
 /// Relais des refus d'abonnement renvoyés par l'API.
 ///
@@ -11,17 +19,17 @@ import '../../features/subscription/data/models/plan_access.dart';
 /// relais évite une dépendance circulaire : le cubit dépend de Dio, qui
 /// dépend de l'intercepteur.
 class PlanSignals {
-  final _controller = StreamController<PlanAccess>.broadcast();
+  final _controller = StreamController<PlanRefusal>.broadcast();
 
-  Stream<PlanAccess> get stream => _controller.stream;
+  Stream<PlanRefusal> get stream => _controller.stream;
 
-  /// Traduit un code métier de refus en accès constaté. Ignore tout autre code.
+  /// Traduit un code métier de refus. Ignore tout autre code.
   void report(String? code) {
-    final access = switch (code) {
-      'subscription_required' => PlanAccess.inactive,
-      'plan_upgrade_required' => PlanAccess.basic,
+    final refusal = switch (code) {
+      'subscription_required' => PlanRefusal.inactive,
+      'plan_upgrade_required' => PlanRefusal.upgradeRequired,
       _ => null,
     };
-    if (access != null) _controller.add(access);
+    if (refusal != null) _controller.add(refusal);
   }
 }

@@ -211,7 +211,37 @@ void main() {
         'price_tiers': [
           {'min_days': 7, 'discount_percent': 15},
         ],
+        // La règle de départ tardif fait partie de la grille : renvoyée
+        // entière, elle garde la valeur lue.
+        'late_checkout_grace_minutes': 60,
+        'late_checkout_half_day_hours': 6,
       });
+    });
+
+    test('un départ tardif modifié transmet la tarification', () {
+      final property = _original(
+        pricing: const PropertyPricing(dailyPrice: 15000),
+      );
+
+      final payload = UpdatePropertyPayload.diff(
+        original: property,
+        title: property.title,
+        description: property.description,
+        propertyType: property.propertyType,
+        address: property.address,
+        details: property.details,
+        amenities: property.amenities,
+        images: property.images,
+        pricing: const PropertyPricing(
+          dailyPrice: 15000,
+          lateCheckoutGraceMinutes: 30,
+          lateCheckoutHalfDayHours: 4,
+        ),
+      );
+
+      final pricing = payload.toJson()['pricing'] as Map<String, dynamic>;
+      expect(pricing['late_checkout_grace_minutes'], 30);
+      expect(pricing['late_checkout_half_day_hours'], 4);
     });
 
     test('vider les paliers transmet une liste vide', () {

@@ -5,6 +5,7 @@ import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../models/booking_stats_model.dart';
+import '../models/deposit_action.dart';
 import '../models/early_check_out_quote.dart';
 import '../models/occupied_period_model.dart';
 import '../models/reservation_model.dart';
@@ -98,6 +99,7 @@ class ReservationRepository {
     required StayType stayType,
     required DateTime checkInAt,
     DateTime? checkOutAt,
+    int? daysCount,
     double? receivedAmount,
     double? agreedUnitPrice,
     double? depositAmount,
@@ -117,6 +119,7 @@ class ReservationRepository {
           'check_in_at': checkInAt.toUtc().toIso8601String(),
           if (checkOutAt != null)
             'check_out_at': checkOutAt.toUtc().toIso8601String(),
+          'days_count': ?daysCount,
           // `?` plutôt qu'un `if` : la clé n'est posée que si la valeur
           // existe, et le serveur applique alors sa propre valeur par défaut.
           'received_amount': ?receivedAmount,
@@ -138,6 +141,34 @@ class ReservationRepository {
         },
       );
 
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Annule une réservation à venir ou en cours.
+  ///
+  /// [depositAction] est exigé par le serveur dès qu'un acompte a été versé
+  /// (422 `deposit_action_required`). Un 409 signale un séjour déjà clos ou
+  /// déjà annulé.
+  Future<ReservationModel> cancel(
+    String id, {
+    String? reason,
+    DepositAction? depositAction,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.bookingCancel(_role.value, id),
+        data: {
+          if (reason != null && reason.trim().isNotEmpty)
+            'reason': reason.trim(),
+          'deposit_action': ?depositAction?.code,
+        },
+      );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -239,6 +270,8 @@ class ReservationRepository {
     String id, {
     required DateTime actualCheckOutAt,
     num? finalAmount,
+    String? earlyCheckoutOption,
+    num? penaltyAmount,
   }) async {
     try {
       final response = await _dio.patch(
@@ -246,7 +279,10 @@ class ReservationRepository {
         data: {
           'full_stay': false,
           'actual_check_out_at': actualCheckOutAt.toUtc().toIso8601String(),
-          'final_amount': ?finalAmount,
+          if (finalAmount != null) 'final_amount': finalAmount,
+          if (earlyCheckoutOption != null)
+            'early_checkout_option': earlyCheckoutOption,
+          if (penaltyAmount != null) 'penalty_amount': penaltyAmount,
         },
       );
       final data = (response.data as Map<String, dynamic>)['data'];
@@ -310,6 +346,7 @@ class ReservationRepository {
     required StayType stayType,
     required DateTime checkInAt,
     required DateTime checkOutAt,
+    int? daysCount,
     double? agreedAmount,
     double? agreedUnitPrice,
     required double depositAmount,
@@ -323,6 +360,7 @@ class ReservationRepository {
           'stay_type': stayType.code,
           'check_in_at': checkInAt.toUtc().toIso8601String(),
           'check_out_at': checkOutAt.toUtc().toIso8601String(),
+          'days_count': ?daysCount,
           'received_amount': ?agreedAmount,
           'agreed_unit_price': ?agreedUnitPrice,
           'deposit_amount': depositAmount,

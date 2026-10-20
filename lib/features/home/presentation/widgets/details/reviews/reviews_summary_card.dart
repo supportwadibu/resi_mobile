@@ -35,7 +35,10 @@ class ReviewsSummaryCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 const StarRating(rating: 4.9, starSize: 18),
                 const SizedBox(height: 8),
-                Text('reviews.count'.tr(args: ['128']), style: context.mutedText),
+                Text(
+                  'reviews.count'.tr(args: ['128']),
+                  style: context.mutedText,
+                ),
               ],
             ),
           ),

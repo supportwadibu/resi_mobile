@@ -45,9 +45,10 @@ class SubscriptionStatusModel {
 
   final DateTime? endDate;
 
-  /// Palier ouvert : `full` (5 000 F), `basic` (3 000 F), ou `null` pour un
-  /// compte inactif. Absent d'un serveur antérieur aux forfaits, qui ne
-  /// bloquait rien : le repli est alors l'accès complet.
+  /// Palier ouvert : `free`, `pro`, `pro_plus` — ou `basic` / `full` d'un
+  /// serveur antérieur —, `null` pour un compte inactif. Absent d'un serveur
+  /// antérieur aux forfaits, qui ne bloquait rien : le repli est alors
+  /// l'accès complet. Lu par `PlanAccess.fromApi`.
   final String? planAccess;
 
   /// Le compte a été suspendu faute de validation dans les temps.
@@ -68,7 +69,12 @@ class SubscriptionStatusModel {
       ownerStatus: json['owner_status'] as String?,
       status: subscription?['status'] as String?,
       endDate: endDate == null ? null : DateTime.tryParse(endDate),
-      planAccess: json.containsKey('plan_access')
+      // `plan_tier` porte les paliers actuels (`free`, `pro`, `pro_plus`) ;
+      // `plan_access` les garde dans l'ancien vocabulaire pour les versions
+      // déjà installées, et sert de repli face à un serveur antérieur.
+      planAccess: json.containsKey('plan_tier')
+          ? json['plan_tier'] as String?
+          : json.containsKey('plan_access')
           ? json['plan_access'] as String?
           : 'full',
     );

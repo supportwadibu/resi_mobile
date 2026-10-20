@@ -5,10 +5,11 @@ import 'app_router.gr.dart';
 /// Entrées de la grille d'actions fermées au gérant.
 ///
 /// `finance` et `reports` portent les agrégats du propriétaire — revenu net,
-/// tendances, parc entier —, que la conception lui ferme. `expenses`,
-/// `clients` et `residences` restent : ce sont ses outils quotidiens, que le
-/// serveur cloisonne déjà sur son périmètre.
-const _managerHiddenActions = <String>{'finance', 'reports'};
+/// tendances, parc entier —, que la conception lui ferme, comme `wallet`,
+/// l'argent encaissé pour lui. `expenses`, `clients` et `residences` restent :
+/// ce sont ses outils quotidiens, que le serveur cloisonne déjà sur son
+/// périmètre.
+const _managerHiddenActions = <String>{'finance', 'reports', 'wallet'};
 
 /// Créations fermées au gérant dans le menu du bouton `+`.
 ///

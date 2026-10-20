@@ -21,6 +21,7 @@ import '../../data/models/reservation_model.dart';
 import '../widgets/create/date_time_field.dart';
 import '../widgets/create/property_selector.dart';
 import '../widgets/create/reservation_section_title.dart';
+import '../widgets/create/stay_duration_picker.dart';
 import '../widgets/create/stay_tier_hints.dart';
 import '../widgets/create/stay_type_picker.dart';
 
@@ -198,6 +199,13 @@ class _EditReservationViewState extends State<_EditReservationView> {
                     tiers: state.priceTiers,
                     activeDiscountPercent: state.quote.discountPercent,
                   ),
+                  if (state.stayType == StayType.fullDay) ...[
+                    const SizedBox(height: 12),
+                    StayDurationPicker(
+                      days: state.daysCount,
+                      onChanged: cubit.setDaysCount,
+                    ),
+                  ],
 
                   const SizedBox(height: 24),
                   ReservationSectionTitle(title: 'booking_edit.check_in'.tr()),
@@ -316,9 +324,13 @@ class _Summary extends StatelessWidget {
               label: 'booking_edit.duration_discount'.tr(
                 args: ['${quote.discountPercent}'],
               ),
-              value: quote.fullAmount - quote.expectedAmount,
+              value: quote.durationDiscount,
             ),
             const Divider(height: 20),
+          ],
+          if (quote.lateCheckout) ...[
+            _Row(label: 'late_checkout.fee'.tr(), value: quote.lateCheckoutFee),
+            const SizedBox(height: 8),
           ],
           _Row(
             label: 'booking_amounts.grid_price'.tr(),

@@ -29,7 +29,7 @@ class PlanCubit extends Cubit<PlanState> {
   final AuthService _auth;
   final LocalStorage _storage;
   final SessionRole _role;
-  late final StreamSubscription<PlanAccess> _signals;
+  late final StreamSubscription<PlanRefusal> _signals;
 
   PlanAccess get access => state.access;
 
@@ -67,9 +67,26 @@ class PlanCubit extends Cubit<PlanState> {
   }
 
   /// Un refus de l'API fait foi sur tout ce que l'application croyait savoir.
-  Future<void> _onSignal(PlanAccess access) async {
-    if (isClosed || state.access == access) return;
-    await _apply(PlanKnown(access));
+  ///
+  /// `plan_upgrade_required` ne dit pas le palier du propriétaire, seulement
+  /// qu'il est en dessous de celui exigé : l'accès est relu. Le gérant ne peut
+  /// pas le relire, mais tout son espace exige Pro+ — un refus le place donc
+  /// en dessous, et l'écran des forfaits le prend en charge.
+  Future<void> _onSignal(PlanRefusal refusal) async {
+    if (isClosed) return;
+
+    switch (refusal) {
+      case PlanRefusal.inactive:
+        if (state.access == PlanAccess.inactive) return;
+        await _apply(const PlanKnown(PlanAccess.inactive));
+      case PlanRefusal.upgradeRequired:
+        if (_role.value == 'gerant') {
+          if (!state.access.allows(PlanAccess.proPlus)) return;
+          await _apply(const PlanKnown(PlanAccess.pro));
+          return;
+        }
+        await refresh();
+    }
   }
 
   Future<void> _apply(PlanKnown next) async {

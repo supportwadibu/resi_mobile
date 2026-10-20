@@ -1,3 +1,5 @@
+import 'plan_access.dart';
+
 /// Forfait proposé à la souscription, tel que servi par `GET /proprio/plans`.
 class SubscriptionPlanModel {
   const SubscriptionPlanModel({
@@ -5,7 +7,7 @@ class SubscriptionPlanModel {
     required this.name,
     required this.price,
     required this.durationDays,
-    required this.isFull,
+    required this.access,
     this.description = '',
     this.features = const [],
   });
@@ -18,8 +20,8 @@ class SubscriptionPlanModel {
   final double price;
   final int durationDays;
 
-  /// Forfait complet (5 000 F), par opposition au forfait d'enregistrement.
-  final bool isFull;
+  /// Palier que le forfait ouvre : RESI Pro ou RESI Pro+.
+  final PlanAccess access;
 
   /// Lignes de présentation saisies par l'administrateur.
   final List<String> features;
@@ -33,7 +35,7 @@ class SubscriptionPlanModel {
       durationDays: (json['duration_days'] as num?)?.toInt() ?? 30,
       // Un plan sans palier est lu complet par le serveur : même repli ici,
       // pour que l'écran n'annonce pas moins que ce que le plan ouvre.
-      isFull: json['tier'] != 'basic',
+      access: PlanAccess.fromApi(json['tier'] as String? ?? 'pro_plus'),
       features: (json['features'] as List<dynamic>? ?? const [])
           .whereType<String>()
           .toList(growable: false),

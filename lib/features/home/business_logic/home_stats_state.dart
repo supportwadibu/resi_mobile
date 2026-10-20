@@ -20,6 +20,8 @@ final class HomeStatsLoaded extends HomeStatsState {
     this.propertiesCount,
     this.activeBookings,
     this.netIncome,
+    this.monthRevenue,
+    this.occupancyRate,
   });
 
   /// Toutes les unités du parc, brouillons compris. Sans période : un parc ne
@@ -30,8 +32,14 @@ final class HomeStatsLoaded extends HomeStatsState {
   final int? activeBookings;
 
   /// Bénéfice net du mois — revenus moins charges. Négatif un mois de travaux,
-  /// ce que l'affichage doit montrer plutôt que masquer à zéro.
+  /// ce que l'affichage doit montrer plutôt que masquer à zéro. `null` sous
+  /// RESI Basic, qui ne suit pas les charges.
   final double? netIncome;
+
+  /// Revenus du mois et taux d'occupation (0 à 1), servis à tous les paliers :
+  /// la rangée de RESI Basic les montre à la place du bénéfice.
+  final double? monthRevenue;
+  final double? occupancyRate;
 }
 
 final class HomeStatsError extends HomeStatsState {

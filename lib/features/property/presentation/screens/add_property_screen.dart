@@ -23,6 +23,7 @@ import '../widgets/add_property/steps/step_amenities_widget.dart';
 import '../widgets/add_property/steps/step_details_widget.dart';
 import '../widgets/add_property/steps/step_identification_widget.dart';
 import '../widgets/add_property/steps/step_images_widget.dart';
+import '../../../../shared/models/late_checkout_policy.dart';
 import '../widgets/add_property/steps/step_location_widget.dart';
 import '../widgets/add_property/steps/step_pricing_widget.dart';
 import '../widgets/add_property/steps/step_type_widget.dart';
@@ -165,6 +166,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   // ── Étape 7 : tarification
   double _dailyPrice = 0;
   List<PriceTier> _priceTiers = const [];
+  int _lateCheckoutGraceMinutes = LateCheckoutPolicy.defaultGraceMinutes;
+  int _lateCheckoutHalfDayHours = LateCheckoutPolicy.defaultHalfDayHours;
 
   @override
   void initState() {
@@ -193,6 +196,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     _images = [...property.images];
     _dailyPrice = property.pricing.dailyPrice;
     _priceTiers = [...property.pricing.priceTiers];
+    _lateCheckoutGraceMinutes = property.pricing.lateCheckoutGraceMinutes;
+    _lateCheckoutHalfDayHours = property.pricing.lateCheckoutHalfDayHours;
   }
 
   bool get _isLastStep => _currentStep == _stepTitles.length - 1;
@@ -223,8 +228,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       1 when _title.trim().length < 3 => 'property_form.name_too_short'.tr(),
       1 when _description.trim().length < 10 =>
         'property_form.description_too_short'.tr(),
-      2 when _street.trim().length < 2 =>
-        'property_form.address_required'.tr(),
+      2 when _street.trim().length < 2 => 'property_form.address_required'.tr(),
       2 when _city.trim().length < 2 => 'property_form.city_required'.tr(),
       // La surface est facultative ; renseignée, elle doit rester plausible.
       3 when _surfaceArea != null && _surfaceArea! <= 0 =>
@@ -400,9 +404,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
           content: Text(
             _touched.length == 1
                 ? 'property_form.discard_one'.tr()
-                : 'property_form.discard_many'.tr(
-                    args: ['${_touched.length}'],
-                  ),
+                : 'property_form.discard_many'.tr(args: ['${_touched.length}']),
           ),
           actions: [
             TextButton(
@@ -459,6 +461,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     priceTiers: _priceTiers,
     minimumStayDays: _original?.pricing.minimumStayDays,
     maximumStayDays: _original?.pricing.maximumStayDays,
+    lateCheckoutGraceMinutes: _lateCheckoutGraceMinutes,
+    lateCheckoutHalfDayHours: _lateCheckoutHalfDayHours,
   );
 
   void _submit() {
@@ -743,6 +747,12 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         priceTiers: _priceTiers,
         onDailyChanged: (v) => _dailyPrice = v,
         onTiersChanged: (v) => setState(() => _priceTiers = v),
+        lateCheckoutGraceMinutes: _lateCheckoutGraceMinutes,
+        lateCheckoutHalfDayHours: _lateCheckoutHalfDayHours,
+        onLateCheckoutChanged: (grace, halfDay) => setState(() {
+          _lateCheckoutGraceMinutes = grace;
+          _lateCheckoutHalfDayHours = halfDay;
+        }),
       ),
       _ => const SizedBox.shrink(),
     };
