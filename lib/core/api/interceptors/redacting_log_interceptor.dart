@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-
 class RedactingLogInterceptor extends Interceptor {
   const RedactingLogInterceptor();
 
@@ -85,9 +84,8 @@ class RedactingLogInterceptor extends Interceptor {
     if (value is Map) {
       return {
         for (final entry in value.entries)
-          entry.key: _sensitiveFields.contains(
-                entry.key.toString().toLowerCase(),
-              )
+          entry.key:
+              _sensitiveFields.contains(entry.key.toString().toLowerCase())
               ? _redacted
               : _redactValue(entry.value),
       };
