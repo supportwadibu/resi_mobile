@@ -4,14 +4,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 
-/// Barre de l'écran financier, avec le choix du périmètre (tout le parc ou
-/// une résidence).
+/// Barre de l'écran financier, avec le choix du périmètre (tout le parc, une
+/// résidence ou un logement).
 class FinanceAppBar extends StatelessWidget implements PreferredSizeWidget {
   const FinanceAppBar({super.key, this.onFilterTap, this.scopeLabel});
 
   final VoidCallback? onFilterTap;
 
-  /// Résidence retenue, `null` pour tout le parc.
+  /// Résidence ou logement retenu, `null` pour tout le parc.
   final String? scopeLabel;
 
   @override

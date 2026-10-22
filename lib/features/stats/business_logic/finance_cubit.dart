@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
 import '../data/models/finance/finance_period.dart';
+import '../data/models/finance/finance_scope.dart';
 import '../data/repositories/finance_repository.dart';
 import 'finance_state.dart';
 
@@ -9,16 +10,16 @@ class FinanceCubit extends Cubit<FinanceState> {
   FinanceCubit(this._repository) : super(const FinanceInitial());
   final FinanceRepository _repository;
 
-  /// Résidence sur laquelle le relevé est restreint, `null` pour tout le parc.
+  /// Périmètre du relevé : tout le parc, une résidence ou un logement.
   ///
-  /// Mémorisée dans le cubit et non dans l'écran : celui-ci recharge à chaque
+  /// Mémorisé dans le cubit et non dans l'écran : celui-ci recharge à chaque
   /// retour de navigation, et un filtre porté par le widget serait perdu au
   /// premier aller-retour vers la saisie d'une dépense.
-  String? _residenceId;
+  FinanceScope _scope = const FinanceScope.portfolio();
 
-  String? get residenceId => _residenceId;
+  FinanceScope get scope => _scope;
 
-  /// Période retenue, gardée ici pour la même raison que [_residenceId].
+  /// Période retenue, gardée ici pour la même raison que [_scope].
   FinancePeriod _period = const FinancePeriod.rolling();
 
   FinancePeriod get period => _period;
@@ -50,7 +51,8 @@ class FinanceCubit extends Cubit<FinanceState> {
       final overview = await _repository.getOverview(
         from: bounds.from,
         to: bounds.to,
-        residenceId: _residenceId,
+        residenceId: _scope.residenceId,
+        propertyId: _scope.propertyId,
       );
       if (!isClosed) emit(FinanceLoaded(overview));
     } on AppFailure catch (f) {
@@ -58,10 +60,10 @@ class FinanceCubit extends Cubit<FinanceState> {
     }
   }
 
-  Future<void> filterByResidence(String? residenceId) async {
-    if (_residenceId == residenceId) return;
+  Future<void> filterByScope(FinanceScope scope) async {
+    if (_scope == scope) return;
 
-    _residenceId = residenceId;
+    _scope = scope;
     await load();
   }
 

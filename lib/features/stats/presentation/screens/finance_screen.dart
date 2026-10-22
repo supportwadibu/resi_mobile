@@ -23,11 +23,13 @@ import '../../business_logic/finance_cubit.dart';
 import '../../business_logic/finance_state.dart';
 import '../../data/models/finance/finance_overview_model.dart';
 import '../../data/models/finance/finance_period.dart';
+import '../../../property/data/models/property_model.dart';
+import '../../../property/data/repositories/property_repository.dart';
 import '../../../residence/data/models/residence_model.dart';
 import '../../../residence/data/repositories/residence_repository.dart';
 import '../widgets/finance/finance_app_bar.dart';
 import '../widgets/finance/finance_period_sheet.dart';
-import '../widgets/finance/finance_residence_sheet.dart';
+import '../widgets/finance/finance_scope_sheet.dart';
 import '../widgets/finance/revenue_chart.dart';
 import '../widgets/finance/stats_row.dart';
 
@@ -71,8 +73,6 @@ class _FinanceView extends StatefulWidget {
 
 class _FinanceViewState extends State<_FinanceView>
     with AutoRouteAwareStateMixin<_FinanceView> {
-  String? _scopeLabel;
-
   @override
   void didPopNext() {
     context.read<FinanceCubit>().load();
@@ -82,9 +82,20 @@ class _FinanceViewState extends State<_FinanceView>
   Future<void> _pickScope() async {
     final cubit = context.read<FinanceCubit>();
 
-    List<ResidenceModel> residences;
+    final List<ResidenceModel> residences;
+    final List<PropertyModel> properties;
     try {
-      residences = await sl<ResidenceRepository>().getAllResidences();
+      // `Future.wait` relève la première erreur telle quelle : l'`AppFailure`
+      // d'un des deux appels arrive ici sans enveloppe.
+      final [
+        residenceList as List<ResidenceModel>,
+        propertyList as List<PropertyModel>,
+      ] = await Future.wait<Object>([
+        sl<ResidenceRepository>().getAllResidences(),
+        sl<PropertyRepository>().getAllProperties(),
+      ]);
+      residences = residenceList;
+      properties = propertyList;
     } on AppFailure catch (f) {
       AppToast.error(f.userMessage);
       return;
@@ -92,29 +103,31 @@ class _FinanceViewState extends State<_FinanceView>
 
     if (!mounted) return;
 
-    final selection = await FinanceResidenceSheet.show(
+    final scope = await FinanceScopeSheet.show(
       context,
       residences: residences,
-      selectedId: cubit.residenceId,
+      properties: properties,
+      selected: cubit.scope,
     );
 
-    if (selection == null || !mounted) return;
+    if (scope == null || !mounted) return;
 
-    setState(() {
-      _scopeLabel = selection.residenceId == null
-          ? null
-          : residences.firstWhere((r) => r.id == selection.residenceId).name;
-    });
-
-    await cubit.filterByResidence(selection.residenceId);
+    await cubit.filterByScope(scope);
 
     if (!mounted) return;
 
+    // La ventilation suit le même périmètre que le relevé, faute de quoi ses
+    // catégories ne sommeraient pas au total « Dépenses » affiché au-dessus.
+    // Les deux rattachements sont exclusifs côté dépenses aussi : poser l'un
+    // lève l'autre.
     final expenses = context.read<ExpenseCubit>();
     await expenses.applyFilters(
-      selection.residenceId == null
-          ? expenses.filters.copyWith(clearResidence: true)
-          : expenses.filters.copyWith(residenceId: selection.residenceId),
+      expenses.filters.copyWith(
+        residenceId: scope.residenceId,
+        propertyId: scope.propertyId,
+        clearResidence: scope.residenceId == null,
+        clearProperty: scope.propertyId == null,
+      ),
     );
   }
 
@@ -143,7 +156,14 @@ class _FinanceViewState extends State<_FinanceView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FinanceAppBar(onFilterTap: _pickScope, scopeLabel: _scopeLabel),
+      appBar: FinanceAppBar(
+        onFilterTap: _pickScope,
+        // Lu sur le cubit, qui garde le périmètre d'un rechargement à l'autre :
+        // le libellé ne peut pas annoncer un autre périmètre que les chiffres.
+        scopeLabel: context.select<FinanceCubit, String?>(
+          (cubit) => cubit.scope.label,
+        ),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

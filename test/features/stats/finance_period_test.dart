@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
 import 'package:resi_africa/features/stats/data/models/finance/finance_period.dart';
+import 'package:resi_africa/features/stats/data/models/finance/finance_scope.dart';
 import 'package:resi_africa/features/stats/data/models/finance/revenue_point_model.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
 import 'package:resi_africa/features/stats/presentation/widgets/finance/revenue_chart.dart';
@@ -146,7 +147,9 @@ void main() {
       final built = _build();
 
       await built.cubit.filterByPeriod(const FinancePeriod.year(2025));
-      await built.cubit.filterByResidence('resi-adja');
+      await built.cubit.filterByScope(
+        const FinanceScope.residence(id: 'resi-adja', name: 'Resi Adja'),
+      );
 
       final params = built.spy.captured.last.queryParameters;
       expect(params['residence_id'], 'resi-adja');

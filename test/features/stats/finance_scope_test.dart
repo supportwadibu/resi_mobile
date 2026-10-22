@@ -6,6 +6,7 @@ import 'package:resi_africa/features/expense/business_logic/expense_state.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/finance_state.dart';
+import 'package:resi_africa/features/stats/data/models/finance/finance_scope.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
 
 /// Intercepte la requête composée, sans réseau.
@@ -37,6 +38,9 @@ class _CapturingInterceptor extends Interceptor {
   }
 }
 
+const _adja = FinanceScope.residence(id: 'resi-adja', name: 'Resi Adja');
+const _studio = FinanceScope.property(id: 'studio-1', name: 'Studio 1');
+
 ({FinanceCubit cubit, _CapturingInterceptor spy}) _build() {
   final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
   final spy = _CapturingInterceptor();
@@ -49,26 +53,52 @@ class _CapturingInterceptor extends Interceptor {
 
 void main() {
   group('FinanceCubit — périmètre', () {
-    test('sans filtre, aucun residence_id n’est envoyé', () async {
+    test('sans filtre, ni residence_id ni property_id ne partent', () async {
       final built = _build();
 
       await built.cubit.load();
 
       final sent = built.spy.captured.single;
       expect(sent.queryParameters.containsKey('residence_id'), isFalse);
+      expect(sent.queryParameters.containsKey('property_id'), isFalse);
+      expect(built.cubit.scope.isPortfolio, isTrue);
       expect(built.cubit.state, isA<FinanceLoaded>());
     });
 
-    test('filtrer envoie le residence_id', () async {
+    test('filtrer sur une résidence envoie le residence_id seul', () async {
       final built = _build();
 
-      await built.cubit.filterByResidence('resi-adja');
+      await built.cubit.filterByScope(_adja);
 
-      expect(
-        built.spy.captured.single.queryParameters['residence_id'],
-        'resi-adja',
-      );
-      expect(built.cubit.residenceId, 'resi-adja');
+      final params = built.spy.captured.single.queryParameters;
+      expect(params['residence_id'], 'resi-adja');
+      expect(params.containsKey('property_id'), isFalse);
+      expect(built.cubit.scope.residenceId, 'resi-adja');
+    });
+
+    test('filtrer sur un logement envoie le property_id seul', () async {
+      // Résidence et logement sont exclusifs : envoyer les deux laisserait le
+      // serveur arbitrer entre deux périmètres que l'écran n'a pas combinés.
+      final built = _build();
+
+      await built.cubit.filterByScope(_studio);
+
+      final params = built.spy.captured.single.queryParameters;
+      expect(params['property_id'], 'studio-1');
+      expect(params.containsKey('residence_id'), isFalse);
+      expect(built.cubit.scope.propertyId, 'studio-1');
+    });
+
+    test('passer d’une résidence à l’un de ses logements', () async {
+      final built = _build();
+
+      await built.cubit.filterByScope(_adja);
+      await built.cubit.filterByScope(_studio);
+
+      expect(built.spy.captured, hasLength(2));
+      final params = built.spy.captured.last.queryParameters;
+      expect(params['property_id'], 'studio-1');
+      expect(params.containsKey('residence_id'), isFalse);
     });
 
     test('le périmètre survit à un rechargement', () async {
@@ -77,27 +107,26 @@ void main() {
       // la saisie d'une dépense.
       final built = _build();
 
-      await built.cubit.filterByResidence('resi-adja');
+      await built.cubit.filterByScope(_studio);
       await built.cubit.load();
 
       expect(built.spy.captured, hasLength(2));
       expect(
-        built.spy.captured.last.queryParameters['residence_id'],
-        'resi-adja',
+        built.spy.captured.last.queryParameters['property_id'],
+        'studio-1',
       );
     });
 
     test('revenir à « tout le parc » retire le filtre', () async {
       final built = _build();
 
-      await built.cubit.filterByResidence('resi-adja');
-      await built.cubit.filterByResidence(null);
+      await built.cubit.filterByScope(_studio);
+      await built.cubit.filterByScope(const FinanceScope.portfolio());
 
-      expect(built.cubit.residenceId, isNull);
-      expect(
-        built.spy.captured.last.queryParameters.containsKey('residence_id'),
-        isFalse,
-      );
+      expect(built.cubit.scope.isPortfolio, isTrue);
+      final params = built.spy.captured.last.queryParameters;
+      expect(params.containsKey('residence_id'), isFalse);
+      expect(params.containsKey('property_id'), isFalse);
     });
 
     test('resélectionner le même périmètre ne relance rien', () async {
@@ -105,8 +134,8 @@ void main() {
       // l'écran sur un appui sans effet.
       final built = _build();
 
-      await built.cubit.filterByResidence('resi-adja');
-      await built.cubit.filterByResidence('resi-adja');
+      await built.cubit.filterByScope(_adja);
+      await built.cubit.filterByScope(_adja);
 
       expect(built.spy.captured, hasLength(1));
     });
@@ -115,11 +144,33 @@ void main() {
       // Le taux d'occupation a besoin d'une fenêtre pour avoir un dénominateur.
       final built = _build();
 
-      await built.cubit.filterByResidence('resi-adja');
+      await built.cubit.filterByScope(_studio);
 
       final params = built.spy.captured.single.queryParameters;
       expect(params.containsKey('from'), isTrue);
       expect(params.containsKey('to'), isTrue);
+    });
+  });
+
+  group('FinanceScope', () {
+    test('l’égalité ignore le libellé', () {
+      // Un logement renommé entre deux ouvertures de la feuille reste le même
+      // périmètre : le recharger ne changerait aucun chiffre.
+      expect(
+        const FinanceScope.property(id: 'studio-1', name: 'Studio 1'),
+        const FinanceScope.property(id: 'studio-1', name: 'Studio A'),
+      );
+    });
+
+    test('une résidence et un logement de même id restent distincts', () {
+      expect(
+        const FinanceScope.property(id: 'x', name: 'X'),
+        isNot(const FinanceScope.residence(id: 'x', name: 'X')),
+      );
+    });
+
+    test('tout le parc n’a pas de libellé', () {
+      expect(const FinanceScope.portfolio().label, isNull);
     });
   });
 

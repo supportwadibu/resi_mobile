@@ -18,17 +18,22 @@ class FinanceRepository {
   /// logements, ses charges communes et celles de ses logements. Le taux
   /// d’occupation est alors rapporté à ses seules unités, et non au parc entier.
   ///
+  /// [propertyId] restreint le relevé à un logement : son revenu et ses
+  /// propres charges, sans les charges communes de sa résidence. Exclusif de
+  /// [residenceId] — l'écran n'en retient qu'un.
+  ///
   /// [to] est le dernier jour **inclus** : il part en fin de journée. L'API
   /// traite cette borne comme exclusive pour le revenu, l'occupation et les
   /// remboursements ; envoyée à minuit, elle amputerait le relevé de son
   /// dernier jour — le 30 septembre d'un relevé de septembre.
   ///
-  /// Une résidence inconnue répond 404 — lire le `statusCode`, jamais le texte
-  /// du message.
+  /// Une résidence ou un logement inconnu répond 404 — lire le `statusCode`,
+  /// jamais le texte du message.
   Future<FinanceOverviewModel> getOverview({
     DateTime? from,
     DateTime? to,
     String? residenceId,
+    String? propertyId,
   }) async {
     try {
       final response = await _dio.get(
@@ -37,6 +42,7 @@ class FinanceRepository {
           if (from != null) 'from': _formatDate(from),
           if (to != null) 'to': '${_formatDate(to)} 23:59:59',
           'residence_id': ?residenceId,
+          'property_id': ?propertyId,
         },
       );
       final data = (response.data as Map<String, dynamic>)['data'];
