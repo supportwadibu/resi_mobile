@@ -308,23 +308,27 @@ class _Content extends StatelessWidget {
                 value: CurrencyFormatter.short(summary.depenses),
                 icon: LucideIcons.trendingDown,
                 accent: AppAccent.red,
+                // Mention et non tuile : la commission est déjà dans les
+                // dépenses, une tuile à côté se lirait comme une charge de
+                // plus. Absente sans apporteur sur la période.
+                note: summary.commissions > 0
+                    ? 'finance.including_commissions'.tr(
+                        namedArgs: {
+                          'amount': CurrencyFormatter.short(
+                            summary.commissions,
+                          ),
+                        },
+                      )
+                    : null,
               ),
-              // Masquées à zéro : la plupart des périodes n'ont aucun départ
-              // anticipé ni apporteur, et une tuile vide ferait croire à un
-              // manque.
+              // Masquée à zéro : la plupart des périodes n'ont aucun départ
+              // anticipé, et une tuile vide ferait croire à un manque.
               if (summary.remboursements > 0)
                 StatTile(
                   label: 'finance.refunds'.tr(),
                   value: CurrencyFormatter.short(summary.remboursements),
                   icon: LucideIcons.undo2,
                   accent: AppAccent.amber,
-                ),
-              if (summary.commissions > 0)
-                StatTile(
-                  label: 'finance.commissions'.tr(),
-                  value: CurrencyFormatter.short(summary.commissions),
-                  icon: LucideIcons.handshake,
-                  accent: AppAccent.blue,
                 ),
             ],
           ),

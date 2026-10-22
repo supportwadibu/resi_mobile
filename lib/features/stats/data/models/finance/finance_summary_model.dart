@@ -10,8 +10,8 @@ class FinanceSummaryModel {
   /// serveur : à afficher, jamais à retrancher une seconde fois.
   final double remboursements;
 
-  /// Commissions dues aux apporteurs d'affaire, déjà retranchées de
-  /// [beneficeNet] par le serveur.
+  /// Part de [depenses] due aux apporteurs d'affaire : un détail, déjà compté
+  /// dans [depenses] et dans [beneficeNet], jamais à retrancher.
   final double commissions;
 
   const FinanceSummaryModel({

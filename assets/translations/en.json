@@ -164,7 +164,7 @@
   },
   "finance": {
     "refunds": "Refunds (already deducted from revenue)",
-    "commissions": "Referrer commissions"
+    "including_commissions": "Including {amount} in referrer commissions"
   },
   "subscription": {
     "title": "Plans",

@@ -164,7 +164,7 @@
   },
   "finance": {
     "refunds": "Remboursements (déjà déduits du CA)",
-    "commissions": "Commissions apporteurs"
+    "including_commissions": "Dont {amount} de commissions apporteurs"
   },
   "subscription": {
     "title": "Forfaits",
