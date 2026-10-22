@@ -60,7 +60,12 @@ class _CancelFormState extends State<_CancelForm> {
   /// propriétaire, il doit le décider lui-même.
   DepositAction? _depositAction;
 
-  bool get _hasDeposit => widget.reservation.depositAmount > 0;
+  /// Réservation en ligne : le client a pu payer par Wave. La fiche ne porte
+  /// pas ce paiement — le serveur le connaît, et l'ignore s'il n'y en a pas —,
+  /// le choix est donc toujours demandé, sans montant.
+  bool get _isOnline => widget.reservation.source == ReservationSource.online;
+
+  bool get _hasDeposit => widget.reservation.depositAmount > 0 || _isOnline;
 
   @override
   void dispose() {
@@ -105,9 +110,11 @@ class _CancelFormState extends State<_CancelForm> {
             children: [
               if (_hasDeposit) ...[
                 Text(
-                  'stay_cancel.deposit_question'.tr(
-                    namedArgs: {'amount': deposit},
-                  ),
+                  _isOnline
+                      ? 'stay_cancel.online_question'.tr()
+                      : 'stay_cancel.deposit_question'.tr(
+                          namedArgs: {'amount': deposit},
+                        ),
                   style: context.text.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -124,9 +131,11 @@ class _CancelFormState extends State<_CancelForm> {
                 const SizedBox(height: 8),
                 AppOptionTile(
                   title: 'stay_cancel.deposit_refund'.tr(),
-                  description: 'stay_cancel.deposit_refund_hint'.tr(
-                    namedArgs: {'amount': deposit},
-                  ),
+                  description: _isOnline
+                      ? 'stay_cancel.online_refund_hint'.tr()
+                      : 'stay_cancel.deposit_refund_hint'.tr(
+                          namedArgs: {'amount': deposit},
+                        ),
                   icon: LucideIcons.undo2,
                   selected: _depositAction == DepositAction.refund,
                   onTap: isSubmitting

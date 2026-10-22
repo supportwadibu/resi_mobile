@@ -109,7 +109,9 @@
     "reason_hint": "Ex. : client empêché, double réservation…",
     "success": "Réservation annulée",
     "retained": "Acompte gardé",
-    "refunded": "Acompte remboursé"
+    "refunded": "Acompte remboursé",
+    "online_question": "Le client a pu payer en ligne. Que faites-vous de son paiement ?",
+    "online_refund_hint": "Wave lui rend le paiement automatiquement, déduit de votre portefeuille."
   },
   "late_checkout": {
     "fee": "Départ tardif (demi-journée)",

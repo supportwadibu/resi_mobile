@@ -109,7 +109,9 @@
     "reason_hint": "E.g. client unable to come, double booking…",
     "success": "Booking cancelled",
     "retained": "Deposit kept",
-    "refunded": "Deposit refunded"
+    "refunded": "Deposit refunded",
+    "online_question": "The client may have paid online. What do you do with the payment?",
+    "online_refund_hint": "Wave refunds the client automatically, deducted from your wallet."
   },
   "late_checkout": {
     "fee": "Late check-out (half day)",
