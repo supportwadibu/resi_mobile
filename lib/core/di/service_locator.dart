@@ -436,6 +436,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
       // une fabrique, mais le rôle change à la reconnexion sans que le
       // conteneur soit reconstruit.
       () => sl<SessionRole>().value,
+      // Même lecture différée pour le palier : un paiement le change en cours
+      // de session.
+      canReadFinance: () => sl<PlanCubit>().access.allows(PlanAccess.pro),
     ),
   );
   sl.registerFactory(

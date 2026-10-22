@@ -326,15 +326,17 @@
     "inactive_title": "Your account is inactive",
     "inactive_body": "Your account has been suspended. Contact the RESI team to reactivate it. Your data is kept.",
     "free_name": "RESI Basic",
-    "free_tagline": "The essentials to run your residences, free",
+    "free_tagline": "The essentials to manage your residences with ease",
     "pro_name": "RESI Pro",
-    "pro_tagline": "Control of your business and finances",
+    "pro_tagline": "Stay in control of your business and your finances",
     "pro_plus_name": "RESI Pro+",
-    "pro_plus_tagline": "The complete solution for professionals",
+    "pro_plus_tagline": "A complete solution for hospitality professionals",
     "per_month": "/ month",
-    "free_bookings": "Online and counter bookings",
-    "free_dashboard": "Dashboard, revenue and occupancy rate",
-    "free_wallet": "Wave wallet, withdrawals with a 1% fee"
+    "free_bookings": "Online and offline booking management",
+    "free_dashboard": "Performance dashboard",
+    "free_revenue": "Revenue tracking",
+    "free_occupancy": "Occupancy rate statistics for your residences",
+    "free_wallet": "Fund withdrawals with a 1% fee"
   },
   "premium": {
     "title": "Available with {}",
@@ -344,17 +346,13 @@
     "manager_body": "This feature is not included in your owner’s plan.",
     "ok": "Got it",
     "features": {
-      "statistics": {
-        "title": "Statistics",
-        "body": "Track your revenue, profit and the occupancy rate of your residences."
-      },
       "finance": {
         "title": "Financial management",
         "body": "Income, expenses, commissions and net profit, residence by residence."
       },
       "reports": {
         "title": "PDF reports",
-        "body": "Export your financial and performance reports as PDF."
+        "body": "Export as PDF your financial, booking and occupancy reports, and your police records."
       },
       "clients": {
         "title": "Client book",
@@ -705,6 +703,7 @@
   "stats": {
     "income": "Income",
     "outflow": "Outflow",
+    "outflow_locked": "With RESI Pro",
     "occupancy_rate": "Occupancy rate",
     "units_rented": {
       "one": "{} unit rented",

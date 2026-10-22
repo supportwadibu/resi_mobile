@@ -409,9 +409,13 @@ class _FreeCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          // Les lignes de l'offre RESI Basic, dans son ordre. Pro et Pro+
+          // tiennent les leurs du plan servi par l'API (`node ace plans:sync`).
           for (final key in const [
             'plans.free_bookings',
             'plans.free_dashboard',
+            'plans.free_revenue',
+            'plans.free_occupancy',
             'plans.free_wallet',
           ])
             _FeatureLine(text: key.tr(), color: style.colorOf(context)),

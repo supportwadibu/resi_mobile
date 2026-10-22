@@ -21,8 +21,16 @@ class DashboardCubit extends Cubit<DashboardState> {
     this._financeRepository,
     this._parcRepository,
     this._gerantRepository,
-    this._roleOf,
-  ) : super(const DashboardInitial());
+    this._roleOf, {
+    bool Function()? canReadFinance,
+  }) : _canReadFinance = canReadFinance ?? (() => true),
+       super(const DashboardInitial());
+
+  /// Le palier ouvre-t-il le relevé financier (RESI Pro) ? Sous RESI Basic,
+  /// l'onglet suit revenus et occupation par `finance/performance` : le relevé
+  /// complet répondrait 403. Lu à chaque chargement, le palier changeant après
+  /// un paiement.
+  final bool Function() _canReadFinance;
 
   final FinanceRepository _financeRepository;
   final PropertyStatsRepository _parcRepository;
@@ -72,8 +80,11 @@ class DashboardCubit extends Cubit<DashboardState> {
       // L'échec de l'un fait échouer l'ensemble, à dessein : les deux nourrissent
       // la même carte d'occupation, dont le taux et les compteurs d'unités se
       // lisent l'un par l'autre. N'en montrer qu'une moitié induirait en erreur.
+      final canReadFinance = _canReadFinance();
       final results = await Future.wait([
-        _financeRepository.getOverview(from: start, to: end),
+        canReadFinance
+            ? _financeRepository.getOverview(from: start, to: end)
+            : _financeRepository.getPerformance(from: start, to: end),
         _parcRepository.getStats(),
       ]);
 
@@ -85,6 +96,7 @@ class DashboardCubit extends Cubit<DashboardState> {
           parc: results[1] as PropertyStatsModel,
           from: start,
           to: end,
+          expensesVisible: canReadFinance,
         ),
       );
     } on AppFailure catch (f) {

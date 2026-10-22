@@ -194,6 +194,10 @@ abstract final class ApiEndpoints {
   static String financeOverview(String role) =>
       '${basePathForRole(role)}/finance/overview';
 
+  /// Revenus et taux d'occupation, sans charges : le relevé de RESI Basic.
+  /// Propriétaire seulement.
+  static const String financePerformance = '/proprio/finance/performance';
+
   /// Avis et suggestions sur l'application, adressés à l'équipe RESI.
   /// `GET` pour relire les siens, `POST` pour en envoyer un.
   ///

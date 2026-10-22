@@ -326,15 +326,17 @@
     "inactive_title": "Votre compte est inactif",
     "inactive_body": "Votre compte a été suspendu. Contactez l’équipe RESI pour le réactiver. Vos données sont conservées.",
     "free_name": "RESI Basic",
-    "free_tagline": "L’essentiel pour gérer vos résidences, gratuit",
+    "free_tagline": "L’essentiel pour gérer vos résidences en toute simplicité",
     "pro_name": "RESI Pro",
-    "pro_tagline": "Le contrôle de votre activité et de vos finances",
+    "pro_tagline": "Gardez le contrôle de votre activité et de vos finances",
     "pro_plus_name": "RESI Pro+",
-    "pro_plus_tagline": "La solution complète des professionnels",
+    "pro_plus_tagline": "Une solution complète pour les professionnels de l’hébergement",
     "per_month": "/ mois",
-    "free_bookings": "Réservations en ligne et au comptoir",
-    "free_dashboard": "Tableau de bord, revenus et taux d’occupation",
-    "free_wallet": "Portefeuille Wave, retrait avec 1 % de frais"
+    "free_bookings": "Gestion des réservations en ligne et hors ligne",
+    "free_dashboard": "Tableau de bord des performances",
+    "free_revenue": "Suivi des revenus générés",
+    "free_occupancy": "Statistiques sur le taux d’occupation des résidences",
+    "free_wallet": "Retrait des fonds avec des frais de 1 %"
   },
   "premium": {
     "title": "Disponible avec {}",
@@ -344,17 +346,13 @@
     "manager_body": "Cette fonction n’est pas incluse dans le forfait de votre propriétaire.",
     "ok": "Compris",
     "features": {
-      "statistics": {
-        "title": "Statistiques",
-        "body": "Suivez votre chiffre d’affaires, votre bénéfice et le taux d’occupation de vos résidences."
-      },
       "finance": {
         "title": "Gestion financière",
         "body": "Revenus, dépenses, commissions et bénéfice net, résidence par résidence."
       },
       "reports": {
         "title": "Rapports PDF",
-        "body": "Exportez vos rapports financiers et de performance en PDF."
+        "body": "Exportez en PDF vos rapports financiers, de réservations et d’occupation, et vos fiches de police."
       },
       "clients": {
         "title": "Carnet clients",
@@ -705,6 +703,7 @@
   "stats": {
     "income": "Entrées",
     "outflow": "Sorties",
+    "outflow_locked": "Avec RESI Pro",
     "occupancy_rate": "Taux d'occupation",
     "units_rented": {
       "one": "{} unité louée",

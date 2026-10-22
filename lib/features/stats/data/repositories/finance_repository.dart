@@ -54,6 +54,33 @@ class FinanceRepository {
     }
   }
 
+  /// Revenus et taux d'occupation du parc sur une période : le tableau de bord
+  /// de RESI Basic.
+  ///
+  /// Même forme que [getOverview], sans charges ni bénéfice : l'API ne les
+  /// rend pas, et le modèle les lit à zéro. L'appelant ne doit donc pas les
+  /// afficher. Mêmes bornes, `to` inclus.
+  Future<FinanceOverviewModel> getPerformance({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.financePerformance,
+        queryParameters: {
+          'from': _formatDate(from),
+          'to': '${_formatDate(to)} 23:59:59',
+        },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return FinanceOverviewModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
   static String _formatDate(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');

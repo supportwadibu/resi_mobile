@@ -8,8 +8,6 @@ import 'package:resi_africa/features/home/presentation/widgets/stats/occupancy_c
 import 'package:resi_africa/features/home/presentation/widgets/stats/stats_header.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_state.dart';
-import 'package:resi_africa/features/subscription/presentation/widgets/plan_gate.dart';
-import 'package:resi_africa/features/subscription/presentation/widgets/plan_style.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
@@ -20,13 +18,10 @@ class StatsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      // Pas de chargement au forfait 3 000 F : l'API refuserait les trois
-      // appels, et les chiffres ne s'affichent pas.
-      create: (_) {
-        final cubit = sl<DashboardCubit>();
-        if (hasPlanFor(PremiumFeature.statistics)) cubit.load();
-        return cubit;
-      },
+      // Ouvert à tous les paliers : le tableau de bord, les revenus et le taux
+      // d'occupation font partie de RESI Basic. Le cubit choisit son relevé
+      // selon le palier.
+      create: (_) => sl<DashboardCubit>()..load(),
       child: const _StatsView(),
     );
   }
@@ -58,17 +53,9 @@ class _StatsView extends StatelessWidget {
                     // de période doit rester actionnable, sinon un relevé
                     // vide sur la fenêtre choisie enfermerait le
                     // propriétaire dedans.
-                    PlanGate(
-                      feature: PremiumFeature.statistics,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const _Header(),
-                          const SizedBox(height: 12),
-                          _Indicators(state: state),
-                        ],
-                      ),
-                    ),
+                    const _Header(),
+                    const SizedBox(height: 12),
+                    _Indicators(state: state),
                     const SizedBox(height: 24),
                     SectionHeading(title: 'home.management'.tr()),
                     const SizedBox(height: 8),
@@ -118,21 +105,22 @@ class _Indicators extends StatelessWidget {
           onRetry: () => context.read<DashboardCubit>().load(),
         ),
       ),
-      DashboardLoaded(:final overview, :final parc) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          OccupancyCard(
-            occupancyRate: overview.summary.tauxOccupation,
-            rented: parc.rented,
-            available: parc.available,
-          ),
-          const SizedBox(height: 12),
-          KpiRow(
-            entrees: overview.summary.caBrut,
-            sorties: overview.summary.depenses,
-          ),
-        ],
-      ),
+      DashboardLoaded(:final overview, :final parc, :final expensesVisible) =>
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            OccupancyCard(
+              occupancyRate: overview.summary.tauxOccupation,
+              rented: parc.rented,
+              available: parc.available,
+            ),
+            const SizedBox(height: 12),
+            KpiRow(
+              entrees: overview.summary.caBrut,
+              sorties: expensesVisible ? overview.summary.depenses : null,
+            ),
+          ],
+        ),
       // Branche distincte, et non un `DashboardLoaded` aux champs manquants :
       // c'est le type du state qui interdit qu'un bénéfice net atteigne
       // l'écran du gérant, `GerantOverviewModel` n'en portant aucun.

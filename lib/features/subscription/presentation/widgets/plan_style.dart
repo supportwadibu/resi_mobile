@@ -84,7 +84,6 @@ PlanStyle? currentPlanStyle(PlanState state) {
 /// « Accès refusé » générique ne dit rien. Les paliers suivent les groupes de
 /// routes de l'API (`start/routes.ts`).
 enum PremiumFeature {
-  statistics(LucideIcons.chartLine, PlanAccess.pro),
   finance(LucideIcons.scale, PlanAccess.pro),
   clients(LucideIcons.users, PlanAccess.pro),
   expenses(LucideIcons.banknote, PlanAccess.pro),

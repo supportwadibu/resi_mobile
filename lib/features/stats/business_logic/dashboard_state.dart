@@ -20,10 +20,15 @@ final class DashboardLoaded extends DashboardState {
     required this.parc,
     required this.from,
     required this.to,
+    this.expensesVisible = true,
   });
 
   /// Revenus, charges et taux d'occupation sur [from]–[to].
   final FinanceOverviewModel overview;
+
+  /// Les charges de [overview] sont-elles connues ? Faux sous RESI Basic : le
+  /// relevé ne les porte pas, et son zéro se lirait comme « aucune dépense ».
+  final bool expensesVisible;
 
   /// État du parc au moment de l'appel : les compteurs d'unités ignorent la
   /// période, seul le relevé financier en dépend.

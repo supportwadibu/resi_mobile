@@ -120,6 +120,7 @@ class _CapturingInterceptor extends Interceptor {
   String role = 'proprio',
   bool financeFails = false,
   bool managerFails = false,
+  bool canReadFinance = true,
 }) {
   final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
   final spy = _CapturingInterceptor(
@@ -135,6 +136,7 @@ class _CapturingInterceptor extends Interceptor {
       PropertyStatsRepository(dio),
       GerantRepository(dio, session),
       () => session.value,
+      canReadFinance: () => canReadFinance,
     ),
     spy: spy,
   );
@@ -159,6 +161,30 @@ void main() {
       expect(loaded.overview.summary.depenses, 342000);
       expect(loaded.parc.rented, 14);
       expect(built.spy.captured, hasLength(2));
+    });
+
+    test('RESI Basic : revenus et occupation, jamais le relevé Pro', () async {
+      // Le tableau de bord est gratuit ; `finance/overview` relève de RESI Pro
+      // et répondrait 403.
+      final built = _build(canReadFinance: false);
+
+      await built.cubit.load();
+
+      final paths = built.spy.captured.map((r) => r.path).toList();
+      expect(paths.any((p) => p.contains('finance/performance')), isTrue);
+      expect(paths.any((p) => p.contains('finance/overview')), isFalse);
+
+      final loaded = built.cubit.state as DashboardLoaded;
+      expect(loaded.overview.summary.caBrut, 1260840);
+      expect(loaded.expensesVisible, isFalse);
+    });
+
+    test('RESI Pro : les dépenses sont affichées', () async {
+      final built = _build();
+
+      await built.cubit.load();
+
+      expect((built.cubit.state as DashboardLoaded).expensesVisible, isTrue);
     });
 
     test('sans bornes, la période est le mois courant', () async {
