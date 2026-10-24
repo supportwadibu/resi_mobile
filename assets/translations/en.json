@@ -1206,6 +1206,7 @@
   },
   "expense": {
     "deleted_residence": "Deleted residence",
+    "platform_charge": "RESI platform fee",
     "pdf_page": "Page {current} / {total}",
     "pdf_title": "Expense report",
     "pdf_all": "All expenses",

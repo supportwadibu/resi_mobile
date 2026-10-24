@@ -109,7 +109,9 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     // sélecteur de résidence sans le choix qui l'explique.
     _isCommonCharge = _canChargeCommon && (original?.isCommonCharge ?? false);
     _category = original?.category;
-    _spentAt = original?.spentAt ?? DateTime.now();
+    // En heure locale : le sélecteur raisonne en jours locaux, et l'heure de
+    // la saisie est reportée sur le jour choisi (`_pickDate`).
+    _spentAt = (original?.spentAt ?? DateTime.now()).toLocal();
   }
 
   @override
@@ -203,7 +205,20 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
       lastDate: DateTime.now(),
     );
 
-    if (picked != null) setState(() => _spentAt = picked);
+    // Le sélecteur rend le jour à minuit : l'heure déjà retenue est gardée,
+    // celle de la saisie pour une nouvelle dépense, l'heure enregistrée pour
+    // une modification.
+    if (picked != null) {
+      setState(
+        () => _spentAt = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _spentAt.hour,
+          _spentAt.minute,
+        ),
+      );
+    }
   }
 
   @override

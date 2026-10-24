@@ -89,6 +89,67 @@ void main() {
     );
   });
 
+  group('ExpenseModel — abonnement et heure', () {
+    test('l’abonnement n’est pas un bien supprimé', () {
+      // Le serveur l'enregistre sans logement ni résidence : c'est un coût de
+      // la plateforme, que l'historique présentait en « Bien supprimé ».
+      final expense = ExpenseModel.fromJson({
+        'id': 'exp_sub',
+        'property_id': null,
+        'residence_id': null,
+        'category': 'subscription',
+        'amount': 5000,
+        'spent_at': '2026-10-24T14:32:10.000Z',
+        'note': 'Abonnement RESI Pro',
+      });
+
+      expect(expense.isPlatformCharge, isTrue);
+      expect(expense.targetLabel, 'Frais de plateforme RESI');
+    });
+
+    test('une dépense horodatée porte une heure', () {
+      final expense = ExpenseModel.fromJson({
+        'id': 'exp_t',
+        'property_id': 'studio-1',
+        'category': 'cleaning',
+        'amount': 5000,
+        'spent_at': '2026-10-24T14:32:10.000Z',
+      });
+
+      expect(expense.hasTime, isTrue);
+    });
+
+    test('une saisie au jour seul n’invente pas de minuit', () {
+      // Les saisies antérieures n'envoyaient que le jour, enregistré à minuit
+      // UTC : afficher « 00:00 » donnerait une heure que personne n'a saisie.
+      final expense = ExpenseModel.fromJson({
+        'id': 'exp_d',
+        'property_id': 'studio-1',
+        'category': 'cleaning',
+        'amount': 5000,
+        'spent_at': '2026-10-24T00:00:00.000Z',
+      });
+
+      expect(expense.hasTime, isFalse);
+    });
+
+    test('la charge utile envoie l’instant en UTC', () {
+      final at = DateTime.utc(2026, 10, 24, 14, 32);
+      final json = CreateExpensePayload.forProperty(
+        propertyId: 'studio-1',
+        category: ExpenseCategory.cleaning,
+        amount: 5000,
+        spentAt: at,
+      ).toJson();
+
+      expect(json['spent_at'], '2026-10-24T14:32:00.000Z');
+      expect(
+        UpdateExpensePayload(spentAt: at).toJson()['spent_at'],
+        '2026-10-24T14:32:00.000Z',
+      );
+    });
+  });
+
   group('CreateExpensePayload', () {
     test('une charge de logement n’envoie que property_id', () {
       final json = CreateExpensePayload.forProperty(

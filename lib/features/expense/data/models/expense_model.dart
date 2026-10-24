@@ -160,13 +160,34 @@ class ExpenseModel {
   /// Vrai pour une charge commune du lieu, réparties sur aucune unité.
   bool get isCommonCharge => residenceId != null;
 
+  /// Vrai pour un coût de la plateforme — l'abonnement RESI —, que le serveur
+  /// enregistre sans logement ni résidence.
+  bool get isPlatformCharge => propertyId == null && residenceId == null;
+
+  /// La dépense porte-t-elle une heure ?
+  ///
+  /// Les saisies antérieures à l'heure n'envoyaient que le jour, enregistré à
+  /// minuit UTC pile : leur afficher « 00:00 » donnerait une heure que
+  /// personne n'a saisie. Une saisie horodatée tombant à la milliseconde
+  /// près sur minuit UTC est assez improbable pour servir de signal.
+  bool get hasTime {
+    final utc = spentAt.toUtc();
+    return utc.hour != 0 ||
+        utc.minute != 0 ||
+        utc.second != 0 ||
+        utc.millisecond != 0;
+  }
+
   /// Libellé de la cible, quel que soit son type.
   ///
   /// Une cible supprimée depuis la saisie ne laisse qu’un identifiant : le
-  /// repli évite d’afficher une ligne vide dans l’historique.
+  /// repli évite d’afficher une ligne vide dans l’historique. Une dépense sans
+  /// aucune cible n'est pas une cible supprimée mais l'abonnement : la
+  /// présenter en « Bien supprimé » laissait croire à une perte de données.
   String get targetLabel {
     if (residence != null) return residence!.name;
     if (property != null) return property!.title;
+    if (isPlatformCharge) return 'expense.platform_charge'.tr();
     return isCommonCharge
         ? 'expense.deleted_residence'.tr()
         : 'home.deleted_property'.tr();
@@ -206,12 +227,12 @@ class ExpenseModel {
   int get hashCode => id.hashCode;
 }
 
-/// Date au format attendu par `vine.date()` : `YYYY-MM-DD`, sans heure.
-String formatApiDate(DateTime date) {
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '${date.year}-$month-$day';
-}
+/// Instant d'une dépense tel que l'API l'attend : ISO 8601 en UTC.
+///
+/// Le jour seul (`YYYY-MM-DD`) partait auparavant : l'historique ne pouvait
+/// pas afficher d'heure. Les saisies déjà en file hors ligne gardent leur
+/// jour seul, que l'API accepte toujours.
+String formatApiDateTime(DateTime date) => date.toUtc().toIso8601String();
 
 /// Charge utile de création, distincte du modèle de lecture.
 ///
@@ -279,7 +300,7 @@ class CreateExpensePayload {
     if (residenceId != null) 'residence_id': residenceId,
     'category': category.code,
     'amount': amount,
-    'spent_at': formatApiDate(spentAt),
+    'spent_at': formatApiDateTime(spentAt),
     if (note != null && note!.trim().isNotEmpty) 'note': note!.trim(),
   };
 }
@@ -354,7 +375,7 @@ class UpdateExpensePayload {
     },
     if (category != null) 'category': category!.code,
     if (amount != null) 'amount': amount,
-    if (spentAt != null) 'spent_at': formatApiDate(spentAt!),
+    if (spentAt != null) 'spent_at': formatApiDateTime(spentAt!),
     if (clearNote)
       'note': null
     else if (note != null && note!.trim().isNotEmpty)

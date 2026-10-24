@@ -80,12 +80,16 @@ void main() {
       expect(body['amount'], 25000);
     });
 
-    test('la date part en date simple, pas en instant ISO', () async {
+    test('la date part en instant ISO UTC, heure comprise', () async {
       await repository.create(_payload());
       final body = interceptor.captured!.data as Map<String, dynamic>;
 
-      // `vine.date()` attend `YYYY-MM-DD`.
-      expect(body['spent_at'], '2026-03-14');
+      // L'heure part avec le jour : l'historique l'affiche. L'API admet
+      // `YYYY-MM-DD` et l'ISO 8601.
+      expect(
+        body['spent_at'],
+        DateTime(2026, 3, 14).toUtc().toIso8601String(),
+      );
     });
 
     test('une note vide est omise plutôt qu’envoyée à blanc', () async {
@@ -278,14 +282,17 @@ void main() {
       expect(body['note'], isNull);
     });
 
-    test('la date part en date simple', () async {
+    test('la date part en instant ISO UTC', () async {
       await repository.update(
         'exp_1',
-        UpdateExpensePayload(spentAt: DateTime(2026, 7, 9)),
+        UpdateExpensePayload(spentAt: DateTime(2026, 7, 9, 18, 5)),
       );
       final body = interceptor.captured!.data as Map<String, dynamic>;
 
-      expect(body['spent_at'], '2026-07-09');
+      expect(
+        body['spent_at'],
+        DateTime(2026, 7, 9, 18, 5).toUtc().toIso8601String(),
+      );
     });
 
     test('cible la dépense visée', () async {

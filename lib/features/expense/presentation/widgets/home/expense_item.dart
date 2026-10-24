@@ -24,6 +24,15 @@ class ExpenseItem extends StatelessWidget {
   /// Date complète : la liste n'est plus groupée par mois, et une plage de
   /// dates peut franchir le nouvel an.
   static DateFormat get _dayFormat => DateFormat('d MMM y');
+  static DateFormat get _dayTimeFormat => DateFormat('d MMM y · HH:mm');
+
+  /// Jour et heure, ou le jour seul pour une saisie qui n'a pas d'heure.
+  ///
+  /// Le jour seul est lu en UTC, où il a été enregistré à minuit : converti
+  /// en heure locale à l'ouest de Greenwich, il reculerait d'un jour.
+  static String formatSpentAt(ExpenseModel expense) => expense.hasTime
+      ? _dayTimeFormat.format(expense.spentAt.toLocal())
+      : _dayFormat.format(expense.spentAt.toUtc());
 
   @override
   Widget build(BuildContext context) {
@@ -87,10 +96,7 @@ class ExpenseItem extends StatelessWidget {
                 style: context.text.amount,
               ),
               const SizedBox(height: 2),
-              Text(
-                _dayFormat.format(expense.spentAt),
-                style: context.text.bodySmall,
-              ),
+              Text(formatSpentAt(expense), style: context.text.bodySmall),
             ],
           ),
           if (showChevron) ...[

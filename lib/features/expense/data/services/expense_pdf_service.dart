@@ -11,6 +11,7 @@ class ExpensePdfService {
   const ExpensePdfService();
 
   static DateFormat get _dateFormat => DateFormat('dd/MM/yyyy');
+  static DateFormat get _dateTimeFormat => DateFormat('dd/MM/yyyy HH:mm');
   static DateFormat get _longDate => DateFormat('d MMMM y');
   static NumberFormat get _amountFormat => NumberFormat.decimalPattern();
 
@@ -237,8 +238,12 @@ class ExpensePdfService {
           data: [
             for (final expense in expenses)
               [
-                _dateFormat.format(expense.spentAt),
-                expense.property?.title ?? 'home.deleted_property'.tr(),
+                expense.hasTime
+                    ? _dateTimeFormat.format(expense.spentAt.toLocal())
+                    : _dateFormat.format(expense.spentAt.toUtc()),
+                // `targetLabel` et non le seul logement : une charge commune
+                // ou l'abonnement s'imprimaient « Bien supprimé ».
+                expense.targetLabel,
                 expense.category.label,
                 expense.note?.trim() ?? '',
                 _fcfa(expense.amount),
