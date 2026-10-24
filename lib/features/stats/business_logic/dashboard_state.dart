@@ -1,6 +1,5 @@
 import '../../gerant/data/models/gerant_overview_model.dart';
 import '../data/models/finance/finance_overview_model.dart';
-import '../data/models/property_stats_model.dart';
 
 sealed class DashboardState {
   const DashboardState();
@@ -17,22 +16,17 @@ final class DashboardLoading extends DashboardState {
 final class DashboardLoaded extends DashboardState {
   const DashboardLoaded({
     required this.overview,
-    required this.parc,
     required this.from,
     required this.to,
     this.expensesVisible = true,
   });
 
-  /// Revenus, charges et taux d'occupation sur [from]–[to].
+  /// Revenus, charges, taux d'occupation et unités louées sur [from]–[to].
   final FinanceOverviewModel overview;
 
   /// Les charges de [overview] sont-elles connues ? Faux sous RESI Basic : le
   /// relevé ne les porte pas, et son zéro se lirait comme « aucune dépense ».
   final bool expensesVisible;
-
-  /// État du parc au moment de l'appel : les compteurs d'unités ignorent la
-  /// période, seul le relevé financier en dépend.
-  final PropertyStatsModel parc;
 
   final DateTime from;
   final DateTime to;
@@ -53,9 +47,8 @@ final class DashboardError extends DashboardState {
 /// les dépenses d'autres logements. La séparation des types est ce qui
 /// garantit qu'aucun oubli d'affichage ne puisse lui en montrer un.
 ///
-/// Aucun compteur d'unités non plus : `/proprio/properties/stats` n'a pas
-/// d'équivalent gérant, et le demander rendrait un 403. L'absence du champ
-/// vaut mieux qu'un zéro, qui se lirait comme un parc vide.
+/// Aucun compteur d'unités non plus : le relevé gérant ne les porte pas.
+/// L'absence du champ vaut mieux qu'un zéro, qui se lirait comme un parc vide.
 final class DashboardManagerLoaded extends DashboardState {
   const DashboardManagerLoaded({
     required this.overview,

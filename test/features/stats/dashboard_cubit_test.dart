@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/session_role_fixture.dart';
+import '../../support/translations_fixture.dart';
 import 'package:resi_africa/features/home/presentation/widgets/stats/occupancy_card.dart';
 import 'package:resi_africa/features/gerant/data/repositories/gerant_repository.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_state.dart';
 import 'package:resi_africa/features/stats/data/models/property_stats_model.dart';
 import 'package:resi_africa/features/stats/data/repositories/finance_repository.dart';
-import 'package:resi_africa/features/stats/data/repositories/property_stats_repository.dart';
 
 /// Répond aux relevés sans réseau, en distinguant la route appelée.
 ///
@@ -19,7 +19,7 @@ import 'package:resi_africa/features/stats/data/repositories/property_stats_repo
 class _CapturingInterceptor extends Interceptor {
   _CapturingInterceptor({this.financeFails = false, this.managerFails = false});
 
-  /// Simule une panne du seul relevé financier : l'état du parc, lui, répond.
+  /// Simule une panne du relevé financier du propriétaire.
   final bool financeFails;
 
   /// Simule une panne du seul relevé gérant.
@@ -64,25 +64,6 @@ class _CapturingInterceptor extends Interceptor {
       return;
     }
 
-    if (options.path.contains('properties/stats')) {
-      handler.resolve(
-        Response(
-          requestOptions: options,
-          statusCode: 200,
-          data: const {
-            'data': {
-              'total': 20,
-              'published': 18,
-              'rented': 14,
-              'draft': 2,
-              'total_views': 320,
-            },
-          },
-        ),
-      );
-      return;
-    }
-
     if (financeFails) {
       handler.reject(
         DioException(
@@ -107,6 +88,8 @@ class _CapturingInterceptor extends Interceptor {
               'taux_occupation': 0.78,
               'reservations': 9,
               'moyen_sejour': 4.2,
+              'unites_louees': 14,
+              'unites_libres': 4,
             },
             'revenue_points': <Map<String, Object?>>[],
           },
@@ -133,7 +116,6 @@ class _CapturingInterceptor extends Interceptor {
   return (
     cubit: DashboardCubit(
       FinanceRepository(dio, session),
-      PropertyStatsRepository(dio),
       GerantRepository(dio, session),
       () => session.value,
       canReadFinance: () => canReadFinance,
@@ -148,7 +130,7 @@ Widget _card(Widget child) => MaterialApp(
 
 void main() {
   group('DashboardCubit — chargement', () {
-    test('compose les deux relevés en un seul état', () async {
+    test('un seul relevé porte le taux et les unités louées', () async {
       final built = _build();
 
       await built.cubit.load();
@@ -159,8 +141,9 @@ void main() {
       final loaded = state as DashboardLoaded;
       expect(loaded.overview.summary.caBrut, 1260840);
       expect(loaded.overview.summary.depenses, 342000);
-      expect(loaded.parc.rented, 14);
-      expect(built.spy.captured, hasLength(2));
+      expect(loaded.overview.summary.unitesLouees, 14);
+      expect(loaded.overview.summary.unitesLibres, 4);
+      expect(built.spy.captured, hasLength(1));
     });
 
     test('RESI Basic : revenus et occupation, jamais le relevé Pro', () async {
@@ -232,11 +215,24 @@ void main() {
       expect(sent.queryParameters['from'], '2026-03-05');
     });
 
-    test('une panne d’un seul relevé fait échouer l’ensemble', () async {
-      // Vrai du seul propriétaire, et voulu : ses deux relevés nourrissent la
-      // même carte d'occupation, dont le taux et les compteurs d'unités se
-      // lisent l'un par l'autre. Le gérant, lui, n'appelle pas ces routes —
-      // sans quoi la panne serait systématique plutôt qu'accidentelle.
+    test('les unités suivent la période, sans instantané du parc', () async {
+      // `/proprio/properties/stats` servait un `rented` fondé sur un statut
+      // que plus aucun flux n'écrit : la note affichait les mêmes chiffres
+      // quel que soit le mois choisi.
+      final built = _build();
+
+      await built.cubit.filterByPeriod(
+        DateTime(2026, 3, 5),
+        DateTime(2026, 4, 20),
+      );
+
+      expect(
+        built.spy.captured.any((r) => r.path.contains('properties/stats')),
+        isFalse,
+      );
+    });
+
+    test('une panne du relevé reste une erreur affichée', () async {
       final built = _build(financeFails: true);
 
       await built.cubit.load();
@@ -359,30 +355,36 @@ void main() {
     });
   });
 
-  group('OccupancyCard — carte du gérant', () {
+  group('OccupancyCard', () {
+    setUpAll(loadTestTranslations);
+
     testWidgets('sans compteurs, aucune unité n’est inventée', (tester) async {
-      // Ils viennent de `/proprio/properties/stats`, fermée à son rôle. Deux
-      // zéros s'y liraient comme un parc vide.
+      // Le relevé gérant ne les porte pas : deux zéros s'y liraient comme un
+      // parc vide.
       await tester.pumpWidget(_card(const OccupancyCard(occupancyRate: 0.42)));
 
-      expect(find.text('42%'), findsOneWidget);
-      expect(find.text('Unités louées'), findsNothing);
-      expect(find.text('Disponibles'), findsNothing);
+      expect(find.text('42 %'), findsOneWidget);
+      expect(find.textContaining('louée'), findsNothing);
     });
 
-    testWidgets('la carte du propriétaire garde ses compteurs', (tester) async {
-      // Non-régression : la bifurcation ne doit rien retirer au propriétaire.
+    testWidgets('la carte du propriétaire porte ses compteurs', (tester) async {
       await tester.pumpWidget(
-        _card(
-          const OccupancyCard(occupancyRate: 0.78, rented: 14, available: 4),
-        ),
+        _card(const OccupancyCard(occupancyRate: 0.78, rented: 14, idle: 4)),
       );
 
-      expect(find.text('78%'), findsOneWidget);
-      expect(find.text('Unités louées'), findsOneWidget);
-      expect(find.text('14'), findsOneWidget);
-      expect(find.text('Disponibles'), findsOneWidget);
-      expect(find.text('4'), findsOneWidget);
+      expect(find.text('78 %'), findsOneWidget);
+      expect(
+        find.text('14 unités louées · 4 sans réservation'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('accorde le singulier', (tester) async {
+      await tester.pumpWidget(
+        _card(const OccupancyCard(occupancyRate: 0.5, rented: 1, idle: 1)),
+      );
+
+      expect(find.text('1 unité louée · 1 sans réservation'), findsOneWidget);
     });
   });
 

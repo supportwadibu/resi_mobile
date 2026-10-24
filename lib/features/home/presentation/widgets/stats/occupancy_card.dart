@@ -9,34 +9,35 @@ class OccupancyCard extends StatelessWidget {
     super.key,
     required this.occupancyRate,
     this.rented,
-    this.available,
+    this.idle,
   });
 
   /// Taux d'occupation de la période, en fraction de 0 à 1 — l'échelle servie
   /// par `taux_occupation`, convertie ici à l'affichage.
   final double occupancyRate;
 
-  /// Unités occupées et unités publiées encore libres, à l'instant présent —
-  /// ces deux compteurs ne dépendent pas de la période du taux.
+  /// Logements ayant porté au moins un séjour sur la période, et ceux qui
+  /// n'en ont porté aucun — la même fenêtre que le taux, si bien que la note
+  /// suit le mois choisi.
   ///
-  /// Nuls chez le gérant : ils viennent de `/proprio/properties/stats`, fermée
-  /// à son rôle. La note disparaît alors, plutôt que d'afficher deux zéros
-  /// qui se liraient comme un parc vide.
+  /// Nuls chez le gérant, dont le relevé ne les porte pas, ou face à un
+  /// serveur qui ne les sert pas encore. La note disparaît alors, plutôt que
+  /// d'afficher deux zéros qui se liraient comme un parc vide.
   final int? rented;
-  final int? available;
+  final int? idle;
 
   @override
   Widget build(BuildContext context) {
     final rented = this.rented;
-    final available = this.available;
+    final idle = this.idle;
     return StatTile(
       label: 'stats.occupancy_rate'.tr(),
       value: '${(occupancyRate * 100).round()} %',
       icon: LucideIcons.chartPie,
       accent: AppAccent.amber,
-      note: rented != null && available != null
+      note: rented != null && idle != null
           ? '${'stats.units_rented'.plural(rented)} · '
-                '${'stats.units_available'.plural(available)}'
+                '${'stats.units_idle'.plural(idle)}'
           : null,
     );
   }

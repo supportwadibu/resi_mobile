@@ -709,9 +709,9 @@
       "one": "{} unité louée",
       "other": "{} unités louées"
     },
-    "units_available": {
-      "one": "{} disponible",
-      "other": "{} disponibles"
+    "units_idle": {
+      "one": "{} sans réservation",
+      "other": "{} sans réservation"
     },
     "period": "Période",
     "change": "Changer"

@@ -430,7 +430,6 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(
     () => DashboardCubit(
       sl<FinanceRepository>(),
-      sl<PropertyStatsRepository>(),
       sl<GerantRepository>(),
       // Lu à chaque chargement et non figé à l'enregistrement : le cubit est
       // une fabrique, mais le rôle change à la reconnexion sans que le

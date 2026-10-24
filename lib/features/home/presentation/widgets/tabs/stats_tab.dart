@@ -105,29 +105,27 @@ class _Indicators extends StatelessWidget {
           onRetry: () => context.read<DashboardCubit>().load(),
         ),
       ),
-      DashboardLoaded(:final overview, :final parc, :final expensesVisible) =>
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            OccupancyCard(
-              occupancyRate: overview.summary.tauxOccupation,
-              rented: parc.rented,
-              available: parc.available,
-            ),
-            const SizedBox(height: 12),
-            KpiRow(
-              entrees: overview.summary.caBrut,
-              sorties: expensesVisible ? overview.summary.depenses : null,
-            ),
-          ],
-        ),
+      DashboardLoaded(:final overview, :final expensesVisible) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OccupancyCard(
+            occupancyRate: overview.summary.tauxOccupation,
+            rented: overview.summary.unitesLouees,
+            idle: overview.summary.unitesLibres,
+          ),
+          const SizedBox(height: 12),
+          KpiRow(
+            entrees: overview.summary.caBrut,
+            sorties: expensesVisible ? overview.summary.depenses : null,
+          ),
+        ],
+      ),
       // Branche distincte, et non un `DashboardLoaded` aux champs manquants :
       // c'est le type du state qui interdit qu'un bénéfice net atteigne
       // l'écran du gérant, `GerantOverviewModel` n'en portant aucun.
       //
-      // La carte d'occupation vient sans compteurs d'unités : ils sortent
-      // d'une route propriétaire, et deux zéros s'y liraient comme un parc
-      // vide.
+      // La carte d'occupation vient sans compteurs d'unités : le relevé gérant
+      // ne les porte pas, et deux zéros s'y liraient comme un parc vide.
       DashboardManagerLoaded(:final overview) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

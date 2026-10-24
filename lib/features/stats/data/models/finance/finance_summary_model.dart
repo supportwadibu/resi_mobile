@@ -14,9 +14,20 @@ class FinanceSummaryModel {
   /// dans [depenses] et dans [beneficeNet], jamais à retrancher.
   final double commissions;
 
+  /// Logements ayant porté au moins un séjour sur les jours écoulés de la
+  /// période, et ceux du parc qui n'en ont porté aucun.
+  ///
+  /// Nuls quand le serveur ne les sert pas encore : la note qu'ils
+  /// alimentent disparaît alors, plutôt que d'afficher deux zéros qui se
+  /// liraient comme un parc vide.
+  final int? unitesLouees;
+  final int? unitesLibres;
+
   const FinanceSummaryModel({
     this.remboursements = 0,
     this.commissions = 0,
+    this.unitesLouees,
+    this.unitesLibres,
     required this.caBrut,
     required this.depenses,
     required this.beneficeNet,
@@ -37,5 +48,7 @@ class FinanceSummaryModel {
         remboursements: (json['remboursements'] as num?)?.toDouble() ?? 0,
         // Absent des réponses d'un serveur antérieur aux apporteurs.
         commissions: (json['commissions'] as num?)?.toDouble() ?? 0,
+        unitesLouees: (json['unites_louees'] as num?)?.toInt(),
+        unitesLibres: (json['unites_libres'] as num?)?.toInt(),
       );
 }

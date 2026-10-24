@@ -2,24 +2,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
 import '../../gerant/data/repositories/gerant_repository.dart';
-import '../data/models/finance/finance_overview_model.dart';
-import '../data/models/property_stats_model.dart';
 import '../data/repositories/finance_repository.dart';
-import '../data/repositories/property_stats_repository.dart';
 import 'dashboard_state.dart';
 
 /// Chiffres de l'onglet Statistiques : occupation, entrées, sorties.
 ///
-/// L'onglet est monté pour les deux rôles, mais les deux relevés du
-/// propriétaire sont fermés au gérant : `/proprio/properties/stats` n'a aucun
-/// équivalent gérant, et `/gerant/finance/overview` rend un `ManagerOverviewDto`
+/// L'onglet est monté pour les deux rôles, mais le relevé du propriétaire est
+/// fermé au gérant : `/gerant/finance/overview` rend un `ManagerOverviewDto`
 /// sans clé `summary`, que `FinanceOverviewModel.fromJson` lirait entièrement à
 /// zéro sans rien signaler. Le rôle est donc lu avant tout appel, et chaque
 /// branche a sa source, son modèle et son état.
 class DashboardCubit extends Cubit<DashboardState> {
   DashboardCubit(
     this._financeRepository,
-    this._parcRepository,
     this._gerantRepository,
     this._roleOf, {
     bool Function()? canReadFinance,
@@ -33,7 +28,6 @@ class DashboardCubit extends Cubit<DashboardState> {
   final bool Function() _canReadFinance;
 
   final FinanceRepository _financeRepository;
-  final PropertyStatsRepository _parcRepository;
   final GerantRepository _gerantRepository;
 
   /// Lecture du rôle courant, injectée pour rester testable hors widget —
@@ -68,32 +62,25 @@ class DashboardCubit extends Cubit<DashboardState> {
     await _loadOwner(start, end);
   }
 
-  /// Relevé du propriétaire : finances de la période et état du parc.
+  /// Relevé du propriétaire sur la période.
   ///
-  /// Deux sources, car les deux notions ne se recouvrent pas : le relevé
-  /// financier porte sur une période, l'état du parc décrit l'instant présent.
+  /// Une seule source : les compteurs d'unités louées et libres viennent du
+  /// même relevé que le taux, sur la même fenêtre. Ils étaient lus sur
+  /// `/proprio/properties/stats`, un instantané sans période dont le compteur
+  /// `rented` reposait sur un statut que plus aucun flux n'écrit — la note
+  /// affichait les mêmes chiffres quel que soit le mois choisi.
   Future<void> _loadOwner(DateTime start, DateTime end) async {
     try {
-      // En parallèle : les deux relevés sont indépendants, et les enchaîner
-      // doublerait l'attente sur les connexions lentes du terrain.
-      //
-      // L'échec de l'un fait échouer l'ensemble, à dessein : les deux nourrissent
-      // la même carte d'occupation, dont le taux et les compteurs d'unités se
-      // lisent l'un par l'autre. N'en montrer qu'une moitié induirait en erreur.
       final canReadFinance = _canReadFinance();
-      final results = await Future.wait([
-        canReadFinance
-            ? _financeRepository.getOverview(from: start, to: end)
-            : _financeRepository.getPerformance(from: start, to: end),
-        _parcRepository.getStats(),
-      ]);
+      final overview = canReadFinance
+          ? await _financeRepository.getOverview(from: start, to: end)
+          : await _financeRepository.getPerformance(from: start, to: end);
 
       if (isClosed) return;
 
       emit(
         DashboardLoaded(
-          overview: results[0] as FinanceOverviewModel,
-          parc: results[1] as PropertyStatsModel,
+          overview: overview,
           from: start,
           to: end,
           expensesVisible: canReadFinance,
@@ -106,11 +93,9 @@ class DashboardCubit extends Cubit<DashboardState> {
 
   /// Relevé du gérant : un seul appel, sur son propre préfixe.
   ///
-  /// L'état du parc n'est pas demandé — la route est propriétaire, et
-  /// l'appeler rendrait un 403 `forbidden_role` qui ferait échouer tout
-  /// l'onglet. Ce que le gérant y perd tient aux compteurs d'unités louées et
-  /// disponibles, que son périmètre partiel ne définit pas ; son taux
-  /// d'occupation, lui, est servi par son propre relevé.
+  /// Les compteurs d'unités louées et libres n'y figurent pas : son périmètre
+  /// partiel ne les définit pas. Son taux d'occupation, lui, est servi par son
+  /// propre relevé.
   ///
   /// Aucun bénéfice net n'est demandé ni reconstitué en retranchant
   /// `expensesTotal` du brut : sur un périmètre partiel, le chiffre serait faux.
