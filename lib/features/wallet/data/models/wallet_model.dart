@@ -11,6 +11,7 @@ class WalletModel {
     required this.totalCredited,
     required this.totalWithdrawn,
     required this.pendingWithdrawals,
+    this.feeFreeBalance = 0,
   });
 
   final String id;
@@ -25,6 +26,10 @@ class WalletModel {
   final double totalWithdrawn;
   final double pendingWithdrawals;
 
+  /// Part de [balance] retirable sans frais : les remboursements
+  /// d'abonnement. Absente d'un serveur antérieur : 0.
+  final double feeFreeBalance;
+
   factory WalletModel.fromJson(Map<String, dynamic> json) => WalletModel(
     id: json['id'] as String? ?? '',
     residenceId: json['residence_id'] as String?,
@@ -33,6 +38,7 @@ class WalletModel {
     totalCredited: (json['total_credited'] as num?)?.toDouble() ?? 0,
     totalWithdrawn: (json['total_withdrawn'] as num?)?.toDouble() ?? 0,
     pendingWithdrawals: (json['pending_withdrawals'] as num?)?.toDouble() ?? 0,
+    feeFreeBalance: (json['fee_free_balance'] as num?)?.toDouble() ?? 0,
   );
 }
 
@@ -109,7 +115,10 @@ abstract final class WithdrawalRules {
   static const feeRate = 0.01;
   static const minimum = 1000;
 
-  /// Frais de 1 %, au franc supérieur comme au serveur.
-  static double feeFor(double amount) =>
-      amount <= 0 ? 0 : (amount * feeRate).ceilToDouble();
+  /// Frais de 1 %, au franc supérieur comme au serveur. La part prise sur
+  /// [feeFreeBalance] — un remboursement d'abonnement — n'en paie pas.
+  static double feeFor(double amount, {double feeFreeBalance = 0}) {
+    final charged = amount - feeFreeBalance.clamp(0, amount);
+    return charged <= 0 ? 0 : (charged * feeRate).ceilToDouble();
+  }
 }

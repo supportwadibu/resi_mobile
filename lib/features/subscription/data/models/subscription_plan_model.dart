@@ -79,3 +79,61 @@ enum SubscriptionPaymentStatus {
     _ => SubscriptionPaymentStatus.pending,
   };
 }
+
+/// Ce que le propriétaire peut faire de son forfait en cours, chiffré par
+/// `GET /proprio/subscription/options`.
+///
+/// Les montants viennent du serveur : le remboursement annoncé avant de
+/// résilier est celui qui sera crédité, et le prix d'une montée celui que
+/// Wave encaissera.
+class SubscriptionOptionsModel {
+  const SubscriptionOptionsModel({
+    required this.renewable,
+    required this.cancellable,
+    required this.refundAmount,
+    required this.remainingDays,
+    this.upgrades = const {},
+  });
+
+  /// Le renouvellement est ouvert : 7 jours avant l'échéance, ou aucun forfait
+  /// payant en cours.
+  final bool renewable;
+
+  /// Un forfait payant est en cours : il peut être résilié.
+  final bool cancellable;
+
+  /// Rendu au portefeuille RESI en cas de résiliation maintenant.
+  final double refundAmount;
+
+  /// Jours payés restants, sans le jour en cours.
+  final int remainingDays;
+
+  /// Prix d'une montée, par identifiant de forfait : le nouveau forfait moins
+  /// la valeur des jours restants. Un forfait absent n'est pas une montée.
+  final Map<String, double> upgrades;
+
+  /// Repli d'un serveur antérieur aux options, ou d'une lecture échouée :
+  /// l'écran garde son comportement d'avant — payer, sans résilier.
+  static const none = SubscriptionOptionsModel(
+    renewable: true,
+    cancellable: false,
+    refundAmount: 0,
+    remainingDays: 0,
+  );
+
+  factory SubscriptionOptionsModel.fromJson(Map<String, dynamic> json) {
+    return SubscriptionOptionsModel(
+      renewable: json['renewable'] as bool? ?? true,
+      cancellable: json['cancellable'] as bool? ?? false,
+      refundAmount: (json['refund_amount'] as num?)?.toDouble() ?? 0,
+      remainingDays: (json['remaining_days'] as num?)?.toInt() ?? 0,
+      upgrades: {
+        for (final upgrade
+            in (json['upgrades'] as List<dynamic>? ?? const [])
+                .whereType<Map<String, dynamic>>())
+          upgrade['plan_id'] as String? ?? '':
+              (upgrade['amount'] as num?)?.toDouble() ?? 0,
+      }..remove(''),
+    );
+  }
+}

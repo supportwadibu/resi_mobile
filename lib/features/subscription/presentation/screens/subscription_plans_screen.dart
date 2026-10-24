@@ -10,12 +10,15 @@ import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/deep_links/payment_return_links.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
 import '../../../../core/session/session_role.dart';
@@ -69,13 +72,28 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    sl<PaymentReturnLinks>().attach(_onPaymentReturn);
     sl<PlanCubit>().refresh();
   }
 
   @override
   void dispose() {
+    sl<PaymentReturnLinks>().detach(_onPaymentReturn);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Retour par la page du site (`resi://abonnement?statut=…`).
+  ///
+  /// Le succès n'est pas annoncé ici : la confirmation le constate, et le
+  /// `listener` de l'écran l'annonce avant de ramener à l'accueil. L'échec,
+  /// lui, l'est tout de suite — la session Wave peut rester ouverte après une
+  /// tentative refusée, et la confirmation la dirait encore « en attente ».
+  void _onPaymentReturn(PaymentReturn outcome) {
+    if (outcome == PaymentReturn.failure) {
+      AppToast.error('subscription.return_failed'.tr());
+    }
+    context.read<SubscriptionPlansCubit>().confirmPending();
   }
 
   /// Retour de l'application Wave : le paiement est constaté aussitôt, sans
@@ -96,6 +114,69 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
       mode: LaunchMode.externalApplication,
     );
     if (!launched) AppToast.error('subscription.wave_unavailable'.tr());
+  }
+
+  /// Résiliation, montant du remboursement annoncé avant de valider.
+  Future<void> _confirmCancel(SubscriptionOptionsModel options) async {
+    final cubit = context.read<SubscriptionPlansCubit>();
+    var refunded = 0.0;
+    final confirmed = await showConfirmDialog(
+      context: context,
+      title: 'plans.cancel_title'.tr(),
+      message: options.refundAmount > 0
+          ? 'plans.cancel_body'.tr(
+              args: [
+                CurrencyFormatter.fcfa(options.refundAmount),
+                '${options.remainingDays}',
+              ],
+            )
+          : 'plans.cancel_body_no_refund'.tr(),
+      confirmLabel: 'plans.cancel_confirm'.tr(),
+      cancelLabel: 'plans.cancel_keep'.tr(),
+      danger: true,
+      onConfirm: () async => refunded = await cubit.cancel(),
+    );
+    if (!confirmed) return;
+
+    AppToast.success(
+      refunded > 0
+          ? 'plans.cancelled_refund'.tr(
+              args: [CurrencyFormatter.fcfa(refunded)],
+            )
+          : 'plans.cancelled'.tr(),
+    );
+  }
+
+  /// Montées possibles, au prix réduit des jours restants.
+  Future<void> _showChangePlan(SubscriptionPlansLoaded state) async {
+    final offers = state.plans
+        .where((plan) => state.options.upgrades.containsKey(plan.id))
+        .toList();
+    final chosen = await showAppSheet<SubscriptionPlanModel>(
+      context: context,
+      builder: (sheetContext) => AppSheet(
+        title: 'plans.change_title'.tr(),
+        description: 'plans.change_body'.tr(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final plan in offers)
+              AppSheetAction(
+                icon: LucideIcons.circleArrowUp,
+                label: 'plans.upgrade_to'.tr(args: [plan.name]),
+                description: 'plans.upgrade_price'.tr(
+                  args: [
+                    CurrencyFormatter.fcfa(state.options.upgrades[plan.id]!),
+                    CurrencyFormatter.fcfa(plan.price),
+                  ],
+                ),
+                onTap: () => Navigator.of(sheetContext).pop(plan),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null) await _pay(chosen);
   }
 
   @override
@@ -140,6 +221,8 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
               onPay: _pay,
               onVerify: () =>
                   context.read<SubscriptionPlansCubit>().confirmPending(),
+              onCancel: () => _confirmCancel(state.options),
+              onChangePlan: () => _showChangePlan(state),
             ),
           },
         ),
@@ -153,11 +236,15 @@ class _LoadedView extends StatelessWidget {
     required this.state,
     required this.onPay,
     required this.onVerify,
+    required this.onCancel,
+    required this.onChangePlan,
   });
 
   final SubscriptionPlansLoaded state;
   final ValueChanged<SubscriptionPlanModel> onPay;
   final VoidCallback onVerify;
+  final VoidCallback onCancel;
+  final VoidCallback onChangePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +296,11 @@ class _LoadedView extends StatelessWidget {
                   plan: offer,
                   isCurrent: current == PlanStyle.of(offer.access),
                   isPaying: state.payingPlanId == offer.id,
+                  options: state.options,
+                  isCancelling: state.isCancelling,
                   onPay: state.payingPlanId == null ? () => onPay(offer) : null,
+                  onCancel: onCancel,
+                  onChangePlan: onChangePlan,
                 ),
                 const SizedBox(height: 12),
               ],
@@ -229,13 +320,21 @@ class _PlanCard extends StatelessWidget {
     required this.plan,
     required this.isCurrent,
     required this.isPaying,
+    required this.options,
+    required this.isCancelling,
     required this.onPay,
+    required this.onCancel,
+    required this.onChangePlan,
   });
 
   final SubscriptionPlanModel plan;
   final bool isCurrent;
   final bool isPaying;
+  final SubscriptionOptionsModel options;
+  final bool isCancelling;
   final VoidCallback? onPay;
+  final VoidCallback onCancel;
+  final VoidCallback onChangePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -314,20 +413,99 @@ class _PlanCard extends StatelessWidget {
               _FeatureLine(text: line, color: style.colorOf(context)),
           ],
           const SizedBox(height: 16),
+          ..._actions(highlight),
+        ],
+      ),
+    );
+  }
+
+  /// Boutons de la carte, selon le forfait en cours.
+  ///
+  /// - Forfait en cours et payé : « Changer de forfait » et « Résilier » ;
+  ///   « Renouveler » s'y ajoute 7 jours avant l'échéance seulement — plus
+  ///   tôt, le serveur refuserait, et le renouvellement n'a pas à être
+  ///   proposé au lendemain d'un paiement.
+  /// - Autre forfait, pendant un forfait payé : une montée chiffrée, ou un
+  ///   palier inférieur, qui attend l'échéance.
+  /// - Sinon : payer.
+  List<Widget> _actions(bool highlight) {
+    // Le forfait mis en avant garde le bouton noir ; l'autre passe en
+    // secondaire, pour qu'un seul appel à l'action domine l'écran.
+    final variant = highlight
+        ? AppButtonVariant.primary
+        : AppButtonVariant.secondary;
+    final paidPlanRunning = options.cancellable;
+
+    if (isCurrent && paidPlanRunning) {
+      return [
+        if (options.renewable) ...[
           AppButton(
-            label: (isCurrent ? 'plans.renew' : 'subscription.pay').tr(),
-            // Le forfait mis en avant garde le bouton noir ; l'autre passe en
-            // secondaire, pour qu'un seul appel à l'action domine l'écran.
-            variant: highlight
-                ? AppButtonVariant.primary
-                : AppButtonVariant.secondary,
+            label: 'plans.renew'.tr(),
+            icon: LucideIcons.refreshCw,
             expand: true,
             isLoading: isPaying,
             onPressed: onPay,
           ),
+          const SizedBox(height: 8),
         ],
+        if (options.upgrades.isNotEmpty) ...[
+          AppButton(
+            label: 'plans.change_plan'.tr(),
+            icon: LucideIcons.circleArrowUp,
+            variant: options.renewable
+                ? AppButtonVariant.secondary
+                : AppButtonVariant.primary,
+            expand: true,
+            onPressed: onChangePlan,
+          ),
+          const SizedBox(height: 8),
+        ],
+        AppButton(
+          label: 'plans.cancel_plan'.tr(),
+          icon: LucideIcons.circleX,
+          variant: AppButtonVariant.ghost,
+          expand: true,
+          isLoading: isCancelling,
+          onPressed: isCancelling ? null : onCancel,
+        ),
+      ];
+    }
+
+    if (!isCurrent && paidPlanRunning) {
+      final upgradeAmount = options.upgrades[plan.id];
+      if (upgradeAmount == null) {
+        return [
+          AppButton(
+            label: 'plans.at_renewal'.tr(),
+            variant: AppButtonVariant.secondary,
+            expand: true,
+            onPressed: null,
+          ),
+        ];
+      }
+      return [
+        AppButton(
+          label: 'plans.upgrade_for'.tr(
+            args: [CurrencyFormatter.fcfa(upgradeAmount)],
+          ),
+          icon: LucideIcons.circleArrowUp,
+          variant: variant,
+          expand: true,
+          isLoading: isPaying,
+          onPressed: onPay,
+        ),
+      ];
+    }
+
+    return [
+      AppButton(
+        label: (isCurrent ? 'plans.renew' : 'subscription.pay').tr(),
+        variant: variant,
+        expand: true,
+        isLoading: isPaying,
+        onPressed: onPay,
       ),
-    );
+    ];
   }
 }
 

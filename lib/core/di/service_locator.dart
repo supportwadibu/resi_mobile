@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:resi_africa/core/deep_links/payment_return_links.dart';
 import 'package:resi_africa/core/theme/theme_controller.dart';
 import 'package:resi_africa/firebase_options.dart';
 import 'package:resi_africa/features/auth/business_logic/auth_cubit.dart';
@@ -105,6 +106,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerSingleton<SecureStorage>(SecureStorage(sl()));
   sl.registerSingleton<Connectivity>(Connectivity());
+  sl.registerSingleton<PaymentReturnLinks>(PaymentReturnLinks());
 
   // ── Local Storage ─────────────────────────────────────────────────────────
   final sharedPreferences = await SharedPreferences.getInstance();

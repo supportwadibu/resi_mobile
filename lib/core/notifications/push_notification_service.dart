@@ -190,7 +190,8 @@ class PushNotificationService {
     }
   }
 
-  void _open(RemoteMessage message) => _openType(message.data['type'] as String?);
+  void _open(RemoteMessage message) =>
+      _openType(message.data['type'] as String?);
 
   void _openType(String? type) {
     switch (PushDestination.fromData({'type': type})) {

@@ -46,6 +46,36 @@ class SubscriptionRepository {
     }
   }
 
+  /// Options du forfait en cours. Un serveur antérieur à la route répond 404 :
+  /// l'écran se replie alors sur [SubscriptionOptionsModel.none].
+  Future<SubscriptionOptionsModel> fetchOptions() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.proprioSubscriptionOptions);
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return SubscriptionOptionsModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return SubscriptionOptionsModel.none;
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Résilie le forfait en cours et rend le montant crédité au portefeuille.
+  Future<double> cancel() async {
+    try {
+      final response = await _dio.post(ApiEndpoints.proprioSubscriptionCancel);
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ((data as Map<String, dynamic>)['refunded_amount'] as num?)
+              ?.toDouble() ??
+          0;
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
   /// Demande au serveur de constater l'issue du paiement chez Wave.
   Future<SubscriptionPaymentStatus> confirm(String reference) async {
     try {

@@ -46,8 +46,7 @@ extension ResiTextContext on BuildContext {
 
   /// Corps de texte secondaire (`text-sm text-muted`) : description, ligne
   /// d'appoint sous un titre.
-  TextStyle get mutedText =>
-      text.bodyMedium!.copyWith(color: tokens.muted);
+  TextStyle get mutedText => text.bodyMedium!.copyWith(color: tokens.muted);
 }
 
 extension ResiTextTheme on TextTheme {

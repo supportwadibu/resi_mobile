@@ -22,17 +22,74 @@ class SubscriptionPlansCubit extends Cubit<SubscriptionPlansState> {
   Future<void> load() async {
     emit(const SubscriptionPlansLoading());
     try {
-      final plans = await _repository.fetchPlans();
-      if (!isClosed) emit(SubscriptionPlansLoaded(plans: plans));
+      final results = await Future.wait([
+        _repository.fetchPlans(),
+        _safeOptions(),
+      ]);
+      if (!isClosed) {
+        emit(
+          SubscriptionPlansLoaded(
+            plans: results[0] as List<SubscriptionPlanModel>,
+            options: results[1] as SubscriptionOptionsModel,
+          ),
+        );
+      }
     } on AppFailure catch (f) {
       if (!isClosed) emit(SubscriptionPlansError(f.userMessage));
     }
   }
 
+  /// Options du forfait, sans faire échouer l'écran : sans elles, il reste
+  /// possible de payer — seuls la résiliation et le chiffrage des montées
+  /// manquent.
+  Future<SubscriptionOptionsModel> _safeOptions() async {
+    try {
+      return await _repository.fetchOptions();
+    } on AppFailure {
+      return SubscriptionOptionsModel.none;
+    }
+  }
+
+  /// Relit les options après un changement : paiement constaté, résiliation.
+  Future<void> _reloadOptions() async {
+    final options = await _safeOptions();
+    final current = state;
+    if (!isClosed && current is SubscriptionPlansLoaded) {
+      emit(current.copyWith(options: options));
+    }
+  }
+
+  /// Résilie le forfait en cours et rend le montant crédité au portefeuille.
+  ///
+  /// Lève l'[AppFailure] plutôt que de l'émettre : la résiliation part d'un
+  /// dialogue de confirmation, qui affiche l'erreur et reste ouvert.
+  Future<double> cancel() async {
+    final current = state;
+    if (current is! SubscriptionPlansLoaded || current.isCancelling) return 0;
+
+    emit(current.copyWith(isCancelling: true, clearMessage: true));
+    try {
+      final refunded = await _repository.cancel();
+      await _plan.refresh();
+      if (!isClosed) {
+        emit((state as SubscriptionPlansLoaded).copyWith(isCancelling: false));
+      }
+      await _reloadOptions();
+      return refunded;
+    } on AppFailure {
+      if (!isClosed && state is SubscriptionPlansLoaded) {
+        emit((state as SubscriptionPlansLoaded).copyWith(isCancelling: false));
+      }
+      rethrow;
+    }
+  }
+
   /// Lance le paiement d'un forfait et rend le lien Wave à ouvrir.
   ///
-  /// `null` si le serveur refuse — renouvellement trop tôt, changement de
-  /// palier en cours de période — : le motif est alors dans l'état.
+  /// `null` si le serveur refuse — renouvellement trop tôt, passage à un
+  /// palier inférieur avant l'échéance — : le motif est alors dans l'état.
+  /// Un palier supérieur est une montée : le serveur en réduit le prix des
+  /// jours restants.
   Future<String?> pay(SubscriptionPlanModel plan) async {
     final current = state;
     if (current is! SubscriptionPlansLoaded || current.payingPlanId != null) {
@@ -86,6 +143,7 @@ class SubscriptionPlansCubit extends Cubit<SubscriptionPlansState> {
               ),
             );
           }
+          await _reloadOptions();
         case SubscriptionPaymentStatus.pending:
           emit(current.copyWith(outcome: CheckoutOutcome.waiting));
         case SubscriptionPaymentStatus.failed ||

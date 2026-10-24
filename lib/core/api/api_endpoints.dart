@@ -47,6 +47,16 @@ abstract final class ApiEndpoints {
   static String proprioSubscriptionConfirm(String reference) =>
       '$_v1/proprio/subscription/checkout/$reference/confirm';
 
+  /// Renouvellement ouvert ou non, remboursement d'une résiliation, prix des
+  /// montées de forfait.
+  static const String proprioSubscriptionOptions =
+      '$_v1/proprio/subscription/options';
+
+  /// Résilie le forfait payant en cours ; les jours restants sont rendus au
+  /// portefeuille RESI.
+  static const String proprioSubscriptionCancel =
+      '$_v1/proprio/subscription/cancel';
+
   /// Dossier de validation : coordonnées et pièces d'identité déposées à la
   /// suite de l'inscription. `GET` pour relire, `POST` (multipart) pour déposer.
   static const String proprioProfile = '$_v1/proprio/profile';

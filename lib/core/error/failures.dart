@@ -172,10 +172,8 @@ class AppFailure implements Exception {
 
   /// Lecture impossible faute de réseau et de cache.
   bool get isOfflineUnavailable => code == offlineUnavailableCode;
-  factory AppFailure.unauthorized() => AppFailure._(
-    userMessage: 'errors.session_expired'.tr(),
-    statusCode: 401,
-  );
+  factory AppFailure.unauthorized() =>
+      AppFailure._(userMessage: 'errors.session_expired'.tr(), statusCode: 401);
 
   /// [message] : explication renvoyée par l'API, préférée au libellé générique.
   ///

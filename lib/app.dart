@@ -2,6 +2,8 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/router/app_router.dart';
 import 'core/config/app_config.dart';
+import 'core/deep_links/payment_return_links.dart';
+import 'shared/widgets/app_toast.dart';
 import 'core/di/service_locator.dart';
 import 'core/router/app_router.gr.dart';
 import 'core/session/session_role.dart';
@@ -29,6 +31,22 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    sl<PaymentReturnLinks>()
+      ..fallback = _onPaymentReturn
+      ..start();
+  }
+
+  /// Retour de Wave hors de l'écran des forfaits — application relancée par
+  /// le lien, par exemple. L'abonnement est déjà confirmé côté serveur : il
+  /// suffit de relire l'accès et d'annoncer l'issue.
+  void _onPaymentReturn(PaymentReturn outcome) {
+    switch (outcome) {
+      case PaymentReturn.success:
+        sl<PlanCubit>().refresh();
+        AppToast.success('subscription.paid'.tr());
+      case PaymentReturn.failure:
+        AppToast.error('subscription.return_failed'.tr());
+    }
   }
 
   @override

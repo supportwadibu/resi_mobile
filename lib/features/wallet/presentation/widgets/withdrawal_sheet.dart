@@ -100,7 +100,10 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
       },
       builder: (context, state) {
         final isSubmitting = state is WithdrawalRequestSubmitting;
-        final fee = WithdrawalRules.feeFor(_typedAmount.toDouble());
+        final fee = WithdrawalRules.feeFor(
+          _typedAmount.toDouble(),
+          feeFreeBalance: widget.wallet.feeFreeBalance,
+        );
         final canSubmit =
             !isSubmitting && _amountValid && _phone.text.trim().length >= 8;
 

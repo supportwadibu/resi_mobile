@@ -6,6 +6,19 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Retour d'un paiement Wave : la page du site ouvre
+                 `resi://abonnement?statut=succes|echec`, lu par
+                 `PaymentReturnLinks`. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="resi" android:host="abonnement" />
+            </intent-filter>
+            <!-- Le lien est traité par `app_links`, pas par le routeur : sans
+                 ce drapeau, Flutter le pousserait aussi comme route et
+                 ramènerait l'application à son écran d'accueil. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
         </activity>
         <meta-data android:name="flutterEmbedding" android:value="2" />
         <!-- Canal des notifications reçues en arrière-plan. Créé par
