@@ -80,7 +80,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logotype.png"
+  image_path: "assets/images/logotype_inverted.png"
+  # L'App Store refuse une icône avec transparence : les coins transparents
+  # du logotype sont remplis de blanc, iOS arrondissant l'icône lui-même.
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
   min_sdk_android: 21
   adaptive_icon_background: #FFFFFF
 
