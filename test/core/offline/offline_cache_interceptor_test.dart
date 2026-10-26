@@ -119,16 +119,18 @@ void main() {
     expect(status.value, isNotNull);
   });
 
-  test('un échec de transport se rabat sur le cache — Wi-Fi sans Internet',
-      () async {
-    await dio.get<dynamic>('/proprio/properties');
+  test(
+    'un échec de transport se rabat sur le cache — Wi-Fi sans Internet',
+    () async {
+      await dio.get<dynamic>('/proprio/properties');
 
-    adapter.failTransport = true;
-    final cached = await dio.get<dynamic>('/proprio/properties');
+      adapter.failTransport = true;
+      final cached = await dio.get<dynamic>('/proprio/properties');
 
-    expect(cached.statusCode, 200);
-    expect(cached.extra[offlineCachedAtExtra], isNotNull);
-  });
+      expect(cached.statusCode, 200);
+      expect(cached.extra[offlineCachedAtExtra], isNotNull);
+    },
+  );
 
   test('un 5xx se rabat sur le cache', () async {
     await dio.get<dynamic>('/proprio/clients');
@@ -155,18 +157,32 @@ void main() {
     );
   });
 
-  test('sans cache, l’échec dit que l’écran n’est pas disponible hors ligne',
-      () async {
-    offline = true;
+  test('sans cache, un 5xx garde la réponse du serveur', () async {
+    adapter.status = 500;
 
     try {
-      await dio.get<dynamic>('/proprio/expenses');
+      await dio.get<dynamic>('/proprio/wallets');
       fail('la lecture aurait dû échouer');
     } on DioException catch (e) {
-      final failure = mapDioExceptionToFailure(e);
-      expect(failure.isOfflineUnavailable, isTrue);
+      expect(e.response?.statusCode, 500);
+      expect(mapDioExceptionToFailure(e).isOfflineUnavailable, isFalse);
     }
   });
+
+  test(
+    'sans cache, l’échec dit que l’écran n’est pas disponible hors ligne',
+    () async {
+      offline = true;
+
+      try {
+        await dio.get<dynamic>('/proprio/expenses');
+        fail('la lecture aurait dû échouer');
+      } on DioException catch (e) {
+        final failure = mapDioExceptionToFailure(e);
+        expect(failure.isOfflineUnavailable, isTrue);
+      }
+    },
+  );
 
   test('une lecture hors cache n’est jamais servie depuis le cache', () async {
     await dio.get<dynamic>('/proprio/subscription');
@@ -188,7 +204,8 @@ void main() {
       dio.post<dynamic>('/proprio/expenses', data: const {}),
       throwsA(
         isA<DioException>().having(
-          (e) => e.error is AppFailure &&
+          (e) =>
+              e.error is AppFailure &&
               (e.error! as AppFailure).isOfflineUnavailable,
           'hors cache',
           isFalse,

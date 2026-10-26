@@ -144,6 +144,11 @@ class OfflineCacheInterceptor extends Interceptor {
     if (cached != null) {
       return handler.resolve(await _fromCache(err.requestOptions, cached));
     }
+
+    // Sans cache, un 5xx garde la réponse du serveur : le réseau a fonctionné,
+    // et dire « non disponible hors ligne » à un appareil connecté masquait
+    // une panne serveur — un index Firestore non déployé, par exemple.
+    if (err.type == DioExceptionType.badResponse) return handler.next(err);
     handler.next(_unavailable(err.requestOptions));
   }
 
