@@ -56,6 +56,45 @@ void main() {
       expect(options.upgrades, {'plan_pro_plus': 3400});
     });
 
+    test('lit l’issue d’une résiliation et le crédit disponible', () {
+      final options = SubscriptionOptionsModel.fromJson(const {
+        'cancellable': true,
+        'cancel_mode': 'partial_refund',
+        'refund_amount': 3000,
+        'refund_credit': 2000,
+        'access_ends_at': '2026-10-20T10:00:00.000Z',
+        'credit': {'amount': 2000, 'expires_at': '2027-01-18T10:00:00.000Z'},
+        'wave_fee_rate': 0.01,
+      });
+
+      expect(options.cancelMode, CancelMode.partialRefund);
+      expect(options.refundAmount, 3000);
+      expect(options.refundCredit, 2000);
+      expect(options.accessEndsAt, isNotNull);
+      expect(options.credit?.amount, 2000);
+    });
+
+    test('le paiement déduit le crédit et ajoute 1 % de frais Wave', () {
+      final options = SubscriptionOptionsModel.fromJson(const {
+        'credit': {'amount': 2000, 'expires_at': '2099-01-01T00:00:00.000Z'},
+        'wave_fee_rate': 0.01,
+      });
+
+      final pro = options.quoteFor(planId: 'pro', price: 3000);
+      expect(pro.credit, 2000);
+      expect(pro.amount, 1000);
+      expect(pro.fee, 10);
+      expect(pro.total, 1010);
+
+      final plain = SubscriptionOptionsModel.none.quoteFor(
+        planId: 'pro_plus',
+        price: 5000,
+      );
+      expect(plain.credit, 0);
+      expect(plain.fee, 50);
+      expect(plain.total, 5050);
+    });
+
     test('un serveur antérieur laisse l’écran payer sans résilier', () {
       final options = SubscriptionOptionsModel.fromJson(const {});
 

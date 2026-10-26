@@ -50,6 +50,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ReportRoute.page, guards: [_ownerOnly]),
     // L'argent de la maison : le gérant ne le voit ni ne le retire.
     AutoRoute(page: WalletRoute.page, guards: [_ownerOnly]),
+    AutoRoute(page: WalletTransactionsRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ClientsRoute.page),
     AutoRoute(page: AddClientRoute.page),
     AutoRoute(page: SupportChatRoute.page),

@@ -29,6 +29,27 @@ class WalletRepository {
     }
   }
 
+  /// Une page du journal d'un portefeuille, du plus récent au plus ancien.
+  Future<WalletTransactionPage> getTransactions(
+    String walletId, {
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.proprioWalletTransactions(walletId),
+        queryParameters: {'page': page, 'per_page': perPage},
+      );
+      return WalletTransactionPage.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
   /// Dernières demandes de retrait, toutes résidences confondues.
   Future<List<WithdrawalModel>> getWithdrawals({int perPage = 20}) async {
     try {

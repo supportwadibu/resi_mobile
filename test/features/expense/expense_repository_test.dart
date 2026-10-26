@@ -369,6 +369,7 @@ void main() {
     test('les codes couvrent exactement EXPENSE_CATEGORIES', () {
       // Doit rester aligné sur `api_resi/app/models/expense.ts`.
       expect(ExpenseCategory.values.map((c) => c.code).toSet(), {
+        'rent',
         'electricity',
         'water',
         'internet',

@@ -10,6 +10,9 @@ import 'package:resi_africa/core/theme/resi_tokens.dart';
 /// Le code part à l'API, le libellé et l'icône restent côté client : traduire
 /// côté serveur imposerait de redéployer pour corriger un intitulé.
 enum ExpenseCategory {
+  // En tête : poste le plus lourd d'un propriétaire qui sous-loue, il ouvre
+  // la grille de saisie.
+  rent('rent', LucideIcons.house),
   electricity('electricity', LucideIcons.zap),
   water('water', LucideIcons.droplet),
   internet('internet', LucideIcons.wifi),
@@ -41,9 +44,10 @@ enum ExpenseCategory {
   /// pour qu'un poste garde la même teinte d'un écran à l'autre.
   ///
   /// Tirée des jetons du mode courant plutôt que d'une teinte fixe : l'anneau
-  /// reste lisible en sombre. Huit postes pour cinq accents : les trois
-  /// derniers prennent les neutres (texte, secondaire, filet).
+  /// reste lisible en sombre. Plus de postes que d'accents : les autres
+  /// prennent les variantes douces et les neutres (texte, secondaire, filet).
   Color colorIn(ResiTokens t) => switch (this) {
+    ExpenseCategory.rent => t.accentVioletSoft,
     ExpenseCategory.electricity => t.accentAmber,
     ExpenseCategory.water => t.accentBlue,
     ExpenseCategory.internet => t.accentViolet,

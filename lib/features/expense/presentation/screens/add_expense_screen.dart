@@ -79,6 +79,13 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   ExpenseModel? get _original => widget.expense;
   bool get _isEditing => _original != null;
 
+  /// Abonnement RESI enregistré par le serveur, sans logement ni résidence.
+  ///
+  /// Ni rattachement ni catégorie ne se proposent : le serveur crée ce coût
+  /// hors de tout bien, et exiger un logement à la modification forçait le
+  /// propriétaire à imputer un frais de plateforme à une unité.
+  bool get _isPlatformCharge => _original?.isPlatformCharge ?? false;
+
   /// Une charge commune de résidence est-elle offerte à ce rôle ?
   ///
   /// `POST /gerant/expenses` exige un `property_id` et répond 422
@@ -128,11 +135,13 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   /// Les règles reprennent celles du validateur serveur : mieux vaut un refus
   /// immédiat et situé qu'une erreur 422 après coup.
   String? _validate() {
-    if (_isCommonCharge && _residenceId == null) {
-      return 'expense.choose_residence'.tr();
-    }
-    if (!_isCommonCharge && _propertyId == null) {
-      return 'expense.choose_property'.tr();
+    if (!_isPlatformCharge) {
+      if (_isCommonCharge && _residenceId == null) {
+        return 'expense.choose_residence'.tr();
+      }
+      if (!_isCommonCharge && _propertyId == null) {
+        return 'expense.choose_property'.tr();
+      }
     }
     if (_category == null) return 'expense.choose_category'.tr();
     if (_amount <= 0) return 'expense.amount_positive'.tr();
@@ -182,8 +191,10 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     } else {
       cubit.update(
         original: original,
-        propertyId: _isCommonCharge ? null : _propertyId,
-        residenceId: _isCommonCharge ? _residenceId : null,
+        propertyId: _isPlatformCharge || _isCommonCharge ? null : _propertyId,
+        residenceId: _isPlatformCharge || !_isCommonCharge
+            ? null
+            : _residenceId,
         category: _category!,
         amount: _amount,
         spentAt: _spentAt,
@@ -263,29 +274,38 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
                   // sélecteurs avant de la poser.
                   AmountField(controller: _amountController),
                   const SizedBox(height: 24),
-                  if (_canChargeCommon) ...[
-                    _FieldLabel('expense.charge_kind'.tr()),
-                    _chargeKindPicker(),
+                  if (_isPlatformCharge) ...[
+                    AppCallout(
+                      icon: LucideIcons.info,
+                      tone: AppAccent.neutral,
+                      message: 'expense.platform_charge_notice'.tr(),
+                    ),
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    if (_canChargeCommon) ...[
+                      _FieldLabel('expense.charge_kind'.tr()),
+                      _chargeKindPicker(),
+                      const SizedBox(height: 20),
+                    ],
+                    _FieldLabel(
+                      _isCommonCharge
+                          ? 'expense.residence_concerned'.tr()
+                          : 'expense.unit_concerned'.tr(),
+                    ),
+                    if (_isCommonCharge)
+                      _residenceTargetPicker()
+                    else
+                      _residencePicker(),
+                    const SizedBox(height: 20),
+                    _FieldLabel('expense.category'.tr()),
+                    CategoryGrid(
+                      categories: ExpenseCategory.manual,
+                      selected: _category,
+                      onSelected: (category) =>
+                          setState(() => _category = category),
+                    ),
                     const SizedBox(height: 20),
                   ],
-                  _FieldLabel(
-                    _isCommonCharge
-                        ? 'expense.residence_concerned'.tr()
-                        : 'expense.unit_concerned'.tr(),
-                  ),
-                  if (_isCommonCharge)
-                    _residenceTargetPicker()
-                  else
-                    _residencePicker(),
-                  const SizedBox(height: 20),
-                  _FieldLabel('expense.category'.tr()),
-                  CategoryGrid(
-                    categories: ExpenseCategory.manual,
-                    selected: _category,
-                    onSelected: (category) =>
-                        setState(() => _category = category),
-                  ),
-                  const SizedBox(height: 20),
                   _FieldLabel('expense.date'.tr()),
                   DatePickerField(
                     date: DateFormat('d MMMM yyyy').format(_spentAt),

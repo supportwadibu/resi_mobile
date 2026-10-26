@@ -13,5 +13,8 @@ class WalletRouterModule extends RootStackRouter {
       RouteType.custom(transitionsBuilder: customTransitionBuilder);
 
   @override
-  List<AutoRoute> get routes => [AutoRoute(page: WalletRoute.page)];
+  List<AutoRoute> get routes => [
+    AutoRoute(page: WalletRoute.page),
+    AutoRoute(page: WalletTransactionsRoute.page),
+  ];
 }

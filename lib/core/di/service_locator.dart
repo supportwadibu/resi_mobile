@@ -62,6 +62,7 @@ import 'package:resi_africa/features/stats/data/repositories/property_stats_repo
 import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
 import 'package:resi_africa/features/subscription/data/models/plan_access.dart';
 import 'package:resi_africa/features/wallet/business_logic/wallet_cubit.dart';
+import 'package:resi_africa/features/wallet/business_logic/wallet_transactions_cubit.dart';
 import 'package:resi_africa/features/wallet/data/repositories/wallet_repository.dart';
 import 'package:resi_africa/features/subscription/business_logic/subscription_plans_cubit.dart';
 import 'package:resi_africa/features/subscription/data/repositories/subscription_repository.dart';
@@ -385,6 +386,9 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => ExpenseCubit(sl<ExpenseRepository>()));
   sl.registerFactory(() => WalletCubit(sl<WalletRepository>()));
   sl.registerFactory(() => WithdrawalRequestCubit(sl<WalletRepository>()));
+  sl.registerFactoryParam<WalletTransactionsCubit, String, void>(
+    (walletId, _) => WalletTransactionsCubit(sl<WalletRepository>(), walletId),
+  );
   sl.registerFactory(
     () => SyncReviewCubit(
       sl<ReservationLocalStore>(),

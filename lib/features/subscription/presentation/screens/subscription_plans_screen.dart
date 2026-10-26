@@ -105,8 +105,34 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
     }
   }
 
+  /// Paiement, précédé du détail de ce que Wave débitera : le propriétaire
+  /// voit les frais de 1 % et les conditions de résiliation avant de payer.
   Future<void> _pay(SubscriptionPlanModel plan) async {
-    final url = await context.read<SubscriptionPlansCubit>().pay(plan);
+    final cubit = context.read<SubscriptionPlansCubit>();
+    final state = cubit.state;
+    final options = state is SubscriptionPlansLoaded
+        ? state.options
+        : SubscriptionOptionsModel.none;
+    final quote = options.quoteFor(planId: plan.id, price: plan.price);
+
+    final accepted = await showAppSheet<bool>(
+      context: context,
+      builder: (sheetContext) => AppSheet(
+        title: 'plans.pay_title'.tr(args: [plan.name]),
+        footer: AppButton(
+          label: 'plans.pay_with_wave'.tr(
+            args: [CurrencyFormatter.fcfa(quote.total)],
+          ),
+          icon: LucideIcons.wallet,
+          expand: true,
+          onPressed: () => Navigator.of(sheetContext).pop(true),
+        ),
+        child: _PaymentSummary(quote: quote),
+      ),
+    );
+    if (accepted != true || !mounted) return;
+
+    final url = await cubit.pay(plan);
     if (url == null) return;
 
     final launched = await launchUrl(
@@ -116,33 +142,44 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
     if (!launched) AppToast.error('subscription.wave_unavailable'.tr());
   }
 
-  /// Résiliation, montant du remboursement annoncé avant de valider.
+  /// Résiliation, issue annoncée avant de valider : les montants viennent du
+  /// serveur, qui applique la même règle à l'envoi.
   Future<void> _confirmCancel(SubscriptionOptionsModel options) async {
     final cubit = context.read<SubscriptionPlansCubit>();
-    var refunded = 0.0;
+    final refund = CurrencyFormatter.fcfa(options.refundAmount);
+    final credit = CurrencyFormatter.fcfa(options.refundCredit);
+    final endsAt = options.accessEndsAt == null
+        ? ''
+        : DateFormat('d MMMM y').format(options.accessEndsAt!.toLocal());
+
+    final message = switch (options.cancelMode) {
+      CancelMode.fullRefund when options.refundCredit > 0 =>
+        'plans.cancel_full_with_credit'.tr(args: [refund, credit]),
+      CancelMode.fullRefund => 'plans.cancel_full'.tr(args: [refund]),
+      CancelMode.partialRefund =>
+        options.refundAmount > 0
+            ? 'plans.cancel_partial'.tr(args: [refund, credit])
+            : 'plans.cancel_partial_credit_only'.tr(args: [credit]),
+      CancelMode.periodEnd ||
+      null => 'plans.cancel_period_end'.tr(args: [endsAt]),
+    };
+
     final confirmed = await showConfirmDialog(
       context: context,
       title: 'plans.cancel_title'.tr(),
-      message: options.refundAmount > 0
-          ? 'plans.cancel_body'.tr(
-              args: [
-                CurrencyFormatter.fcfa(options.refundAmount),
-                '${options.remainingDays}',
-              ],
-            )
-          : 'plans.cancel_body_no_refund'.tr(),
+      message: message,
       confirmLabel: 'plans.cancel_confirm'.tr(),
       cancelLabel: 'plans.cancel_keep'.tr(),
       danger: true,
-      onConfirm: () async => refunded = await cubit.cancel(),
+      onConfirm: () async => cubit.cancel(),
     );
     if (!confirmed) return;
 
     AppToast.success(
-      refunded > 0
-          ? 'plans.cancelled_refund'.tr(
-              args: [CurrencyFormatter.fcfa(refunded)],
-            )
+      options.cancelMode == CancelMode.periodEnd
+          ? 'plans.cancelled_period_end'.tr(args: [endsAt])
+          : options.refundAmount > 0
+          ? 'plans.cancelled_refund'.tr(args: [refund])
           : 'plans.cancelled'.tr(),
     );
   }
@@ -269,6 +306,21 @@ class _LoadedView extends StatelessWidget {
             if (state.outcome == CheckoutOutcome.failed) ...[
               const SizedBox(height: 12),
               _Notice.error('subscription.failed'.tr()),
+            ],
+            if (state.options.credit case final credit?) ...[
+              const SizedBox(height: 12),
+              _Notice.info(
+                'plans.credit_available'.tr(
+                  args: [
+                    CurrencyFormatter.fcfa(credit.amount),
+                    credit.expiresAt == null
+                        ? ''
+                        : DateFormat(
+                            'd MMMM y',
+                          ).format(credit.expiresAt!.toLocal()),
+                  ],
+                ),
+              ),
             ],
 
             const SizedBox(height: 24),
@@ -434,7 +486,9 @@ class _PlanCard extends StatelessWidget {
     final variant = highlight
         ? AppButtonVariant.primary
         : AppButtonVariant.secondary;
-    final paidPlanRunning = options.cancellable;
+    // Un forfait résilié à l'échéance court encore : ses cartes gardent les
+    // règles d'un forfait payé, sans le bouton de résiliation.
+    final paidPlanRunning = options.hasPaidPlan;
 
     if (isCurrent && paidPlanRunning) {
       return [
@@ -460,14 +514,29 @@ class _PlanCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        AppButton(
-          label: 'plans.cancel_plan'.tr(),
-          icon: LucideIcons.circleX,
-          variant: AppButtonVariant.ghost,
-          expand: true,
-          isLoading: isCancelling,
-          onPressed: isCancelling ? null : onCancel,
-        ),
+        if (options.cancelScheduled)
+          AppCallout(
+            icon: LucideIcons.calendarX,
+            tone: AppAccent.amber,
+            message: 'plans.cancel_scheduled'.tr(
+              args: [
+                options.accessEndsAt == null
+                    ? ''
+                    : DateFormat(
+                        'd MMMM y',
+                      ).format(options.accessEndsAt!.toLocal()),
+              ],
+            ),
+          )
+        else
+          AppButton(
+            label: 'plans.cancel_plan'.tr(),
+            icon: LucideIcons.circleX,
+            variant: AppButtonVariant.ghost,
+            expand: true,
+            isLoading: isCancelling,
+            onPressed: isCancelling ? null : onCancel,
+          ),
       ];
     }
 
@@ -668,6 +737,47 @@ class _Notice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCallout(icon: icon, tone: tone, message: message);
+  }
+}
+
+/// Détail d'un paiement d'abonnement : prix, crédit déduit, frais Wave, total,
+/// puis les conditions de résiliation — à lire avant de payer.
+class _PaymentSummary extends StatelessWidget {
+  const _PaymentSummary({required this.quote});
+
+  final CheckoutQuote quote;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DetailList(
+          items: [
+            DetailItem(
+              'plans.pay_price'.tr(),
+              CurrencyFormatter.fcfa(quote.price),
+            ),
+            if (quote.credit > 0)
+              DetailItem(
+                'plans.pay_credit'.tr(),
+                '− ${CurrencyFormatter.fcfa(quote.credit)}',
+              ),
+            DetailItem('plans.pay_fee'.tr(), CurrencyFormatter.fcfa(quote.fee)),
+            DetailItem(
+              'plans.pay_total'.tr(),
+              CurrencyFormatter.fcfa(quote.total),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        AppCallout(
+          icon: LucideIcons.info,
+          tone: AppAccent.neutral,
+          message: 'plans.pay_conditions'.tr(),
+        ),
+      ],
+    );
   }
 }
 

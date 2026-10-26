@@ -19,6 +19,7 @@ import 'package:resi_africa/shared/widgets/stat_tile.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/router/app_router.gr.dart';
 import '../../business_logic/wallet_cubit.dart';
 import '../../business_logic/wallet_state.dart';
 import '../../data/models/wallet_model.dart';
@@ -158,12 +159,30 @@ class _WalletCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          AppButton(
-            label: 'wallet.withdraw'.tr(),
-            icon: LucideIcons.arrowDownToLine,
-            variant: AppButtonVariant.secondary,
-            expand: true,
-            onPressed: onWithdraw,
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: 'wallet.movements'.tr(),
+                  icon: LucideIcons.history,
+                  variant: AppButtonVariant.ghost,
+                  expand: true,
+                  onPressed: () => context.router.push(
+                    WalletTransactionsRoute(wallet: wallet),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AppButton(
+                  label: 'wallet.withdraw'.tr(),
+                  icon: LucideIcons.arrowDownToLine,
+                  variant: AppButtonVariant.secondary,
+                  expand: true,
+                  onPressed: onWithdraw,
+                ),
+              ),
+            ],
           ),
         ],
       ),
