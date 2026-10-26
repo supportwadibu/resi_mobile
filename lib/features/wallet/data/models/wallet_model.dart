@@ -200,10 +200,86 @@ class WithdrawalModel {
       );
 }
 
+/// Numéro Wave enregistré pour les retraits.
+class PayoutNumber {
+  const PayoutNumber({
+    required this.slot,
+    required this.phone,
+    this.holderName,
+  });
+
+  /// Position, 1 ou 2 : c'est elle que la demande de retrait désigne.
+  final int slot;
+  final String phone;
+  final String? holderName;
+
+  factory PayoutNumber.fromJson(Map<String, dynamic> json) => PayoutNumber(
+    slot: (json['slot'] as num?)?.toInt() ?? 1,
+    phone: json['phone'] as String? ?? '',
+    holderName: json['holder_name'] as String?,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'slot': slot,
+    'phone': phone,
+    if (holderName != null && holderName!.trim().isNotEmpty)
+      'holder_name': holderName!.trim(),
+  };
+}
+
+/// Ce que l'écran de retrait doit savoir, servi par
+/// `GET /proprio/payout-settings`.
+class PayoutSettings {
+  const PayoutSettings({
+    required this.minimumWithdrawal,
+    required this.numbers,
+  });
+
+  /// Retrait minimal, réglé par l'équipe RESI au backoffice.
+  final int minimumWithdrawal;
+
+  /// Numéros Wave enregistrés, rangés par position.
+  final List<PayoutNumber> numbers;
+
+  /// Deux numéros au plus, comme au serveur.
+  static const maxNumbers = 2;
+
+  /// Repli d'une lecture échouée, ou d'un serveur antérieur : le minimum
+  /// historique, sans numéro enregistré.
+  static const fallback = PayoutSettings(
+    minimumWithdrawal: WithdrawalRules.minimum,
+    numbers: [],
+  );
+
+  PayoutNumber? numberAt(int slot) {
+    for (final number in numbers) {
+      if (number.slot == slot) return number;
+    }
+    return null;
+  }
+
+  factory PayoutSettings.fromJson(Map<String, dynamic> json) {
+    final numbers =
+        (json['numbers'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(PayoutNumber.fromJson)
+            .toList()
+          ..sort((a, b) => a.slot.compareTo(b.slot));
+    return PayoutSettings(
+      minimumWithdrawal:
+          (json['minimum_withdrawal'] as num?)?.toInt() ??
+          WithdrawalRules.minimum,
+      numbers: List.unmodifiable(numbers),
+    );
+  }
+}
+
 /// Règles de retrait, miroir de `wallet_rules.ts` côté API : l'écran annonce
 /// les frais avant l'envoi, le serveur reste l'autorité.
 abstract final class WithdrawalRules {
   static const feeRate = 0.01;
+
+  /// Minimum historique, à défaut du réglage servi par `PayoutSettings`.
   static const minimum = 1000;
 
   /// Frais de 1 %, au franc supérieur comme au serveur. La part prise sur

@@ -69,23 +69,53 @@ class WalletRepository {
     }
   }
 
-  /// Demande un retrait. Un 422 signale un solde insuffisant ou un montant
-  /// sous le minimum ; le message du serveur le dit.
+  /// Retrait minimal réglé par l'équipe et numéros Wave enregistrés.
+  Future<PayoutSettings> getPayoutSettings() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.proprioPayoutSettings);
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return PayoutSettings.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Remplace les numéros Wave enregistrés. Un 422 dit pourquoi un numéro
+  /// est refusé — format, doublon.
+  Future<List<PayoutNumber>> savePayoutNumbers(
+    List<PayoutNumber> numbers,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiEndpoints.proprioPayoutNumbers,
+        data: {'numbers': numbers.map((n) => n.toJson()).toList()},
+      );
+      final data = (response.data as Map<String, dynamic>)['data'] as List;
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(PayoutNumber.fromJson)
+          .toList(growable: false);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Demande un retrait vers le numéro Wave enregistré [payoutSlot]. Un 422
+  /// signale un solde insuffisant, un montant sous le minimum ou un numéro
+  /// retiré entre-temps ; le message du serveur le dit.
   Future<WithdrawalModel> requestWithdrawal(
     String walletId, {
     required int amount,
-    required String payoutPhone,
-    String? payoutName,
+    required int payoutSlot,
   }) async {
     try {
       final response = await _dio.post(
         ApiEndpoints.proprioWalletWithdrawals(walletId),
-        data: {
-          'amount': amount,
-          'payout_phone': payoutPhone,
-          if (payoutName != null && payoutName.trim().isNotEmpty)
-            'payout_name': payoutName.trim(),
-        },
+        data: {'amount': amount, 'payout_slot': payoutSlot},
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return WithdrawalModel.fromJson(data as Map<String, dynamic>);

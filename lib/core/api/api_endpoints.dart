@@ -35,6 +35,12 @@ abstract final class ApiEndpoints {
   /// Toutes les demandes de retrait du propriétaire.
   static const String proprioWithdrawals = '$_v1/proprio/withdrawals';
 
+  /// Retrait minimal et numéros Wave enregistrés.
+  static const String proprioPayoutSettings = '$_v1/proprio/payout-settings';
+
+  /// Numéros Wave de retrait, remplacés en bloc.
+  static const String proprioPayoutNumbers = '$_v1/proprio/payout-numbers';
+
   /// Forfaits proposés à la souscription, du moins cher au plus cher.
   static const String proprioPlans = '$_v1/proprio/plans';
 

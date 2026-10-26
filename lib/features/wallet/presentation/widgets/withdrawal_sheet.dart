@@ -8,30 +8,41 @@ import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_option_tile.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 import '../../../../core/di/service_locator.dart';
-import '../../../../core/storage/local_storage.dart';
 import '../../business_logic/wallet_cubit.dart';
 import '../../business_logic/wallet_state.dart';
 import '../../data/models/wallet_model.dart';
+import 'wave_logo.dart';
 
-/// Feuille de demande de retrait : montant, numéro Wave, frais annoncés.
+/// Feuille de demande de retrait : montant, numéro Wave enregistré, frais
+/// annoncés. Le versement ne passe que par Wave.
 ///
 /// Rend la demande enregistrée, ou `null` si le propriétaire renonce.
 class WithdrawalSheet extends StatelessWidget {
-  const WithdrawalSheet({required this.wallet, super.key});
+  const WithdrawalSheet({
+    required this.wallet,
+    required this.settings,
+    super.key,
+  });
 
   final WalletModel wallet;
+
+  /// Minimum et numéros enregistrés ; au moins un numéro — l'écran fait
+  /// enregistrer un numéro avant d'ouvrir la feuille.
+  final PayoutSettings settings;
 
   static Future<WithdrawalModel?> show(
     BuildContext context,
     WalletModel wallet,
+    PayoutSettings settings,
   ) {
     return showAppSheet<WithdrawalModel>(
       context: context,
-      builder: (_) => WithdrawalSheet(wallet: wallet),
+      builder: (_) => WithdrawalSheet(wallet: wallet, settings: settings),
     );
   }
 
@@ -39,15 +50,16 @@ class WithdrawalSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<WithdrawalRequestCubit>(),
-      child: _WithdrawalForm(wallet: wallet),
+      child: _WithdrawalForm(wallet: wallet, settings: settings),
     );
   }
 }
 
 class _WithdrawalForm extends StatefulWidget {
-  const _WithdrawalForm({required this.wallet});
+  const _WithdrawalForm({required this.wallet, required this.settings});
 
   final WalletModel wallet;
+  final PayoutSettings settings;
 
   @override
   State<_WithdrawalForm> createState() => _WithdrawalFormState();
@@ -58,36 +70,22 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
   late final _amount = TextEditingController(
     text: widget.wallet.balance.toInt().toString(),
   );
-  final _phone = TextEditingController();
-  final _name = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _prefillPayee();
-  }
-
-  /// Le numéro et le nom du dossier propriétaire, s'ils sont en cache : c'est
-  /// le plus souvent sur son propre compte Wave qu'il retire.
-  Future<void> _prefillPayee() async {
-    final owner = await sl<LocalStorage>().getPropertyManager();
-    if (owner == null || !mounted) return;
-    if (_phone.text.isEmpty) _phone.text = owner.phoneNumber;
-    if (_name.text.isEmpty) _name.text = owner.name;
-  }
+  /// Numéro 1 par défaut : c'est le plus souvent celui du propriétaire.
+  late int? _slot = widget.settings.numbers.isEmpty
+      ? null
+      : widget.settings.numbers.first.slot;
 
   @override
   void dispose() {
     _amount.dispose();
-    _phone.dispose();
-    _name.dispose();
     super.dispose();
   }
 
   int get _typedAmount => int.tryParse(_amount.text.trim()) ?? 0;
 
   bool get _amountValid =>
-      _typedAmount >= WithdrawalRules.minimum &&
+      _typedAmount >= widget.settings.minimumWithdrawal &&
       _typedAmount <= widget.wallet.balance;
 
   @override
@@ -104,8 +102,8 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
           _typedAmount.toDouble(),
           feeFreeBalance: widget.wallet.feeFreeBalance,
         );
-        final canSubmit =
-            !isSubmitting && _amountValid && _phone.text.trim().length >= 8;
+        final slot = _slot;
+        final canSubmit = !isSubmitting && _amountValid && slot != null;
 
         return AppSheet(
           title: 'wallet.withdraw_title'.tr(),
@@ -123,8 +121,7 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
                 ? () => context.read<WithdrawalRequestCubit>().submit(
                     widget.wallet.id,
                     amount: _typedAmount,
-                    payoutPhone: _phone.text.trim(),
-                    payoutName: _name.text.trim(),
+                    payoutSlot: slot,
                   )
                 : null,
           ),
@@ -140,22 +137,29 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
                 enabled: !isSubmitting,
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 12),
-              AppTextField(
-                label: 'wallet.payout_phone'.tr(),
-                hint: 'wallet.payout_phone_hint'.tr(),
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                enabled: !isSubmitting,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-              AppTextField(
-                label: 'wallet.payout_name'.tr(),
-                controller: _name,
-                enabled: !isSubmitting,
-              ),
               const SizedBox(height: 16),
+              Row(
+                children: [
+                  const WaveLogo(size: 20),
+                  const SizedBox(width: 8),
+                  Text('wallet.payout_to'.tr(), style: context.text.titleSmall),
+                ],
+              ),
+              const SizedBox(height: 8),
+              for (final number in widget.settings.numbers) ...[
+                AppOptionTile(
+                  title: 'wallet.payout_number_line'.tr(
+                    args: ['${number.slot}', number.phone],
+                  ),
+                  description: number.holderName,
+                  selected: _slot == number.slot,
+                  onTap: isSubmitting
+                      ? null
+                      : () => setState(() => _slot = number.slot),
+                ),
+                const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 8),
               // Les frais sont annoncés avant l'envoi : le propriétaire doit
               // savoir ce qu'il recevra, pas le découvrir au versement.
               _Row('wallet.fee'.tr(), '- ${CurrencyFormatter.fcfa(fee)}'),
@@ -174,7 +178,9 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
                   tone: AppAccent.amber,
                   message: 'wallet.amount_invalid'.tr(
                     namedArgs: {
-                      'min': CurrencyFormatter.fcfa(WithdrawalRules.minimum),
+                      'min': CurrencyFormatter.fcfa(
+                        widget.settings.minimumWithdrawal,
+                      ),
                     },
                   ),
                 ),

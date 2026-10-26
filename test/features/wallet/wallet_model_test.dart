@@ -62,6 +62,29 @@ void main() {
     });
   });
 
+  group('PayoutSettings', () {
+    test('lit le minimum réglé au backoffice et les numéros Wave', () {
+      final settings = PayoutSettings.fromJson({
+        'minimum_withdrawal': 5000,
+        'fee_rate': 0.01,
+        'numbers': [
+          {'slot': 2, 'phone': '0500000002', 'holder_name': 'Awa'},
+          {'slot': 1, 'phone': '0700000001', 'holder_name': null},
+        ],
+      });
+      expect(settings.minimumWithdrawal, 5000);
+      expect(settings.numbers.map((n) => n.slot), [1, 2]);
+      expect(settings.numberAt(2)?.holderName, 'Awa');
+      expect(settings.numberAt(1)?.holderName, isNull);
+    });
+
+    test('un serveur antérieur garde le minimum historique', () {
+      final settings = PayoutSettings.fromJson(const {});
+      expect(settings.minimumWithdrawal, WithdrawalRules.minimum);
+      expect(settings.numbers, isEmpty);
+    });
+  });
+
   group('WithdrawalModel', () {
     test('un statut inconnu reste en attente', () {
       final withdrawal = WithdrawalModel.fromJson({

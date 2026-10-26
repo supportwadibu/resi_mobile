@@ -386,6 +386,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => ExpenseCubit(sl<ExpenseRepository>()));
   sl.registerFactory(() => WalletCubit(sl<WalletRepository>()));
   sl.registerFactory(() => WithdrawalRequestCubit(sl<WalletRepository>()));
+  sl.registerFactory(() => PayoutNumbersCubit(sl<WalletRepository>()));
   sl.registerFactoryParam<WalletTransactionsCubit, String, void>(
     (walletId, _) => WalletTransactionsCubit(sl<WalletRepository>(), walletId),
   );

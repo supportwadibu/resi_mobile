@@ -23,6 +23,8 @@ import '../../../../core/router/app_router.gr.dart';
 import '../../business_logic/wallet_cubit.dart';
 import '../../business_logic/wallet_state.dart';
 import '../../data/models/wallet_model.dart';
+import '../widgets/payout_numbers_sheet.dart';
+import '../widgets/wave_logo.dart';
 import '../widgets/withdrawal_sheet.dart';
 
 /// Portefeuille : l'argent payé par Wave par les clients, résidence par
@@ -43,13 +45,44 @@ class WalletScreen extends StatelessWidget {
 class _WalletView extends StatelessWidget {
   const _WalletView();
 
-  Future<void> _withdraw(BuildContext context, WalletModel wallet) async {
+  /// Retrait vers un numéro Wave enregistré. Sans numéro, la feuille des
+  /// numéros s'ouvre d'abord : un retrait ne part que vers un numéro que le
+  /// propriétaire a pris le temps d'enregistrer.
+  Future<void> _withdraw(
+    BuildContext context,
+    WalletModel wallet,
+    PayoutSettings settings,
+  ) async {
     final cubit = context.read<WalletCubit>();
-    final done = await WithdrawalSheet.show(context, wallet);
+    var current = settings;
+
+    if (current.numbers.isEmpty) {
+      final saved = await PayoutNumbersSheet.show(context, const []);
+      if (saved == null || saved.isEmpty || !context.mounted) return;
+      current = PayoutSettings(
+        minimumWithdrawal: settings.minimumWithdrawal,
+        numbers: saved,
+      );
+      cubit.load();
+    }
+
+    final done = await WithdrawalSheet.show(context, wallet, current);
     if (done == null || !context.mounted) return;
 
     AppToast.success('wallet.withdraw_sent'.tr());
     // Le solde a été débité au serveur : il est relu plutôt que recalculé.
+    await cubit.load();
+  }
+
+  Future<void> _editNumbers(
+    BuildContext context,
+    PayoutSettings settings,
+  ) async {
+    final cubit = context.read<WalletCubit>();
+    final saved = await PayoutNumbersSheet.show(context, settings.numbers);
+    if (saved == null || !context.mounted) return;
+
+    AppToast.success('wallet.payout_numbers_saved'.tr());
     await cubit.load();
   }
 
@@ -76,7 +109,20 @@ class _WalletView extends StatelessWidget {
                   value: CurrencyFormatter.fcfa(state.totalBalance),
                   icon: LucideIcons.wallet,
                   accent: AppAccent.green,
-                  note: 'wallet.fee_note'.tr(),
+                  note: 'wallet.fee_note_min'.tr(
+                    args: [
+                      CurrencyFormatter.fcfa(
+                        state.payoutSettings.minimumWithdrawal,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SectionHeading(title: 'wallet.payout_numbers'.tr()),
+                const SizedBox(height: 8),
+                _PayoutNumbersCard(
+                  numbers: state.payoutSettings.numbers,
+                  onEdit: () => _editNumbers(context, state.payoutSettings),
                 ),
                 const SizedBox(height: 24),
                 SectionHeading(title: 'wallet.residences'.tr()),
@@ -91,8 +137,12 @@ class _WalletView extends StatelessWidget {
                   for (final wallet in state.wallets) ...[
                     _WalletCard(
                       wallet: wallet,
-                      onWithdraw: wallet.balance >= WithdrawalRules.minimum
-                          ? () => _withdraw(context, wallet)
+                      minimum: state.payoutSettings.minimumWithdrawal,
+                      onWithdraw:
+                          wallet.balance >=
+                              state.payoutSettings.minimumWithdrawal
+                          ? () =>
+                                _withdraw(context, wallet, state.payoutSettings)
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -115,11 +165,74 @@ class _WalletView extends StatelessWidget {
   }
 }
 
+/// Numéros Wave enregistrés pour les retraits, et leur modification.
+class _PayoutNumbersCard extends StatelessWidget {
+  const _PayoutNumbersCard({required this.numbers, required this.onEdit});
+
+  final List<PayoutNumber> numbers;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const WaveLogo(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'wallet.payout_wave_only'.tr(),
+                  style: context.mutedText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (numbers.isEmpty)
+            Text('wallet.payout_numbers_empty'.tr(), style: context.mutedText)
+          else
+            for (final number in numbers) ...[
+              Text(
+                'wallet.payout_number_line'.tr(
+                  args: ['${number.slot}', number.phone],
+                ),
+                style: context.text.titleSmall,
+              ),
+              if (number.holderName case final name?)
+                Text(name, style: context.mutedText),
+              const SizedBox(height: 8),
+            ],
+          const SizedBox(height: 4),
+          AppButton(
+            label: numbers.isEmpty
+                ? 'wallet.payout_numbers_add'.tr()
+                : 'wallet.payout_numbers_edit'.tr(),
+            icon: numbers.isEmpty ? LucideIcons.plus : LucideIcons.pencil,
+            variant: AppButtonVariant.secondary,
+            expand: true,
+            onPressed: onEdit,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Solde d'une résidence et son bouton de retrait.
 class _WalletCard extends StatelessWidget {
-  const _WalletCard({required this.wallet, required this.onWithdraw});
+  const _WalletCard({
+    required this.wallet,
+    required this.minimum,
+    required this.onWithdraw,
+  });
 
   final WalletModel wallet;
+
+  /// Retrait minimal réglé par l'équipe, rappelé sous le bouton désactivé.
+  final int minimum;
 
   /// `null` sous le retrait minimal : le bouton reste visible, désactivé.
   final VoidCallback? onWithdraw;
@@ -184,6 +297,14 @@ class _WalletCard extends StatelessWidget {
               ),
             ],
           ),
+          // Sans ce rappel, un bouton grisé ne dit pas ce qui manque.
+          if (onWithdraw == null && wallet.balance > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              'wallet.minimum_hint'.tr(args: [CurrencyFormatter.fcfa(minimum)]),
+              style: context.mutedText,
+            ),
+          ],
         ],
       ),
     );
