@@ -929,7 +929,18 @@
     "tier_no_effect": "Sans effet : un palier plus court accorde déjà autant. Augmentez la remise ou supprimez ce palier.",
     "client_pays": "Ce que paiera le client",
     "full_price": "plein tarif",
-    "which_type": "Quel type de bien souhaitez-vous enregistrer ?"
+    "which_type": "Quel type de bien souhaitez-vous enregistrer ?",
+    "negotiation": "Négociation",
+    "negotiation_hint": "Le client peut demander un meilleur prix, palier par palier",
+    "negotiation_step": "Palier {} — prix par jour",
+    "negotiation_step_required": "Indiquez un prix pour ce palier.",
+    "negotiation_below_price": "Le palier doit être inférieur au prix normal.",
+    "negotiation_below_previous": "Chaque palier doit être inférieur au précédent.",
+    "negotiation_saving": "{} de moins que le prix normal",
+    "negotiation_add": "Ajouter un palier",
+    "negotiation_remove": "Retirer ce palier",
+    "negotiation_rule": "Le client voit le palier 1 en appuyant sur « Négocier », puis le suivant à chaque « Négocier encore ». Le dernier palier est votre prix le plus bas. La remise de durée ne s’ajoute pas à un prix négocié.",
+    "negotiation_invalid": "Vérifiez les paliers de négociation : chacun doit être inférieur au prix normal et au palier précédent."
   },
   "property_page": {
     "fullscreen": "Plein écran",

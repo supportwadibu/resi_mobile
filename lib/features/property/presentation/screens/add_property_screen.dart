@@ -168,6 +168,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   List<PriceTier> _priceTiers = const [];
   int _lateCheckoutGraceMinutes = LateCheckoutPolicy.defaultGraceMinutes;
   int _lateCheckoutHalfDayHours = LateCheckoutPolicy.defaultHalfDayHours;
+  PropertyNegotiation _negotiation = PropertyNegotiation.disabled;
 
   @override
   void initState() {
@@ -198,6 +199,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     _priceTiers = [...property.pricing.priceTiers];
     _lateCheckoutGraceMinutes = property.pricing.lateCheckoutGraceMinutes;
     _lateCheckoutHalfDayHours = property.pricing.lateCheckoutHalfDayHours;
+    _negotiation = property.negotiation;
   }
 
   bool get _isLastStep => _currentStep == _stepTitles.length - 1;
@@ -234,6 +236,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       3 when _surfaceArea != null && _surfaceArea! <= 0 =>
         'property_form.surface_positive'.tr(),
       6 when _dailyPrice <= 0 => 'property_form.price_required'.tr(),
+      6 when !_negotiation.isValidFor(_dailyPrice) =>
+        'property_form.negotiation_invalid'.tr(),
       _ => null,
     };
   }
@@ -478,6 +482,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         amenities: _amenities,
         images: _images,
         pricing: _pricing,
+        negotiation: _negotiation,
       );
       return;
     }
@@ -491,6 +496,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       amenities: _amenities,
       imagePaths: _images,
       pricing: _pricing,
+      negotiation: _negotiation,
       // `available_from` reste exigé par l'API. L'étape « Conditions » ayant
       // disparu, le bien est réputé disponible dès son dépôt.
       availableFrom: DateTime.now(),
@@ -753,6 +759,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
           _lateCheckoutGraceMinutes = grace;
           _lateCheckoutHalfDayHours = halfDay;
         }),
+        negotiation: _negotiation,
+        onNegotiationChanged: (v) => setState(() => _negotiation = v),
       ),
       _ => const SizedBox.shrink(),
     };

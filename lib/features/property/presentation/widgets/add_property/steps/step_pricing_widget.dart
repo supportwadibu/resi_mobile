@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 import '../../../../data/models/property_model.dart';
+import '../negotiation_card.dart';
 
 /// Tarification : un prix par jour, remisé selon la durée du séjour.
 ///
@@ -29,6 +30,8 @@ class StepPricingWidget extends StatefulWidget {
     required this.lateCheckoutGraceMinutes,
     required this.lateCheckoutHalfDayHours,
     required this.onLateCheckoutChanged,
+    this.negotiation = PropertyNegotiation.disabled,
+    this.onNegotiationChanged,
   });
 
   final double dailyPrice;
@@ -40,6 +43,10 @@ class StepPricingWidget extends StatefulWidget {
   final int lateCheckoutGraceMinutes;
   final int lateCheckoutHalfDayHours;
   final void Function(int graceMinutes, int halfDayHours) onLateCheckoutChanged;
+
+  /// Paliers de négociation ; sans [onNegotiationChanged], la carte est masquée.
+  final PropertyNegotiation negotiation;
+  final ValueChanged<PropertyNegotiation>? onNegotiationChanged;
 
   @override
   State<StepPricingWidget> createState() => _StepPricingWidgetState();
@@ -170,6 +177,15 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
               dailyPrice: widget.dailyPrice,
               priceTiers: tiers,
             ),
+          ),
+        ],
+
+        if (widget.onNegotiationChanged case final onChanged?) ...[
+          const SizedBox(height: 24),
+          NegotiationCard(
+            negotiation: widget.negotiation,
+            dailyPrice: widget.dailyPrice,
+            onChanged: onChanged,
           ),
         ],
 

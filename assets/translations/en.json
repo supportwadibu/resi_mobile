@@ -929,7 +929,18 @@
     "tier_no_effect": "No effect: a shorter tier already gives as much. Increase the discount or delete this tier.",
     "client_pays": "What the client will pay",
     "full_price": "full price",
-    "which_type": "What type of property do you want to register?"
+    "which_type": "What type of property do you want to register?",
+    "negotiation": "Negotiation",
+    "negotiation_hint": "Guests can ask for a better price, one step at a time",
+    "negotiation_step": "Step {} — price per day",
+    "negotiation_step_required": "Enter a price for this step.",
+    "negotiation_below_price": "The step must be lower than the standard rate.",
+    "negotiation_below_previous": "Each step must be lower than the previous one.",
+    "negotiation_saving": "{} below the standard rate",
+    "negotiation_add": "Add a step",
+    "negotiation_remove": "Remove this step",
+    "negotiation_rule": "Guests see step 1 when they tap “Negotiate”, then the next one each time they tap “Negotiate again”. The last step is your lowest price. Duration discounts do not apply to a negotiated price.",
+    "negotiation_invalid": "Check the negotiation steps: each must be lower than the standard rate and the previous step."
   },
   "property_page": {
     "fullscreen": "Full screen",

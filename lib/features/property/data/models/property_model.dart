@@ -466,6 +466,48 @@ class PropertyPricing {
   }
 }
 
+/// Paliers de négociation : le client qui appuie sur « Négocier » voit le
+/// premier, puis le suivant à chaque « Négocier encore ». Pas de discussion,
+/// tout est réglé ici à l'avance.
+///
+/// Chaque palier est un prix par jour, sous le prix normal et sous le
+/// précédent ; le dernier est le prix plancher. Le serveur le vérifie et dit
+/// pourquoi il refuse.
+class PropertyNegotiation {
+  const PropertyNegotiation({this.enabled = false, this.prices = const []});
+
+  /// Paliers au plus, comme `MAX_NEGOTIATION_STEPS` côté API.
+  static const maxSteps = 5;
+
+  static const disabled = PropertyNegotiation();
+
+  final bool enabled;
+  final List<int> prices;
+
+  factory PropertyNegotiation.fromJson(Map<String, dynamic>? json) =>
+      PropertyNegotiation(
+        enabled: json?['enabled'] as bool? ?? false,
+        prices: ((json?['prices'] as List?) ?? const [])
+            .whereType<num>()
+            .map((p) => p.round())
+            .toList(growable: false),
+      );
+
+  Map<String, dynamic> toJson() => {'enabled': enabled, 'prices': prices};
+
+  /// Paliers valides contre [dailyPrice] : positifs et strictement
+  /// décroissants sous le prix normal.
+  bool isValidFor(double dailyPrice) {
+    if (enabled && prices.isEmpty) return false;
+    var previous = dailyPrice;
+    for (final price in prices) {
+      if (price <= 0 || price >= previous) return false;
+      previous = price.toDouble();
+    }
+    return true;
+  }
+}
+
 /// Annonce, telle que renvoyée par `GET/POST /proprio/properties`.
 class PropertyModel {
   const PropertyModel({
@@ -481,6 +523,7 @@ class PropertyModel {
     required this.images,
     required this.pricing,
     required this.availableFrom,
+    this.negotiation = PropertyNegotiation.disabled,
     this.chargesIncluded = false,
     this.additionalCharges = 0,
     this.isPublic = false,
@@ -501,6 +544,9 @@ class PropertyModel {
   final List<String> images;
   final PropertyPricing pricing;
   final DateTime availableFrom;
+
+  /// Absente des biens antérieurs à la négociation : non négociable.
+  final PropertyNegotiation negotiation;
   final bool chargesIncluded;
   final double additionalCharges;
   final bool isPublic;
@@ -557,6 +603,9 @@ class PropertyModel {
       availableFrom:
           DateTime.tryParse(json['available_from'] as String? ?? '') ??
           DateTime.now(),
+      negotiation: PropertyNegotiation.fromJson(
+        json['negotiation'] as Map<String, dynamic>?,
+      ),
       chargesIncluded: json['charges_included'] as bool? ?? false,
       additionalCharges: (json['additional_charges'] as num?)?.toDouble() ?? 0,
       isPublic: visibility['is_public'] as bool? ?? false,
@@ -596,6 +645,7 @@ class CreatePropertyPayload {
     required this.images,
     required this.pricing,
     required this.availableFrom,
+    this.negotiation = PropertyNegotiation.disabled,
     this.chargesIncluded = false,
     this.additionalCharges,
   });
@@ -609,6 +659,7 @@ class CreatePropertyPayload {
   final List<String> images;
   final PropertyPricing pricing;
   final DateTime availableFrom;
+  final PropertyNegotiation negotiation;
   final bool chargesIncluded;
   final double? additionalCharges;
 
@@ -623,6 +674,8 @@ class CreatePropertyPayload {
     'amenities': {for (final amenity in amenities) amenity.code: true},
     if (images.isNotEmpty) 'media': {'images': images},
     'pricing': pricing.toJson(),
+    // Seulement activée : un bien non négociable n'a rien à déclarer.
+    if (negotiation.enabled) 'negotiation': negotiation.toJson(),
     'charges_included': chargesIncluded,
     if (additionalCharges != null) 'additional_charges': additionalCharges,
     // `vine.date()` attend une date, pas un instant ISO complet.
@@ -666,6 +719,7 @@ class UpdatePropertyPayload {
     required Set<Amenity> amenities,
     required List<String> images,
     required PropertyPricing pricing,
+    PropertyNegotiation? negotiation,
     bool? chargesIncluded,
     double? additionalCharges,
     DateTime? availableFrom,
@@ -713,6 +767,13 @@ class UpdatePropertyPayload {
       // Même raison que pour la surface : sans clé explicite, vider les
       // paliers de remise ne les supprimerait pas.
       fields['pricing'] = {'price_tiers': const <dynamic>[], ...pricingJson};
+    }
+
+    // Envoyée en entier : la liste de paliers se remplace, elle ne se
+    // complète pas.
+    if (negotiation != null &&
+        !_sameJson(negotiation.toJson(), original.negotiation.toJson())) {
+      fields['negotiation'] = negotiation.toJson();
     }
 
     if (chargesIncluded != null &&

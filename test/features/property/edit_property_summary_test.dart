@@ -28,6 +28,7 @@ class _FakeEditCubit extends Cubit<EditPropertyState>
     required Set<Amenity> amenities,
     required List<String> images,
     required PropertyPricing pricing,
+    PropertyNegotiation? negotiation,
   }) async {
     submitCount++;
   }
@@ -82,6 +83,7 @@ class _FakeCreateCubit extends Cubit<CreatePropertyState>
     required List<String> imagePaths,
     required PropertyPricing pricing,
     required DateTime availableFrom,
+    PropertyNegotiation negotiation = PropertyNegotiation.disabled,
     bool chargesIncluded = false,
     double? additionalCharges,
   }) async {}

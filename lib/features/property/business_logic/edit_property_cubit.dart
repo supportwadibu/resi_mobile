@@ -39,6 +39,7 @@ class EditPropertyCubit extends Cubit<EditPropertyState> {
     required Set<Amenity> amenities,
     required List<String> images,
     required PropertyPricing pricing,
+    PropertyNegotiation? negotiation,
   }) async {
     try {
       final resolved = await _resolveImages(images);
@@ -54,6 +55,7 @@ class EditPropertyCubit extends Cubit<EditPropertyState> {
         amenities: amenities,
         images: resolved,
         pricing: pricing,
+        negotiation: negotiation,
       );
 
       // Rien n'a bougé : l'appel serait sans effet, et l'API refuse un corps

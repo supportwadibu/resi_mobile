@@ -32,6 +32,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
     required List<String> imagePaths,
     required PropertyPricing pricing,
     required DateTime availableFrom,
+    PropertyNegotiation negotiation = PropertyNegotiation.disabled,
     bool chargesIncluded = false,
     double? additionalCharges,
   }) async {
@@ -56,6 +57,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
           images: _uploadedImages,
           pricing: pricing,
           availableFrom: availableFrom,
+          negotiation: negotiation,
           chargesIncluded: chargesIncluded,
           additionalCharges: additionalCharges,
         ),
