@@ -8,8 +8,14 @@ import 'app_router.gr.dart';
 /// tendances, parc entier —, que la conception lui ferme, comme `wallet`,
 /// l'argent encaissé pour lui. `expenses`, `clients` et `residences` restent :
 /// ce sont ses outils quotidiens, que le serveur cloisonne déjà sur son
-/// périmètre.
-const _managerHiddenActions = <String>{'finance', 'reports', 'wallet'};
+/// périmètre. `sponsorship` : le parrainage est celui du compte, et l'API le
+/// ferme au rôle gérant.
+const _managerHiddenActions = <String>{
+  'finance',
+  'reports',
+  'wallet',
+  'sponsorship',
+};
 
 /// Créations fermées au gérant dans le menu du bouton `+`.
 ///
@@ -92,6 +98,7 @@ const _ownerOnlyRoutes = <String>{
   'AddGerantRoute',
   'GerantScopeRoute',
   'PropertyManagerProfileRoute',
+  'SponsorshipRoute',
 };
 
 bool isRouteAllowed(String role, String routeName) {

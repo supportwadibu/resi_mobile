@@ -87,9 +87,12 @@ class AuthService {
     return auth;
   }
 
-  Future<AuthModel> loginWithGoogle() async {
+  Future<AuthModel> loginWithGoogle({String? sponsorshipCode}) async {
     final idToken = await _google.obtainIdToken();
-    final auth = await _repository.loginWithGoogle(idToken);
+    final auth = await _repository.loginWithGoogle(
+      idToken,
+      sponsorshipCode: sponsorshipCode,
+    );
     await _persist(auth);
     return auth;
   }

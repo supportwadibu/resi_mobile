@@ -568,7 +568,9 @@
     "has_account": "Already have an account?",
     "tagline": "All your rental management, from your phone.",
     "tagline_sub": "Bookings, clients, expenses and income.",
-    "or": "or"
+    "or": "or",
+    "sponsorship_code": "Referral code (optional)",
+    "sponsorship_code_hint": "E.g. KOF7Q2M"
   },
   "owner_profile": {
     "step_personal": "Personal information",
@@ -727,7 +729,9 @@
     "residences": "Residences",
     "residences_hint": "Group the units of a building",
     "wallet": "Wallet",
-    "wallet_hint": "Wave payments received and withdrawals"
+    "wallet_hint": "Wave payments received and withdrawals",
+    "sponsorship": "Referrals",
+    "sponsorship_hint": "Invite and earn on every paid sign-up"
   },
   "stats": {
     "income": "Income",
@@ -1540,6 +1544,77 @@
       "pending": "Pending",
       "paid": "Paid",
       "rejected": "Rejected"
+    }
+  },
+  "sponsorship": {
+    "title": "Referrals",
+    "paused": "Referral rewards are paused. Your referrals stay recorded and will earn you rewards once they resume.",
+    "code_title": "Your referral code",
+    "code_hint": "Your referrals enter it when they sign up.",
+    "copy_code": "Copy code",
+    "code_copied": "Code copied",
+    "share": "Share on WhatsApp",
+    "share_copied": "Message copied: paste it anywhere.",
+    "share_message": "I manage my rentals with RESI: bookings, guests, expenses and Wave payments in one place. Sign up with my referral code {code}.",
+    "balance": "Available rewards",
+    "pending_note": "+ {} awaiting confirmation",
+    "progress": "{balance} of {min} to use your rewards",
+    "redeem": "Use my rewards",
+    "redeem_threshold": "Your rewards can be used from {}.",
+    "redeem_closed": "Using rewards is temporarily closed.",
+    "redeem_title": "Use my rewards",
+    "redeem_body": "Available rewards: {balance}.",
+    "redeem_confirm": "Send request",
+    "redeem_sent": "Request recorded",
+    "amount": "Amount (Fcfa)",
+    "amount_invalid": "The amount must be at least {min} and not exceed your rewards.",
+    "payout_to": "Payout to Wave",
+    "payout_phone": "Wave number",
+    "payout_name": "Account holder (optional)",
+    "how_title": "How it works",
+    "how_share": "Share your code with an owner or a guest.",
+    "how_owner": "An owner signs up with your code and pays a subscription: you earn {}.",
+    "how_client": "A guest signs up with your code and completes a stay paid online: you earn {}.",
+    "how_redeem": "From {}, withdraw your rewards to Wave or use them on your subscription.",
+    "reward_percent": "{}% of the payment",
+    "reward_capped": "{}, up to {}",
+    "sponsored_by": "Referred by {}",
+    "apply_cta": "I have a referral code",
+    "apply_title": "Referral code",
+    "apply_body": "Enter the code of the person who recommended RESI to you. Possible until your first payment.",
+    "apply_confirm": "Apply code",
+    "apply_done": "Referrer saved",
+    "code_label": "Code",
+    "sponsored_title": "My referrals ({})",
+    "sponsored_empty_title": "No referrals yet",
+    "sponsored_empty_body": "Share your code: every paid sign-up earns you a reward.",
+    "sponsored_waiting": "Reward on first payment",
+    "sponsored_pending": "{amount}, available on {date}",
+    "role_owner": "Owner",
+    "role_client": "Guest",
+    "redemptions_title": "My requests",
+    "status": {
+      "registered": "Signed up",
+      "pending": "Pending",
+      "earned": "Earned",
+      "cancelled": "Cancelled"
+    },
+    "redemption_type": {
+      "withdrawal": "Wave withdrawal",
+      "stay_credit": "Stay credit",
+      "subscription_credit": "Subscription credit",
+      "other": "Other use"
+    },
+    "redemption_hint": {
+      "withdrawal": "Sent to your Wave account by the RESI team, free of charge.",
+      "stay_credit": "Deducted from your next bookings.",
+      "subscription_credit": "Deducted from your next subscription payment."
+    },
+    "redemption_status": {
+      "pending": "To pay",
+      "paid": "Paid",
+      "rejected": "Rejected",
+      "completed": "Converted"
     }
   }
 }

@@ -51,6 +51,9 @@ class AppRouter extends RootStackRouter {
     // L'argent de la maison : le gérant ne le voit ni ne le retire.
     AutoRoute(page: WalletRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: WalletTransactionsRoute.page, guards: [_ownerOnly]),
+    // Le parrainage est celui du compte : le gérant n'en a pas, l'API le
+    // refuse à son rôle.
+    AutoRoute(page: SponsorshipRoute.page, guards: [_ownerOnly]),
     AutoRoute(page: ClientsRoute.page),
     AutoRoute(page: AddClientRoute.page),
     AutoRoute(page: SupportChatRoute.page),

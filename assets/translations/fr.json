@@ -568,7 +568,9 @@
     "has_account": "Déjà un compte ?",
     "tagline": "Toute votre gestion locative, depuis votre téléphone.",
     "tagline_sub": "Réservations, clients, dépenses et revenus.",
-    "or": "ou"
+    "or": "ou",
+    "sponsorship_code": "Code de parrainage (facultatif)",
+    "sponsorship_code_hint": "Ex. KOF7Q2M"
   },
   "owner_profile": {
     "step_personal": "Informations personnelles",
@@ -727,7 +729,9 @@
     "residences": "Résidences",
     "residences_hint": "Regrouper les logements d'un immeuble",
     "wallet": "Portefeuille",
-    "wallet_hint": "Paiements Wave reçus et retraits"
+    "wallet_hint": "Paiements Wave reçus et retraits",
+    "sponsorship": "Parrainage",
+    "sponsorship_hint": "Invitez, gagnez à chaque inscription payée"
   },
   "stats": {
     "income": "Entrées",
@@ -1540,6 +1544,77 @@
       "pending": "En attente",
       "paid": "Versé",
       "rejected": "Refusé"
+    }
+  },
+  "sponsorship": {
+    "title": "Parrainage",
+    "paused": "Les gains de parrainage sont en pause. Vos filleuls restent enregistrés et vous rapporteront dès la reprise.",
+    "code_title": "Votre code de parrainage",
+    "code_hint": "À saisir par vos filleuls lors de leur inscription.",
+    "copy_code": "Copier le code",
+    "code_copied": "Code copié",
+    "share": "Partager sur WhatsApp",
+    "share_copied": "Message copié : collez-le où vous voulez.",
+    "share_message": "Je gère mes locations avec RESI : réservations, clients, dépenses et paiements Wave au même endroit. Inscris-toi avec mon code de parrainage {code}.",
+    "balance": "Gains disponibles",
+    "pending_note": "+ {} en attente de confirmation",
+    "progress": "{balance} sur {min} pour utiliser vos gains",
+    "redeem": "Utiliser mes gains",
+    "redeem_threshold": "Vos gains sont utilisables à partir de {}.",
+    "redeem_closed": "L’usage des gains est momentanément fermé.",
+    "redeem_title": "Utiliser mes gains",
+    "redeem_body": "Gains disponibles : {balance}.",
+    "redeem_confirm": "Envoyer la demande",
+    "redeem_sent": "Demande enregistrée",
+    "amount": "Montant (Fcfa)",
+    "amount_invalid": "Le montant doit être d’au moins {min} et ne pas dépasser vos gains.",
+    "payout_to": "Versement sur Wave",
+    "payout_phone": "Numéro Wave",
+    "payout_name": "Nom du titulaire (facultatif)",
+    "how_title": "Comment ça marche",
+    "how_share": "Partagez votre code à un propriétaire ou à un client.",
+    "how_owner": "Un propriétaire s’inscrit avec votre code et paie son abonnement : vous gagnez {}.",
+    "how_client": "Un client s’inscrit avec votre code et termine un séjour payé en ligne : vous gagnez {}.",
+    "how_redeem": "Dès {}, retirez vos gains sur Wave ou utilisez-les sur votre abonnement.",
+    "reward_percent": "{} % du paiement",
+    "reward_capped": "{}, jusqu’à {}",
+    "sponsored_by": "Parrainé par {}",
+    "apply_cta": "J’ai un code de parrainage",
+    "apply_title": "Code de parrainage",
+    "apply_body": "Saisissez le code de la personne qui vous a recommandé RESI. Possible jusqu’à votre premier paiement.",
+    "apply_confirm": "Valider le code",
+    "apply_done": "Parrain enregistré",
+    "code_label": "Code",
+    "sponsored_title": "Mes filleuls ({})",
+    "sponsored_empty_title": "Aucun filleul pour l’instant",
+    "sponsored_empty_body": "Partagez votre code : chaque inscription payée vous rapporte.",
+    "sponsored_waiting": "Gain au premier paiement",
+    "sponsored_pending": "{amount}, disponibles le {date}",
+    "role_owner": "Propriétaire",
+    "role_client": "Client",
+    "redemptions_title": "Mes demandes",
+    "status": {
+      "registered": "Inscrit",
+      "pending": "En attente",
+      "earned": "Gagné",
+      "cancelled": "Annulé"
+    },
+    "redemption_type": {
+      "withdrawal": "Retrait Wave",
+      "stay_credit": "Crédit séjour",
+      "subscription_credit": "Crédit d’abonnement",
+      "other": "Autre usage"
+    },
+    "redemption_hint": {
+      "withdrawal": "Versé sur votre compte Wave par l’équipe RESI, sans frais.",
+      "stay_credit": "Déduit de vos prochaines réservations.",
+      "subscription_credit": "Déduit de votre prochain paiement d’abonnement."
+    },
+    "redemption_status": {
+      "pending": "À verser",
+      "paid": "Versé",
+      "rejected": "Refusé",
+      "completed": "Converti"
     }
   }
 }

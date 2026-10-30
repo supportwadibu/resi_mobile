@@ -18,4 +18,5 @@ abstract final class AppSectionIcons {
   static const IconData support = LucideIcons.lifeBuoy;
   static const IconData reviews = LucideIcons.messageSquare;
   static const IconData profile = LucideIcons.circleUser;
+  static const IconData sponsorship = LucideIcons.gift;
 }

@@ -79,6 +79,13 @@ class ActionGrid extends StatelessWidget {
       description: 'stats_actions.residences_hint',
       route: ResidenceRoute(),
     ),
+    StatsAction(
+      key: 'sponsorship',
+      icon: AppSectionIcons.sponsorship,
+      label: 'stats_actions.sponsorship',
+      description: 'stats_actions.sponsorship_hint',
+      route: SponsorshipRoute(),
+    ),
   ];
 
   @override

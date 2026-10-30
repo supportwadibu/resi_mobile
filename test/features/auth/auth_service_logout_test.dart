@@ -63,8 +63,10 @@ class _StubAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
-  Future<AuthModel> loginWithGoogle(String idToken) =>
-      throw UnimplementedError();
+  Future<AuthModel> loginWithGoogle(
+    String idToken, {
+    String? sponsorshipCode,
+  }) => throw UnimplementedError();
 
   @override
   Future<RegisterInitModel> initRegistration({

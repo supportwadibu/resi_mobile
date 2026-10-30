@@ -41,6 +41,25 @@ abstract final class ApiEndpoints {
   /// Numéros Wave de retrait, remplacés en bloc.
   static const String proprioPayoutNumbers = '$_v1/proprio/payout-numbers';
 
+  /// Parrainage : code, gains, filleuls et règles du programme. Ouvert à tous
+  /// les paliers — inviter n'engage aucune fonction payante —, fermé au
+  /// gérant.
+  static const String sponsorship = '$_v1/sponsorship';
+
+  /// Vérifie un code avant l'inscription. Publique.
+  static String sponsorshipCode(String code) =>
+      '$sponsorship/codes/${Uri.encodeComponent(code)}';
+
+  /// Saisie après coup du code d'un parrain.
+  static const String sponsorshipApply = '$sponsorship/apply';
+
+  /// Filleuls et l'étape de chacun.
+  static const String sponsorshipSponsored = '$sponsorship/sponsored';
+
+  /// Retraits Wave et conversions des gains. `GET` pour lister, `POST` pour
+  /// demander.
+  static const String sponsorshipRedemptions = '$sponsorship/redemptions';
+
   /// Forfaits proposés à la souscription, du moins cher au plus cher.
   static const String proprioPlans = '$_v1/proprio/plans';
 

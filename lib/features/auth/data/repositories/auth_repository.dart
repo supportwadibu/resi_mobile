@@ -43,11 +43,16 @@ class AuthRepository {
     }
   }
 
-  Future<AuthModel> loginWithGoogle(String idToken) async {
+  /// [sponsorshipCode] : code du parrain, lu par l'API à la création du
+  /// compte seulement — ignoré pour un compte qui existe déjà.
+  Future<AuthModel> loginWithGoogle(
+    String idToken, {
+    String? sponsorshipCode,
+  }) async {
     try {
       final res = await _dio.post(
         ApiEndpoints.googleLogin,
-        data: {'id_token': idToken},
+        data: {'id_token': idToken, 'sponsorship_code': ?sponsorshipCode},
       );
       return AuthModel.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {

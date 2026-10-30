@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_text_field.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
@@ -70,24 +71,16 @@ class RegisterScreen extends StatelessWidget {
                         Icon(LucideIcons.check, size: 16, color: t.accentGreen),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(line.tr(), style: context.text.bodyMedium),
+                          child: Text(
+                            line.tr(),
+                            style: context.text.bodyMedium,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 const SizedBox(height: 14),
-                if (state is AuthLoading)
-                  const Center(child: AppLoader())
-                else
-                  GoogleSignInButton(
-                    label: 'auth.sign_up_google'.tr(),
-                    // Même appel que sur l'écran de connexion : côté API,
-                    // `/auth/google` crée le compte s'il n'existe pas et
-                    // connecte sinon. Le drapeau `is_new_user` de la réponse
-                    // distingue les deux cas pour l'onboarding.
-                    onPressed: () =>
-                        context.read<AuthCubit>().loginWithGoogle(),
-                  ),
+                _GoogleSignUp(isLoading: state is AuthLoading),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -104,6 +97,60 @@ class RegisterScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Code de parrainage facultatif, puis inscription Google.
+///
+/// Le code n'est demandé qu'ici : à la connexion, le compte existe déjà, et
+/// l'API ne lit le code qu'à la création. Oublié, il se saisit encore depuis
+/// l'écran Parrainage.
+class _GoogleSignUp extends StatefulWidget {
+  const _GoogleSignUp({required this.isLoading});
+
+  final bool isLoading;
+
+  @override
+  State<_GoogleSignUp> createState() => _GoogleSignUpState();
+}
+
+class _GoogleSignUpState extends State<_GoogleSignUp> {
+  final _code = TextEditingController();
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppTextField(
+          label: 'auth.sponsorship_code'.tr(),
+          hint: 'auth.sponsorship_code_hint'.tr(),
+          controller: _code,
+          enabled: !widget.isLoading,
+          prefixIcon: const Icon(LucideIcons.gift, size: 18),
+        ),
+        const SizedBox(height: 14),
+        if (widget.isLoading)
+          const Center(child: AppLoader())
+        else
+          GoogleSignInButton(
+            label: 'auth.sign_up_google'.tr(),
+            // Même appel que sur l'écran de connexion : côté API,
+            // `/auth/google` crée le compte s'il n'existe pas et connecte
+            // sinon. Le drapeau `is_new_user` de la réponse distingue les
+            // deux cas pour l'onboarding.
+            onPressed: () => context.read<AuthCubit>().loginWithGoogle(
+              sponsorshipCode: _code.text,
+            ),
+          ),
+      ],
     );
   }
 }
