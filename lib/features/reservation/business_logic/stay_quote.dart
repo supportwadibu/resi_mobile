@@ -9,7 +9,8 @@ export '../../../shared/models/late_checkout_policy.dart';
 /// Partagé par la création et la modification : deux copies de la règle
 /// annonceraient deux montants attendus différents pour le même séjour.
 /// Reprend `computeOwnerBookingAmounts` du serveur — ratios par type de
-/// séjour, jours entamés, palier de durée sur le séjour complet.
+/// séjour, nuits à l'heure de départ du bien, palier de durée sur le séjour
+/// complet.
 class StayQuote {
   const StayQuote({
     required this.dailyPrice,
@@ -41,11 +42,11 @@ class StayQuote {
     StayType.passage => (dailyPrice * 0.3).roundToDouble(),
   };
 
-  /// Jours facturés et départ tardif, selon la règle du bien.
+  /// Nuits facturées et départ tardif, selon la règle du bien.
   ///
-  /// Si le propriétaire a choisi un nombre de jours explicite (Option 1), ce
-  /// choix fait foi pour les jours : une sortie à 15h le lendemain d'une
-  /// entrée à 12h reste 1 jour, plus une demi-journée de départ tardif.
+  /// Si le propriétaire a choisi un nombre de nuits explicite (Option 1), ce
+  /// choix fait foi : une sortie à 15h le lendemain reste une nuit, plus une
+  /// demi-nuit de départ tardif après 12h30.
   BilledStay get _billed {
     if (stayType != StayType.fullDay) {
       return const BilledStay(1, lateCheckout: false);
@@ -61,7 +62,7 @@ class StayQuote {
     return lateCheckoutPolicy.resolve(start, end, explicitDays: explicit);
   }
 
-  /// Nombre de jours facturés, au minimum un.
+  /// Nombre de nuits facturées, au minimum une.
   int get daysCount => _billed.days;
 
   /// Le dépassement des jours facturés se paie en demi-journée.

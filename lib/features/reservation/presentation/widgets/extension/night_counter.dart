@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/shared/widgets/app_icon_button.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 
-/// Compteur des jours ajoutés au séjour.
+/// Compteur des nuits ajoutées au séjour.
 class NightCounter extends StatelessWidget {
   final int value;
   final VoidCallback onAdd;
@@ -39,7 +39,7 @@ class NightCounter extends StatelessWidget {
                 children: [
                   Text(value.toString(), style: context.text.figure),
                   Text(
-                    value > 1 ? 'jours' : 'jour',
+                    'stay_extension.night_unit'.plural(value),
                     style: context.text.bodySmall,
                   ),
                 ],

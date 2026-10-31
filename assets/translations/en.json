@@ -14,7 +14,7 @@
     "search_ellipsis": "Search…",
     "no_results": "No results",
     "choose": "Choose",
-    "per_day": " /day",
+    "per_day": " /night",
     "step_of": "Step {current} of {total}",
     "field_required": "This field is required",
     "action_failed": "The action did not go through. Try again.",
@@ -114,11 +114,11 @@
     "online_refund_hint": "Wave refunds the client automatically, deducted from your wallet."
   },
   "late_checkout": {
-    "fee": "Late check-out (half day)",
+    "fee": "Late check-out (half rate)",
     "title": "Late check-out",
-    "subtitle": "Beyond full days: free overrun, then billed as a half day.",
+    "subtitle": "After check-out time: free overrun, then billed at half rate.",
     "grace": "Grace period",
-    "half_day": "Half day up to",
+    "half_day": "Half rate up to",
     "none": "None"
   },
   "stay_checkout": {
@@ -133,9 +133,9 @@
     "answer_full": "Yes, full stay",
     "answer_early": "No, left early",
     "early_title": "Early check-out",
-    "early_body": "Every started day is due. The suggested amount is prorated on what the guest paid.",
+    "early_body": "Every started night is due. The suggested amount is prorated on what the guest paid.",
     "early_departure": "Actual check-out",
-    "early_days": "Billed days",
+    "early_days": "Billed nights",
     "early_days_value": "{billed} of {planned}",
     "early_paid": "Amount paid",
     "early_amount": "Amount kept",
@@ -153,10 +153,10 @@
       "not_early_departure": "This check-out is not before the planned end: close the stay as complete."
     },
     "option_label": "Billing mode",
-    "option_prorata": "Used days only",
-    "option_prorata_desc": "Bill for the days actually used, prorated.",
-    "option_with_penalty": "Used days + penalty",
-    "option_with_penalty_desc": "Bill for the days used and apply an additional penalty.",
+    "option_prorata": "Used nights only",
+    "option_prorata_desc": "Bill for the nights actually used, prorated.",
+    "option_with_penalty": "Used nights + penalty",
+    "option_with_penalty_desc": "Bill for the nights used and apply an additional penalty.",
     "option_full_amount": "Full stay amount",
     "option_full_amount_desc": "Keep the full amount paid, no refund.",
     "penalty_label": "Penalty amount",
@@ -223,7 +223,7 @@
     "check_in": "Check-in",
     "check_out": "Check-out",
     "duration": "Duration",
-    "daily_price": "Daily rate",
+    "daily_price": "Nightly rate",
     "discount": "Discount",
     "total": "Total",
     "deposit": "Deposit paid",
@@ -249,12 +249,12 @@
     "agreed_hint": "Rate: {} F",
     "agreed_helper": "Total price of the stay. Leave empty to apply the rate. Money already paid goes in the deposit.",
     "agreed_unit_label": {
-      "full_day": "Agreed price per day",
+      "full_day": "Agreed price per night",
       "half_day": "Agreed price per half-day",
       "passage": "Agreed price per short stay"
     },
     "agreed_unit_helper": "Price negotiated with the guest; the total follows the length of stay. Leave empty to apply the rate. Money already paid goes in the deposit.",
-    "agreed_breakdown": "{count} d × {price} F",
+    "agreed_breakdown": "{count} night(s) × {price} F",
     "suspicious": "This price is far below the rate ({} F). If it is a first payment, enter it as the deposit and leave the price empty.",
     "deposit_label": "Deposit paid",
     "deposit_hint": "Optional",
@@ -279,7 +279,7 @@
     "payment": "Payment",
     "message": "Note",
     "message_hint": "Optional",
-    "days_times_price": "{} d × {}",
+    "days_times_price": "{} night(s) × {}",
     "duration_discount": "Length-of-stay discount (−{} %)"
   },
   "client_identity": {
@@ -440,7 +440,7 @@
     "invalid_booking_owner": "You cannot book your own property.",
     "invalid_code": "Invalid code.",
     "invalid_credentials": "Invalid credentials.",
-    "invalid_daily_price": "The daily rate must be positive.",
+    "invalid_daily_price": "The nightly rate must be positive.",
     "invalid_departure": "The check-out time must be after the guest's check-in.",
     "invalid_extension": "The new check-out date must be after the current one.",
     "invalid_extension_days": "The extension length is invalid.",
@@ -669,11 +669,11 @@
     "hidden": "Hidden from the showcase",
     "description": "Description",
     "features": "Features",
-    "per_day": "per day",
-    "per_day_title": "Per day",
+    "per_day": "per night",
+    "per_day_title": "Per night",
     "open_directions": "Open directions",
     "pricing": "Rates",
-    "from_days": "From {} days",
+    "from_days": "From {} nights",
     "residence": "Residence",
     "attach": "Attach",
     "unit_no_label": "Unlabelled unit",
@@ -837,7 +837,7 @@
     "address_required": "Enter the property's address.",
     "city_required": "Enter the city.",
     "surface_positive": "The area must be greater than zero.",
-    "price_required": "Enter the daily rate.",
+    "price_required": "Enter the nightly rate.",
     "not_set": "Not set",
     "untitled": "Untitled",
     "not_set_f": "Not set",
@@ -854,10 +854,10 @@
     "bedrooms_short": "{} bd",
     "bathrooms_short": "{} ba",
     "price_to_define": "Rate to be set",
-    "price_per_day": "{} / day",
+    "price_per_day": "{} / night",
     "price_with_tiers": {
-      "one": "{price} / day · {count} tier",
-      "other": "{price} / day · {count} tiers"
+      "one": "{price} / night · {count} tier",
+      "other": "{price} / night · {count} tiers"
     },
     "discard_title": "Discard changes?",
     "discard_one": "One section was changed without being saved.",
@@ -909,22 +909,22 @@
     "city_search_hint": "Type to search or use your location",
     "no_city_found": "No city found",
     "set_price": "Set your rate",
-    "daily_rate": "Daily rate",
-    "daily_rate_hint": "From check-in to the same time the next day",
-    "price_per_day_label": "Price / day (FCFA)",
+    "daily_rate": "Nightly rate",
+    "daily_rate_hint": "A night runs until check-out time the next day",
+    "price_per_day_label": "Price / night (FCFA)",
     "price_hint": "E.g. 15000",
     "duration_discounts": "Length-of-stay discounts",
     "optional_editable": "Optional · can be changed anytime",
     "tier": "Tier",
-    "pricing_rule": "A stay is billed at the daily rate. If its length reaches a tier, the matching discount applies to the whole stay — the best one if tiers overlap.",
+    "pricing_rule": "A stay is billed at the nightly rate, whatever the check-in time. If its length reaches a tier, the matching discount applies to the whole stay — the best one if tiers overlap.",
     "add_tier": "Add a discount tier",
-    "add_tier_hint": "Encourages long stays. Without a tier, the daily rate applies whatever the length.",
+    "add_tier_hint": "Encourages long stays. Without a tier, the nightly rate applies whatever the length.",
     "remove_tier": "Delete this tier",
     "duration": "Length",
-    "days_short": "{} d",
+    "days_short": "{} n",
     "discount": "Discount",
-    "price_day_short": "Price / day",
-    "days": "{} days",
+    "price_day_short": "Price / night",
+    "days": "{} nights",
     "client_saves": "The client saves",
     "tier_no_effect": "No effect: a shorter tier already gives as much. Increase the discount or delete this tier.",
     "client_pays": "What the client will pay",
@@ -932,7 +932,7 @@
     "which_type": "What type of property do you want to register?",
     "negotiation": "Negotiation",
     "negotiation_hint": "Guests can ask for a better price, one step at a time",
-    "negotiation_step": "Step {} — price per day",
+    "negotiation_step": "Step {} — price per night",
     "negotiation_step_required": "Enter a price for this step.",
     "negotiation_below_price": "The step must be lower than the standard rate.",
     "negotiation_below_previous": "Each step must be lower than the previous one.",
@@ -1034,7 +1034,7 @@
       "one": "{} unit",
       "other": "{} units"
     },
-    "price_per_day": "{} /day"
+    "price_per_day": "{} /night"
   },
   "reservation_status": {
     "confirmed": "Confirmed",
@@ -1045,7 +1045,7 @@
   "stay_types": {
     "passage": "Short stay",
     "half_day": "Half day",
-    "full_day": "Full day"
+    "full_day": "Overnight"
   },
   "reservation_source": {
     "online": "Online",
@@ -1057,12 +1057,12 @@
     "period_taken": "This property is already booked for this period.",
     "period_taken_by": "Already booked for this period by {}.",
     "days": {
-      "one": "{} day",
-      "other": "{} days"
+      "one": "{} night",
+      "other": "{} nights"
     },
     "stay_duration": "Stay duration",
-    "remove_day": "Remove a day",
-    "add_day": "Add a day",
+    "remove_day": "Remove a night",
+    "add_day": "Add a night",
     "title_check_in": "Immediate check-in",
     "title_future": "Future booking",
     "save_check_in": "Save the check-in",
@@ -1100,7 +1100,7 @@
     "mode_check_in_hint": "The client is checking in now",
     "mode_future_hint": "Stay planned for a later date",
     "length_discounts": "Length-of-stay discounts",
-    "from_days_short": "from {} d",
+    "from_days_short": "from {} n",
     "phone_placeholder": "+225 07 XX XX XX XX"
   },
   "booking_detail": {
@@ -1120,16 +1120,20 @@
     "new_departure": "New check-out",
     "arrival_date": "Arrival date",
     "planned_end": "Planned end",
-    "extra_days": "Extra days",
-    "remove_day": "Remove a day",
-    "add_day": "Add a day",
-    "daily_cost": "Cost per day",
+    "extra_days": "Extra nights",
+    "remove_day": "Remove a night",
+    "add_day": "Add a night",
+    "daily_cost": "Cost per night",
     "subtotal": {
-      "one": "Subtotal ({} day)",
-      "other": "Subtotal ({} days)"
+      "one": "Subtotal ({} night)",
+      "other": "Subtotal ({} nights)"
     },
     "length_discount": "Length discount",
-    "total_due": "Total to pay"
+    "total_due": "Total to pay",
+    "night_unit": {
+      "one": "night",
+      "other": "nights"
+    }
   },
   "offline_banner": {
     "message": "Offline · data from {date} at {time}"
@@ -1232,8 +1236,8 @@
     },
     "save_client": "Save the client",
     "history_line": {
-      "one": "{period} · {count} day",
-      "other": "{period} · {count} days"
+      "one": "{period} · {count} night",
+      "other": "{period} · {count} nights"
     }
   },
   "expense_categories": {
@@ -1379,7 +1383,7 @@
     "standalone_properties": "Standalone units",
     "bookings": "Bookings",
     "average_stay": "Average stay",
-    "days_short": "{} d",
+    "days_short": "{} n",
     "period_title": "Statement period",
     "rolling_year": "Last 12 months",
     "rolling_year_hint": "Up to today",
@@ -1627,5 +1631,9 @@
       "rejected": "Rejected",
       "completed": "Converted"
     }
+  },
+  "checkout_time": {
+    "title": "Check-out time",
+    "subtitle": "End of each night, the day after arrival, whatever the check-in time."
   }
 }

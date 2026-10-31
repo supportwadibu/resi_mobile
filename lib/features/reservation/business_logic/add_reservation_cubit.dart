@@ -30,14 +30,21 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     this._store,
     this._connectivity, {
     required ReservationMode mode,
-  }) : super(
-         AddReservationState(
-           mode: mode,
-           // Un check-in enregistre une arrivée qui a lieu maintenant : la
-           // date n'est pas à choisir.
-           checkInAt: mode == ReservationMode.checkIn ? DateTime.now() : null,
-         ),
-       );
+  }) : super(_initialState(mode, DateTime.now()));
+
+  /// Un check-in enregistre une arrivée qui a lieu maintenant : la date n'est
+  /// pas à choisir, et la sortie d'une nuit s'en déduit aussitôt — le champ
+  /// de sortie d'un séjour complet ne se saisit pas, il ne doit pas rester
+  /// vide.
+  static AddReservationState _initialState(ReservationMode mode, DateTime now) {
+    if (mode != ReservationMode.checkIn) return AddReservationState(mode: mode);
+    const policy = LateCheckoutPolicy();
+    return AddReservationState(
+      mode: mode,
+      checkInAt: now,
+      checkOutAt: policy.checkOutFor(now, 1),
+    );
+  }
 
   final ReservationRepository _reservations;
   final ClientsRepository _clients;
@@ -189,6 +196,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     List<PriceTier> priceTiers = const [],
     LateCheckoutPolicy lateCheckoutPolicy = const LateCheckoutPolicy(),
   }) async {
+    final checkIn = state.checkInAt;
     emit(
       state.copyWith(
         propertyId: propertyId,
@@ -197,6 +205,11 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         // Triés à l'entrée : le calcul de remise n'en dépend pas, mais l'écran
         // les présente dans l'ordre où le propriétaire les lit.
         priceTiers: PriceTierList.sorted(priceTiers),
+        // L'heure de départ change d'un bien à l'autre : la sortie déjà
+        // affichée suivait celle du bien précédent.
+        checkOutAt: checkIn != null && state.stayType == StayType.fullDay
+            ? lateCheckoutPolicy.checkOutFor(checkIn, state.daysCount)
+            : state.checkOutAt,
         clearConflict: true,
       ),
     );
@@ -217,49 +230,51 @@ class AddReservationCubit extends Cubit<AddReservationState> {
 
   void setStayType(StayType type) {
     final checkIn = state.checkInAt;
-    final duration = type == StayType.fullDay
-        ? Duration(days: state.daysCount)
-        : type.defaultDuration;
-    emit(state.copyWith(stayType: type, checkOutAt: checkIn?.add(duration)));
+    emit(
+      state.copyWith(
+        stayType: type,
+        checkOutAt: checkIn == null
+            ? null
+            : _checkOutFor(type, checkIn, state.daysCount),
+      ),
+    );
     _revalidateDates();
   }
 
-  /// Modifie la durée en jours (pour un séjour complet).
+  /// Modifie la durée en nuits (pour un séjour complet).
   ///
-  /// Recalcule la date de sortie tout en préservant l'heure personnalisée
-  /// (par exemple si le propriétaire a fixé 15h00 au lieu de l'heure d'entrée).
+  /// La sortie tombe à l'heure de départ du bien après la dernière nuit,
+  /// quelle que soit l'heure d'arrivée.
   void setDaysCount(int count) {
     if (count < 1) return;
     final checkIn = state.checkInAt;
-    final currentOut = state.checkOutAt;
-
-    DateTime? newOut;
-    if (checkIn != null) {
-      if (currentOut != null) {
-        newOut = DateTime(
-          checkIn.year,
-          checkIn.month,
-          checkIn.day + count,
-          currentOut.hour,
-          currentOut.minute,
-          currentOut.second,
-        );
-      } else {
-        newOut = checkIn.add(Duration(days: count));
-      }
-    }
-
-    emit(state.copyWith(daysCount: count, checkOutAt: newOut));
+    emit(
+      state.copyWith(
+        daysCount: count,
+        checkOutAt: checkIn == null
+            ? null
+            : state.lateCheckoutPolicy.checkOutFor(checkIn, count),
+      ),
+    );
     _revalidateDates();
   }
 
   void setCheckIn(DateTime value) {
-    final duration = state.stayType == StayType.fullDay
-        ? Duration(days: state.daysCount)
-        : state.stayType.defaultDuration;
-    emit(state.copyWith(checkInAt: value, checkOutAt: value.add(duration)));
+    emit(
+      state.copyWith(
+        checkInAt: value,
+        checkOutAt: _checkOutFor(state.stayType, value, state.daysCount),
+      ),
+    );
     _revalidateDates();
   }
+
+  /// Sortie proposée : l'heure de départ du bien après [nights] nuits pour un
+  /// séjour complet, la durée type sinon.
+  DateTime _checkOutFor(StayType type, DateTime checkIn, int nights) =>
+      type == StayType.fullDay
+      ? state.lateCheckoutPolicy.checkOutFor(checkIn, nights)
+      : checkIn.add(type.defaultDuration);
 
   void setCheckOut(DateTime value) {
     int newDays = state.daysCount;

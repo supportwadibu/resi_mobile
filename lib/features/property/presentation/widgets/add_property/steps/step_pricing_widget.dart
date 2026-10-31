@@ -4,6 +4,7 @@ import 'package:resi_africa/shared/widgets/app_badge.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/app_picker_field.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -12,14 +13,15 @@ import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
+import 'package:resi_africa/shared/models/late_checkout_policy.dart';
 import '../../../../data/models/property_model.dart';
 import '../negotiation_card.dart';
 
-/// Tarification : un prix par jour, remisé selon la durée du séjour.
+/// Tarification : un prix par nuit, remisé selon la durée du séjour.
 ///
-/// Une journée court de l'heure d'arrivée à la même heure le lendemain. Les
-/// paliers sont facultatifs et modifiables à tout moment depuis l'édition du
-/// bien.
+/// Chaque nuit se termine le lendemain à l'heure de départ du bien, quelle que
+/// soit l'heure d'arrivée. Les paliers sont facultatifs et modifiables à tout
+/// moment depuis l'édition du bien.
 class StepPricingWidget extends StatefulWidget {
   const StepPricingWidget({
     super.key,
@@ -27,6 +29,8 @@ class StepPricingWidget extends StatefulWidget {
     required this.priceTiers,
     required this.onDailyChanged,
     required this.onTiersChanged,
+    required this.checkoutTime,
+    required this.onCheckoutTimeChanged,
     required this.lateCheckoutGraceMinutes,
     required this.lateCheckoutHalfDayHours,
     required this.onLateCheckoutChanged,
@@ -38,6 +42,10 @@ class StepPricingWidget extends StatefulWidget {
   final List<PriceTier> priceTiers;
   final void Function(double) onDailyChanged;
   final void Function(List<PriceTier>) onTiersChanged;
+
+  /// Heure de départ « HH:mm », fin de chaque nuit.
+  final String checkoutTime;
+  final ValueChanged<String> onCheckoutTimeChanged;
 
   /// Départ tardif : dépassement offert, puis facturé en demi-journée.
   final int lateCheckoutGraceMinutes;
@@ -191,6 +199,13 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
 
         const SizedBox(height: 24),
 
+        _CheckoutTimeCard(
+          checkoutTime: widget.checkoutTime,
+          onChanged: widget.onCheckoutTimeChanged,
+        ),
+
+        const SizedBox(height: 12),
+
         _LateCheckoutCard(
           graceMinutes: widget.lateCheckoutGraceMinutes,
           halfDayHours: widget.lateCheckoutHalfDayHours,
@@ -205,6 +220,45 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
           message: 'property_form.pricing_rule'.tr(),
         ),
       ],
+    );
+  }
+}
+
+/// Heure de départ du bien : la fin de chaque nuit, le lendemain de
+/// l'arrivée. 12h30 par défaut.
+class _CheckoutTimeCard extends StatelessWidget {
+  const _CheckoutTimeCard({
+    required this.checkoutTime,
+    required this.onChanged,
+  });
+
+  final String checkoutTime;
+  final ValueChanged<String> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    final minutes = LateCheckoutPolicy.parseCheckoutTime(checkoutTime);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
+    );
+    if (picked == null) return;
+    onChanged(
+      LateCheckoutPolicy.formatCheckoutTime(picked.hour * 60 + picked.minute),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PricingCard(
+      icon: LucideIcons.clock,
+      title: 'checkout_time.title'.tr(),
+      subtitle: 'checkout_time.subtitle'.tr(),
+      color: context.tokens.primary,
+      child: AppPickerField(
+        icon: LucideIcons.clock,
+        value: checkoutTime.replaceFirst(':', ' h '),
+        onTap: () => _pick(context),
+      ),
     );
   }
 }

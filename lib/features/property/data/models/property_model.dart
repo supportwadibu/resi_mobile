@@ -370,8 +370,9 @@ abstract final class PriceTierList {
 
 /// Tarification. `dailyPrice` est exigé par l'API.
 ///
-/// Une journée court de l'heure d'arrivée à la même heure le lendemain : entrer
-/// à 12h et sortir le lendemain à 12h compte pour un jour.
+/// Un séjour se compte en nuits : chaque nuit se termine le lendemain à
+/// [checkoutTime], quelle que soit l'heure d'arrivée. `dailyPrice` est donc
+/// le prix d'une nuit ; il garde son nom d'API.
 class PropertyPricing {
   const PropertyPricing({
     required this.dailyPrice,
@@ -380,16 +381,21 @@ class PropertyPricing {
     this.maximumStayDays,
     this.lateCheckoutGraceMinutes = LateCheckoutPolicy.defaultGraceMinutes,
     this.lateCheckoutHalfDayHours = LateCheckoutPolicy.defaultHalfDayHours,
+    this.checkoutTime = LateCheckoutPolicy.defaultCheckoutTime,
   });
 
   final double dailyPrice;
 
   /// Départ tardif : dépassement offert, en minutes, puis facturé en
-  /// demi-journée jusqu'à ce nombre d'heures.
+  /// demi-nuit jusqu'à ce nombre d'heures.
   final int lateCheckoutGraceMinutes;
   final int lateCheckoutHalfDayHours;
 
+  /// Heure de départ « HH:mm », fin de chaque nuit.
+  final String checkoutTime;
+
   LateCheckoutPolicy get lateCheckoutPolicy => LateCheckoutPolicy(
+    checkoutMinutes: LateCheckoutPolicy.parseCheckoutTime(checkoutTime),
     graceMinutes: lateCheckoutGraceMinutes,
     halfDayHours: lateCheckoutHalfDayHours,
   );
@@ -431,6 +437,11 @@ class PropertyPricing {
       lateCheckoutHalfDayHours:
           (json['late_checkout_half_day_hours'] as num?)?.toInt() ??
           LateCheckoutPolicy.defaultHalfDayHours,
+      // Absente d'un serveur antérieur aux nuits à heure fixe et du cache
+      // local écrit avant : 12h30, l'heure que le serveur leur applique.
+      checkoutTime:
+          json['checkout_time'] as String? ??
+          LateCheckoutPolicy.defaultCheckoutTime,
     );
   }
 
@@ -442,6 +453,7 @@ class PropertyPricing {
     if (maximumStayDays != null) 'maximum_stay_days': maximumStayDays,
     'late_checkout_grace_minutes': lateCheckoutGraceMinutes,
     'late_checkout_half_day_hours': lateCheckoutHalfDayHours,
+    'checkout_time': checkoutTime,
   };
 
   /// Remise applicable à [days] : le palier le plus avantageux atteint.

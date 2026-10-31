@@ -168,6 +168,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   List<PriceTier> _priceTiers = const [];
   int _lateCheckoutGraceMinutes = LateCheckoutPolicy.defaultGraceMinutes;
   int _lateCheckoutHalfDayHours = LateCheckoutPolicy.defaultHalfDayHours;
+  String _checkoutTime = LateCheckoutPolicy.defaultCheckoutTime;
   PropertyNegotiation _negotiation = PropertyNegotiation.disabled;
 
   @override
@@ -199,6 +200,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     _priceTiers = [...property.pricing.priceTiers];
     _lateCheckoutGraceMinutes = property.pricing.lateCheckoutGraceMinutes;
     _lateCheckoutHalfDayHours = property.pricing.lateCheckoutHalfDayHours;
+    _checkoutTime = property.pricing.checkoutTime;
     _negotiation = property.negotiation;
   }
 
@@ -467,6 +469,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     maximumStayDays: _original?.pricing.maximumStayDays,
     lateCheckoutGraceMinutes: _lateCheckoutGraceMinutes,
     lateCheckoutHalfDayHours: _lateCheckoutHalfDayHours,
+    checkoutTime: _checkoutTime,
   );
 
   void _submit() {
@@ -753,6 +756,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         priceTiers: _priceTiers,
         onDailyChanged: (v) => _dailyPrice = v,
         onTiersChanged: (v) => setState(() => _priceTiers = v),
+        checkoutTime: _checkoutTime,
+        onCheckoutTimeChanged: (v) => setState(() => _checkoutTime = v),
         lateCheckoutGraceMinutes: _lateCheckoutGraceMinutes,
         lateCheckoutHalfDayHours: _lateCheckoutHalfDayHours,
         onLateCheckoutChanged: (grace, halfDay) => setState(() {

@@ -14,7 +14,7 @@
     "search_ellipsis": "Rechercher…",
     "no_results": "Aucun résultat",
     "choose": "Choisir",
-    "per_day": " /jour",
+    "per_day": " /nuit",
     "step_of": "Étape {current} sur {total}",
     "field_required": "Ce champ est requis",
     "action_failed": "L'action n'a pas abouti. Réessayez.",
@@ -114,11 +114,11 @@
     "online_refund_hint": "Wave lui rend le paiement automatiquement, déduit de votre portefeuille."
   },
   "late_checkout": {
-    "fee": "Départ tardif (demi-journée)",
+    "fee": "Départ tardif (demi-tarif)",
     "title": "Départ tardif",
-    "subtitle": "Au-delà des jours entiers : dépassement offert, puis facturé en demi-journée.",
+    "subtitle": "Après l’heure de départ : dépassement offert, puis facturé à demi-tarif.",
     "grace": "Tolérance",
-    "half_day": "Demi-journée jusqu’à",
+    "half_day": "Demi-tarif jusqu’à",
     "none": "Aucune"
   },
   "stay_checkout": {
@@ -133,9 +133,9 @@
     "answer_full": "Oui, séjour complet",
     "answer_early": "Non, départ anticipé",
     "early_title": "Départ anticipé",
-    "early_body": "Tout jour entamé reste dû. Le montant proposé est calculé au prorata de ce que le client a réglé.",
+    "early_body": "Toute nuit entamée reste due. Le montant proposé est calculé au prorata de ce que le client a réglé.",
     "early_departure": "Sortie réelle",
-    "early_days": "Jours facturés",
+    "early_days": "Nuits facturées",
     "early_days_value": "{billed} sur {planned}",
     "early_paid": "Montant réglé",
     "early_amount": "Montant retenu",
@@ -153,10 +153,10 @@
       "not_early_departure": "Cette sortie n’intervient pas avant la fin prévue : clôturez le séjour comme complet."
     },
     "option_label": "Mode de facturation",
-    "option_prorata": "Jours utilisés uniquement",
-    "option_prorata_desc": "Facturer au prorata des jours réellement occupés.",
-    "option_with_penalty": "Jours utilisés + pénalité",
-    "option_with_penalty_desc": "Facturer les jours utilisés et appliquer une pénalité supplémentaire.",
+    "option_prorata": "Nuits utilisées uniquement",
+    "option_prorata_desc": "Facturer au prorata des nuits réellement occupées.",
+    "option_with_penalty": "Nuits utilisées + pénalité",
+    "option_with_penalty_desc": "Facturer les nuits utilisées et appliquer une pénalité supplémentaire.",
     "option_full_amount": "Totalité du séjour",
     "option_full_amount_desc": "Conserver l'intégralité du montant réglé, sans remboursement.",
     "penalty_label": "Montant de la pénalité",
@@ -223,7 +223,7 @@
     "check_in": "Entrée",
     "check_out": "Sortie",
     "duration": "Durée",
-    "daily_price": "Prix journalier",
+    "daily_price": "Prix par nuit",
     "discount": "Remise",
     "total": "Total",
     "deposit": "Acompte versé",
@@ -249,12 +249,12 @@
     "agreed_hint": "Tarif : {} F",
     "agreed_helper": "Prix total du séjour. Laissez vide pour appliquer le tarif. L'argent déjà versé se saisit dans l'acompte.",
     "agreed_unit_label": {
-      "full_day": "Prix convenu par jour",
+      "full_day": "Prix convenu par nuit",
       "half_day": "Prix convenu par demi-journée",
       "passage": "Prix convenu par passage"
     },
     "agreed_unit_helper": "Prix négocié avec le client ; le total se calcule sur la durée du séjour. Laissez vide pour appliquer le tarif. L'argent déjà versé se saisit dans l'acompte.",
-    "agreed_breakdown": "{count} j × {price} F",
+    "agreed_breakdown": "{count} nuit(s) × {price} F",
     "suspicious": "Ce prix est très inférieur au tarif ({} F). S'il s'agit d'un premier versement, saisissez-le dans l'acompte et laissez le prix vide.",
     "deposit_label": "Acompte versé",
     "deposit_hint": "Facultatif",
@@ -279,7 +279,7 @@
     "payment": "Paiement",
     "message": "Note",
     "message_hint": "Facultatif",
-    "days_times_price": "{} j × {}",
+    "days_times_price": "{} nuit(s) × {}",
     "duration_discount": "Remise durée (−{} %)"
   },
   "client_identity": {
@@ -440,7 +440,7 @@
     "invalid_booking_owner": "Vous ne pouvez pas réserver votre propriété.",
     "invalid_code": "Code invalide.",
     "invalid_credentials": "Identifiants invalides.",
-    "invalid_daily_price": "Le tarif par jour doit être positif.",
+    "invalid_daily_price": "Le tarif par nuit doit être positif.",
     "invalid_departure": "L'heure de sortie doit être postérieure à l'entrée du client.",
     "invalid_extension": "La nouvelle date de sortie doit être postérieure à la date actuelle.",
     "invalid_extension_days": "La durée de prolongation est invalide.",
@@ -669,11 +669,11 @@
     "hidden": "Masquée dans la vitrine",
     "description": "Description",
     "features": "Caractéristiques",
-    "per_day": "par jour",
-    "per_day_title": "Par jour",
+    "per_day": "par nuit",
+    "per_day_title": "Par nuit",
     "open_directions": "Ouvrir l'itinéraire",
     "pricing": "Tarifs",
-    "from_days": "Dès {} jours",
+    "from_days": "Dès {} nuits",
     "residence": "Résidence",
     "attach": "Rattacher",
     "unit_no_label": "Logement sans libellé",
@@ -837,7 +837,7 @@
     "address_required": "Renseignez l’adresse du bien.",
     "city_required": "Renseignez la ville.",
     "surface_positive": "La surface doit être supérieure à zéro.",
-    "price_required": "Indiquez le tarif par jour.",
+    "price_required": "Indiquez le tarif par nuit.",
     "not_set": "Non renseigné",
     "untitled": "Sans titre",
     "not_set_f": "Non renseignée",
@@ -854,10 +854,10 @@
     "bedrooms_short": "{} ch",
     "bathrooms_short": "{} sdb",
     "price_to_define": "Tarif à définir",
-    "price_per_day": "{} / jour",
+    "price_per_day": "{} / nuit",
     "price_with_tiers": {
-      "one": "{price} / jour · {count} palier",
-      "other": "{price} / jour · {count} paliers"
+      "one": "{price} / nuit · {count} palier",
+      "other": "{price} / nuit · {count} paliers"
     },
     "discard_title": "Abandonner les modifications ?",
     "discard_one": "Une section a été modifiée sans être enregistrée.",
@@ -909,22 +909,22 @@
     "city_search_hint": "Tapez pour rechercher ou utilisez votre position",
     "no_city_found": "Aucune ville trouvée",
     "set_price": "Définissez votre tarif",
-    "daily_rate": "Tarif par jour",
-    "daily_rate_hint": "De l’arrivée à la même heure le lendemain",
-    "price_per_day_label": "Prix / jour (FCFA)",
+    "daily_rate": "Tarif par nuit",
+    "daily_rate_hint": "Une nuit court jusqu’à l’heure de départ du lendemain",
+    "price_per_day_label": "Prix / nuit (FCFA)",
     "price_hint": "Ex : 15000",
     "duration_discounts": "Réductions par durée",
     "optional_editable": "Facultatif · modifiable à tout moment",
     "tier": "Palier",
-    "pricing_rule": "Un séjour est facturé au prix par jour. Si sa durée atteint un palier, la remise correspondante s’applique à tout le séjour — la plus avantageuse en cas de chevauchement.",
+    "pricing_rule": "Un séjour est facturé au prix par nuit, quelle que soit l’heure d’arrivée. Si sa durée atteint un palier, la remise correspondante s’applique à tout le séjour — la plus avantageuse en cas de chevauchement.",
     "add_tier": "Ajouter un palier de remise",
-    "add_tier_hint": "Encourage les séjours longs. Sans palier, le prix par jour s’applique quelle que soit la durée.",
+    "add_tier_hint": "Encourage les séjours longs. Sans palier, le prix par nuit s’applique quelle que soit la durée.",
     "remove_tier": "Supprimer ce palier",
     "duration": "Durée",
-    "days_short": "{} j",
+    "days_short": "{} n",
     "discount": "Remise",
-    "price_day_short": "Prix / jour",
-    "days": "{} jours",
+    "price_day_short": "Prix / nuit",
+    "days": "{} nuits",
     "client_saves": "Le client économise",
     "tier_no_effect": "Sans effet : un palier plus court accorde déjà autant. Augmentez la remise ou supprimez ce palier.",
     "client_pays": "Ce que paiera le client",
@@ -932,7 +932,7 @@
     "which_type": "Quel type de bien souhaitez-vous enregistrer ?",
     "negotiation": "Négociation",
     "negotiation_hint": "Le client peut demander un meilleur prix, palier par palier",
-    "negotiation_step": "Palier {} — prix par jour",
+    "negotiation_step": "Palier {} — prix par nuit",
     "negotiation_step_required": "Indiquez un prix pour ce palier.",
     "negotiation_below_price": "Le palier doit être inférieur au prix normal.",
     "negotiation_below_previous": "Chaque palier doit être inférieur au précédent.",
@@ -1034,7 +1034,7 @@
       "one": "{} logement",
       "other": "{} logements"
     },
-    "price_per_day": "{} /jour"
+    "price_per_day": "{} /nuit"
   },
   "reservation_status": {
     "confirmed": "Confirmée",
@@ -1045,7 +1045,7 @@
   "stay_types": {
     "passage": "Passage",
     "half_day": "Demi-journée",
-    "full_day": "Journée complète"
+    "full_day": "Nuitée"
   },
   "reservation_source": {
     "online": "En ligne",
@@ -1057,12 +1057,12 @@
     "period_taken": "Ce bien est déjà réservé sur cette période.",
     "period_taken_by": "Déjà réservé sur cette période par {}.",
     "days": {
-      "one": "{} jour",
-      "other": "{} jours"
+      "one": "{} nuit",
+      "other": "{} nuits"
     },
     "stay_duration": "Durée du séjour",
-    "remove_day": "Retirer un jour",
-    "add_day": "Ajouter un jour",
+    "remove_day": "Retirer une nuit",
+    "add_day": "Ajouter une nuit",
     "title_check_in": "Check-in immédiat",
     "title_future": "Réservation future",
     "save_check_in": "Enregistrer le check-in",
@@ -1100,7 +1100,7 @@
     "mode_check_in_hint": "Le client entre maintenant",
     "mode_future_hint": "Séjour prévu à une date à venir",
     "length_discounts": "Remises sur la durée",
-    "from_days_short": "dès {} j",
+    "from_days_short": "dès {} n",
     "phone_placeholder": "+225 07 XX XX XX XX"
   },
   "booking_detail": {
@@ -1120,16 +1120,20 @@
     "new_departure": "Nouveau départ",
     "arrival_date": "Date d'arrivée",
     "planned_end": "Fin prévue",
-    "extra_days": "Jours supplémentaires",
-    "remove_day": "Retirer un jour",
-    "add_day": "Ajouter un jour",
-    "daily_cost": "Coût par jour",
+    "extra_days": "Nuits supplémentaires",
+    "remove_day": "Retirer une nuit",
+    "add_day": "Ajouter une nuit",
+    "daily_cost": "Coût par nuit",
     "subtotal": {
-      "one": "Sous-total ({} jour)",
-      "other": "Sous-total ({} jours)"
+      "one": "Sous-total ({} nuit)",
+      "other": "Sous-total ({} nuits)"
     },
     "length_discount": "Remise durée",
-    "total_due": "Total à payer"
+    "total_due": "Total à payer",
+    "night_unit": {
+      "one": "nuit",
+      "other": "nuits"
+    }
   },
   "offline_banner": {
     "message": "Hors ligne · données du {date} à {time}"
@@ -1232,8 +1236,8 @@
     },
     "save_client": "Enregistrer le client",
     "history_line": {
-      "one": "{period} · {count} jour",
-      "other": "{period} · {count} jours"
+      "one": "{period} · {count} nuit",
+      "other": "{period} · {count} nuits"
     }
   },
   "expense_categories": {
@@ -1379,7 +1383,7 @@
     "standalone_properties": "Logements indépendants",
     "bookings": "Réservations",
     "average_stay": "Séjour moyen",
-    "days_short": "{} j",
+    "days_short": "{} n",
     "period_title": "Période du relevé",
     "rolling_year": "12 derniers mois",
     "rolling_year_hint": "Jusqu’à aujourd’hui",
@@ -1627,5 +1631,9 @@
       "rejected": "Refusé",
       "completed": "Converti"
     }
+  },
+  "checkout_time": {
+    "title": "Heure de départ",
+    "subtitle": "Fin de chaque nuit, le lendemain de l’arrivée, quelle que soit l’heure d’entrée."
   }
 }

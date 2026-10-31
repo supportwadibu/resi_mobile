@@ -31,47 +31,69 @@ class EditReservationCubit extends Cubit<EditReservationState> {
   /// Appelée aussi pour le logement d'origine : la réservation ne porte que le
   /// tarif journalier figé, pas les paliers, et le montant attendu se
   /// recalcule sur la grille **courante** — comme le fera le serveur.
+  ///
+  /// Un séjour complet est recalé sur l'heure de départ du logement : sa
+  /// sortie ne se saisit plus, et une sortie héritée du décompte en 24h
+  /// — 15h pour une entrée à 15h — serait facturée en départ tardif.
   void setProperty(PropertyModel property) {
+    final policy = property.pricing.lateCheckoutPolicy;
     emit(
       state.copyWith(
         propertyId: property.id,
         dailyPrice: property.pricing.dailyPrice,
         priceTiers: PriceTierList.sorted(property.pricing.priceTiers),
-        lateCheckoutPolicy: property.pricing.lateCheckoutPolicy,
+        lateCheckoutPolicy: policy,
+        checkOutAt: state.stayType == StayType.fullDay
+            ? policy.checkOutFor(state.checkInAt, state.daysCount)
+            : state.checkOutAt,
       ),
     );
   }
 
   void setStayType(StayType type) {
-    final duration = type == StayType.fullDay
-        ? Duration(days: state.daysCount)
-        : type.defaultDuration;
     emit(
-      state.copyWith(stayType: type, checkOutAt: state.checkInAt.add(duration)),
+      state.copyWith(
+        stayType: type,
+        checkOutAt: type == StayType.fullDay
+            ? state.lateCheckoutPolicy.checkOutFor(
+                state.checkInAt,
+                state.daysCount,
+              )
+            : state.checkInAt.add(type.defaultDuration),
+      ),
     );
   }
 
-  /// Modifie la durée en jours (pour séjour complet).
+  /// Modifie la durée en nuits (pour séjour complet) : la sortie tombe à
+  /// l'heure de départ du logement après la dernière nuit.
   void setDaysCount(int count) {
     if (count < 1) return;
-    final checkIn = state.checkInAt;
-    final currentOut = state.checkOutAt;
-
-    final newOut = DateTime(
-      checkIn.year,
-      checkIn.month,
-      checkIn.day + count,
-      currentOut.hour,
-      currentOut.minute,
-      currentOut.second,
+    emit(
+      state.copyWith(
+        daysCount: count,
+        checkOutAt: state.lateCheckoutPolicy.checkOutFor(
+          state.checkInAt,
+          count,
+        ),
+      ),
     );
-
-    emit(state.copyWith(daysCount: count, checkOutAt: newOut));
   }
 
-  /// Déplace l'entrée en gardant la durée : décaler un séjour de trois jours
-  /// ne doit pas le ramener à un jour.
+  /// Déplace l'entrée en gardant la durée : décaler un séjour de trois nuits
+  /// ne doit pas le ramener à une nuit.
   void setCheckIn(DateTime value) {
+    if (state.stayType == StayType.fullDay) {
+      emit(
+        state.copyWith(
+          checkInAt: value,
+          checkOutAt: state.lateCheckoutPolicy.checkOutFor(
+            value,
+            state.daysCount,
+          ),
+        ),
+      );
+      return;
+    }
     final length = state.checkOutAt.difference(state.checkInAt);
     emit(
       state.copyWith(

@@ -214,7 +214,7 @@ void main() {
       // sépare les milliers par une espace fine insécable, qu'une espace
       // ordinaire dans le test ne retrouverait pas.
       expect(
-        find.textContaining('${CurrencyFormatter.fcfa(15000)} / jour'),
+        find.textContaining('${CurrencyFormatter.fcfa(15000)} / nuit'),
         findsOneWidget,
       );
       expect(find.textContaining('1 palier'), findsOneWidget);

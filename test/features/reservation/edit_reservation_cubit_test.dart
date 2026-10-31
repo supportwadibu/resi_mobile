@@ -126,7 +126,8 @@ void main() {
       final cubit = _cubit(_reservation());
       cubit.setCheckIn(DateTime.utc(2026, 10, 20, 12));
 
-      expect(cubit.state.checkOutAt, DateTime.utc(2026, 10, 23, 12));
+      // Trois nuits, sortie à l'heure de départ du bien.
+      expect(cubit.state.checkOutAt, DateTime.utc(2026, 10, 23, 12, 30));
       expect(cubit.state.quote.daysCount, 3);
     });
 

@@ -215,6 +215,7 @@ void main() {
         // entière, elle garde la valeur lue.
         'late_checkout_grace_minutes': 60,
         'late_checkout_half_day_hours': 6,
+        'checkout_time': '12:30',
       });
     });
 
