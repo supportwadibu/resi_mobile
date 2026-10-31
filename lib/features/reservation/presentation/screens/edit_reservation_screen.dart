@@ -215,8 +215,11 @@ class _EditReservationViewState extends State<_EditReservationView> {
                   ),
                   const SizedBox(height: 12),
                   ReservationSectionTitle(title: 'booking_edit.check_out'.tr()),
+                  // Même règle qu'à la création : en séjour à la journée, la
+                  // sortie suit la durée et ne se saisit pas.
                   DateTimeField(
                     value: state.checkOutAt,
+                    enabled: state.stayType != StayType.fullDay,
                     firstDate: state.checkInAt,
                     onChanged: cubit.setCheckOut,
                   ),

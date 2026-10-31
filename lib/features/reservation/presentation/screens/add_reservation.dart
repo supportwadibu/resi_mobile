@@ -247,8 +247,12 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 ReservationSectionTitle(
                   title: 'booking_form.planned_check_out'.tr(),
                 ),
+                // Pour un séjour à la journée, la sortie découle de la durée
+                // choisie plus haut : la saisir ici ferait deux commandes pour
+                // une seule valeur.
                 DateTimeField(
                   value: state.checkOutAt,
+                  enabled: state.stayType != StayType.fullDay,
                   firstDate: state.checkInAt,
                   onChanged: cubit.setCheckOut,
                 ),
@@ -382,7 +386,12 @@ class _AmountSummary extends StatelessWidget {
           // montant attendu semblerait ne pas suivre le tarif affiché.
           if (state.discountPercent > 0) ...[
             _Row(
-              label: '${state.daysCount} j × ${_money(state.unitPrice)} F',
+              label: 'booking_amounts.agreed_breakdown'.tr(
+                namedArgs: {
+                  'count': '${state.daysCount}',
+                  'price': _money(state.unitPrice),
+                },
+              ),
               value: state.fullAmount,
             ),
             const SizedBox(height: 8),

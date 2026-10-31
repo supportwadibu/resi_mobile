@@ -21,8 +21,9 @@ class DateTimeField extends StatelessWidget {
   final ValueChanged<DateTime> onChanged;
   final String hint;
 
-  /// Un check-in fixe l'entrée à l'instant présent : le champ s'affiche mais
-  /// ne s'ouvre pas.
+  /// Champ affiché mais qui ne s'ouvre pas : entrée d'un check-in, fixée à
+  /// l'instant présent, ou sortie d'un séjour à la journée, déduite de la
+  /// durée.
   final bool enabled;
 
   /// Borne basse du calendrier. Une réservation future ne se prend pas dans le
@@ -31,8 +32,7 @@ class DateTimeField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Un champ figé (entrée d'un check-in) reste lisible mais s'estompe,
-    // comme un bouton désactivé.
+    // Un champ figé reste lisible mais s'estompe, comme un bouton désactivé.
     return Opacity(
       opacity: enabled ? 1 : 0.6,
       child: AppPickerField(
