@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/features/auth/data/services/auth_service.dart';
 import 'package:resi_africa/features/auth/data/services/property_manager_service.dart';
-import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/resi_build_loader.dart';
 import '../../../../core/di/service_locator.dart';
 
 @RoutePage()
@@ -48,6 +48,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const AppLoaderScreen();
+    return const ResiBuildLoaderScreen();
   }
 }
