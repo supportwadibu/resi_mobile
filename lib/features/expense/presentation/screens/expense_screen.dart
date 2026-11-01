@@ -210,7 +210,7 @@ class _ExpenseViewState extends State<_ExpenseView>
   String? _periodLabel(ExpenseFilters filters) {
     if (filters.month case final month?) {
       return toBeginningOfSentenceCase(
-        DateFormat('MMMM yyyy', context.locale.toString()).format(month),
+        DateFormat('MMM y', context.locale.toString()).format(month),
       );
     }
 

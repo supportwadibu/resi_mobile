@@ -25,6 +25,7 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/offline/pending_action.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/utils/phone_helper.dart';
+import '../../../../shared/utils/date_formatter.dart';
 import '../../../../shared/utils/launcher_helper.dart';
 import '../../../subscription/presentation/widgets/plan_gate.dart';
 import '../../../subscription/presentation/widgets/plan_style.dart';
@@ -311,9 +312,6 @@ class DetailsReservationScreen extends StatelessWidget {
     context.router.maybePop(true);
   }
 
-  /// Date longue : « 12 mai 2026 ».
-  static String _longDate(DateTime date) => DateFormat('d MMMM y').format(date);
-
   /// Confirme l'arrivée avant de l'enregistrer : le geste fait passer le
   /// séjour « en cours » et n'a pas d'annulation.
   Future<void> _confirmCheckIn(BuildContext context) async {
@@ -377,17 +375,17 @@ class DetailsReservationScreen extends StatelessWidget {
     final stay = <DetailItem>[
       DetailItem(
         'booking_detail.check_in_date'.tr(),
-        _longDate(reservation.startDate),
+        DateFormatter.stayInstant(reservation.checkInAt),
       ),
       DetailItem(
         'booking_detail.check_out_date'.tr(),
-        _longDate(reservation.endDate),
+        DateFormatter.stayInstant(reservation.checkOutAt),
       ),
       DetailItem('booking_detail.duration'.tr(), reservation.durationLabel),
       if (reservation.actualCheckInAt case final arrivedAt?)
         DetailItem(
           'stay_checkin.arrived_at'.tr(),
-          DateFormat('d MMMM y, HH:mm').format(arrivedAt.toLocal()),
+          DateFormatter.stayInstant(arrivedAt),
         ),
     ];
 

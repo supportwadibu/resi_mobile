@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/utils/date_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
 import '../../../../../core/router/app_router.gr.dart';
@@ -93,8 +94,11 @@ class ReservationItem extends StatelessWidget {
                           Expanded(
                             child: Text(
                               '${formatReservationPeriod(reservation)} · '
-                              '${reservation.durationLabel}',
-                              maxLines: 1,
+                              '${reservation.durationLabel.replaceAll(' ', ' ')}',
+                              // Date et heure aux deux bouts ne tiennent pas
+                              // sur une ligne : la période passe à la ligne
+                              // après la flèche plutôt que d'être tronquée.
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: context.text.bodySmall,
                             ),
@@ -135,12 +139,14 @@ class ReservationItem extends StatelessWidget {
   }
 }
 
-/// Période du séjour, en dates courtes : « 12 sept. → 14 oct. ».
-String formatReservationPeriod(ReservationModel reservation) {
-  final format = DateFormat('d MMM');
-  return '${format.format(reservation.startDate)} → '
-      '${format.format(reservation.endDate)}';
-}
+/// Période du séjour, à l'heure près :
+/// « 14 nov. 2026, 14h42 → 15 nov. 2026, 12h30 ».
+///
+/// Lit l'entrée et la sortie, pas les dates de début et de fin : un séjour se
+/// facture en nuits closes à l'heure de départ, et l'heure fait partie de ce
+/// que le propriétaire doit lire.
+String formatReservationPeriod(ReservationModel reservation) =>
+    DateFormatter.stayPeriod(reservation.checkInAt, reservation.checkOutAt);
 
 /// Montant en FCFA, séparateurs de milliers compris.
 String formatAmount(double amount) {

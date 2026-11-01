@@ -7,6 +7,7 @@ import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/utils/date_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
@@ -138,7 +139,7 @@ class _ReviewCard extends StatelessWidget {
           Text(
             'arbitration.saved_at'.tr(
               args: [
-                DateFormat.yMd().add_Hm().format(item.createdAt.toLocal()),
+                DateFormatter.stayInstant(item.createdAt),
               ],
             ),
             style: context.mutedText,

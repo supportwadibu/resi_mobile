@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared/utils/date_formatter.dart';
 import '../../business_logic/stay_extension_cubit.dart';
 import '../../business_logic/stay_extension_state.dart';
 import '../../data/models/reservation_model.dart';
@@ -44,8 +45,6 @@ class _StayExtensionView extends StatefulWidget {
 
 class _StayExtensionViewState extends State<_StayExtensionView> {
   int _extraDays = 1;
-
-  static DateFormat get _dateFormat => DateFormat('d MMMM y');
 
   ReservationModel get _reservation => widget.reservation;
 
@@ -111,8 +110,8 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
             children: [
               BookingInfoCard(
                 residence: property?.title ?? 'home.deleted_property'.tr(),
-                checkIn: _dateFormat.format(_reservation.startDate),
-                checkOut: _dateFormat.format(_reservation.endDate),
+                checkIn: DateFormatter.stayInstant(_reservation.checkInAt),
+                checkOut: DateFormatter.stayInstant(_reservation.checkOutAt),
               ),
               const SizedBox(height: 12),
               NightCounter(
@@ -131,7 +130,12 @@ class _StayExtensionViewState extends State<_StayExtensionView> {
                 icon: LucideIcons.calendarCheck,
                 tone: AppAccent.blue,
                 title: 'stay_extension.new_departure'.tr(),
-                message: _dateFormat.format(_newEndDate),
+                // Date seule : le serveur cale la nouvelle sortie sur l'heure
+                // de départ du bien (`extensionCheckOutFor`), que la
+                // réservation ne porte pas — l'heure de la sortie actuelle,
+                // tardive peut-être, annoncerait une heure qui ne sera pas
+                // retenue.
+                message: DateFormatter.date(_newEndDate.toLocal()),
               ),
               const SizedBox(height: 12),
               PriceSummaryCard(

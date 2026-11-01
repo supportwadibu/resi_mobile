@@ -12,7 +12,7 @@ class ExpensePdfService {
 
   static DateFormat get _dateFormat => DateFormat('dd/MM/yyyy');
   static DateFormat get _dateTimeFormat => DateFormat('dd/MM/yyyy HH:mm');
-  static DateFormat get _longDate => DateFormat('d MMMM y');
+  static DateFormat get _longDate => DateFormat('d MMM y');
   static NumberFormat get _amountFormat => NumberFormat.decimalPattern();
 
   String _fcfa(double amount) => '${_amountFormat.format(amount.round())} F';

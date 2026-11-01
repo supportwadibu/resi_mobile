@@ -1366,7 +1366,7 @@
     "generate": "Generate the PDF report"
   },
   "finance_page": {
-    "range": "From {from} to {to}",
+    "range": "{from} - {to}",
     "net_profit": "Net profit",
     "period_loss": "Loss-making period",
     "gross_revenue": "Gross revenue",

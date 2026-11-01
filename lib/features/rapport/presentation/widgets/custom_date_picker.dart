@@ -17,7 +17,7 @@ class CustomDatePicker extends StatelessWidget {
 
   String _format(DateTime? date) {
     if (date == null) return 'report.select'.tr();
-    return DateFormat('dd MMM yyyy').format(date);
+    return DateFormat('d MMM y').format(date);
   }
 
   Future<void> _pick(BuildContext context) async {
@@ -35,7 +35,9 @@ class CustomDatePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPickerField(
-      value: startDate == null ? null : '${_format(startDate)}  →  ${_format(endDate)}',
+      value: startDate == null
+          ? null
+          : '${_format(startDate)}  →  ${_format(endDate)}',
       placeholder: 'report.choose_dates'.tr(),
       icon: LucideIcons.calendarRange,
       onTap: () => _pick(context),

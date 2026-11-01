@@ -130,7 +130,7 @@ class _ActiveContent extends StatelessWidget {
               if (days != null) 'plans.days_left'.plural(days),
               if (end != null)
                 'plans.until'.tr(
-                  args: [DateFormat('d MMMM y').format(end.toLocal())],
+                  args: [DateFormat('d MMM y').format(end.toLocal())],
                 ),
             ].join(' · '),
             style: context.text.bodySmall,

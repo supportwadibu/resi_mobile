@@ -217,7 +217,11 @@ class _PeriodHeader extends StatelessWidget {
 
     // Nom du mois dans la langue de l'application ; le français l'écrit en
     // minuscule, d'où la majuscule ajoutée en tête de libellé.
-    String monthYear(DateTime d) => DateFormat('MMMM y').format(d);
+    String monthYear(DateTime d) => DateFormat('MMM y').format(d);
+
+    // Mois abrégé pour une plage : « nov. 2025 - nov. 2026 » tient sur une
+    // ligne, là où les mois en toutes lettres étaient coupés.
+    String shortMonthYear(DateTime d) => DateFormat('MMM y').format(d);
 
     final label = switch ((period.year, period.month)) {
       (final int year, null) => 'finance_page.year_label'.tr(
@@ -227,7 +231,7 @@ class _PeriodHeader extends StatelessWidget {
         monthYear(DateTime(year, month)),
       ),
       _ when from != null && to != null => 'finance_page.range'.tr(
-        namedArgs: {'from': monthYear(from), 'to': monthYear(to)},
+        namedArgs: {'from': shortMonthYear(from), 'to': shortMonthYear(to)},
       ),
       _ => '',
     };

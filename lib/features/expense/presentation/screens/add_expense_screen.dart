@@ -308,7 +308,7 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
                   ],
                   _FieldLabel('expense.date'.tr()),
                   DatePickerField(
-                    date: DateFormat('d MMMM yyyy').format(_spentAt),
+                    date: DateFormat('d MMM y').format(_spentAt),
                     onTap: _pickDate,
                   ),
                   const SizedBox(height: 20),

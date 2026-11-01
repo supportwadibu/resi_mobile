@@ -25,7 +25,7 @@ class StatsHeader extends StatelessWidget {
     if (from.year == to.year && from.month == to.month) {
       // Le nom du mois vient d'intl, dans la langue de l'application ; le
       // français l'écrit en minuscule, d'où la majuscule ajoutée.
-      return toBeginningOfSentenceCase(DateFormat('MMMM y').format(from));
+      return toBeginningOfSentenceCase(DateFormat('MMM y').format(from));
     }
 
     String short(DateTime d) =>

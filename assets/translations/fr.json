@@ -1366,7 +1366,7 @@
     "generate": "Générer le rapport PDF"
   },
   "finance_page": {
-    "range": "Du {from} à {to}",
+    "range": "{from} - {to}",
     "net_profit": "Bénéfice net",
     "period_loss": "Période en perte",
     "gross_revenue": "CA brut",

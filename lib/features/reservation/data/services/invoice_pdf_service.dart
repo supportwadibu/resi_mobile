@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../../../shared/utils/date_formatter.dart';
 import '../models/reservation_model.dart';
 
 /// Émetteur de la facture : le propriétaire, tel qu'il se présente au client.
@@ -47,17 +48,15 @@ class InvoicePdfService {
   /// d'argent remis au client, et une ligne manquante ne se voit qu'à la
   /// lecture.
   static List<InvoiceLine> lines(ReservationModel reservation) {
-    final dateTime = DateFormat('d MMM y, HH:mm');
-
     return [
       (
         labelKey: 'invoice.check_in',
-        value: dateTime.format(reservation.checkInAt.toLocal()),
+        value: DateFormatter.stayInstant(reservation.checkInAt),
         strong: false,
       ),
       (
         labelKey: 'invoice.check_out',
-        value: dateTime.format(reservation.checkOutAt.toLocal()),
+        value: DateFormatter.stayInstant(reservation.checkOutAt),
         strong: false,
       ),
       (
@@ -166,7 +165,7 @@ class InvoicePdfService {
   }) async {
     final pdf = pw.Document();
     final number = invoiceNumber(reservation);
-    final issued = DateFormat('d MMMM y').format(issuedAt ?? DateTime.now());
+    final issued = DateFormat('d MMM y').format(issuedAt ?? DateTime.now());
     final client = reservation.client;
     final property = reservation.property;
 

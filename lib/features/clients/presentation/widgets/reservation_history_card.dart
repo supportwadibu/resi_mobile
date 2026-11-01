@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/utils/date_formatter.dart';
 import 'package:resi_africa/shared/widgets/status_badge.dart';
 import '../../data/models/client_reservation_model.dart';
 
@@ -35,9 +36,10 @@ class ReservationHistoryCard extends StatelessWidget {
                   'clients.history_line'.plural(
                     reservation.days,
                     namedArgs: {
-                      'period':
-                          '${_fmt(reservation.startDate)} → '
-                          '${_fmt(reservation.endDate)}',
+                      'period': DateFormatter.stayPeriod(
+                        reservation.startDate,
+                        reservation.endDate,
+                      ),
                       'count': '${reservation.days}',
                     },
                   ),
@@ -65,6 +67,4 @@ class ReservationHistoryCard extends StatelessWidget {
       ),
     );
   }
-
-  String _fmt(DateTime d) => DateFormat('dd MMM').format(d);
 }

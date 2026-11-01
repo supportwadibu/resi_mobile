@@ -44,8 +44,7 @@ class ClientDetailScreen extends StatelessWidget {
       // La fiche venue de la liste s'affiche sans attendre, puis est remplacée
       // par celle du serveur : le propriétaire doit pouvoir appeler son client
       // avant la fin du chargement.
-      create: (_) =>
-          sl<ClientDetailCubit>()..load(client.id, known: client),
+      create: (_) => sl<ClientDetailCubit>()..load(client.id, known: client),
       child: _ClientDetailView(onArchiveToggle: onArchiveToggle),
     );
   }
@@ -155,7 +154,7 @@ class _LoadedView extends StatelessWidget {
                 'clients.last_stay'.tr(),
                 lastStay == null
                     ? 'clients.no_stay'.tr()
-                    : DateFormat('dd MMMM yyyy').format(lastStay),
+                    : DateFormat('d MMM y').format(lastStay),
                 icon: LucideIcons.calendar,
               ),
             ],
@@ -346,9 +345,7 @@ class _QuickActions extends StatelessWidget {
         const SizedBox(width: 8),
         AppIconButton(
           icon: isArchived ? LucideIcons.archiveRestore : LucideIcons.archive,
-          label: isArchived
-              ? 'clients.restore'.tr()
-              : 'clients.archive'.tr(),
+          label: isArchived ? 'clients.restore'.tr() : 'clients.archive'.tr(),
           bordered: true,
           onPressed: onArchiveToggle,
         ),

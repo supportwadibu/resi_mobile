@@ -150,7 +150,7 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
     final credit = CurrencyFormatter.fcfa(options.refundCredit);
     final endsAt = options.accessEndsAt == null
         ? ''
-        : DateFormat('d MMMM y').format(options.accessEndsAt!.toLocal());
+        : DateFormat('d MMM y').format(options.accessEndsAt!.toLocal());
 
     final message = switch (options.cancelMode) {
       CancelMode.fullRefund when options.refundCredit > 0 =>
@@ -316,7 +316,7 @@ class _LoadedView extends StatelessWidget {
                     credit.expiresAt == null
                         ? ''
                         : DateFormat(
-                            'd MMMM y',
+                            'd MMM y',
                           ).format(credit.expiresAt!.toLocal()),
                   ],
                 ),
@@ -523,7 +523,7 @@ class _PlanCard extends StatelessWidget {
                 options.accessEndsAt == null
                     ? ''
                     : DateFormat(
-                        'd MMMM y',
+                        'd MMM y',
                       ).format(options.accessEndsAt!.toLocal()),
               ],
             ),
