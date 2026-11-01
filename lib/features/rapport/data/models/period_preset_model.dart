@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+
 enum PeriodPreset { thisMonth, lastMonth, thisYear, custom }
 
 extension PeriodPresetExt on PeriodPreset {

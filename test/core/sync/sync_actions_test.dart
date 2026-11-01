@@ -171,21 +171,24 @@ void main() {
     expect(left.single.state, PendingActionState.pending);
   });
 
-  test('un départ déjà enregistré au premier envoi vaut succès au rejeu',
-      () async {
-    sender.failures[PendingActionType.bookingCheckOut] = AppFailure.serverError(
-      code: 409,
-      businessCode: 'booking_already_completed',
-    );
-    await actions.enqueue(
-      _action('a1', PendingActionType.bookingCheckOut, target: 'b1', at: 1),
-    );
+  test(
+    'un départ déjà enregistré au premier envoi vaut succès au rejeu',
+    () async {
+      sender.failures[PendingActionType.bookingCheckOut] =
+          AppFailure.serverError(
+            code: 409,
+            businessCode: 'booking_already_completed',
+          );
+      await actions.enqueue(
+        _action('a1', PendingActionType.bookingCheckOut, target: 'b1', at: 1),
+      );
 
-    final report = await sync.synchronize();
+      final report = await sync.synchronize();
 
-    expect(report.sent, 1);
-    expect(await actions.all(), isEmpty);
-  });
+      expect(report.sent, 1);
+      expect(await actions.all(), isEmpty);
+    },
+  );
 
   test('un chevauchement passe en conflit, conservé', () async {
     sender.failures[PendingActionType.bookingExtend] = AppFailure.serverError(
@@ -207,7 +210,9 @@ void main() {
     sender.failures[PendingActionType.expenseCreate] = AppFailure.validation(
       errors: const {},
     );
-    await actions.enqueue(_action('a1', PendingActionType.expenseCreate, at: 1));
+    await actions.enqueue(
+      _action('a1', PendingActionType.expenseCreate, at: 1),
+    );
 
     await sync.synchronize();
 
@@ -217,7 +222,9 @@ void main() {
 
   test('une panne réseau garde l’action en attente', () async {
     sender.failures[PendingActionType.expenseCreate] = AppFailure.noInternet();
-    await actions.enqueue(_action('a1', PendingActionType.expenseCreate, at: 1));
+    await actions.enqueue(
+      _action('a1', PendingActionType.expenseCreate, at: 1),
+    );
 
     await sync.synchronize();
 

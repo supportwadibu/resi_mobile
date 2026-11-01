@@ -31,7 +31,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = showBack && (onBack != null || Navigator.of(context).canPop());
+    final canPop =
+        showBack && (onBack != null || Navigator.of(context).canPop());
     return AppBar(
       automaticallyImplyLeading: false,
       titleSpacing: canPop ? 0 : 16,

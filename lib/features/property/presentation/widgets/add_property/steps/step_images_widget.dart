@@ -60,10 +60,7 @@ class StepImagesWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'property_form.add_photos'.tr(),
-          style: context.text.titleMedium,
-        ),
+        Text('property_form.add_photos'.tr(), style: context.text.titleMedium),
         const SizedBox(height: 6),
         Text(
           'property_form.photos_hint'.tr(args: ['${images.length}']),

@@ -284,34 +284,46 @@ void main() {
       expect(failure.userMessage, startsWith('Complete your profile'));
     });
 
-    test('un code inconnu retombe sur le libellé générique, pas sur le français', () {
-      expect(
-        AppFailure.fromDio(
-          _dioError(403, {'code': 'inconnu', 'message': 'Refus en français.'}),
-        ).userMessage,
-        'Access denied.',
-      );
-      expect(
-        AppFailure.serverError(code: 409, message: 'Période prise.').userMessage,
-        'This period is already booked.',
-      );
-    });
+    test(
+      'un code inconnu retombe sur le libellé générique, pas sur le français',
+      () {
+        expect(
+          AppFailure.fromDio(
+            _dioError(403, {
+              'code': 'inconnu',
+              'message': 'Refus en français.',
+            }),
+          ).userMessage,
+          'Access denied.',
+        );
+        expect(
+          AppFailure.serverError(
+            code: 409,
+            message: 'Période prise.',
+          ).userMessage,
+          'This period is already booked.',
+        );
+      },
+    );
 
     test('les libellés génériques sont en anglais', () {
       expect(AppFailure.noInternet().userMessage, 'No internet connection.');
       expect(AppFailure.notFound().userMessage, 'Resource not found.');
     });
 
-    test('les erreurs de champ de VineJS, rédigées en anglais, sont affichées', () {
-      expect(
-        AppFailure.validation(
-          errors: const {
-            'email': ['The email field must be a valid email address'],
-          },
-        ).userMessage,
-        'The email field must be a valid email address',
-      );
-    });
+    test(
+      'les erreurs de champ de VineJS, rédigées en anglais, sont affichées',
+      () {
+        expect(
+          AppFailure.validation(
+            errors: const {
+              'email': ['The email field must be a valid email address'],
+            },
+          ).userMessage,
+          'The email field must be a valid email address',
+        );
+      },
+    );
 
     test('en français, ces mêmes erreurs de champ cèdent au générique', () {
       loadTestTranslations('fr');

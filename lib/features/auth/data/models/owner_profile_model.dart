@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+
 /// Types de pièces d'identité acceptés par l'API.
 ///
 /// Les codes doivent rester alignés sur `ID_DOCUMENT_TYPES` côté serveur : le

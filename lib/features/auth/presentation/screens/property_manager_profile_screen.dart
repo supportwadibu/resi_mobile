@@ -182,9 +182,7 @@ class _PropertyManagerProfileViewState
     final source = await showAppSheet<ImageSource>(
       context: context,
       builder: (sheetContext) => AppSheet(
-        title: isFront
-            ? 'owner_profile.front'.tr()
-            : 'owner_profile.back'.tr(),
+        title: isFront ? 'owner_profile.front'.tr() : 'owner_profile.back'.tr(),
         description: 'ocr.owner_hint'.tr(),
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
@@ -342,10 +340,7 @@ class _PropertyManagerProfileViewState
             });
           case OwnerProfileSubmitted(:final profile):
             setState(() => _profile = profile);
-            AppToast.success(
-              'owner_profile.submitted'.tr(),
-              context: context,
-            );
+            AppToast.success('owner_profile.submitted'.tr(), context: context);
             _continue();
           case OwnerProfileError(:final profile, :final message):
             // Un échec de dépôt renvoie le dossier antérieur : il reste la

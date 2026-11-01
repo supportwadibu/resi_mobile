@@ -46,9 +46,7 @@ class _ReportView extends StatelessWidget {
     final result = await OpenFilex.open(filePath);
     if (result.type == ResultType.done) return;
 
-    AppToast.error(
-      'report.open_failed'.tr(),
-    );
+    AppToast.error('report.open_failed'.tr());
   }
 
   @override

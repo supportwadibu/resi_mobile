@@ -186,10 +186,8 @@ class _UploadField extends StatelessWidget {
         width: double.infinity,
         // L'URL est signée et temporaire : son expiration ne doit pas casser
         // l'écran, l'utilisateur peut toujours redéposer le fichier.
-        errorBuilder: (context, _, _) => _placeholder(
-          context,
-          'owner_profile.preview_unavailable'.tr(),
-        ),
+        errorBuilder: (context, _, _) =>
+            _placeholder(context, 'owner_profile.preview_unavailable'.tr()),
       );
     }
 
@@ -208,10 +206,7 @@ class _UploadField extends StatelessWidget {
           style: context.text.titleSmall,
         ),
         const SizedBox(height: 2),
-        Text(
-          'owner_profile.photo_tip'.tr(),
-          style: context.text.bodySmall,
-        ),
+        Text('owner_profile.photo_tip'.tr(), style: context.text.bodySmall),
       ],
     );
   }

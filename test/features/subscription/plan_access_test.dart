@@ -49,13 +49,16 @@ void main() {
       },
     );
 
-    test('plan_tier prime sur plan_access, gardé pour les anciennes versions', () {
-      final status = SubscriptionStatusModel.fromJson({
-        'plan_access': 'basic',
-        'plan_tier': 'free',
-      });
-      expect(PlanAccess.fromApi(status.planAccess), PlanAccess.free);
-    });
+    test(
+      'plan_tier prime sur plan_access, gardé pour les anciennes versions',
+      () {
+        final status = SubscriptionStatusModel.fromJson({
+          'plan_access': 'basic',
+          'plan_tier': 'free',
+        });
+        expect(PlanAccess.fromApi(status.planAccess), PlanAccess.free);
+      },
+    );
 
     test('un plan_access nul explicite reste nul : compte inactif', () {
       final status = SubscriptionStatusModel.fromJson({'plan_access': null});

@@ -5,10 +5,7 @@ import 'package:logger/logger.dart';
 import '../../../../core/config/app_config.dart';
 
 class PlaceSuggestion {
-  const PlaceSuggestion({
-    required this.placeId,
-    required this.description,
-  });
+  const PlaceSuggestion({required this.placeId, required this.description});
 
   final String placeId;
   final String description;
@@ -22,10 +19,7 @@ class PlaceSuggestion {
 }
 
 class PlaceDetails {
-  const PlaceDetails({
-    required this.name,
-    required this.coordinates,
-  });
+  const PlaceDetails({required this.name, required this.coordinates});
 
   final String name;
   final LatLng coordinates;
@@ -64,7 +58,9 @@ class GooglePlacesService {
         final status = data['status'] as String?;
 
         if (status != 'OK') {
-          _log.w('Google Places API status: $status — error_message: ${data["error_message"]}');
+          _log.w(
+            'Google Places API status: $status — error_message: ${data["error_message"]}',
+          );
           return [];
         }
 
@@ -72,10 +68,15 @@ class GooglePlacesService {
         final predictions = data['predictions'] as List<dynamic>? ?? [];
 
         return predictions
-            .map((prediction) => PlaceSuggestion.fromJson(prediction as Map<String, dynamic>))
+            .map(
+              (prediction) =>
+                  PlaceSuggestion.fromJson(prediction as Map<String, dynamic>),
+            )
             .toList();
       } else {
-        _log.e('Google Places API HTTP error: ${response.statusCode} — body: ${response.body}');
+        _log.e(
+          'Google Places API HTTP error: ${response.statusCode} — body: ${response.body}',
+        );
       }
     } catch (e) {
       _log.e('Google Places API searchCities error: $e');
@@ -102,18 +103,24 @@ class GooglePlacesService {
       _log.d('Google Places Details API request: $url');
       final response = await http.get(url);
 
-      _log.d('Google Places Details API response status: ${response.statusCode}');
+      _log.d(
+        'Google Places Details API response status: ${response.statusCode}',
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final status = data['status'] as String?;
 
         if (status != 'OK') {
-          _log.w('Google Places Details API status: $status — error_message: ${data["error_message"]}');
+          _log.w(
+            'Google Places Details API status: $status — error_message: ${data["error_message"]}',
+          );
           return null;
         }
 
-        _log.d('Google Places Details API successful response with status: $status');
+        _log.d(
+          'Google Places Details API successful response with status: $status',
+        );
         final result = data['result'] as Map<String, dynamic>?;
 
         if (result != null) {
@@ -126,15 +133,14 @@ class GooglePlacesService {
             final lng = location['lng'] as double?;
 
             if (lat != null && lng != null) {
-              return PlaceDetails(
-                name: name,
-                coordinates: LatLng(lat, lng),
-              );
+              return PlaceDetails(name: name, coordinates: LatLng(lat, lng));
             }
           }
         }
       } else {
-        _log.e('Google Places Details API HTTP error: ${response.statusCode} — body: ${response.body}');
+        _log.e(
+          'Google Places Details API HTTP error: ${response.statusCode} — body: ${response.body}',
+        );
       }
     } catch (e) {
       _log.e('Google Places API getPlaceDetails error: $e');

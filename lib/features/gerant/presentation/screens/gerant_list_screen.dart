@@ -52,11 +52,8 @@ class _GerantListView extends StatelessWidget {
       ),
       body: BlocBuilder<GerantListCubit, GerantListState>(
         builder: (context, state) => switch (state) {
-          GerantListInitial() ||
-          GerantListLoading() => const SimpleListSkeleton(
-            itemCount: 5,
-            itemHeight: 96,
-          ),
+          GerantListInitial() || GerantListLoading() =>
+            const SimpleListSkeleton(itemCount: 5, itemHeight: 96),
           GerantListError(:final message) => ErrorState(
             message: message,
             onRetry: () => context.read<GerantListCubit>().load(),

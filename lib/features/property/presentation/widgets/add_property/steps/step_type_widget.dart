@@ -32,10 +32,7 @@ class StepTypeWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'property_form.which_type'.tr(),
-          style: context.text.titleMedium,
-        ),
+        Text('property_form.which_type'.tr(), style: context.text.titleMedium),
         const SizedBox(height: 16),
         for (final type in PropertyType.values) ...[
           AppOptionTile(

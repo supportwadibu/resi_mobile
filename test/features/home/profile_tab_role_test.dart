@@ -321,7 +321,10 @@ void main() {
       await _pump(tester, role: 'proprio', forbidOwner: false);
 
       expect(find.text('Kouamé Jean-Baptiste'), findsNWidgets(2));
-      expect(find.text('Propriétaire · Abidjan, Côte d\'Ivoire'), findsOneWidget);
+      expect(
+        find.text('Propriétaire · Abidjan, Côte d\'Ivoire'),
+        findsOneWidget,
+      );
       expect(
         find.text('Carte nationale d’identité • CI-AB-2019-12345'),
         findsOneWidget,

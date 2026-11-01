@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+
 /// Statut d'un séjour, aligné sur `BOOKING_STATUSES` du serveur.
 enum ReservationStatus {
   confirmed('confirmed'),

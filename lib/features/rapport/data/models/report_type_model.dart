@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+
 // `maintenance` et `fiscal` ont existé dans la maquette mais n'ont rien
 // derrière côté API : aucune donnée d'intervention ni de prestataire pour la
 // maintenance, aucun marqueur de déductibilité pour le fiscal. Retirés plutôt

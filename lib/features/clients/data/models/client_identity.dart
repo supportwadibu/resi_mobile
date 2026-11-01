@@ -87,7 +87,8 @@ class ClientIdentity {
     );
   }
 
-  static bool _filled(String? value) => value != null && value.trim().isNotEmpty;
+  static bool _filled(String? value) =>
+      value != null && value.trim().isNotEmpty;
 
   static String? _text(Object? value) =>
       value is String && value.trim().isNotEmpty ? value : null;

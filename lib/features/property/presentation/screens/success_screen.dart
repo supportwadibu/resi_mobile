@@ -131,7 +131,8 @@ class _SuccessScreenState extends State<SuccessScreen>
                     const SizedBox(height: 8),
                     AppButton(
                       label:
-                          widget.secondaryButtonText ?? 'success.secondary'.tr(),
+                          widget.secondaryButtonText ??
+                          'success.secondary'.tr(),
                       icon: LucideIcons.plus,
                       variant: AppButtonVariant.secondary,
                       expand: true,

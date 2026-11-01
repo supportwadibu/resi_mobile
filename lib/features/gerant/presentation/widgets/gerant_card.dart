@@ -95,7 +95,9 @@ class GerantCard extends StatelessWidget {
                         0 => 'residence.no_unit'.tr(),
                         _ => 'residence.unit_count'.plural(count),
                       },
-                      icon: count == 0 ? LucideIcons.info : LucideIcons.doorOpen,
+                      icon: count == 0
+                          ? LucideIcons.info
+                          : LucideIcons.doorOpen,
                       tone: count == 0 ? AppAccent.amber : AppAccent.neutral,
                     ),
                     // N'est affiché que pour un compte suspendu : marquer

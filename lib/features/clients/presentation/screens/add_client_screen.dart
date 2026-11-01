@@ -157,7 +157,8 @@ class _AddClientViewState extends State<_AddClientView> {
                   IdScanButton(
                     onScanned: (path, reading) {
                       cubit.setDocument(DocumentSlot.verso, File(path));
-                      if (reading != null) _applyReading(reading, overwrite: true);
+                      if (reading != null)
+                        _applyReading(reading, overwrite: true);
                     },
                   ),
                   const SizedBox(height: 12),

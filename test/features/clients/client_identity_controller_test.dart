@@ -12,8 +12,7 @@ void main() {
   );
 
   test('une photo déposée ne comble que les champs vides', () {
-    final controller = ClientIdentityController()
-      ..birthPlace.text = 'Korhogo';
+    final controller = ClientIdentityController()..birthPlace.text = 'Korhogo';
 
     controller.apply(reading, overwrite: false);
 
@@ -25,8 +24,7 @@ void main() {
   });
 
   test('un scan explicite remplace la saisie', () {
-    final controller = ClientIdentityController()
-      ..birthPlace.text = 'Korhogo';
+    final controller = ClientIdentityController()..birthPlace.text = 'Korhogo';
 
     controller.apply(reading, overwrite: true);
 

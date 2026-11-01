@@ -63,7 +63,11 @@ class _SupportContactSheet extends StatelessWidget {
             ),
           AppSheetAction(
             // Logo de marque : WhatsApp reste reconnaissable d'un coup d'œil.
-            iconWidget: FaIcon(FontAwesomeIcons.whatsapp, size: 16, color: t.muted),
+            iconWidget: FaIcon(
+              FontAwesomeIcons.whatsapp,
+              size: 16,
+              color: t.muted,
+            ),
             label: 'support.whatsapp'.tr(),
             description: _formatPhone(AppConfig.supportWhatsApp),
             onTap: () => _run(

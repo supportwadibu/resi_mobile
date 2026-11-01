@@ -98,8 +98,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
                       label: 'gerant.full_name'.tr(),
                       controller: _nameController,
                       hint: 'gerant.name_hint'.tr(),
-                      validator: (value) =>
-                          (value ?? '').trim().length < 2
+                      validator: (value) => (value ?? '').trim().length < 2
                           ? 'gerant.name_required'.tr()
                           : null,
                     ),
@@ -236,9 +235,7 @@ class _AddGerantViewState extends State<_AddGerantView> {
     setState(() => _isSubmitting = false);
 
     if (created == null) {
-      AppToast.error(
-        cubit.lastError ?? 'gerant.create_failed'.tr(),
-      );
+      AppToast.error(cubit.lastError ?? 'gerant.create_failed'.tr());
       return;
     }
 
@@ -264,16 +261,15 @@ class _ScopeSection extends StatelessWidget {
         return switch (state) {
           // Squelette de liste et non de formulaire : ce qui se charge ici est
           // la liste des logements, pas des champs de saisie.
-          GerantScopeInitial() || GerantScopeLoading() => const SimpleListSkeleton(
-            itemCount: 3,
-            itemHeight: 64,
-          ),
+          GerantScopeInitial() || GerantScopeLoading() =>
+            const SimpleListSkeleton(itemCount: 3, itemHeight: 64),
           GerantScopeError(:final message) => ErrorState(
             message: message,
             onRetry: cubit.load,
           ),
-          GerantScopeLoaded(:final totalCount) when totalCount == 0 =>
-            _Hint('gerant.no_unit_to_assign'.tr()),
+          GerantScopeLoaded(:final totalCount) when totalCount == 0 => _Hint(
+            'gerant.no_unit_to_assign'.tr(),
+          ),
           GerantScopeLoaded() => ScopeSelector(
             groups: state.groups,
             standalone: state.standalone,
@@ -296,10 +292,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        label,
-        style: context.text.titleMedium,
-      ),
+      child: Text(label, style: context.text.titleMedium),
     );
   }
 }
@@ -311,9 +304,6 @@ class _Hint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: context.text.bodySmall!.copyWith(height: 1.5),
-    );
+    return Text(text, style: context.text.bodySmall!.copyWith(height: 1.5));
   }
 }

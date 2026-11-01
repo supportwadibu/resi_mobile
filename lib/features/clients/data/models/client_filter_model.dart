@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+
 enum ClientFilter { all, active, archived }
 
 extension ClientFilterExt on ClientFilter {

@@ -161,7 +161,9 @@ class _RichSubtitle extends StatelessWidget {
         children: [
           TextSpan(
             text: 'trial.ready'.tr(),
-            style: context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600),
+            style: context.text.titleSmall!.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           TextSpan(
             text: days > 0

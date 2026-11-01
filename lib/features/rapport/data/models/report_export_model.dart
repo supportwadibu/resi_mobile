@@ -6,10 +6,7 @@
 /// [filePath] pointe vers le fichier temporaire écrit par le repository ;
 /// contrairement à l'ancienne URL signée, il ne périme pas.
 class ReportExportModel {
-  const ReportExportModel({
-    required this.filePath,
-    required this.filename,
-  });
+  const ReportExportModel({required this.filePath, required this.filename});
 
   final String filePath;
   final String filename;

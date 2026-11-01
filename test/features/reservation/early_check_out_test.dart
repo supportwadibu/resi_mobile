@@ -110,11 +110,14 @@ void main() {
     test('décode les 3 options de facturation depuis le JSON', () {
       final quote = EarlyCheckOutQuote.fromJson(_quote);
 
-      expect(quote.options.keys, containsAll([
-        EarlyCheckOutOption.prorata,
-        EarlyCheckOutOption.withPenalty,
-        EarlyCheckOutOption.fullAmount,
-      ]));
+      expect(
+        quote.options.keys,
+        containsAll([
+          EarlyCheckOutOption.prorata,
+          EarlyCheckOutOption.withPenalty,
+          EarlyCheckOutOption.fullAmount,
+        ]),
+      );
       expect(quote.options[EarlyCheckOutOption.prorata]?.amount, 40000);
       expect(quote.options[EarlyCheckOutOption.withPenalty]?.penalty, 10000);
       expect(quote.options[EarlyCheckOutOption.withPenalty]?.amount, 50000);

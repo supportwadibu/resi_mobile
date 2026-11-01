@@ -110,10 +110,7 @@ void main() {
   group('IdCardReading.merge', () {
     test('complète sans écraser', () {
       const first = IdCardReading(documentNumber: 'A1', birthPlace: 'Man');
-      const second = IdCardReading(
-        documentNumber: 'B2',
-        address: 'Yopougon',
-      );
+      const second = IdCardReading(documentNumber: 'B2', address: 'Yopougon');
 
       final merged = first.merge(second);
       expect(merged.documentNumber, 'A1');

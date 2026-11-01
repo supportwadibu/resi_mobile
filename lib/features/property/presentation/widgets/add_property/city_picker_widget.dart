@@ -11,10 +11,7 @@ import 'package:resi_africa/features/property/data/services/google_places_servic
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 class CityPickerWidget extends StatefulWidget {
-  const CityPickerWidget({
-    super.key,
-    required this.onCitySelected,
-  });
+  const CityPickerWidget({super.key, required this.onCitySelected});
 
   final void Function(String cityName, LatLng coordinates) onCitySelected;
 
@@ -158,21 +155,21 @@ class _CityPickerWidgetState extends State<CityPickerWidget> {
           Expanded(
             child: _placesService.isAvailable
                 ? (_suggestions.isEmpty && !_isLoading
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        itemCount: _suggestions.length,
-                        itemBuilder: (context, index) {
-                          final suggestion = _suggestions[index];
-                          return ListTile(
-                            leading: const Icon(LucideIcons.mapPin, size: 20),
-                            title: Text(
-                              suggestion.description,
-                              style: context.text.bodyMedium,
-                            ),
-                            onTap: () => _onSuggestionTap(suggestion),
-                          );
-                        },
-                      ))
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          itemCount: _suggestions.length,
+                          itemBuilder: (context, index) {
+                            final suggestion = _suggestions[index];
+                            return ListTile(
+                              leading: const Icon(LucideIcons.mapPin, size: 20),
+                              title: Text(
+                                suggestion.description,
+                                style: context.text.bodyMedium,
+                              ),
+                              onTap: () => _onSuggestionTap(suggestion),
+                            );
+                          },
+                        ))
                 : Center(
                     child: Text(
                       'Saisissez le nom de la ville ci-dessus',

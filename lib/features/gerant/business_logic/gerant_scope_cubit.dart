@@ -135,9 +135,7 @@ class GerantScopeCubit extends Cubit<GerantScopeState> {
               residence: ResidenceSelection(
                 id: residence.id,
                 name: residence.name,
-                propertyIds: [
-                  for (final p in byResidence[residence.id]!) p.id,
-                ],
+                propertyIds: [for (final p in byResidence[residence.id]!) p.id],
               ),
               properties: byResidence[residence.id]!,
             ),

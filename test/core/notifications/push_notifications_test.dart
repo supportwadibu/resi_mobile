@@ -26,17 +26,23 @@ void main() {
       repository = DeviceTokenRepository(dio);
     });
 
-    test('enregistre l’appareil sur la route commune à tous les rôles', () async {
-      await repository.register('fcm-token-123456789012345', platform: 'android');
+    test(
+      'enregistre l’appareil sur la route commune à tous les rôles',
+      () async {
+        await repository.register(
+          'fcm-token-123456789012345',
+          platform: 'android',
+        );
 
-      final request = interceptor.captured!;
-      expect(request.method, 'POST');
-      expect(request.path, endsWith('/api/v1/auth/device-tokens'));
-      expect(request.data, {
-        'token': 'fcm-token-123456789012345',
-        'platform': 'android',
-      });
-    });
+        final request = interceptor.captured!;
+        expect(request.method, 'POST');
+        expect(request.path, endsWith('/api/v1/auth/device-tokens'));
+        expect(request.data, {
+          'token': 'fcm-token-123456789012345',
+          'platform': 'android',
+        });
+      },
+    );
 
     test('retire l’appareil à la déconnexion', () async {
       await repository.unregister('fcm-token-123456789012345');

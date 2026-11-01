@@ -41,9 +41,10 @@ class IdCardReading {
     final labels = IdLabelParser.parse(text);
     if (mrz == null && labels.isEmpty) return null;
 
-    final labelName = [labels.givenNames, labels.surname]
-        .whereType<String>()
-        .join(' ');
+    final labelName = [
+      labels.givenNames,
+      labels.surname,
+    ].whereType<String>().join(' ');
 
     return IdCardReading(
       documentType: mrz?.documentType,

@@ -87,7 +87,9 @@ void main() {
     // `Intl.defaultLocale` suit la langue de l'application : une locale
     // passée en dur l'emporte sur elle et garde « octobre » sur un
     // téléphone en anglais.
-    final pinned = RegExp(r"""(DateFormat|NumberFormat)[\w.]*\([^;]*['"]fr(_FR)?['"]""");
+    final pinned = RegExp(
+      r"""(DateFormat|NumberFormat)[\w.]*\([^;]*['"]fr(_FR)?['"]""",
+    );
     final offenders = [
       for (final file in _dartSources())
         if (pinned.hasMatch(file.readAsStringSync())) _relative(file),

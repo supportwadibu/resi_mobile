@@ -68,36 +68,51 @@ abstract final class IdLabelParser {
   /// Alias par champ, sans accent et en minuscules. L'ordre compte : un alias
   /// plus long passe avant celui qu'il contient (« prénom » avant « nom »).
   static const _aliases = <(_Field, List<String>)>[
-    (_Field.givenNames, ['prenom(s)', 'prenoms', 'prenom', 'given names', 'given name']),
-    (_Field.birthDate, ['date de naissance', 'date of birth', 'ne(e) le', 'nee le', 'ne le']),
+    (
+      _Field.givenNames,
+      ['prenom(s)', 'prenoms', 'prenom', 'given names', 'given name'],
+    ),
+    (
+      _Field.birthDate,
+      ['date de naissance', 'date of birth', 'ne(e) le', 'nee le', 'ne le'],
+    ),
     (_Field.birthPlace, ['lieu de naissance', 'place of birth']),
-    (_Field.issuedAt, [
-      'date de delivrance',
-      "date d'emission",
-      'date d emission',
-      'date of issue',
-      'delivree le',
-      'delivre le',
-      'emise le',
-    ]),
-    (_Field.ignored, [
-      "date d'expiration",
-      'date d expiration',
-      'date of expiry',
-      'expire le',
-      'sexe',
-      'sex',
-      'taille',
-      'height',
-      'profession',
-      'signature',
-      'republique',
-      'carte nationale',
-      'nni',
-    ]),
+    (
+      _Field.issuedAt,
+      [
+        'date de delivrance',
+        "date d'emission",
+        'date d emission',
+        'date of issue',
+        'delivree le',
+        'delivre le',
+        'emise le',
+      ],
+    ),
+    (
+      _Field.ignored,
+      [
+        "date d'expiration",
+        'date d expiration',
+        'date of expiry',
+        'expire le',
+        'sexe',
+        'sex',
+        'taille',
+        'height',
+        'profession',
+        'signature',
+        'republique',
+        'carte nationale',
+        'nni',
+      ],
+    ),
     (_Field.nationality, ['nationalite', 'nationality']),
     (_Field.address, ['domicile', 'adresse', 'address']),
-    (_Field.documentNumber, ['numero de la carte', 'card number', 'numero', 'n°', 'no.']),
+    (
+      _Field.documentNumber,
+      ['numero de la carte', 'card number', 'numero', 'n°', 'no.'],
+    ),
     (_Field.surname, ['nom', 'surname']),
   ];
 
@@ -217,8 +232,9 @@ abstract final class IdLabelParser {
   /// Premier jeton alphanumérique assez long pour être un numéro de pièce.
   static String? _documentNumber(String? value) {
     if (value == null) return null;
-    final match = RegExp(r'[A-Z0-9][A-Z0-9 ]{5,}[A-Z0-9]')
-        .firstMatch(value.toUpperCase());
+    final match = RegExp(
+      r'[A-Z0-9][A-Z0-9 ]{5,}[A-Z0-9]',
+    ).firstMatch(value.toUpperCase());
     if (match == null) return null;
     final number = match.group(0)!.replaceAll(' ', '');
     return RegExp(r'\d').hasMatch(number) ? number : null;
@@ -229,8 +245,9 @@ abstract final class IdLabelParser {
   /// date fausse non.
   static DateTime? _date(String? value, {required bool past}) {
     if (value == null) return null;
-    final match = RegExp(r'(\d{1,2})\s*[/.\- ]\s*(\d{1,2})\s*[/.\- ]\s*(\d{2,4})')
-        .firstMatch(value);
+    final match = RegExp(
+      r'(\d{1,2})\s*[/.\- ]\s*(\d{1,2})\s*[/.\- ]\s*(\d{2,4})',
+    ).firstMatch(value);
     if (match == null) return null;
 
     final day = int.parse(match.group(1)!);

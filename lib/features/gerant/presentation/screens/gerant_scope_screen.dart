@@ -23,11 +23,7 @@ import '../widgets/scope_selector.dart';
 /// de l'ordre des requêtes.
 @RoutePage()
 class GerantScopeScreen extends StatelessWidget {
-  const GerantScopeScreen({
-    super.key,
-    required this.gerantId,
-    this.gerantName,
-  });
+  const GerantScopeScreen({super.key, required this.gerantId, this.gerantName});
 
   final String gerantId;
 
@@ -56,11 +52,8 @@ class _GerantScopeView extends StatelessWidget {
       appBar: AppTopBar(title: 'gerant.assigned_units'.tr()),
       body: BlocBuilder<GerantScopeCubit, GerantScopeState>(
         builder: (context, state) => switch (state) {
-          GerantScopeInitial() ||
-          GerantScopeLoading() => const SimpleListSkeleton(
-            itemCount: 6,
-            itemHeight: 64,
-          ),
+          GerantScopeInitial() || GerantScopeLoading() =>
+            const SimpleListSkeleton(itemCount: 6, itemHeight: 64),
           GerantScopeError(:final message) => ErrorState(
             message: message,
             onRetry: () =>
@@ -174,10 +167,7 @@ class ScopeSummary extends StatelessWidget {
       title: gerantName == null
           ? 'gerant.scope_count'.plural(
               selectedCount,
-              namedArgs: {
-                'selected': '$selectedCount',
-                'total': '$totalCount',
-              },
+              namedArgs: {'selected': '$selectedCount', 'total': '$totalCount'},
             )
           : 'gerant.scope_count_named'.plural(
               selectedCount,
@@ -187,9 +177,7 @@ class ScopeSummary extends StatelessWidget {
                 'name': gerantName!,
               },
             ),
-      message: isEmpty
-          ? 'gerant.scope_empty'.tr()
-          : 'gerant.scope_body'.tr(),
+      message: isEmpty ? 'gerant.scope_empty'.tr() : 'gerant.scope_body'.tr(),
     );
   }
 }

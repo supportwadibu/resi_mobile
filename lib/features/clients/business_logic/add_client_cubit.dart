@@ -126,10 +126,7 @@ class AddClientCubit extends Cubit<AddClientState> {
         'id_document_number': ?documentNumber,
         'identity': identity.toFormFields(),
       },
-      filePaths: {
-        'id_document_front': ?front,
-        'id_document_back': ?back,
-      },
+      filePaths: {'id_document_front': ?front, 'id_document_back': ?back},
     );
     if (!isClosed) {
       emit(state.copyWith(status: AddClientStatus.success, queued: true));

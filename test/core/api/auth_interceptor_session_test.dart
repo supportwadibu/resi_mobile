@@ -250,36 +250,33 @@ void main() {
       },
     );
 
-    test(
-      'un refus métier de la requête rejouée garde la session',
-      () async {
-        // Jeton expiré, rafraîchi, puis la réservation rejouée rend 409
-        // (période déjà prise) : c'est un refus à présenter, pas une session
-        // perdue. Le rejeu partageait le bloc du rafraîchissement, et ce 409
-        // déconnectait le propriétaire.
-        final storage = _MemorySecureStorage(refresh: 'rt-valide');
-        final session = sessionRoleFixture('gerant');
-        final interceptor = AuthInterceptor(
-          storage,
-          session,
-          SpyDatabase(),
-          refreshClient: (baseUrl) =>
-              Dio(BaseOptions(baseUrl: baseUrl))
-                ..httpClientAdapter = _RefreshThenConflictAdapter(),
-        );
-        DioException? passed;
+    test('un refus métier de la requête rejouée garde la session', () async {
+      // Jeton expiré, rafraîchi, puis la réservation rejouée rend 409
+      // (période déjà prise) : c'est un refus à présenter, pas une session
+      // perdue. Le rejeu partageait le bloc du rafraîchissement, et ce 409
+      // déconnectait le propriétaire.
+      final storage = _MemorySecureStorage(refresh: 'rt-valide');
+      final session = sessionRoleFixture('gerant');
+      final interceptor = AuthInterceptor(
+        storage,
+        session,
+        SpyDatabase(),
+        refreshClient: (baseUrl) =>
+            Dio(BaseOptions(baseUrl: baseUrl))
+              ..httpClientAdapter = _RefreshThenConflictAdapter(),
+      );
+      DioException? passed;
 
-        interceptor.onError(
-          _unauthorized(),
-          _CapturingHandler((e) => passed = e),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+      interceptor.onError(
+        _unauthorized(),
+        _CapturingHandler((e) => passed = e),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
-        expect(storage.cleared, isFalse);
-        expect(session.value, 'gerant');
-        expect(passed?.response?.statusCode, 409);
-      },
-    );
+      expect(storage.cleared, isFalse);
+      expect(session.value, 'gerant');
+      expect(passed?.response?.statusCode, 409);
+    });
   });
 }
 

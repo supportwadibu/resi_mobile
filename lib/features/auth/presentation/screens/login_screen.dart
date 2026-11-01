@@ -102,8 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    validator: (v) =>
-                        v == null || v.isEmpty
+                    validator: (v) => v == null || v.isEmpty
                         ? 'common.field_required'.tr()
                         : null,
                   ),

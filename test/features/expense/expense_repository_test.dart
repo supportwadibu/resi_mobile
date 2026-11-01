@@ -86,10 +86,7 @@ void main() {
 
       // L'heure part avec le jour : l'historique l'affiche. L'API admet
       // `YYYY-MM-DD` et l'ISO 8601.
-      expect(
-        body['spent_at'],
-        DateTime(2026, 3, 14).toUtc().toIso8601String(),
-      );
+      expect(body['spent_at'], DateTime(2026, 3, 14).toUtc().toIso8601String());
     });
 
     test('une note vide est omise plutôt qu’envoyée à blanc', () async {

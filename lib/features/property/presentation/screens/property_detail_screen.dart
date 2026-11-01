@@ -246,10 +246,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       if (publish) {
         AppToast.success('property_page.published'.tr(), context: context);
       } else {
-        AppToast.warning(
-          'property_page.unpublished'.tr(),
-          context: context,
-        );
+        AppToast.warning('property_page.unpublished'.tr(), context: context);
       }
     } on AppFailure catch (f) {
       if (!mounted) return;
