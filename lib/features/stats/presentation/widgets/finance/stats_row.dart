@@ -1,8 +1,12 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
-import 'stat_item.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 
+/// Occupation, séjours et durée moyenne de la période, en trois tuiles
+/// étroites.
 class StatsRow extends StatelessWidget {
   final double tauxOccupation;
   final int reservations;
@@ -17,32 +21,43 @@ class StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final taux = '${(tauxOccupation * 100).toStringAsFixed(0)}%';
-    final moyen = '${moyenSejour.toStringAsFixed(1)} j';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Statistiques', style: AppTextStyles.sectionTitle),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            StatItem(label: "Taux d'occ.", value: taux),
-            _Divider(),
-            StatItem(label: 'Réservations', value: '$reservations'),
-            _Divider(),
-            StatItem(label: 'Moy. Séjour', value: moyen),
-          ],
-        ),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: StatTile(
+              compact: true,
+              label: 'common.occupancy'.tr(),
+              value: '${(tauxOccupation * 100).toStringAsFixed(0)} %',
+              icon: LucideIcons.chartPie,
+              accent: AppAccent.amber,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: StatTile(
+              compact: true,
+              label: 'finance_page.bookings'.tr(),
+              value: '$reservations',
+              icon: AppSectionIcons.bookings,
+              accent: AppAccent.violet,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: StatTile(
+              compact: true,
+              label: 'finance_page.average_stay'.tr(),
+              value: 'finance_page.days_short'.tr(
+                args: [moyenSejour.toStringAsFixed(1)],
+              ),
+              icon: LucideIcons.clock,
+              accent: AppAccent.blue,
+            ),
+          ),
+        ],
+      ),
     );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(height: 36, width: 1, color: AppColors.divider);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../../../property/data/models/property_model.dart';
@@ -8,14 +9,18 @@ import '../models/residence_model.dart';
 
 /// Résidences du propriétaire connecté.
 class ResidenceRepository {
-  const ResidenceRepository(this._dio);
+  const ResidenceRepository(this._dio, this._role);
   final Dio _dio;
+  final SessionRole _role;
 
   /// Une page de résidences, la plus récente d'abord.
-  Future<ResidencePage> getResidencePage({int page = 1, int perPage = 20}) async {
+  Future<ResidencePage> getResidencePage({
+    int page = 1,
+    int perPage = 20,
+  }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioResidences,
+        ApiEndpoints.residences(_role.value),
         queryParameters: {'page': page, 'per_page': perPage},
       );
       return ResidencePage.fromJson(response.data as Map<String, dynamic>);
@@ -47,7 +52,7 @@ class ResidenceRepository {
 
   Future<ResidenceModel> getResidence(String id) async {
     try {
-      final response = await _dio.get(ApiEndpoints.proprioResidence(id));
+      final response = await _dio.get(ApiEndpoints.residence(_role.value, id));
       final data = (response.data as Map<String, dynamic>)['data'];
       return ResidenceModel.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -60,7 +65,7 @@ class ResidenceRepository {
   Future<ResidenceModel> createResidence(CreateResidencePayload payload) async {
     try {
       final response = await _dio.post(
-        ApiEndpoints.proprioResidences,
+        ApiEndpoints.residences(_role.value),
         data: payload.toJson(),
       );
       final data = (response.data as Map<String, dynamic>)['data'];
@@ -78,7 +83,7 @@ class ResidenceRepository {
   ) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioResidence(id),
+        ApiEndpoints.residence(_role.value, id),
         data: payload.toJson(),
       );
       final data = (response.data as Map<String, dynamic>)['data'];
@@ -98,7 +103,7 @@ class ResidenceRepository {
   /// le texte du message.
   Future<void> deleteResidence(String id) async {
     try {
-      await _dio.delete(ApiEndpoints.proprioResidence(id));
+      await _dio.delete(ApiEndpoints.residence(_role.value, id));
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);
     } catch (e) {
@@ -119,7 +124,7 @@ class ResidenceRepository {
   }) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioPropertyResidence(propertyId),
+        ApiEndpoints.propertyResidence(_role.value, propertyId),
         data: {
           'residence_id': residenceId,
           'unit_label': unitLabel,

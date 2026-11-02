@@ -15,9 +15,9 @@ class ClientsModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        // TODO: map fields
-      };
+    'id': id,
+    // TODO: map fields
+  };
 
   ClientsModel copyWith({
     String? id,
@@ -29,7 +29,9 @@ class ClientsModel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ClientsModel && runtimeType == other.runtimeType && id == other.id;
+      other is ClientsModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

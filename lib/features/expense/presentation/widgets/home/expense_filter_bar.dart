@@ -1,4 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 
 /// Barre d'actions de l'historique : filtres et export.
 class ExpenseFilterBar extends StatelessWidget {
@@ -11,7 +16,7 @@ class ExpenseFilterBar extends StatelessWidget {
     this.isExporting = false,
   });
 
-  /// Nombre de filtres actifs, affiché en pastille.
+  /// Nombre de filtres actifs, repris dans le libellé.
   final int activeCount;
   final VoidCallback onTap;
 
@@ -29,75 +34,39 @@ class ExpenseFilterBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              decoration: BoxDecoration(
-                color: hasFilters ? Colors.black : const Color(0xffF5F5FA),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.filter_list_rounded,
-                    size: 18,
-                    color: hasFilters ? Colors.white : const Color(0xff1D2452),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    hasFilters
-                        ? '$activeCount filtre${activeCount > 1 ? 's' : ''}'
-                        : 'Filtrer',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: hasFilters ? Colors.white : const Color(0xff1D2452),
-                    ),
-                  ),
-                  if (onClear != null) ...[
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: onClear,
-                      child: Icon(
-                        Icons.close,
-                        size: 16,
-                        color: hasFilters ? Colors.white : Colors.grey,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          child: AppButton(
+            label: hasFilters
+                ? 'expense.filters_count'.plural(activeCount)
+                : 'expense.filter'.tr(),
+            icon: LucideIcons.listFilter,
+            // Filtres posés : le bouton passe en noir, pour qu'on lise d'un
+            // coup d'œil que la liste n'est pas complète.
+            variant: hasFilters
+                ? AppButtonVariant.primary
+                : AppButtonVariant.secondary,
+            expand: true,
+            onPressed: onTap,
           ),
         ),
-        const SizedBox(width: 10),
-        InkWell(
-          onTap: isExporting ? null : onExport,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: const Color(0xffF5F5FA),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: isExporting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(
-                    Icons.picture_as_pdf_outlined,
-                    size: 18,
-                    // Grisé quand l'export n'a rien à produire.
-                    color: onExport == null
-                        ? Colors.grey.shade400
-                        : const Color(0xff1D2452),
-                  ),
+        if (onClear != null) ...[
+          const SizedBox(width: 8),
+          AppIconButton(
+            icon: LucideIcons.x,
+            label: 'expense.clear_filters'.tr(),
+            bordered: true,
+            onPressed: onClear,
           ),
-        ),
+        ],
+        const SizedBox(width: 8),
+        isExporting
+            ? const SizedBox.square(dimension: 40, child: AppLoader(size: 20))
+            : AppIconButton(
+                icon: LucideIcons.share,
+                label: 'expense.export_pdf'.tr(),
+                bordered: true,
+                // Désactivé quand l'export n'a rien à produire.
+                onPressed: onExport,
+              ),
       ],
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
+import '../data/models/finance/finance_period.dart';
+import '../data/models/finance/finance_scope.dart';
 import '../data/repositories/finance_repository.dart';
 import 'finance_state.dart';
 
@@ -8,30 +10,49 @@ class FinanceCubit extends Cubit<FinanceState> {
   FinanceCubit(this._repository) : super(const FinanceInitial());
   final FinanceRepository _repository;
 
-  /// Résidence sur laquelle le relevé est restreint, `null` pour tout le parc.
+  /// Périmètre du relevé : tout le parc, une résidence ou un logement.
   ///
-  /// Mémorisée dans le cubit et non dans l'écran : celui-ci recharge à chaque
+  /// Mémorisé dans le cubit et non dans l'écran : celui-ci recharge à chaque
   /// retour de navigation, et un filtre porté par le widget serait perdu au
   /// premier aller-retour vers la saisie d'une dépense.
-  String? _residenceId;
+  FinanceScope _scope = const FinanceScope.portfolio();
 
-  String? get residenceId => _residenceId;
+  FinanceScope get scope => _scope;
 
-  /// Charge la situation financière.
+  /// Période retenue, gardée ici pour la même raison que [_scope].
+  FinancePeriod _period = const FinancePeriod.rolling();
+
+  FinancePeriod get period => _period;
+
+  DateTime? _from;
+  DateTime? _to;
+
+  /// Bornes du relevé affiché, dernier jour inclus.
   ///
-  /// Sans bornes, l'exercice porte sur les douze derniers mois : le taux
-  /// d'occupation a besoin d'une fenêtre pour avoir un dénominateur.
-  Future<void> load({DateTime? from, DateTime? to}) async {
+  /// Exposées pour que l'écran annonce la période exacte des chiffres : les
+  /// recalculer de son côté les ferait diverger d'un jour à l'autre, et le
+  /// même `ca_brut` se lit très différemment selon la fenêtre — d'où la
+  /// confusion avec l'onglet Statistiques, qui n'affiche qu'un mois.
+  DateTime? get from => _from;
+  DateTime? get to => _to;
+
+  /// Charge la situation financière sur la période retenue.
+  ///
+  /// Par défaut, les douze derniers mois : le taux d'occupation a besoin d'une
+  /// fenêtre pour avoir un dénominateur.
+  Future<void> load() async {
     emit(const FinanceLoading());
 
-    final now = DateTime.now();
-    final start = from ?? DateTime(now.year - 1, now.month, now.day);
+    final bounds = _period.bounds(DateTime.now());
+    _from = bounds.from;
+    _to = bounds.to;
 
     try {
       final overview = await _repository.getOverview(
-        from: start,
-        to: to ?? now,
-        residenceId: _residenceId,
+        from: bounds.from,
+        to: bounds.to,
+        residenceId: _scope.residenceId,
+        propertyId: _scope.propertyId,
       );
       if (!isClosed) emit(FinanceLoaded(overview));
     } on AppFailure catch (f) {
@@ -39,14 +60,17 @@ class FinanceCubit extends Cubit<FinanceState> {
     }
   }
 
-  /// Restreint le relevé à une résidence, ou lève la restriction avec `null`.
-  ///
-  /// Le rechargement est immédiat : le filtre n'a pas d'existence propre à
-  /// l'écran, seuls les chiffres qu'il produit en ont une.
-  Future<void> filterByResidence(String? residenceId) async {
-    if (_residenceId == residenceId) return;
+  Future<void> filterByScope(FinanceScope scope) async {
+    if (_scope == scope) return;
 
-    _residenceId = residenceId;
+    _scope = scope;
+    await load();
+  }
+
+  Future<void> filterByPeriod(FinancePeriod period) async {
+    if (_period == period) return;
+
+    _period = period;
     await load();
   }
 }

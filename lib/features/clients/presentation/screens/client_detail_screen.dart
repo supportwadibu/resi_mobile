@@ -1,17 +1,31 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/features/clients/data/models/client_model.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../data/models/clients_fake_data.dart';
-import '../widgets/client_action_button.dart';
+
+import '../../business_logic/client_detail_cubit.dart';
+import '../../business_logic/client_detail_state.dart';
 import '../widgets/client_avatar.dart';
 import '../widgets/client_status_badge.dart';
-import '../widgets/detail_info_row.dart';
+import '../widgets/identity_documents_card.dart';
 import '../widgets/reservation_history_card.dart';
+import 'edit_client_screen.dart';
 
 @RoutePage()
 class ClientDetailScreen extends StatelessWidget {
@@ -26,60 +40,239 @@ class ClientDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reservations = ClientsFakeData.reservationsByClient[client.id] ?? [];
+    return BlocProvider(
+      // La fiche venue de la liste s'affiche sans attendre, puis est remplacée
+      // par celle du serveur : le propriétaire doit pouvoir appeler son client
+      // avant la fin du chargement.
+      create: (_) => sl<ClientDetailCubit>()..load(client.id, known: client),
+      child: _ClientDetailView(onArchiveToggle: onArchiveToggle),
+    );
+  }
+}
 
+class _ClientDetailView extends StatelessWidget {
+  const _ClientDetailView({this.onArchiveToggle});
+
+  final VoidCallback? onArchiveToggle;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Fiche Client',
-          style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _ClientHeader(client: client),
-            const SizedBox(height: 16),
-
-            // Actions rapides
-            _QuickActions(client: client, onArchiveToggle: onArchiveToggle),
-            const SizedBox(height: 16),
-
-            // Infos
-            _InfoCard(client: client),
-            const SizedBox(height: 16),
-
-            // Stats
-            _StatsCard(client: client),
-            const SizedBox(height: 16),
-
-            // Historique
-            if (reservations.isNotEmpty) ...[
-              Text(
-                'Historique des réservations',
-                style: AppTextStyles.sectionTitle,
-              ),
-              const SizedBox(height: 10),
-              ...reservations.map(
-                (r) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ReservationHistoryCard(reservation: r),
+      appBar: AppTopBar(
+        title: 'clients.record'.tr(),
+        actions: [
+          BlocBuilder<ClientDetailCubit, ClientDetailState>(
+            builder: (context, state) {
+              if (state is! ClientDetailLoaded) return const SizedBox.shrink();
+              return AppIconButton(
+                icon: LucideIcons.pencil,
+                label: 'common.edit'.tr(),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => EditClientScreen(
+                      client: state.client,
+                      cubit: context.read<ClientDetailCubit>(),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              );
+            },
+          ),
+        ],
+      ),
+      body: BlocBuilder<ClientDetailCubit, ClientDetailState>(
+        builder: (context, state) {
+          return switch (state) {
+            ClientDetailInitial() ||
+            ClientDetailLoading() => const Center(child: AppLoader()),
+            ClientDetailError(:final message) => ErrorState(message: message),
+            ClientDetailLoaded() => _LoadedView(
+              state: state,
+              onArchiveToggle: onArchiveToggle,
+            ),
+          };
+        },
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 24),
+class _LoadedView extends StatelessWidget {
+  const _LoadedView({required this.state, this.onArchiveToggle});
+
+  final ClientDetailLoaded state;
+  final VoidCallback? onArchiveToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final client = state.client;
+    final lastStay = client.stats.lastStayAt;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        _ClientHeader(client: client),
+        const SizedBox(height: 12),
+        _QuickActions(client: client, onArchiveToggle: onArchiveToggle),
+        const SizedBox(height: 16),
+        StatGrid(
+          children: [
+            StatTile(
+              label: 'clients.stays'.tr(),
+              value: '${client.stats.totalStays}',
+              icon: AppSectionIcons.bookings,
+              accent: AppAccent.violet,
+            ),
+            StatTile(
+              label: 'clients.total_paid'.tr(),
+              value: CurrencyFormatter.short(client.stats.totalPaid),
+              icon: LucideIcons.banknote,
+              accent: AppAccent.green,
+            ),
           ],
         ),
+        const SizedBox(height: 16),
+        Section(
+          title: 'clients.contact'.tr(),
+          icon: AppSectionIcons.profile,
+          child: DetailList(
+            items: [
+              DetailItem(
+                'common.phone'.tr(),
+                client.phone,
+                icon: LucideIcons.phone,
+              ),
+              DetailItem(
+                'clients.id_document'.tr(),
+                client.documentsComplete
+                    ? (client.idDocumentType?.label ??
+                          'clients.document_deposited'.tr())
+                    : 'clients.document_incomplete'.tr(),
+                icon: LucideIcons.idCard,
+              ),
+              DetailItem(
+                'clients.last_stay'.tr(),
+                lastStay == null
+                    ? 'clients.no_stay'.tr()
+                    : DateFormat('d MMM y').format(lastStay),
+                icon: LucideIcons.calendar,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _IdentitySection(client: client),
+        const SizedBox(height: 16),
+        IdentityDocumentsCard(client: client),
+        const SizedBox(height: 16),
+        Section(
+          title: 'clients.stay_history'.tr(),
+          icon: AppSectionIcons.bookings,
+          padding: EdgeInsets.zero,
+          child: _History(state: state),
+        ),
+      ],
+    );
+  }
+}
+
+/// Ce que le registre de police imprimera pour ce client.
+///
+/// Un champ manquant s'affiche « Non renseigné » plutôt que de disparaître :
+/// le propriétaire doit voir ce qu'il reste à compléter avant d'éditer le
+/// registre, où la case sortirait vide.
+class _IdentitySection extends StatelessWidget {
+  const _IdentitySection({required this.client});
+
+  final ClientModel client;
+
+  @override
+  Widget build(BuildContext context) {
+    final identity = client.identity;
+    final missing = 'client_identity.missing'.tr();
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    String date(DateTime? value) =>
+        value == null ? missing : dateFormat.format(value);
+    String text(String? value) =>
+        value == null || value.trim().isEmpty ? missing : value;
+
+    final document = [
+      client.idDocumentType?.label,
+      if (client.idDocumentNumber case final number?
+          when number.trim().isNotEmpty)
+        'n° $number',
+    ].whereType<String>().join(' ');
+
+    return Section(
+      title: 'client_identity.section'.tr(),
+      icon: LucideIcons.idCard,
+      child: DetailList(
+        items: [
+          DetailItem(
+            'client_identity.document_number'.tr(),
+            document.isEmpty ? missing : document,
+          ),
+          DetailItem(
+            'client_identity.issued_at'.tr(),
+            date(identity.idDocumentIssuedAt),
+          ),
+          DetailItem(
+            'client_identity.birth_date'.tr(),
+            date(identity.birthDate),
+          ),
+          DetailItem(
+            'client_identity.birth_place'.tr(),
+            text(identity.birthPlace),
+          ),
+          DetailItem(
+            'client_identity.nationality'.tr(),
+            text(identity.nationality),
+          ),
+          DetailItem('client_identity.address'.tr(), text(identity.address)),
+        ],
       ),
+    );
+  }
+}
+
+/// Historique des séjours : chargement, échec rattrapable, ou liste.
+class _History extends StatelessWidget {
+  const _History({required this.state});
+
+  final ClientDetailLoaded state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isHistoryLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: AppLoader()),
+      );
+    }
+
+    if (state.historyError != null) {
+      return ErrorState(
+        message: state.historyError!,
+        onRetry: () =>
+            context.read<ClientDetailCubit>().retryHistory(state.client.id),
+      );
+    }
+
+    if (state.reservations.isEmpty) {
+      return EmptyState(
+        message: 'clients.no_stay_recorded'.tr(),
+        icon: LucideIcons.calendarX,
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < state.reservations.length; i++) ...[
+          if (i > 0) const Divider(height: 1),
+          ReservationHistoryCard(reservation: state.reservations[i]),
+        ],
+      ],
     );
   }
 }
@@ -90,25 +283,21 @@ class _ClientHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          ClientAvatar(initials: client.avatarInitials, size: 64),
-          const SizedBox(height: 12),
-          Text(
-            client.fullName,
-            style: AppTextStyles.valueMedium.copyWith(fontSize: 20),
+    return Row(
+      children: [
+        ClientAvatar(initials: client.avatarInitials, size: 56),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(client.fullName, style: context.text.titleLarge),
+              const SizedBox(height: 6),
+              ClientStatusBadge(status: client.status),
+            ],
           ),
-          const SizedBox(height: 6),
-          ClientStatusBadge(status: client.status),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -125,7 +314,7 @@ class _QuickActions extends StatelessWidget {
   }
 
   Future<void> _whatsapp(String number) async {
-    final uri = Uri.parse('https://wa.me/$number');
+    final uri = Uri.parse('https://wa.me/225$number');
     if (await canLaunchUrl(uri)) launchUrl(uri);
   }
 
@@ -135,133 +324,32 @@ class _QuickActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: ClientActionButton(
-            icon: Icons.call_rounded,
-            label: 'Appeler',
-            color: AppColors.black,
-            onTap: () => _call(client.phone),
+          child: AppButton(
+            label: 'clients.call'.tr(),
+            icon: LucideIcons.phone,
+            variant: AppButtonVariant.secondary,
+            expand: true,
+            onPressed: () => _call(client.phone),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
-          child: ClientActionButton(
-            icon: Icons.chat_rounded,
-            label: 'WhatsApp',
-            color: Colors.black,
-            // À défaut de numéro WhatsApp distinct, le téléphone fait foi :
-            // en Côte d'Ivoire c'est presque toujours le même.
-            onTap: () => _whatsapp(client.whatsapp ?? client.phone),
+          child: AppButton(
+            label: 'clients.whatsapp'.tr(),
+            icon: LucideIcons.messageCircle,
+            variant: AppButtonVariant.secondary,
+            expand: true,
+            onPressed: () => _whatsapp(client.whatsapp ?? client.phone),
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ClientActionButton(
-            icon: isArchived ? Icons.restore_rounded : Icons.archive_rounded,
-            label: isArchived ? 'Restaurer' : 'Archiver',
-            color: isArchived ? AppColors.black : AppColors.textSecondary,
-            onTap: onArchiveToggle ?? () {},
-          ),
+        const SizedBox(width: 8),
+        AppIconButton(
+          icon: isArchived ? LucideIcons.archiveRestore : LucideIcons.archive,
+          label: isArchived ? 'clients.restore'.tr() : 'clients.archive'.tr(),
+          bordered: true,
+          onPressed: onArchiveToggle,
         ),
       ],
     );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  final ClientModel client;
-  const _InfoCard({required this.client});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          DetailInfoRow(
-            icon: Icons.phone_rounded,
-            label: 'Téléphone',
-            value: client.phone,
-          ),
-          Divider(color: AppColors.divider, height: 1),
-          DetailInfoRow(
-            icon: Icons.badge_rounded,
-            label: 'Pièce d’identité',
-            value: client.documentsComplete
-                ? (client.idDocumentType?.label ?? 'Déposée')
-                : 'Incomplète',
-          ),
-          Divider(color: AppColors.divider, height: 1),
-          DetailInfoRow(
-            icon: Icons.calendar_month_rounded,
-            label: 'Dernier séjour',
-            value: client.stats.lastStayAt == null
-                ? 'Aucun séjour'
-                : DateFormat(
-                    'dd MMMM yyyy',
-                    'fr_FR',
-                  ).format(client.stats.lastStayAt!),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatsCard extends StatelessWidget {
-  final ClientModel client;
-  const _StatsCard({required this.client});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          _StatBlock(
-            label: 'Total séjours',
-            value: '${client.stats.totalStays}',
-          ),
-          _VerticalDivider(),
-          _StatBlock(
-            label: 'Total payé',
-            value: CurrencyFormatter.format(client.stats.totalPaid),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatBlock extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatBlock({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value, style: AppTextStyles.valueMedium.copyWith(fontSize: 18)),
-          const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.labelSmall),
-        ],
-      ),
-    );
-  }
-}
-
-class _VerticalDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 40, color: AppColors.divider);
   }
 }

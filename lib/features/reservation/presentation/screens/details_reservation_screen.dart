@@ -1,173 +1,746 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import '../../../clients/presentation/widgets/client_avatar.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/offline/pending_action.dart';
+import '../../../../core/storage/local_storage.dart';
+import '../../../../core/utils/phone_helper.dart';
+import '../../../../shared/utils/date_formatter.dart';
+import '../../../../shared/utils/launcher_helper.dart';
+import '../../../subscription/presentation/widgets/plan_gate.dart';
+import '../../../subscription/presentation/widgets/plan_style.dart';
+import '../../data/services/invoice_pdf_service.dart';
+import '../../../clients/data/repositories/clients_repository.dart';
+import '../../../clients/presentation/screens/client_detail_screen.dart';
+import '../../business_logic/stay_check_in_cubit.dart';
+import '../../business_logic/stay_check_in_state.dart';
+import '../../business_logic/stay_check_out_cubit.dart';
+import '../../business_logic/stay_check_out_state.dart';
+import '../../data/models/early_check_out_quote.dart';
 import '../../data/models/reservation_model.dart';
 import '../../../home/presentation/widgets/reservations/reservation_item.dart';
+import '../widgets/cancel/cancel_reservation_sheet.dart';
+import '../widgets/check_out/early_check_out_sheet.dart';
 
 /// Fiche d'une réservation reçue.
 ///
-/// Les informations du client ne sont pas encore servies par l'API — seul son
-/// identifiant l'est. La section correspondante est donc omise plutôt que
-/// remplie d'un contact inventé, qu'un propriétaire aurait pu appeler.
+/// La section « Client » n'apparaît que sur les réservations comptoir : le
+/// serveur ne joint `client_snapshot` que pour celles-ci, une réservation en
+/// ligne n'ayant pas de fiche au carnet du propriétaire.
 @RoutePage()
 class DetailsReservationScreen extends StatelessWidget {
   final ReservationModel reservation;
 
   const DetailsReservationScreen({super.key, required this.reservation});
 
-  /// Date longue : « 12 mai 2026 ».
-  static String _longDate(DateTime date) =>
-      DateFormat('d MMMM y', 'fr').format(date);
+  /// Ouvre la prolongation, puis referme la fiche si le séjour a changé.
+  ///
+  /// La fiche reçoit sa réservation en argument et ne sait pas la relire : la
+  /// garder ouverte afficherait les dates et le montant d’avant. Le `true`
+  /// remonte jusqu’à la liste, qui recharge.
+  Future<void> _extend(BuildContext context) async {
+    final router = context.router;
+
+    final changed = await router.push<bool>(
+      StayExtensionRoute(reservation: reservation),
+    );
+
+    if (changed == true) router.maybePop(true);
+  }
+
+  /// Ouvre la modification, puis referme la fiche si la réservation a changé —
+  /// même contrat que la prolongation : la fiche ne sait pas se relire.
+  Future<void> _edit(BuildContext context) async {
+    final router = context.router;
+
+    final changed = await router.push<bool>(
+      EditReservationRoute(reservation: reservation),
+    );
+
+    if (changed == true) router.maybePop(true);
+  }
+
+  /// Seule une réservation comptoir non terminée se modifie : le serveur
+  /// refuse de réécrire un séjour clos ou une réservation payée en ligne.
+  bool get _isEditable =>
+      reservation.status.isActive &&
+      reservation.source == ReservationSource.offline;
+
+  /// Demande si le séjour a été utilisé en entier avant de clôturer : le geste
+  /// est sans retour, le serveur refusant toute prolongation d'un séjour
+  /// terminé.
+  ///
+  /// Un séjour complet ne change que de statut ; un départ anticipé ouvre la
+  /// feuille qui ramène la période et le montant à l'usage réel.
+  ///
+  /// Une fois la sortie prévue passée, il n'y a plus de départ anticipé
+  /// possible — le serveur le refuse (`not_early_departure`) : la question
+  /// n'est pas posée, seule la clôture complète est proposée.
+  Future<void> _earlyCheckOut(BuildContext context) async {
+    final closed = await EarlyCheckOutSheet.show(context, reservation);
+    if (closed == null || !context.mounted) return;
+
+    AppToast.success(
+      closed.queued
+          ? 'offline_queue.saved'.tr()
+          : 'stay_checkout.early_success'.tr(),
+    );
+    // Même contrat que la clôture simple : le `true` fait recharger la liste.
+    context.router.maybePop(true);
+  }
+
+  Future<void> _confirmCheckOut(BuildContext context) async {
+    final cubit = context.read<StayCheckOutCubit>();
+    final isOverdue = !DateTime.now().isBefore(reservation.checkOutAt);
+
+    final fullStay = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          isOverdue
+              ? 'stay_checkout.overdue_title'.tr()
+              : 'stay_checkout.confirm_title'.tr(),
+        ),
+        content: Text(
+          isOverdue
+              ? 'stay_checkout.overdue_body'.tr()
+              : 'stay_checkout.confirm_body'.tr(),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppButton(
+                label: isOverdue
+                    ? 'stay_checkout.action'.tr()
+                    : 'stay_checkout.answer_full'.tr(),
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+              ),
+              const SizedBox(height: 8),
+              AppButton(
+                label: 'stay_checkout.answer_early'.tr(),
+                variant: AppButtonVariant.secondary,
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+              ),
+              const SizedBox(height: 8),
+              AppButton(
+                label: 'common.cancel'.tr(),
+                variant: AppButtonVariant.ghost,
+                expand: true,
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (fullStay == true) {
+      cubit.submit(reservation.id);
+      return;
+    }
+
+    if (fullStay == false && context.mounted) {
+      await _earlyCheckOut(context);
+    }
+  }
+
+  void _onCheckOutChanged(BuildContext context, StayCheckOutState state) {
+    switch (state) {
+      case StayCheckOutSuccess(:final queued):
+        // Sans `context` : la fiche se referme juste après, et le toast doit
+        // survivre à sa disparition pour être lu sur la liste.
+        AppToast.success(
+          queued ? 'offline_queue.saved'.tr() : 'stay_checkout.success'.tr(),
+        );
+        // Même contrat que la prolongation : le `true` fait recharger la
+        // liste, qui afficherait sinon le séjour comme encore actif.
+        context.router.maybePop(true);
+
+      case StayCheckOutFailure(:final message):
+        AppToast.error(message, context: context);
+
+      case StayCheckOutIdle() || StayCheckOutSubmitting():
+        break;
+    }
+  }
+
+  /// Ouvre la fiche du carnet clients.
+  ///
+  /// Le client est relu au serveur plutôt que reconstruit depuis le résumé :
+  /// `client_snapshot` est figé à la réservation — il porte le nom et le
+  /// téléphone d'alors — et la fiche doit montrer le client tel qu'il est
+  /// aujourd'hui, avec les champs que l'instantané ne contient pas.
+  Future<void> _openClientFile(BuildContext context, String clientId) async {
+    final navigator = Navigator.of(context);
+
+    // Le chargement bloque l'écran : la lecture est courte, et un indicateur
+    // dans la section laisserait le bouton actionnable une seconde fois.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: context.tokens.surface,
+            borderRadius: AppRadius.md,
+            border: Border.all(color: context.tokens.border),
+          ),
+          child: const AppLoader(),
+        ),
+      ),
+    );
+
+    try {
+      final client = await sl<ClientsRepository>().getClient(clientId);
+      navigator.pop(); // referme l'indicateur
+
+      await navigator.push(
+        MaterialPageRoute(builder: (_) => ClientDetailScreen(client: client)),
+      );
+    } on AppFailure catch (f) {
+      navigator.pop();
+      AppToast.error(f.userMessage);
+    }
+  }
+
+  /// Génère la facture et ouvre la feuille de partage, où le propriétaire
+  /// choisit WhatsApp et son client.
+  ///
+  /// Réservée au forfait 5 000 F : c'est un document PDF.
+  Future<void> _sendInvoice(BuildContext context) async {
+    if (!ensurePlanFor(context, PremiumFeature.invoices)) return;
+
+    // Le dossier du propriétaire, mis en cache à la connexion, sert d'en-tête.
+    // Absent — un gérant, un cache vidé —, la facture part sans émetteur
+    // plutôt que de ne pas partir.
+    final owner = await sl<LocalStorage>().getPropertyManager();
+
+    try {
+      await const InvoicePdfService().share(
+        reservation: reservation,
+        issuer: owner == null
+            ? null
+            : InvoiceIssuer(name: owner.name, phone: owner.phoneNumber),
+      );
+    } catch (_) {
+      AppToast.error('invoice.error'.tr());
+    }
+  }
+
+  /// Ouvre la conversation WhatsApp du client, reçu du séjour prérempli.
+  ///
+  /// Le numéro WhatsApp de la fiche prime sur le téléphone : un client peut
+  /// avoir l'un sans l'autre. La fiche est relue au serveur ; hors réseau, ou
+  /// sur un forfait sans carnet, le téléphone figé à la réservation suffit.
+  ///
+  /// Hors forfait : ce n'est que du texte, là où la facture PDF reste réservée
+  /// au forfait complet.
+  Future<void> _sendReceipt(BuildContext context) async {
+    final snapshot = reservation.client;
+    if (snapshot == null) return;
+
+    String? number = snapshot.phone;
+    if (reservation.clientId.isNotEmpty && !isLocalId(reservation.clientId)) {
+      try {
+        final client = await sl<ClientsRepository>().getClient(
+          reservation.clientId,
+        );
+        final whatsapp = client.whatsapp?.trim();
+        number = whatsapp != null && whatsapp.isNotEmpty
+            ? whatsapp
+            : client.phone;
+      } on AppFailure {
+        // Le téléphone de l'instantané reste disponible.
+      }
+    }
+
+    final target = PhoneHelper.toWhatsApp(number, 'CI');
+    if (target == null) {
+      AppToast.warning('invoice.no_whatsapp'.tr());
+      return;
+    }
+
+    final owner = await sl<LocalStorage>().getPropertyManager();
+
+    try {
+      await LauncherHelper.openWhatsApp(
+        target,
+        message: InvoicePdfService.receiptText(
+          reservation,
+          issuer: owner == null
+              ? null
+              : InvoiceIssuer(name: owner.name, phone: owner.phoneNumber),
+        ),
+      );
+    } on LauncherException {
+      AppToast.error('invoice.whatsapp_error'.tr());
+    }
+  }
+
+  /// Ouvre la feuille d'annulation, puis referme la fiche — même contrat que
+  /// la clôture : le `true` fait recharger la liste.
+  Future<void> _cancel(BuildContext context) async {
+    final cancelled = await CancelReservationSheet.show(context, reservation);
+    if (cancelled == null || !context.mounted) return;
+
+    AppToast.success('stay_cancel.success'.tr());
+    context.router.maybePop(true);
+  }
+
+  /// Confirme l'arrivée avant de l'enregistrer : le geste fait passer le
+  /// séjour « en cours » et n'a pas d'annulation.
+  Future<void> _confirmCheckIn(BuildContext context) async {
+    final cubit = context.read<StayCheckInCubit>();
+
+    final confirmed = await showConfirmDialog(
+      context: context,
+      title: 'stay_checkin.confirm_title'.tr(),
+      message: 'stay_checkin.confirm_body'.tr(),
+      confirmLabel: 'stay_checkin.confirm'.tr(),
+    );
+
+    if (confirmed) cubit.submit(reservation.id);
+  }
+
+  void _onCheckInChanged(BuildContext context, StayCheckInState state) {
+    switch (state) {
+      case StayCheckInSuccess(:final queued):
+        // Même contrat que la clôture : la fiche ne sait pas se relire, elle
+        // se referme et le `true` fait recharger la liste.
+        AppToast.success(
+          queued ? 'offline_queue.saved'.tr() : 'stay_checkin.success'.tr(),
+        );
+        context.router.maybePop(true);
+
+      case StayCheckInFailure(:final message):
+        AppToast.error(message, context: context);
+
+      case StayCheckInIdle() || StayCheckInSubmitting():
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final property = reservation.property;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Détails de réservation',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: _Cover(image: property?.image),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              property?.title ?? 'Bien supprimé',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            if (property != null && property.city.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    property.city,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: 40),
-            _buildDetailRow('Date d’entrée', _longDate(reservation.startDate)),
-            const SizedBox(height: 20),
-            _buildDetailRow('Date de sortie', _longDate(reservation.endDate)),
-            const SizedBox(height: 20),
-            _buildDetailRow('Durée', reservation.durationLabel),
-            const SizedBox(height: 20),
-            _buildDetailRow(
-              'Montant total',
-              formatAmount(reservation.totalAmount),
-            ),
-            if (reservation.discountAmount > 0) ...[
-              const SizedBox(height: 20),
-              _buildDetailRow(
-                'Remise',
-                '- ${formatAmount(reservation.discountAmount)}',
-              ),
-            ],
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Statut',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-                _StatusBadge(status: reservation.status),
-              ],
-            ),
-
-            if (reservation.message case final message?
-                when message.trim().isNotEmpty) ...[
-              const SizedBox(height: 32),
-              const Text(
-                'Message du client',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 40),
-            // La prolongation n'a de sens que sur un séjour qui n'est ni
-            // annulé ni terminé — à venir comme déjà commencé.
-            if (reservation.status.isActive)
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => context.router.push(
-                    StayExtensionRoute(reservation: reservation),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Prolonger le séjour',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'Etat des lieux',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<StayCheckOutCubit>()),
+        BlocProvider(create: (_) => sl<StayCheckInCubit>()),
+      ],
+      child: BlocListener<StayCheckInCubit, StayCheckInState>(
+        listener: _onCheckInChanged,
+        child: BlocConsumer<StayCheckOutCubit, StayCheckOutState>(
+          listener: _onCheckOutChanged,
+          builder: (context, state) => _buildScaffold(
+            context,
+            isSubmitting:
+                state is StayCheckOutSubmitting ||
+                context.watch<StayCheckInCubit>().state
+                    is StayCheckInSubmitting,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildScaffold(BuildContext context, {required bool isSubmitting}) {
+    final property = reservation.property;
+    final t = context.tokens;
+
+    final stay = <DetailItem>[
+      DetailItem(
+        'booking_detail.check_in_date'.tr(),
+        DateFormatter.stayInstant(reservation.checkInAt),
+      ),
+      DetailItem(
+        'booking_detail.check_out_date'.tr(),
+        DateFormatter.stayInstant(reservation.checkOutAt),
+      ),
+      DetailItem('booking_detail.duration'.tr(), reservation.durationLabel),
+      if (reservation.actualCheckInAt case final arrivedAt?)
+        DetailItem(
+          'stay_checkin.arrived_at'.tr(),
+          DateFormatter.stayInstant(arrivedAt),
+        ),
+    ];
+
+    // Les libellés disent ce que les champs portent : `totalAmount` est le
+    // prix convenu du séjour, pas l'argent reçu, et la remise est l'écart au
+    // tarif. « Montant total 15 000 F / Remise − 205 000 F », sans le tarif,
+    // ne se lisait pas.
+    //
+    // En ligne, la remise vient d'un code promo et `expected_amount` n'existe
+    // pas — le modèle le replie sur le total : pas de tarif grille à montrer.
+    final isCounter = reservation.source == ReservationSource.offline;
+    final amounts = <DetailItem>[
+      if (isCounter && reservation.discountAmount > 0)
+        DetailItem(
+          'booking_amounts.grid_price'.tr(),
+          formatAmount(reservation.expectedAmount),
+        ),
+      if (reservation.discountAmount > 0)
+        DetailItem(
+          (isCounter
+                  ? 'booking_amounts.negotiated_discount'
+                  : 'booking_amounts.promo_discount')
+              .tr(),
+          '- ${formatAmount(reservation.discountAmount)}',
+        ),
+      // Déjà compris dans le montant du séjour : affiché pour justifier qu'il
+      // ne soit pas un multiple du prix d'un jour.
+      if (reservation.lateCheckoutFee > 0)
+        DetailItem(
+          'late_checkout.fee'.tr(),
+          formatAmount(reservation.lateCheckoutFee),
+        ),
+      DetailItem(
+        'booking_amounts.stay_amount'.tr(),
+        formatAmount(reservation.totalAmount),
+      ),
+      if (reservation.depositAmount > 0) ...[
+        DetailItem(
+          'booking_amounts.deposit_label'.tr(),
+          formatAmount(reservation.depositAmount),
+        ),
+        DetailItem(
+          'booking_amounts.balance_due'.tr(),
+          formatAmount(reservation.balanceDue),
+        ),
+      ],
+      // Séjour écourté : les dates et le montant ci-dessus portent l'usage
+      // réel, la vente d'origine reste lisible pour un litige.
+      if (reservation.plannedTotalAmount case final planned?)
+        DetailItem('stay_checkout.planned_amount'.tr(), formatAmount(planned)),
+      if (reservation.refundedAmount > 0)
+        DetailItem(
+          'stay_checkout.refunded'.tr(),
+          formatAmount(reservation.refundedAmount),
+        ),
+      // Sort de l'acompte à l'annulation : gardé, il reste un revenu.
+      if (reservation.retainedAmount > 0)
+        DetailItem(
+          'stay_cancel.retained'.tr(),
+          formatAmount(reservation.retainedAmount),
+        ),
+      if (reservation.cancellationRefundedAmount > 0)
+        DetailItem(
+          'stay_cancel.refunded'.tr(),
+          formatAmount(reservation.cancellationRefundedAmount),
+        ),
+      if (reservation.earlyCheckoutOption case final option?)
+        DetailItem('stay_checkout.option_label'.tr(), switch (option) {
+          EarlyCheckOutOption.prorata => 'stay_checkout.option_prorata'.tr(),
+          EarlyCheckOutOption.withPenalty =>
+            'stay_checkout.option_with_penalty'.tr(),
+          EarlyCheckOutOption.fullAmount =>
+            'stay_checkout.option_full_amount'.tr(),
+        }),
+      if (reservation.earlyCheckoutPenalty case final penalty? when penalty > 0)
+        DetailItem('stay_checkout.penalty_label'.tr(), formatAmount(penalty)),
+      // Commission due à l'apporteur, au taux figé à la réservation et
+      // recalculée par le serveur quand le montant du séjour change.
+      if (reservation.referrer case final referrer?) ...[
+        DetailItem(
+          'referrer.label'.tr(),
+          referrer.phone == null || referrer.phone!.isEmpty
+              ? referrer.name
+              : '${referrer.name} · ${referrer.phone}',
+        ),
+        DetailItem(
+          'referrer.commission'.tr(
+            args: ['${(reservation.referrerCommissionRate * 100).round()}'],
+          ),
+          formatAmount(reservation.referrerCommissionAmount),
+        ),
+        // Ce qui revient au propriétaire : la commission montrée seule ne
+        // disait pas qu'elle s'imputait sur le montant du séjour.
+        DetailItem(
+          'referrer.net_amount'.tr(),
+          formatAmount(reservation.netAfterCommission),
+        ),
+      ],
+    ];
+
+    return Scaffold(
+      appBar: AppTopBar(
+        title: 'booking_detail.title'.tr(),
+        actions: [
+          if (reservation.status == ReservationStatus.inProgress ||
+              (reservation.status.isActive &&
+                  reservation.hasStarted(DateTime.now())))
+            AppIconButton(
+              icon: LucideIcons.logOut,
+              label: 'stay_checkout.early_title'.tr(),
+              onPressed: () => _earlyCheckOut(context),
+            ),
+          if (_isEditable)
+            AppIconButton(
+              icon: LucideIcons.pencil,
+              label: 'booking_edit.action'.tr(),
+              onPressed: () => _edit(context),
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        children: [
+          DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              border: Border.all(color: t.border),
+              borderRadius: AppRadius.md,
+            ),
+            child: ClipRRect(
+              borderRadius: AppRadius.md,
+              child: _Cover(image: property?.image),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      property?.title ?? 'home.deleted_property'.tr(),
+                      style: context.text.headlineSmall,
+                    ),
+                    if (property != null && property.city.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(LucideIcons.mapPin, size: 14, color: t.muted),
+                          const SizedBox(width: 4),
+                          Text(property.city, style: context.mutedText),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              StatusBadge(
+                label: reservation.status.label,
+                tone: StatusTones.booking(reservation.status.code),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Section(
+            title: 'booking_detail.stay'.tr(),
+            icon: AppSectionIcons.bookings,
+            child: DetailList(items: stay),
+          ),
+          const SizedBox(height: 12),
+          Section(
+            title: 'booking_detail.amounts'.tr(),
+            icon: LucideIcons.banknote,
+            child: DetailList(items: amounts),
+          ),
+
+          // Le résumé vient de `client_snapshot` : le serveur ne le joint
+          // qu'aux réservations comptoir, celles du carnet du propriétaire.
+          // Une réservation en ligne n'a pas de fiche à ouvrir.
+          if (reservation.client case final client?) ...[
+            const SizedBox(height: 12),
+            Section(
+              title: 'booking_form.client'.tr(),
+              icon: AppSectionIcons.clients,
+              child: _ClientSummary(
+                client: client,
+                // La fiche client relève du forfait 5 000 F.
+                onOpenFile: () {
+                  if (ensurePlanFor(context, PremiumFeature.clients)) {
+                    _openClientFile(context, client.id);
+                  }
+                },
+              ),
+            ),
+          ],
+
+          if (reservation.message case final message?
+              when message.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Section(
+              title: 'booking_detail.client_message'.tr(),
+              icon: AppSectionIcons.reviews,
+              child: Text(
+                message,
+                style: context.mutedText.copyWith(height: 1.5),
+              ),
+            ),
+          ],
+
+          // Un séjour annulé n'a rien à facturer.
+          if (reservation.status != ReservationStatus.cancelled) ...[
+            // Le reçu part dans la conversation du client : seule une
+            // réservation comptoir porte son téléphone.
+            if (reservation.client != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _sendReceipt(context),
+                  // Logo de marque : WhatsApp reste reconnaissable, là où une
+                  // bulle générique ne dirait pas où part le reçu.
+                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+                  label: Text('invoice.send_client'.tr()),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _sendInvoice(context),
+                icon: const Icon(LucideIcons.fileText, size: 16),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('invoice.share_pdf'.tr()),
+                    if (!hasPlanFor(PremiumFeature.invoices)) ...[
+                      const SizedBox(width: 8),
+                      const PremiumBadge(feature: PremiumFeature.invoices),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // En fin de fiche, hors de la barre d'actions : le geste est rare et
+          // sans retour, il ne doit pas voisiner avec l'arrivée ou la clôture.
+          // Une saisie encore en file n'existe pas au serveur.
+          if (reservation.status.isActive && !isLocalId(reservation.id)) ...[
+            const SizedBox(height: 24),
+            AppButton(
+              label: 'stay_cancel.action'.tr(),
+              variant: AppButtonVariant.ghost,
+              icon: LucideIcons.ban,
+              expand: true,
+              onPressed: isSubmitting ? null : () => _cancel(context),
+            ),
+          ],
+        ],
+      ),
+      // Barre fixe plutôt que des boutons en fin de liste : clôture et
+      // prolongation restent atteignables sans dérouler tout le détail.
+      //
+      // `null` quand le séjour n'est plus actif : un `if` de collection ne
+      // vaut que dans une liste, et n'a pas sa place sur un argument nommé.
+      bottomNavigationBar: reservation.status.isActive
+          ? _buildActions(context, isSubmitting: isSubmitting)
+          : null,
+    );
+  }
+
+  /// À partir du jour J, une réservation à venir propose d'abord d'enregistrer
+  /// l'arrivée : elle ne passe plus « en cours » toute seule. Avant, seule la
+  /// prolongation est proposée : le serveur refuse de clôturer un séjour qui
+  /// n'a pas commencé — il s'annule.
+  Widget _buildActions(BuildContext context, {required bool isSubmitting}) {
+    final now = DateTime.now();
+
+    if (reservation.canCheckIn(now)) {
+      return AppBottomActionBar(
+        primaryLabel: 'stay_checkin.action'.tr(),
+        onPrimary: isSubmitting ? null : () => _confirmCheckIn(context),
+        secondaryLabel: 'stay_checkout.extend'.tr(),
+        onSecondary: () => _extend(context),
+        isLoading: isSubmitting,
+      );
+    }
+
+    if (!reservation.hasStarted(now)) {
+      return AppBottomActionBar(
+        primaryLabel: 'stay_checkout.extend_alone'.tr(),
+        onPrimary: () => _extend(context),
+      );
+    }
+
+    return AppBottomActionBar(
+      primaryLabel: 'stay_checkout.action'.tr(),
+      onPrimary: isSubmitting ? null : () => _confirmCheckOut(context),
+      secondaryLabel: 'stay_checkout.extend'.tr(),
+      onSecondary: () => _extend(context),
+      isLoading: isSubmitting,
+    );
+  }
+}
+
+/// Identité du client, telle qu'elle était au moment de la réservation.
+class _ClientSummary extends StatelessWidget {
+  const _ClientSummary({required this.client, required this.onOpenFile});
+
+  final ReservationClient client;
+  final VoidCallback onOpenFile;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = client.fullName.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        Row(
+          children: [
+            // Le carnet accepte un nom en une seule partie : l'initiale est
+            // tirée du nom entier, sans supposer un prénom.
+            ClientAvatar(initials: name.isEmpty ? '?' : name[0].toUpperCase()),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isEmpty ? 'booking_detail.unnamed_client'.tr() : name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleSmall!.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (client.phone.trim().isNotEmpty)
+                    Text(client.phone, style: context.text.bodySmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        AppButton(
+          label: 'booking_detail.see_client'.tr(),
+          icon: LucideIcons.user,
+          variant: AppButtonVariant.secondary,
+          expand: true,
+          onPressed: onOpenFile,
         ),
       ],
     );
@@ -184,68 +757,31 @@ class _Cover extends StatelessWidget {
   Widget build(BuildContext context) {
     final source = image;
 
-    if (source == null || source.isEmpty) return _placeholder();
+    if (source == null || source.isEmpty) return _placeholder(context);
 
-    return Image.network(
-      source,
+    return CachedNetworkImage(
+      imageUrl: source,
       width: double.infinity,
       height: 200,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _placeholder(),
-      loadingBuilder: (context, child, progress) =>
-          progress == null ? child : _placeholder(),
+      placeholder: (_, _) => _loading(context),
+      // Distinct du chargement : une photo injoignable garde l'icône de repli,
+      // là où l'animation tournerait sans fin.
+      errorWidget: (_, _, _) => _placeholder(context),
     );
   }
 
-  Widget _placeholder() => Container(
+  Widget _loading(BuildContext context) => Container(
     width: double.infinity,
     height: 200,
-    color: Colors.grey.shade200,
-    child: const Icon(Icons.image_not_supported_outlined, size: 40),
+    color: context.tokens.background,
+    child: const Center(child: AppLoader()),
   );
-}
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-  final ReservationStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, bg, fg) = switch (status) {
-      ReservationStatus.confirmed => (
-        'Confirmée',
-        const Color(0xFFD1FAE5),
-        const Color(0xFF059669),
-      ),
-      // Le client occupe le logement : distinct de « confirmée », qui décrit
-      // un séjour encore à venir.
-      ReservationStatus.inProgress => (
-        'En cours',
-        const Color(0xFFDBEAFE),
-        const Color(0xFF2563EB),
-      ),
-      ReservationStatus.cancelled => (
-        'Annulée',
-        const Color(0xFFFEE2E2),
-        const Color(0xFFDC2626),
-      ),
-      ReservationStatus.completed => (
-        'Terminée',
-        Colors.grey.shade100,
-        Colors.grey,
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w500),
-      ),
-    );
-  }
+  Widget _placeholder(BuildContext context) => Container(
+    width: double.infinity,
+    height: 200,
+    color: context.tokens.background,
+    child: Icon(LucideIcons.bedDouble, size: 32, color: context.tokens.muted),
+  );
 }

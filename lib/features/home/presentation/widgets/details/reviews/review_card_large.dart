@@ -1,4 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/models/review_model.dart';
 import 'star_rating.dart';
 
@@ -12,9 +17,9 @@ class ReviewCardLarge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: context.tokens.surface,
+        borderRadius: AppRadius.md,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,7 +28,7 @@ class ReviewCardLarge extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAvatar(),
+              _buildAvatar(context),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -34,19 +39,11 @@ class ReviewCardLarge extends StatelessWidget {
                       children: [
                         Text(
                           review.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1F2937),
+                          style: context.text.titleMedium!.copyWith(
+                            color: context.tokens.foreground,
                           ),
                         ),
-                        Text(
-                          review.date,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
+                        Text(review.date, style: context.text.bodySmall),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -61,22 +58,21 @@ class ReviewCardLarge extends StatelessWidget {
           // Texte du commentaire
           Text(
             review.reviewText,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
+            style: context.text.bodyMedium!.copyWith(
+              color: context.tokens.muted,
               height: 1.5,
             ),
           ),
           const SizedBox(height: 12),
 
           // Détails des notes par catégorie
-          _buildDetailedRatings(),
+          _buildDetailedRatings(context),
         ],
       ),
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatar(BuildContext context) {
     return Container(
       width: 44,
       height: 44,
@@ -87,64 +83,53 @@ class ReviewCardLarge extends StatelessWidget {
       child: Center(
         child: Text(
           review.initials,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: review.textColor,
-          ),
+          style: context.text.titleMedium!.copyWith(color: review.textColor),
         ),
       ),
     );
   }
 
-  Widget _buildDetailedRatings() {
+  Widget _buildDetailedRatings(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(color: context.tokens.background),
       child: Column(
         children: [
-          _buildRatingRow('Propreté', review.cleanliness),
+          _buildRatingRow(
+            context,
+            'reviews.cleanliness'.tr(),
+            review.cleanliness,
+          ),
           const SizedBox(height: 8),
-          _buildRatingRow('Emplacement', review.location),
+          _buildRatingRow(context, 'reviews.location'.tr(), review.location),
           const SizedBox(height: 8),
-          _buildRatingRow('Confort', review.comfort),
+          _buildRatingRow(context, 'reviews.comfort'.tr(), review.comfort),
           const SizedBox(height: 8),
-          _buildRatingRow('Rapport qualité/prix', review.valueForMoney),
+          _buildRatingRow(context, 'reviews.value'.tr(), review.valueForMoney),
         ],
       ),
     );
   }
 
-  Widget _buildRatingRow(String label, int rating) {
+  Widget _buildRatingRow(BuildContext context, String label, int rating) {
     return Row(
       children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ),
+        SizedBox(width: 120, child: Text(label, style: context.text.bodySmall)),
         Expanded(
           child: Row(
             children: List.generate(5, (index) {
               return Icon(
-                index < rating ? Icons.star : Icons.star_border,
+                index < rating ? LucideIcons.star : LucideIcons.star,
                 size: 12,
-                color: const Color(0xFFF59E0B),
+                color: context.tokens.accentAmber,
               );
             }),
           ),
         ),
         Text(
           rating.toString(),
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF1F2937),
+          style: context.text.labelMedium!.copyWith(
+            color: context.tokens.foreground,
           ),
         ),
       ],

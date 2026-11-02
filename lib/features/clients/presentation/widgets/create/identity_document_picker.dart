@@ -1,7 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import '../../../data/models/identity_document_model.dart';
 import 'document_slot_card.dart';
 
@@ -28,17 +29,15 @@ class IdentityDocumentPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Progress indicator
         _DocumentProgress(
           total: DocumentSlot.values.length,
           filled: documents.length,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
 
-        // 3 slots
         ...DocumentSlot.values.map(
           (slot) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 8),
             child: DocumentSlotCard(
               slot: slot,
               document: documents[slot],
@@ -50,8 +49,10 @@ class IdentityDocumentPicker extends StatelessWidget {
 
         if (showError && missing > 0)
           Text(
-            '$missing document${missing > 1 ? 's' : ''} manquant${missing > 1 ? 's' : ''}',
-            style: AppTextStyles.labelSmall.copyWith(color: AppColors.red),
+            'clients.documents_missing'.plural(missing),
+            style: context.text.bodySmall!.copyWith(
+              color: context.tokens.accentRed,
+            ),
           ),
       ],
     );
@@ -69,21 +70,21 @@ class _DocumentProgress extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: filled / total,
-              minHeight: 4,
-              backgroundColor: AppColors.divider,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.green),
-            ),
+          child: LinearProgressIndicator(
+            value: filled / total,
+            minHeight: 4,
+            color: filled == total
+                ? context.tokens.accentGreen
+                : context.tokens.primary,
           ),
         ),
         const SizedBox(width: 10),
         Text(
           '$filled / $total',
-          style: AppTextStyles.labelSmall.copyWith(
-            color: filled == total ? AppColors.green : AppColors.textSecondary,
+          style: context.text.bodySmall!.copyWith(
+            color: filled == total
+                ? context.tokens.accentGreen
+                : context.tokens.muted,
             fontWeight: FontWeight.w600,
           ),
         ),

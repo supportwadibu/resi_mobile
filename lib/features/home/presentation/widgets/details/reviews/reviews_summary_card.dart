@@ -1,4 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'star_rating.dart';
 import 'rating_bars_compact.dart';
 
@@ -10,16 +14,9 @@ class ReviewsSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade100,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: context.tokens.surface,
+        borderRadius: AppRadius.md,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,20 +26,18 @@ class ReviewsSummaryCard extends StatelessWidget {
             flex: 1,
             child: Column(
               children: [
-                const Text(
+                Text(
                   '4,9',
-                  style: TextStyle(
-                    fontSize: 52,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
+                  style: context.text.headlineSmall!.copyWith(
+                    color: context.tokens.foreground,
                   ),
                 ),
                 const SizedBox(height: 8),
                 const StarRating(rating: 4.9, starSize: 18),
                 const SizedBox(height: 8),
                 Text(
-                  '128 avis',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  'reviews.count'.tr(args: ['128']),
+                  style: context.mutedText,
                 ),
               ],
             ),
@@ -50,7 +45,7 @@ class ReviewsSummaryCard extends StatelessWidget {
           Container(
             width: 1,
             height: 100,
-            color: Colors.grey.shade200,
+            color: context.tokens.border,
             margin: const EdgeInsets.symmetric(horizontal: 16),
           ),
           // Barres de notes

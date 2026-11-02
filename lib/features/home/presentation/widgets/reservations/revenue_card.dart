@@ -1,87 +1,53 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/features/reservation/data/models/booking_stats_model.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 
-import 'revenue_stat.dart';
-
+/// Revenus du mois, comparés au mois précédent.
 class RevenueCard extends StatelessWidget {
-  const RevenueCard({super.key});
+  const RevenueCard({super.key, this.revenue});
+
+  /// `null` tant que les chiffres ne sont pas arrivés : la tuile garde sa
+  /// hauteur et affiche des tirets plutôt que de se déplier d'un coup.
+  final BookingRevenueStats? revenue;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.black],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Revenus ce mois',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '1 260 840 F',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: const [
-                    RevenueStat(label: 'Mois dernier', value: '980 200 F'),
-                    SizedBox(width: 24),
-                    RevenueStat(label: 'Croissance', value: '+28%'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: 80,
-            height: 80,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  right: 18,
-                  top: -18,
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 22,
-                  top: 16,
-                  child: FaIcon(
-                    FontAwesomeIcons.sackDollar,
-                    size: 72,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    final revenue = this.revenue;
+    final growth = revenue?.growthPercent;
+
+    final previous = revenue == null
+        ? null
+        : CurrencyFormatter.short(revenue.previousMonth);
+    // Croissance signée, absente quand le mois précédent est à zéro : une
+    // progression depuis rien n'a pas de valeur à afficher.
+    final note = previous == null
+        ? null
+        : growth == null
+        ? 'home.last_month'.tr(args: [previous])
+        : 'home.growth'.tr(
+            namedArgs: {
+              'growth': '${growth.round() >= 0 ? '+' : ''}${growth.round()}',
+              'previous': previous,
+            },
+          );
+
+    return StatTile(
+      label: 'home.revenue_month'.tr(),
+      value: revenue == null
+          ? '—'
+          : CurrencyFormatter.short(revenue.currentMonth),
+      icon: LucideIcons.wallet,
+      accent: AppAccent.green,
+      note: note,
+      noteTone: growth == null
+          ? null
+          : growth >= 0
+          ? StatNoteTone.up
+          : StatNoteTone.down,
     );
   }
 }

@@ -1,12 +1,21 @@
+import 'package:easy_localization/easy_localization.dart';
+import '../../../../core/offline/pending_action.dart';
+import '../../../../core/offline/pending_overlay.dart';
+import 'client_identity.dart';
+
+export 'client_identity.dart';
+
 /// Statut d'une fiche du carnet, aligné sur `CLIENT_STATUSES` du serveur.
 enum ClientStatus {
-  active('active', 'Actif'),
-  archived('archived', 'Archivé');
+  active('active'),
+  archived('archived');
 
-  const ClientStatus(this.code, this.label);
+  const ClientStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'client_status.$code'.tr();
 
   static ClientStatus fromCode(String? code) {
     for (final status in ClientStatus.values) {
@@ -20,14 +29,16 @@ enum ClientStatus {
 
 /// Type de pièce d'identité, aligné sur `ID_DOCUMENT_TYPES` du serveur.
 enum ClientIdDocumentType {
-  cni('cni', 'CNI'),
-  passeport('passeport', 'Passeport'),
-  permis('permis', 'Permis de conduire');
+  cni('cni'),
+  passeport('passeport'),
+  permis('permis');
 
-  const ClientIdDocumentType(this.code, this.label);
+  const ClientIdDocumentType(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'client_id_types.$code'.tr();
 
   static ClientIdDocumentType? fromCode(String? code) {
     if (code == null) return null;
@@ -40,11 +51,7 @@ enum ClientIdDocumentType {
 
 /// Cumul des séjours d'un client, alimenté par le serveur à chaque clôture.
 class ClientStats {
-  const ClientStats({
-    this.totalStays = 0,
-    this.totalPaid = 0,
-    this.lastStayAt,
-  });
+  const ClientStats({this.totalStays = 0, this.totalPaid = 0, this.lastStayAt});
 
   final int totalStays;
   final double totalPaid;
@@ -70,6 +77,7 @@ class ClientModel {
     required this.id,
     required this.fullName,
     required this.phone,
+    this.syncState,
     this.whatsapp,
     this.idDocumentType,
     this.idDocumentNumber,
@@ -80,6 +88,7 @@ class ClientModel {
     this.status = ClientStatus.active,
     this.documentFrontUrl,
     this.documentBackUrl,
+    this.identity = ClientIdentity.empty,
   });
 
   final String id;
@@ -107,6 +116,13 @@ class ClientModel {
   final String? documentFrontUrl;
   final String? documentBackUrl;
 
+  /// Fiche saisie ou modifiée hors ligne, pas encore acceptée par le
+  /// serveur ; `null` sinon. Posé par la superposition de la file.
+  final PendingActionState? syncState;
+
+  /// Identité du registre de police, vide tant qu'elle n'est pas saisie.
+  final ClientIdentity identity;
+
   factory ClientModel.fromJson(Map<String, dynamic> json) {
     return ClientModel(
       id: json['id'] as String? ?? '',
@@ -124,6 +140,42 @@ class ClientModel {
       status: ClientStatus.fromCode(json['status'] as String?),
       documentFrontUrl: json['document_front_url'] as String?,
       documentBackUrl: json['document_back_url'] as String?,
+      identity: ClientIdentity.fromJson(json),
+      syncState: localSyncState(json['sync_status']),
+    );
+  }
+
+  ClientModel copyWith({
+    String? fullName,
+    String? phone,
+    String? whatsapp,
+    ClientIdDocumentType? idDocumentType,
+    String? idDocumentNumber,
+    bool? hasDocumentFront,
+    bool? hasDocumentBack,
+    bool? documentsComplete,
+    ClientStats? stats,
+    ClientStatus? status,
+    String? documentFrontUrl,
+    String? documentBackUrl,
+    ClientIdentity? identity,
+  }) {
+    return ClientModel(
+      id: id,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      whatsapp: whatsapp ?? this.whatsapp,
+      idDocumentType: idDocumentType ?? this.idDocumentType,
+      idDocumentNumber: idDocumentNumber ?? this.idDocumentNumber,
+      hasDocumentFront: hasDocumentFront ?? this.hasDocumentFront,
+      hasDocumentBack: hasDocumentBack ?? this.hasDocumentBack,
+      documentsComplete: documentsComplete ?? this.documentsComplete,
+      stats: stats ?? this.stats,
+      status: status ?? this.status,
+      documentFrontUrl: documentFrontUrl ?? this.documentFrontUrl,
+      documentBackUrl: documentBackUrl ?? this.documentBackUrl,
+      identity: identity ?? this.identity,
+      syncState: syncState,
     );
   }
 
@@ -145,7 +197,9 @@ class ClientModel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ClientModel && runtimeType == other.runtimeType && id == other.id;
+      other is ClientModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
+import '../offline/offline_cache_interceptor.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/connectivity_interceptor.dart';
+import 'interceptors/plan_interceptor.dart';
+import 'interceptors/redacting_log_interceptor.dart';
 import 'interceptors/retry_interceptor.dart';
 
 Dio buildDioClient(
@@ -11,6 +14,8 @@ Dio buildDioClient(
   AuthInterceptor auth,
   RetryInterceptor retry,
   ConnectivityInterceptor connectivity,
+  PlanInterceptor plan,
+  OfflineCacheInterceptor offlineCache,
 ) {
   final dio = Dio(
     BaseOptions(
@@ -26,18 +31,22 @@ Dio buildDioClient(
   );
 
   dio.interceptors.addAll([
+    // En tête : hors ligne, il sert la lecture depuis le cache avant que
+    // l'intercepteur de connectivité ne la rejette.
+    offlineCache,
     connectivity,
     auth,
     retry,
-    if (config.enableLogging)
-      PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        error: true,
-        compact: false,
-      ),
+    // Après le rafraîchissement du jeton : un 403 qui atteint ce point est un
+    // refus métier définitif pour cette requête, pas une session à relancer.
+    plan,
+    // En dernier : il voit ainsi la requête telle qu'elle part réellement,
+    // en-tête d'authentification et rejeu compris. Muet en production, et les
+    // mots de passe, jetons et OTP y sont masqués.
+    if (kDebugMode && config.enableLogging) const RedactingLogInterceptor(),
   ]);
+
+  retry.attach(dio);
 
   return dio;
 }

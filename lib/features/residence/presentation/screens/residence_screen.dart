@@ -1,12 +1,25 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/router/app_router.gr.dart';
+import '../../../../core/router/role_guard.dart';
+import '../../../../core/session/session_role.dart';
 import '../../business_logic/residence_cubit.dart';
 import '../../business_logic/residence_state.dart';
 import '../widgets/residence_card.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Résidences du propriétaire — les lieux regroupant plusieurs logements.
 @RoutePage()
@@ -27,49 +40,78 @@ class _ResidenceView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Le rôle se lit sur la session, comme partout ailleurs dans le projet.
+    // L'écran reste ouvert au gérant — les résidences situent ses logements —
+    // mais `/gerant/residences` est en lecture seule : créer et supprimer lui
+    // sont retirés ici plutôt que refusés à l'appui.
+    final role = sl<SessionRole>().value;
+    final canCreate = isGestureAllowed(role, 'residence_create');
+    final canDelete = isGestureAllowed(role, 'residence_delete');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes résidences')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Ajouter'),
+      appBar: AppTopBar(
+        title: 'residence.my_residences'.tr(),
+        actions: [
+          if (canCreate)
+            AppButton(
+              label: 'residence.new_short'.tr(),
+              icon: LucideIcons.plus,
+              size: AppButtonSize.sm,
+              onPressed: () => _openForm(context),
+            ),
+        ],
       ),
       body: BlocBuilder<ResidenceCubit, ResidenceState>(
         builder: (context, state) => switch (state) {
-          ResidenceInitial() || ResidenceLoading() => const Center(
-            child: CircularProgressIndicator(),
+          ResidenceInitial() || ResidenceLoading() => const SimpleListSkeleton(
+            itemCount: 5,
+            itemHeight: 108,
           ),
-          ResidenceError(:final message) => _ErrorView(
+          ResidenceError(:final message) => ErrorState(
             message: message,
             onRetry: () => context.read<ResidenceCubit>().load(),
           ),
-          ResidenceLoaded(:final items) when items.isEmpty => const _EmptyView(),
+          ResidenceLoaded(:final items) when items.isEmpty => _EmptyView(
+            onCreate: canCreate ? () => _openForm(context) : null,
+          ),
           ResidenceLoaded(:final items) => RefreshIndicator(
             onRefresh: () => context.read<ResidenceCubit>().load(),
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (_, index) {
                 final residence = items[index];
                 return ResidenceCard(
                   residence: residence,
-                  onTap: () => _openForm(context, id: residence.id),
-                  onDelete: () => _confirmDelete(context, residence.id),
+                  onTap: () => _openDetail(context, residence.id),
+                  onDelete: canDelete
+                      ? () => _confirmDelete(context, residence.id)
+                      : null,
                 );
               },
             ),
           ),
         },
       ),
-      backgroundColor: theme.scaffoldBackgroundColor,
     );
+  }
+
+  /// Ouvre la fiche : détails du lieu et logements rattachés.
+  ///
+  /// L'édition s'y trouve derrière un bouton dédié — un clic sur la carte
+  /// menait auparavant droit au formulaire, sans jamais montrer ce que la
+  /// résidence contient.
+  Future<void> _openDetail(BuildContext context, String id) async {
+    final cubit = context.read<ResidenceCubit>();
+    await context.router.push(ResidenceDetailRoute(residenceId: id));
+    // Le compteur de logements et le nom peuvent avoir changé depuis la fiche.
+    await cubit.load();
   }
 
   Future<void> _openForm(BuildContext context, {String? id}) async {
     final cubit = context.read<ResidenceCubit>();
+    if (!await ensureOnline(context) || !context.mounted) return;
     await context.router.push(AddResidenceRoute(residenceId: id));
     // La liste est rechargée au retour : le formulaire a son propre cubit, et
     // ses écritures n'atteignent donc pas celui de cette page.
@@ -83,99 +125,48 @@ class _ResidenceView extends StatelessWidget {
   /// seul sachant combien il en reste.
   Future<void> _confirmDelete(BuildContext context, String id) async {
     final cubit = context.read<ResidenceCubit>();
-    final messenger = ScaffoldMessenger.of(context);
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Supprimer cette résidence ?'),
-        content: const Text(
-          'Les logements qu’elle contient ne sont pas supprimés. '
-          'Détachez-les d’abord si la suppression est refusée.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
+      title: 'residence.delete_title'.tr(),
+      message: 'residence.delete_body'.tr(),
+      confirmLabel: 'common.delete'.tr(),
+      danger: true,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     final error = await cubit.delete(id);
     if (error != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(error)));
+      AppToast.error(error);
+      return;
     }
+
+    AppToast.success('residence.deleted'.tr());
   }
 }
 
+/// Aucune résidence : l'écran explique la notion avant d'inviter à créer.
+///
+/// Une résidence se confond facilement avec un bien ; sans cette précision, le
+/// propriétaire en crée une par logement.
 class _EmptyView extends StatelessWidget {
-  const _EmptyView();
+  const _EmptyView({required this.onCreate});
+
+  /// Nul quand le rôle ne crée pas de résidence : l'explication reste, l'appel
+  /// à créer disparaît. Inviter un gérant à un geste que le serveur lui refuse
+  /// ne lui laisserait qu'une impasse.
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.apartment_outlined,
-              size: 56,
-              color: Theme.of(context).disabledColor,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Aucune résidence',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Une résidence regroupe plusieurs logements loués séparément — '
-              'un studio, une chambre-salon — qui partagent une adresse et des '
-              'charges communes.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).hintColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Réessayer')),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: AppSectionIcons.residences,
+      title: 'residence.empty_title'.tr(),
+      message: 'residence.empty_body'.tr(),
+      actionLabel: onCreate == null ? null : 'residence.create_one'.tr(),
+      actionIcon: LucideIcons.plus,
+      onAction: onCreate,
     );
   }
 }

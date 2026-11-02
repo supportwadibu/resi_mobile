@@ -1,18 +1,24 @@
+import 'package:easy_localization/easy_localization.dart';
+
+import '../../../../shared/models/late_checkout_policy.dart';
+
 /// Type de bien, tel que l'API le nomme.
 ///
 /// Le code est ce qui transite (`apartment`), le libellé ce qui s'affiche
 /// (« Appartement ») : les confondre enverrait du français à un validateur qui
 /// n'accepte que les valeurs de l'énumération.
 enum PropertyType {
-  apartment('apartment', 'Appartement'),
-  studio('studio', 'Studio'),
-  villa('villa', 'Villa'),
-  duplex('duplex', 'Duplex');
+  apartment('apartment'),
+  studio('studio'),
+  villa('villa'),
+  duplex('duplex');
 
-  const PropertyType(this.code, this.label);
+  const PropertyType(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'property_types.$code'.tr();
 
   static PropertyType? fromCode(String? code) {
     if (code == null) return null;
@@ -23,39 +29,21 @@ enum PropertyType {
   }
 }
 
-/// Niveau d'ameublement.
-enum Furnishing {
-  unfurnished('unfurnished', 'Non meublé'),
-  semiFurnished('semi_furnished', 'Semi-meublé'),
-  furnished('furnished', 'Meublé');
-
-  const Furnishing(this.code, this.label);
-
-  final String code;
-  final String label;
-
-  static Furnishing? fromCode(String? code) {
-    if (code == null) return null;
-    for (final value in Furnishing.values) {
-      if (value.code == code) return value;
-    }
-    return null;
-  }
-}
-
 /// Statut d'une annonce côté serveur.
 enum PropertyStatus {
-  draft('draft', 'Brouillon'),
-  published('published', 'Publiée'),
-  reserved('reserved', 'Réservée'),
-  rented('rented', 'Louée'),
-  maintenance('maintenance', 'En travaux'),
-  inactive('inactive', 'Inactive');
+  draft('draft'),
+  published('published'),
+  reserved('reserved'),
+  rented('rented'),
+  maintenance('maintenance'),
+  inactive('inactive');
 
-  const PropertyStatus(this.code, this.label);
+  const PropertyStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'property_status.$code'.tr();
 
   static PropertyStatus? fromCode(String? code) {
     if (code == null) return null;
@@ -121,7 +109,6 @@ class PropertyDetails {
     this.floorNumber,
     this.totalFloors,
     this.yearBuilt,
-    this.furnishing,
   });
 
   /// Surface habitable en m². Optionnelle : tous les propriétaires ne la
@@ -136,7 +123,6 @@ class PropertyDetails {
   final int? floorNumber;
   final int? totalFloors;
   final int? yearBuilt;
-  final Furnishing? furnishing;
 
   factory PropertyDetails.fromJson(Map<String, dynamic> json) {
     return PropertyDetails(
@@ -149,7 +135,6 @@ class PropertyDetails {
       floorNumber: (json['floor_number'] as num?)?.toInt(),
       totalFloors: (json['total_floors'] as num?)?.toInt(),
       yearBuilt: (json['year_built'] as num?)?.toInt(),
-      furnishing: Furnishing.fromCode(json['furnishing'] as String?),
     );
   }
 
@@ -165,7 +150,6 @@ class PropertyDetails {
     if (floorNumber != null) 'floor_number': floorNumber,
     if (totalFloors != null) 'total_floors': totalFloors,
     if (yearBuilt != null) 'year_built': yearBuilt,
-    if (furnishing != null) 'furnishing': furnishing!.code,
   };
 }
 
@@ -175,25 +159,27 @@ class PropertyDetails {
 /// libre : les commodités affichées côté mobile doivent donc se rattacher à
 /// l'une de ces clés, ou n'être pas transmises.
 enum Amenity {
-  airConditioning('air_conditioning', 'Climatisation'),
-  heating('heating', 'Chauffe-eau'),
-  elevator('elevator', 'Ascenseur'),
-  balcony('balcony', 'Balcon'),
-  terrace('terrace', 'Terrasse'),
-  garden('garden', 'Jardin'),
-  pool('pool', 'Piscine'),
-  gym('gym', 'Salle de sport'),
-  security('security', 'Sécurité 24h'),
-  concierge('concierge', 'Concierge'),
-  wifi('wifi', 'Wifi'),
-  parking('parking', 'Parking'),
-  petFriendly('pet_friendly', 'Animaux acceptés'),
-  smokingAllowed('smoking_allowed', 'Fumeurs acceptés');
+  airConditioning('air_conditioning'),
+  heating('heating'),
+  elevator('elevator'),
+  balcony('balcony'),
+  terrace('terrace'),
+  garden('garden'),
+  pool('pool'),
+  gym('gym'),
+  security('security'),
+  concierge('concierge'),
+  wifi('wifi'),
+  parking('parking'),
+  petFriendly('pet_friendly'),
+  smokingAllowed('smoking_allowed');
 
-  const Amenity(this.code, this.label);
+  const Amenity(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'amenities.$code'.tr();
 
   static Amenity? fromCode(String? code) {
     if (code == null) return null;
@@ -243,19 +229,176 @@ class PriceTier {
   int get hashCode => Object.hash(minDays, discountPercent);
 }
 
+/// Bornes admises pour une valeur de palier. [max] nul : pas de plafond.
+class TierBounds {
+  const TierBounds({required this.min, this.max});
+
+  final int min;
+  final int? max;
+
+  /// Ramène [value] dans les bornes plutôt que de la refuser : l'écran cale
+  /// ainsi la saisie sur la limite au lieu d'ignorer le geste sans rien dire.
+  int clamp(int value) {
+    final floored = value < min ? min : value;
+    final ceiling = max;
+    return ceiling != null && floored > ceiling ? ceiling : floored;
+  }
+
+  bool get allowsIncrement => max == null || max! > min;
+}
+
+/// Règles de cohérence d'une liste de paliers de remise.
+///
+/// L'API ne valide chaque palier qu'isolément (`min_days ≥ 2`,
+/// `discount_percent ∈ [1, 90]`) : rien ne l'empêche d'enregistrer deux
+/// paliers de même durée, ou une remise qui décroît quand le séjour s'allonge.
+/// Un tel palier est accepté mais ne s'applique jamais — [PropertyPricing]
+/// retient la remise la plus avantageuse atteinte, pas la dernière déclarée.
+/// Ces règles rendent l'état incohérent inatteignable depuis le formulaire.
+abstract final class PriceTierList {
+  /// Durée minimale d'un palier, imposée par le validateur serveur.
+  static const int minDaysFloor = 2;
+
+  static const int minDiscount = 1;
+  static const int maxDiscount = 90;
+
+  /// Liste triée par durée croissante.
+  ///
+  /// Les annonces enregistrées avant cette normalisation peuvent porter leurs
+  /// paliers dans n'importe quel ordre : l'écran les présente ordonnés.
+  static List<PriceTier> sorted(List<PriceTier> tiers) =>
+      [...tiers]..sort((a, b) => a.minDays.compareTo(b.minDays));
+
+  /// Durées admises pour le palier [index], au vu de ses voisins.
+  static TierBounds minDaysBounds(List<PriceTier> tiers, int index) {
+    final previous = index > 0 ? tiers[index - 1].minDays : null;
+    final next = index < tiers.length - 1 ? tiers[index + 1].minDays : null;
+
+    return TierBounds(
+      min: previous == null ? minDaysFloor : previous + 1,
+      max: next == null ? null : next - 1,
+    );
+  }
+
+  /// Remises admises pour le palier [index].
+  ///
+  /// La remise croît avec la durée : un séjour plus long ne peut pas être
+  /// moins avantageux qu'un séjour plus court.
+  static TierBounds discountBounds(List<PriceTier> tiers, int index) {
+    final previous = index > 0 ? tiers[index - 1].discountPercent : null;
+    final next = index < tiers.length - 1
+        ? tiers[index + 1].discountPercent
+        : null;
+
+    return TierBounds(
+      min: previous == null ? minDiscount : previous + 1,
+      max: next == null ? maxDiscount : next - 1,
+    );
+  }
+
+  /// Remplace le palier [index], en ramenant ses valeurs dans les bornes.
+  static List<PriceTier> replace(
+    List<PriceTier> tiers,
+    int index,
+    PriceTier tier,
+  ) {
+    final updated = [...tiers];
+    updated[index] = PriceTier(
+      minDays: minDaysBounds(tiers, index).clamp(tier.minDays),
+      discountPercent: discountBounds(tiers, index).clamp(tier.discountPercent),
+    );
+    return updated;
+  }
+
+  static List<PriceTier> removed(List<PriceTier> tiers, int index) =>
+      [...tiers]..removeAt(index);
+
+  /// Reste-t-il de la place pour un palier supplémentaire ?
+  ///
+  /// Non quand le dernier atteint déjà la remise maximale : le suivant devrait
+  /// être plus avantageux, et aucune valeur ne le permet.
+  static bool canAppend(List<PriceTier> tiers) =>
+      tiers.isEmpty || tiers.last.discountPercent < maxDiscount;
+
+  /// Ajoute un palier plus long et plus avantageux que le dernier.
+  static List<PriceTier> appended(List<PriceTier> tiers) {
+    if (!canAppend(tiers)) return tiers;
+    if (tiers.isEmpty) {
+      // La semaine : premier seuil que les propriétaires proposent
+      // spontanément, et point de bascule courant d'un séjour de passage.
+      return const [PriceTier(minDays: 7, discountPercent: 10)];
+    }
+
+    final last = tiers.last;
+    final nextDays = switch (last.minDays) {
+      < 7 => 7,
+      < 30 => 30,
+      _ => last.minDays + 30,
+    };
+
+    return [
+      ...tiers,
+      PriceTier(
+        minDays: nextDays,
+        // +5 points, sans dépasser le plafond ni rejoindre le palier
+        // précédent — la borne basse reste `last + 1`.
+        discountPercent: (last.discountPercent + 5).clamp(
+          last.discountPercent + 1,
+          maxDiscount,
+        ),
+      ),
+    ];
+  }
+
+  /// Le palier [index] est-il sans effet ?
+  ///
+  /// Ne survient que sur des données historiques : un palier plus long dont la
+  /// remise n'excède pas celle d'un palier plus court ne sera jamais retenu.
+  static bool isIneffective(List<PriceTier> tiers, int index) {
+    final tier = tiers[index];
+    for (var i = 0; i < tiers.length; i++) {
+      if (i == index) continue;
+      final other = tiers[i];
+      if (other.minDays <= tier.minDays &&
+          other.discountPercent >= tier.discountPercent) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
 /// Tarification. `dailyPrice` est exigé par l'API.
 ///
-/// Une journée court de l'heure d'arrivée à la même heure le lendemain : entrer
-/// à 12h et sortir le lendemain à 12h compte pour un jour.
+/// Un séjour se compte en nuits : chaque nuit se termine le lendemain à
+/// [checkoutTime], quelle que soit l'heure d'arrivée. `dailyPrice` est donc
+/// le prix d'une nuit ; il garde son nom d'API.
 class PropertyPricing {
   const PropertyPricing({
     required this.dailyPrice,
     this.priceTiers = const [],
     this.minimumStayDays,
     this.maximumStayDays,
+    this.lateCheckoutGraceMinutes = LateCheckoutPolicy.defaultGraceMinutes,
+    this.lateCheckoutHalfDayHours = LateCheckoutPolicy.defaultHalfDayHours,
+    this.checkoutTime = LateCheckoutPolicy.defaultCheckoutTime,
   });
 
   final double dailyPrice;
+
+  /// Départ tardif : dépassement offert, en minutes, puis facturé en
+  /// demi-nuit jusqu'à ce nombre d'heures.
+  final int lateCheckoutGraceMinutes;
+  final int lateCheckoutHalfDayHours;
+
+  /// Heure de départ « HH:mm », fin de chaque nuit.
+  final String checkoutTime;
+
+  LateCheckoutPolicy get lateCheckoutPolicy => LateCheckoutPolicy(
+    checkoutMinutes: LateCheckoutPolicy.parseCheckoutTime(checkoutTime),
+    graceMinutes: lateCheckoutGraceMinutes,
+    halfDayHours: lateCheckoutHalfDayHours,
+  );
 
   /// Paliers de remise par durée, triés par durée croissante.
   ///
@@ -286,6 +429,19 @@ class PropertyPricing {
       priceTiers: tiers,
       minimumStayDays: (json['minimum_stay_days'] as num?)?.toInt(),
       maximumStayDays: (json['maximum_stay_days'] as num?)?.toInt(),
+      // Absents d'un serveur antérieur au départ tardif et du cache local
+      // écrit avant : la règle par défaut est celle que le serveur applique.
+      lateCheckoutGraceMinutes:
+          (json['late_checkout_grace_minutes'] as num?)?.toInt() ??
+          LateCheckoutPolicy.defaultGraceMinutes,
+      lateCheckoutHalfDayHours:
+          (json['late_checkout_half_day_hours'] as num?)?.toInt() ??
+          LateCheckoutPolicy.defaultHalfDayHours,
+      // Absente d'un serveur antérieur aux nuits à heure fixe et du cache
+      // local écrit avant : 12h30, l'heure que le serveur leur applique.
+      checkoutTime:
+          json['checkout_time'] as String? ??
+          LateCheckoutPolicy.defaultCheckoutTime,
     );
   }
 
@@ -295,6 +451,9 @@ class PropertyPricing {
       'price_tiers': [for (final tier in priceTiers) tier.toJson()],
     if (minimumStayDays != null) 'minimum_stay_days': minimumStayDays,
     if (maximumStayDays != null) 'maximum_stay_days': maximumStayDays,
+    'late_checkout_grace_minutes': lateCheckoutGraceMinutes,
+    'late_checkout_half_day_hours': lateCheckoutHalfDayHours,
+    'checkout_time': checkoutTime,
   };
 
   /// Remise applicable à [days] : le palier le plus avantageux atteint.
@@ -319,6 +478,48 @@ class PropertyPricing {
   }
 }
 
+/// Paliers de négociation : le client qui appuie sur « Négocier » voit le
+/// premier, puis le suivant à chaque « Négocier encore ». Pas de discussion,
+/// tout est réglé ici à l'avance.
+///
+/// Chaque palier est un prix par jour, sous le prix normal et sous le
+/// précédent ; le dernier est le prix plancher. Le serveur le vérifie et dit
+/// pourquoi il refuse.
+class PropertyNegotiation {
+  const PropertyNegotiation({this.enabled = false, this.prices = const []});
+
+  /// Paliers au plus, comme `MAX_NEGOTIATION_STEPS` côté API.
+  static const maxSteps = 5;
+
+  static const disabled = PropertyNegotiation();
+
+  final bool enabled;
+  final List<int> prices;
+
+  factory PropertyNegotiation.fromJson(Map<String, dynamic>? json) =>
+      PropertyNegotiation(
+        enabled: json?['enabled'] as bool? ?? false,
+        prices: ((json?['prices'] as List?) ?? const [])
+            .whereType<num>()
+            .map((p) => p.round())
+            .toList(growable: false),
+      );
+
+  Map<String, dynamic> toJson() => {'enabled': enabled, 'prices': prices};
+
+  /// Paliers valides contre [dailyPrice] : positifs et strictement
+  /// décroissants sous le prix normal.
+  bool isValidFor(double dailyPrice) {
+    if (enabled && prices.isEmpty) return false;
+    var previous = dailyPrice;
+    for (final price in prices) {
+      if (price <= 0 || price >= previous) return false;
+      previous = price.toDouble();
+    }
+    return true;
+  }
+}
+
 /// Annonce, telle que renvoyée par `GET/POST /proprio/properties`.
 class PropertyModel {
   const PropertyModel({
@@ -334,6 +535,7 @@ class PropertyModel {
     required this.images,
     required this.pricing,
     required this.availableFrom,
+    this.negotiation = PropertyNegotiation.disabled,
     this.chargesIncluded = false,
     this.additionalCharges = 0,
     this.isPublic = false,
@@ -354,6 +556,9 @@ class PropertyModel {
   final List<String> images;
   final PropertyPricing pricing;
   final DateTime availableFrom;
+
+  /// Absente des biens antérieurs à la négociation : non négociable.
+  final PropertyNegotiation negotiation;
   final bool chargesIncluded;
   final double additionalCharges;
   final bool isPublic;
@@ -410,6 +615,9 @@ class PropertyModel {
       availableFrom:
           DateTime.tryParse(json['available_from'] as String? ?? '') ??
           DateTime.now(),
+      negotiation: PropertyNegotiation.fromJson(
+        json['negotiation'] as Map<String, dynamic>?,
+      ),
       chargesIncluded: json['charges_included'] as bool? ?? false,
       additionalCharges: (json['additional_charges'] as num?)?.toDouble() ?? 0,
       isPublic: visibility['is_public'] as bool? ?? false,
@@ -449,6 +657,7 @@ class CreatePropertyPayload {
     required this.images,
     required this.pricing,
     required this.availableFrom,
+    this.negotiation = PropertyNegotiation.disabled,
     this.chargesIncluded = false,
     this.additionalCharges,
   });
@@ -462,6 +671,7 @@ class CreatePropertyPayload {
   final List<String> images;
   final PropertyPricing pricing;
   final DateTime availableFrom;
+  final PropertyNegotiation negotiation;
   final bool chargesIncluded;
   final double? additionalCharges;
 
@@ -476,6 +686,8 @@ class CreatePropertyPayload {
     'amenities': {for (final amenity in amenities) amenity.code: true},
     if (images.isNotEmpty) 'media': {'images': images},
     'pricing': pricing.toJson(),
+    // Seulement activée : un bien non négociable n'a rien à déclarer.
+    if (negotiation.enabled) 'negotiation': negotiation.toJson(),
     'charges_included': chargesIncluded,
     if (additionalCharges != null) 'additional_charges': additionalCharges,
     // `vine.date()` attend une date, pas un instant ISO complet.
@@ -487,4 +699,163 @@ class CreatePropertyPayload {
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
   }
+}
+
+/// Charge utile de modification : uniquement ce que le propriétaire a changé.
+///
+/// `PATCH` est partiel côté API, et c'est ici une garantie, pas une commodité :
+/// `media.images` et `pricing.price_tiers` sont **remplacés** par ce qu'on
+/// envoie. Retransmettre l'intégralité de la fiche à chaque enregistrement
+/// ferait réécrire des tableaux que l'utilisateur n'a pas touchés.
+///
+/// Trois champs sont volontairement absents du corps produit :
+/// - `visibility` — la mise en ligne passe par `publish`/`unpublish`, qui
+///   vérifient le dossier d'identité et horodatent la publication ;
+/// - `residence_id` — le rattachement a sa propre route, qui déplace les
+///   compteurs des deux résidences ;
+/// - `status` — il se déduit des réservations, le poser à la main
+///   réintroduirait un état bloqué que rien ne remet à zéro.
+class UpdatePropertyPayload {
+  const UpdatePropertyPayload._(this._fields);
+
+  final Map<String, dynamic> _fields;
+
+  /// Compare la saisie à [original] et ne retient que les écarts.
+  factory UpdatePropertyPayload.diff({
+    required PropertyModel original,
+    required String title,
+    required String description,
+    required PropertyType propertyType,
+    required PropertyAddress address,
+    required PropertyDetails details,
+    required Set<Amenity> amenities,
+    required List<String> images,
+    required PropertyPricing pricing,
+    PropertyNegotiation? negotiation,
+    bool? chargesIncluded,
+    double? additionalCharges,
+    DateTime? availableFrom,
+  }) {
+    final fields = <String, dynamic>{};
+
+    if (title != original.title) fields['title'] = title;
+    if (description != original.description) {
+      fields['description'] = description;
+    }
+    if (propertyType != original.propertyType) {
+      fields['property_type'] = propertyType.code;
+    }
+
+    // Les objets imbriqués se comparent sur leur forme sérialisée : le modèle
+    // n'implémente pas `==`, et l'écart qui compte est celui que verra l'API.
+    final addressJson = address.toJson();
+    if (!_sameJson(addressJson, original.address.toJson())) {
+      fields['address'] = addressJson;
+    }
+
+    final detailsJson = details.toJson();
+    if (!_sameJson(detailsJson, original.details.toJson())) {
+      // Une surface effacée doit être transmise à `null` : la clé omise par
+      // `PropertyDetails.toJson` laisserait l'ancienne valeur en place.
+      fields['details'] = {'surface_area': null, ...detailsJson};
+    }
+
+    if (!_sameAmenities(amenities, original.amenities)) {
+      // L'objet complet, y compris les `false` : n'envoyer que les commodités
+      // retenues rendrait tout retrait invisible côté serveur.
+      fields['amenities'] = {
+        for (final amenity in Amenity.values)
+          amenity.code: amenities.contains(amenity),
+      };
+    }
+
+    // L'ordre compte : la première photo sert de couverture.
+    if (!_sameList(images, original.images)) {
+      fields['media'] = {'images': images};
+    }
+
+    final pricingJson = pricing.toJson();
+    if (!_sameJson(pricingJson, original.pricing.toJson())) {
+      // Même raison que pour la surface : sans clé explicite, vider les
+      // paliers de remise ne les supprimerait pas.
+      fields['pricing'] = {'price_tiers': const <dynamic>[], ...pricingJson};
+    }
+
+    // Envoyée en entier : la liste de paliers se remplace, elle ne se
+    // complète pas.
+    if (negotiation != null &&
+        !_sameJson(negotiation.toJson(), original.negotiation.toJson())) {
+      fields['negotiation'] = negotiation.toJson();
+    }
+
+    if (chargesIncluded != null &&
+        chargesIncluded != original.chargesIncluded) {
+      fields['charges_included'] = chargesIncluded;
+    }
+    if (additionalCharges != null &&
+        additionalCharges != original.additionalCharges) {
+      fields['additional_charges'] = additionalCharges;
+    }
+    if (availableFrom != null &&
+        !_sameDay(availableFrom, original.availableFrom)) {
+      fields['available_from'] = CreatePropertyPayload._formatDate(
+        availableFrom,
+      );
+    }
+
+    return UpdatePropertyPayload._(fields);
+  }
+
+  /// Aucun écart : il n'y a rien à envoyer, et l'appel peut être épargné.
+  bool get isEmpty => _fields.isEmpty;
+
+  Map<String, dynamic> toJson() => Map.unmodifiable(_fields);
+
+  /// Égalité structurelle sur des cartes issues de `toJson`.
+  ///
+  /// `DeepCollectionEquality` viendrait de `collection`, que le projet n'a pas
+  /// en dépendance directe : la comparaison manuelle évite d'en ajouter une
+  /// pour ce seul usage.
+  static bool _sameJson(Map<String, dynamic> a, Map<String, dynamic> b) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (!b.containsKey(entry.key)) return false;
+      if (!_sameValue(entry.value, b[entry.key])) return false;
+    }
+    return true;
+  }
+
+  static bool _sameValue(dynamic a, dynamic b) {
+    if (a is Map<String, dynamic> && b is Map<String, dynamic>) {
+      return _sameJson(a, b);
+    }
+    if (a is List && b is List) {
+      if (a.length != b.length) return false;
+      for (var i = 0; i < a.length; i++) {
+        if (!_sameValue(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    // `15000` et `15000.0` désignent le même tarif : un modèle relu depuis
+    // l'API porte des `int` là où la saisie produit des `double`.
+    if (a is num && b is num) return a.toDouble() == b.toDouble();
+    return a == b;
+  }
+
+  static bool _sameList(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// L'ordre d'un `Set` ne porte pas de sens : seule la composition compte.
+  static bool _sameAmenities(Set<Amenity> a, Set<Amenity> b) =>
+      a.length == b.length && a.containsAll(b);
+
+  /// `available_from` est une date, pas un instant : comparer les `DateTime`
+  /// bruts signalerait un écart à chaque ouverture du formulaire.
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }

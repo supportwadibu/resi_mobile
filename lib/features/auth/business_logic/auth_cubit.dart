@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/error/failures.dart';
+import '../../sponsorship/data/repositories/sponsorship_repository.dart';
 import '../data/services/auth_service.dart';
 import '../data/services/google_auth_service.dart';
 import '../data/services/property_manager_service.dart';
@@ -9,10 +10,12 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthService _service;
   final PropertyManagerService _propertyManagerService;
 
-  AuthCubit(
-    this._service,
-    this._propertyManagerService,
-  ) : super(const AuthInitial());
+  /// Vérifie le code de parrainage saisi à l'inscription. Facultatif : la
+  /// connexion n'en a pas l'usage.
+  final SponsorshipRepository? _sponsorships;
+
+  AuthCubit(this._service, this._propertyManagerService, [this._sponsorships])
+    : super(const AuthInitial());
 
   Future<void> login(String email, String password) async {
     emit(const AuthLoading());
@@ -78,10 +81,20 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Connexion Google : le service obtient l'ID token puis l'échange contre
   /// les tokens de l'API. L'annulation par l'utilisateur n'est pas une erreur.
-  Future<void> loginWithGoogle() async {
+  ///
+  /// [sponsorshipCode], saisi à l'inscription, est vérifié **avant** d'ouvrir
+  /// Google : l'API l'ignorerait en silence s'il était faux, et le parrain ne
+  /// toucherait rien sans que personne le sache.
+  Future<void> loginWithGoogle({String? sponsorshipCode}) async {
     emit(const AuthLoading());
     try {
-      final auth = await _service.loginWithGoogle();
+      final code = sponsorshipCode?.trim();
+      final checked = code == null || code.isEmpty || _sponsorships == null
+          ? null
+          : await _sponsorships.checkCode(code);
+      final auth = await _service.loginWithGoogle(
+        sponsorshipCode: checked?.code,
+      );
       if (!isClosed) emit(AuthSuccess(auth));
     } on GoogleSignInCancelled {
       if (!isClosed) emit(const AuthCancelled());

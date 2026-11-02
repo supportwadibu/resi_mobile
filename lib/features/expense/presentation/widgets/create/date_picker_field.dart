@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_picker_field.dart';
 
 class DatePickerField extends StatelessWidget {
   final String date;
@@ -8,23 +10,10 @@ class DatePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AppPickerField(
+      value: date,
+      icon: LucideIcons.calendar,
       onTap: onTap,
-      child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xffF5F5FA),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Text(date),
-            const Spacer(),
-            const Icon(Icons.keyboard_arrow_down),
-          ],
-        ),
-      ),
     );
   }
 }

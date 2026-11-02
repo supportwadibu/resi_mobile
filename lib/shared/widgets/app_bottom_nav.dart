@@ -1,14 +1,27 @@
-import 'dart:ui';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/resi_tokens.dart';
+import 'frosted_surface.dart';
+
+/// Barre des onglets racines, flottante au-dessus du contenu, suivie du
+/// bouton « Créer ». Les icônes sont celles des sections (`AppSectionIcons`),
+/// reprises sur les tuiles et les en-têtes.
+///
+/// À poser en `bottomNavigationBar` d'un `Scaffold` en `extendBody` : le
+/// contenu défile sous la barre, et le `Scaffold` en reporte la hauteur dans
+/// `MediaQuery.paddingOf(context).bottom` pour que la dernière ligne reste
+/// atteignable.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     required this.currentIndex,
     required this.onTap,
-    required this.isMenuOpen,
-    required this.onMenuToggle,
+    this.isMenuOpen = false,
+    this.onMenuToggle,
     super.key,
   });
 
@@ -17,152 +30,165 @@ class AppBottomNav extends StatelessWidget {
 
   final bool isMenuOpen;
 
-  final void Function(bool) onMenuToggle;
+  final VoidCallback? onMenuToggle;
+
+  static const barHeight = 64.0;
 
   static const _items = [
-    _NavItem(icon: FontAwesomeIcons.house, label: 'Accueil'),
-    _NavItem(icon: FontAwesomeIcons.book, label: 'Réservations'),
-    _NavItem(icon: FontAwesomeIcons.building, label: 'Biens'),
-    _NavItem(icon: FontAwesomeIcons.chartColumn, label: 'Stats'),
+    (icon: AppSectionIcons.home, label: 'nav.home'),
+    (icon: AppSectionIcons.bookings, label: 'nav.bookings'),
+    (icon: AppSectionIcons.properties, label: 'nav.properties'),
+    (icon: AppSectionIcons.stats, label: 'nav.stats'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.65),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: Colors.black.withOpacity(0.08),
-                      ),
-                    ),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: FrostedSurface(
+                borderRadius: FrostedSurface.pill,
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: SizedBox(
+                    height: barHeight,
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(
-                        _items.length,
-                        (i) => _NavButton(
-                          item: _items[i],
-                          isActive: currentIndex == i,
-                          onTap: () => onTap(i),
-                        ),
-                      ),
+                      children: [
+                        for (var i = 0; i < _items.length; i++)
+                          Expanded(
+                            child: _NavItem(
+                              icon: _items[i].icon,
+                              label: _items[i].label.tr(),
+                              selected: i == currentIndex,
+                              onTap: () => onTap(i),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          // Bouton Add
-          GestureDetector(
-            onTap: () => onMenuToggle(!isMenuOpen),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: isMenuOpen
-                          ? AppColors.primary.withOpacity(0.9)
-                          : Colors.white.withOpacity(0.65),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.black.withOpacity(0.08),
-                      ),
-                    ),
-                    child: AnimatedRotation(
-                      turns: isMenuOpen ? 0.125 : 0,
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeOutBack,
-                      child: Icon(
-                        Icons.add,
-                        color: isMenuOpen ? Colors.white : AppColors.black,
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+            if (onMenuToggle != null) ...[
+              const SizedBox(width: 8),
+              _CreateButton(isOpen: isMenuOpen, onTap: onMenuToggle!),
+            ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _NavItem {
-  const _NavItem({required this.icon, required this.label});
-  final FaIconData icon;
-  final String label;
-}
-
-class _NavButton extends StatelessWidget {
-  const _NavButton({
-    required this.item,
-    required this.isActive,
+/// Un onglet : indicateur en pilule derrière l'icône, libellé dessous.
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
     required this.onTap,
   });
 
-  final _NavItem item;
-  final bool isActive;
+  final IconData icon;
+  final String label;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.black : Colors.transparent,
-          shape: BoxShape.circle,
+    final t = context.tokens;
+    final color = selected ? t.foreground : t.muted;
+    return Semantics(
+      container: true,
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                height: 30,
+                // Borné par la largeur de l'onglet : l'indicateur ne déborde
+                // jamais sur son voisin ni sur le bord de la pilule.
+                constraints: const BoxConstraints(maxWidth: 56),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? t.background
+                      : t.background.withValues(alpha: 0),
+                  border: Border.all(
+                    color: selected ? t.border : t.border.withValues(alpha: 0),
+                  ),
+                  borderRadius: AppRadius.pill,
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(height: 4),
+              // Une seule ligne, quitte à réduire un peu le corps : un
+              // libellé coupé en deux décalait l'onglet entier.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: context.text.labelMedium!.copyWith(color: color),
+                ),
+              ),
+            ],
+          ),
         ),
-        child: FaIcon(
-          item.icon,
-          size: 20,
-          color: isActive ? AppColors.white : Colors.black87,
+      ),
+    );
+  }
+}
+
+class _CreateButton extends StatelessWidget {
+  const _CreateButton({required this.isOpen, required this.onTap});
+
+  final bool isOpen;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Tooltip(
+      message: isOpen ? 'common.close'.tr() : 'common.create'.tr(),
+      child: SizedBox.square(
+        dimension: AppBottomNav.barHeight,
+        child: FrostedSurface(
+          borderRadius: FrostedSurface.pill,
+          color: isOpen ? t.primary : null,
+          opacity: isOpen ? 1 : 0.72,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onTap,
+              child: Center(
+                child: AnimatedRotation(
+                  turns: isOpen ? 0.125 : 0,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  child: Icon(
+                    LucideIcons.plus,
+                    size: 24,
+                    color: isOpen ? t.primaryForeground : t.foreground,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

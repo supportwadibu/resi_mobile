@@ -1,0 +1,12 @@
+Flutter Static Analysis Results
+===============================
+
+Command: flutter analyze --no-pub lib/features/property/data/services/google_places_service.dart lib/features/property/presentation/widgets/add_property/city_picker_widget.dart
+
+Result: No issues found! (ran in 31.5s)
+
+Files analyzed:
+- lib/features/property/data/services/google_places_service.dart
+- lib/features/property/presentation/widgets/add_property/city_picker_widget.dart
+
+All files passed static analysis without warnings or errors.

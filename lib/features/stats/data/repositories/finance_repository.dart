@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
 import '../models/finance/finance_overview_model.dart';
 
 /// Situation financière du propriétaire connecté : revenus, charges, bénéfice.
 class FinanceRepository {
-  const FinanceRepository(this._dio);
+  const FinanceRepository(this._dio, this._role);
   final Dio _dio;
+  final SessionRole _role;
 
   /// Revenus, charges et bénéfice sur une période.
   ///
@@ -16,20 +18,58 @@ class FinanceRepository {
   /// logements, ses charges communes et celles de ses logements. Le taux
   /// d’occupation est alors rapporté à ses seules unités, et non au parc entier.
   ///
-  /// Une résidence inconnue répond 404 — lire le `statusCode`, jamais le texte
-  /// du message.
+  /// [propertyId] restreint le relevé à un logement : son revenu et ses
+  /// propres charges, sans les charges communes de sa résidence. Exclusif de
+  /// [residenceId] — l'écran n'en retient qu'un.
+  ///
+  /// [to] est le dernier jour **inclus** : il part en fin de journée. L'API
+  /// traite cette borne comme exclusive pour le revenu, l'occupation et les
+  /// remboursements ; envoyée à minuit, elle amputerait le relevé de son
+  /// dernier jour — le 30 septembre d'un relevé de septembre.
+  ///
+  /// Une résidence ou un logement inconnu répond 404 — lire le `statusCode`,
+  /// jamais le texte du message.
   Future<FinanceOverviewModel> getOverview({
     DateTime? from,
     DateTime? to,
     String? residenceId,
+    String? propertyId,
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioFinanceOverview,
+        ApiEndpoints.financeOverview(_role.value),
         queryParameters: {
           if (from != null) 'from': _formatDate(from),
-          if (to != null) 'to': _formatDate(to),
+          if (to != null) 'to': '${_formatDate(to)} 23:59:59',
           'residence_id': ?residenceId,
+          'property_id': ?propertyId,
+        },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return FinanceOverviewModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Revenus et taux d'occupation du parc sur une période : le tableau de bord
+  /// de RESI Basic.
+  ///
+  /// Même forme que [getOverview], sans charges ni bénéfice : l'API ne les
+  /// rend pas, et le modèle les lit à zéro. L'appelant ne doit donc pas les
+  /// afficher. Mêmes bornes, `to` inclus.
+  Future<FinanceOverviewModel> getPerformance({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.financePerformance,
+        queryParameters: {
+          'from': _formatDate(from),
+          'to': '${_formatDate(to)} 23:59:59',
         },
       );
       final data = (response.data as Map<String, dynamic>)['data'];

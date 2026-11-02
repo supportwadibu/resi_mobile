@@ -2,7 +2,7 @@ name: resi_africa
 description: "A new Flutter project."
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.2+2
 
 environment:
   sdk: ^3.10.1
@@ -18,7 +18,6 @@ dependencies:
   auto_route: ^11.1.0
   dio: ^5.9.2
   connectivity_plus: ^7.1.1
-  pretty_dio_logger: ^1.4.0
   flutter_secure_storage: ^10.3.1
   easy_localization: ^3.0.8
   logger: ^2.7.0
@@ -36,6 +35,7 @@ dependencies:
   lottie: ^3.3.2
   phone_numbers_parser: ^9.0.5
   geolocator: ^14.0.3
+  http: ^1.1.0
   flutter_inappwebview: ^6.1.5
   pdf: ^3.11.1
   printing: ^5.13.4
@@ -43,6 +43,28 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.5
   uuid: ^4.5.1
+  open_filex: ^4.7.0
+  cached_network_image: ^3.4.1
+  package_info_plus: ^10.2.1
+  google_mlkit_text_recognition: ^0.16.0
+  # Icônes Lucide, les mêmes que celles du backoffice (`lucide-react`) : une
+  # section garde le même pictogramme sur le web et sur le téléphone.
+  lucide_icons_flutter: ^3.1.20
+  # Notifications push (FCM) : relances d'échéance d'abonnement et messages
+  # du back-office. Firebase est déjà initialisé pour Google Sign-In, et le
+  # serveur envoie par le compte de service qu'il a déjà — aucun fournisseur
+  # de plus.
+  firebase_messaging: ^16.7.0
+  # Affichage des notifications quand l'application est ouverte : FCM ne les
+  # montre pas lui-même au premier plan sur Android. Crée aussi le canal
+  # `resi_default` à importance haute, sans lequel une notification reçue en
+  # arrière-plan n'apparaît qu'en icône discrète, sans bannière ni son.
+  flutter_local_notifications: ^22.3.1
+  # Liens `resi://` : la page de retour Wave du site rouvre l'application,
+  # qui constate alors le paiement et l'annonce. Un schéma propre plutôt
+  # que des liens `https` universels, qui exigeraient de publier
+  # `assetlinks.json` et `apple-app-site-association` sur le domaine.
+  app_links: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -58,12 +80,32 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logotype.png"
+  image_path: "assets/images/logotype_inverted.png"
+  # L'App Store refuse une icône avec transparence : les coins transparents
+  # du logotype sont remplis de blanc, iOS arrondissant l'icône lui-même.
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
   min_sdk_android: 21
   adaptive_icon_background: #FFFFFF
 
 flutter:
   uses-material-design: true
+
+  # Geist, la police du backoffice, embarquée plutôt que chargée par
+  # `google_fonts` : la saisie au comptoir fonctionne hors réseau, police
+  # comprise. Graisses statiques — Flutter n'applique pas `FontWeight` à l'axe
+  # d'une police variable.
+  fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/geist/Geist-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/geist/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/geist/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/geist/Geist-Bold.ttf
+          weight: 700
 
   assets:
     - assets/translations/en.json

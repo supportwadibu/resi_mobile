@@ -55,21 +55,21 @@ class PropertyManagerModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'email': email,
-        'name': name,
-        'phone_number': phoneNumber,
-        'photo_url': photoUrl,
-        'id_card_type': idCardType,
-        'id_card_number': idCardNumber,
-        'id_card_front_path': idCardFrontPath,
-        'id_card_back_path': idCardBackPath,
-        'address': address,
-        'city': city,
-        'country': country,
-        'created_at': createdAt?.toIso8601String(),
-        'updated_at': updatedAt?.toIso8601String(),
-      };
+    'id': id,
+    'email': email,
+    'name': name,
+    'phone_number': phoneNumber,
+    'photo_url': photoUrl,
+    'id_card_type': idCardType,
+    'id_card_number': idCardNumber,
+    'id_card_front_path': idCardFrontPath,
+    'id_card_back_path': idCardBackPath,
+    'address': address,
+    'city': city,
+    'country': country,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
+  };
 
   PropertyManagerModel copyWith({
     String? id,
@@ -116,5 +116,6 @@ class PropertyManagerModel {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'PropertyManagerModel(id: $id, name: $name, email: $email)';
+  String toString() =>
+      'PropertyManagerModel(id: $id, name: $name, email: $email)';
 }

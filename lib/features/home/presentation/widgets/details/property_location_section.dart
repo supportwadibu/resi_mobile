@@ -1,8 +1,14 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/shared/utils/launcher_helper.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 
 class PropertyLocationSection extends StatelessWidget {
   const PropertyLocationSection({
@@ -18,56 +24,28 @@ class PropertyLocationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final propertyLocation = LatLng(latitude, longitude);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Adresse précise',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E2A5A),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.location_on_outlined,
-                size: 18,
-                color: Color(0xFF1E2A5A),
-              ),
+    return Section(
+      title: 'common.address'.tr(),
+      icon: LucideIcons.mapPin,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(address, style: context.text.bodyMedium),
+          const SizedBox(height: 12),
+          DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              border: Border.all(color: t.border),
+              borderRadius: AppRadius.md,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                address,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SizedBox(
-            height: 200,
-            child: Stack(
-              children: [
-                FlutterMap(
+            child: ClipRRect(
+              borderRadius: AppRadius.md,
+              child: SizedBox(
+                height: 180,
+                child: FlutterMap(
                   options: MapOptions(
                     initialCenter: propertyLocation,
                     initialZoom: 14,
@@ -85,54 +63,37 @@ class PropertyLocationSection extends StatelessWidget {
                       markers: [
                         Marker(
                           point: propertyLocation,
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.location_pin,
-                            color: Color(0xFF1E2A5A),
-                            size: 40,
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.topCenter,
+                          // Toujours noir : le marqueur est posé sur une carte
+                          // aux couleurs fixes, qui ne suit pas le mode sombre.
+                          child: Icon(
+                            LucideIcons.mapPin,
+                            color: t.overlay,
+                            size: 36,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: () => LauncherHelper.openNavigation(
-                      latitude: latitude,
-                      longitude: longitude,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(16),
-                          bottomRight: Radius.circular(16),
-                        ),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'Ouvrir la navigation',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          AppButton(
+            label: 'property_detail.open_directions'.tr(),
+            icon: LucideIcons.navigation,
+            variant: AppButtonVariant.secondary,
+            expand: true,
+            onPressed: () => LauncherHelper.openNavigation(
+              latitude: latitude,
+              longitude: longitude,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,14 +1,22 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 
 /// Photos de l'annonce.
 ///
-/// [images] contient des chemins de fichiers de l'appareil : ils sont déposés
-/// sur le serveur au moment de l'envoi, qui retourne les URLs publiques.
+/// [images] mêle deux natures d'entrée, indistinctes à l'écran : des chemins
+/// de fichiers de l'appareil, déposés au moment de l'envoi, et — en
+/// modification — les URLs des photos déjà hébergées. Seules les premières
+/// sont envoyées ; l'ordre de la liste, lui, fait foi des deux côtés, la
+/// première photo servant de couverture.
 class StepImagesWidget extends StatelessWidget {
   const StepImagesWidget({
     super.key,
@@ -35,11 +43,10 @@ class StepImagesWidget extends StatelessWidget {
     onChanged(updated);
 
     if (picked.length > remaining && context.mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('$maxImages photos au maximum.')),
-        );
+      AppToast.warning(
+        'property_form.max_photos'.tr(args: ['$maxImages']),
+        context: context,
+      );
     }
   }
 
@@ -53,18 +60,11 @@ class StepImagesWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Ajoutez des photos de votre bien',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
-        ),
+        Text('property_form.add_photos'.tr(), style: context.text.titleMedium),
         const SizedBox(height: 6),
         Text(
-          'Minimum 3 photos recommandées · ${images.length} ajoutée(s)',
-          style: TextStyle(fontSize: 12, color: AppColors.grey500),
+          'property_form.photos_hint'.tr(args: ['${images.length}']),
+          style: context.text.bodySmall,
         ),
         const SizedBox(height: 16),
         GridView.builder(
@@ -78,33 +78,25 @@ class StepImagesWidget extends StatelessWidget {
           itemCount: images.length + 1,
           itemBuilder: (_, i) {
             if (i == images.length) {
-              return GestureDetector(
-                onTap: () => _addImages(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.grey200,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
+              return Material(
+                color: context.tokens.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.md,
+                  side: BorderSide(color: context.tokens.border),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _addImages(context),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      FaIcon(
-                        FontAwesomeIcons.plus,
+                      Icon(
+                        LucideIcons.imagePlus,
                         size: 20,
-                        color: AppColors.primary,
+                        color: context.tokens.muted,
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        'Ajouter',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.grey500,
-                        ),
-                      ),
+                      Text('common.add'.tr(), style: context.text.bodySmall),
                     ],
                   ),
                 ),
@@ -112,33 +104,34 @@ class StepImagesWidget extends StatelessWidget {
             }
             return Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  // Une image choisie via `ImagePicker` est un fichier de
-                  // l'appareil, jamais un asset empaqueté.
-                  child: Image.file(
-                    File(images[i]),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: AppRadius.md,
+                    child: _Thumbnail(source: images[i]),
                   ),
                 ),
                 Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () => _removeImage(images, i),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: AppColors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(8),
+                  top: 4,
+                  right: 4,
+                  child: Tooltip(
+                    message: 'property_form.remove'.tr(),
+                    child: Material(
+                      color: context.tokens.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.sm,
+                        side: BorderSide(color: context.tokens.border),
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 14,
-                        color: AppColors.white,
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => _removeImage(images, i),
+                        child: SizedBox.square(
+                          dimension: 28,
+                          child: Icon(
+                            LucideIcons.trash2,
+                            size: 14,
+                            color: context.tokens.danger,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -147,21 +140,20 @@ class StepImagesWidget extends StatelessWidget {
                   Positioned(
                     bottom: 6,
                     left: 6,
+                    // Voile fixe : l'étiquette est posée sur la photo.
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: 6,
+                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(6),
+                        color: context.tokens.overlay.withValues(alpha: 0.7),
+                        borderRadius: AppRadius.pill,
                       ),
-                      child: const Text(
-                        'Principale',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                      child: Text(
+                        'property_form.cover'.tr(),
+                        style: context.text.labelMedium!.copyWith(
+                          color: context.tokens.onOverlay,
                         ),
                       ),
                     ),
@@ -171,6 +163,47 @@ class StepImagesWidget extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Vignette d'une photo, qu'elle soit déjà hébergée ou encore sur l'appareil.
+///
+/// Les deux cohabitent dans la grille dès qu'on modifie une annonce : une URL
+/// passée à `Image.file` afficherait une tuile cassée.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.source});
+
+  final String source;
+
+  bool get _isHosted =>
+      source.startsWith('http://') || source.startsWith('https://');
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isHosted) {
+      return CachedNetworkImage(
+        imageUrl: source,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (_, _) => Container(color: context.tokens.background),
+        errorWidget: (_, _, _) => Container(
+          color: context.tokens.background,
+          child: Icon(
+            LucideIcons.imageOff,
+            size: 20,
+            color: context.tokens.muted,
+          ),
+        ),
+      );
+    }
+
+    return Image.file(
+      File(source),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
     );
   }
 }

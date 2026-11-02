@@ -1,48 +1,56 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/service_locator.dart';
 import '../../../../shared/utils/currency_formatter.dart';
+import '../../../../shared/utils/date_formatter.dart';
+import '../../business_logic/stay_extension_cubit.dart';
+import '../../business_logic/stay_extension_state.dart';
 import '../../data/models/reservation_model.dart';
 import '../widgets/extension/booking_info_card.dart';
-import '../widgets/extension/extension_header.dart';
 import '../widgets/extension/night_counter.dart';
 import '../widgets/extension/payment_link_button.dart';
 import '../widgets/extension/price_summary_card.dart';
 
-/// Prolongation d'un séjour en cours.
-///
-/// Le montant affiché reprend le tarif figé à la réservation : le propriétaire
-/// peut avoir retouché sa grille depuis, mais un séjour déjà engagé reste
-/// facturé aux conditions acceptées. Le serveur reste seul à faire foi sur le
-/// montant encaissé.
 @RoutePage()
-class StayExtensionScreen extends StatefulWidget {
+class StayExtensionScreen extends StatelessWidget {
   const StayExtensionScreen({super.key, required this.reservation});
 
   final ReservationModel reservation;
 
   @override
-  State<StayExtensionScreen> createState() => _StayExtensionScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => sl<StayExtensionCubit>(),
+      child: _StayExtensionView(reservation: reservation),
+    );
+  }
 }
 
-class _StayExtensionScreenState extends State<StayExtensionScreen> {
-  /// Jours ajoutés au séjour, jamais moins d'un.
-  int _extraDays = 1;
+class _StayExtensionView extends StatefulWidget {
+  const _StayExtensionView({required this.reservation});
 
-  static final _dateFormat = DateFormat('d MMMM y', 'fr');
+  final ReservationModel reservation;
+
+  @override
+  State<_StayExtensionView> createState() => _StayExtensionViewState();
+}
+
+class _StayExtensionViewState extends State<_StayExtensionView> {
+  int _extraDays = 1;
 
   ReservationModel get _reservation => widget.reservation;
 
-  /// Tarif journalier déjà remisé, tel que facturé sur ce séjour.
-  ///
-  /// La remise de durée s'appliquait à l'ensemble du séjour : la reconduire sur
-  /// les jours ajoutés évite de facturer la prolongation plus cher que les
-  /// jours qui la précèdent.
-  double get _effectiveDailyPrice {
-    final discount = _reservation.durationDiscountPercent;
-    return _reservation.dailyPrice * (1 - discount / 100);
-  }
+  /// Tarif convenu à la réservation s'il a été négocié, grille sinon : c'est
+  /// ce que le serveur facturera pour chaque jour ajouté.
+  double get _effectiveDailyPrice => _reservation.extensionDailyRate;
 
   double get _extensionTotal =>
       (_effectiveDailyPrice * _extraDays).roundToDouble();
@@ -50,91 +58,106 @@ class _StayExtensionScreenState extends State<StayExtensionScreen> {
   DateTime get _newEndDate =>
       _reservation.endDate.add(Duration(days: _extraDays));
 
+  void _submit() {
+    context.read<StayExtensionCubit>().submit(
+      bookingId: _reservation.id,
+      checkOutAt: _newEndDate,
+    );
+  }
+
+  void _onStateChanged(BuildContext context, StayExtensionState state) {
+    switch (state) {
+      case StayExtensionSuccess(:final queued):
+        // Sans `context` : l'écran se referme juste après, et le toast doit
+        // survivre à sa disparition pour être lu sur la fiche.
+        AppToast.success(
+          queued ? 'offline_queue.saved'.tr() : 'stay_extension.extended'.tr(),
+        );
+        // `true` signale à l'écran de détail que la réservation a changé : il
+        // affiche des dates et un montant que cet envoi vient de réécrire.
+        context.router.maybePop(true);
+
+      case StayExtensionConflict(:final message):
+        // Un conflit de période n'est pas une panne : le propriétaire doit
+        // pouvoir raccourcir sa demande sans quitter l'écran.
+        AppToast.warning(message, context: context);
+
+      case StayExtensionFailure(:final message):
+        AppToast.error(message, context: context);
+
+      case StayExtensionIdle() || StayExtensionSubmitting():
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final property = _reservation.property;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return BlocConsumer<StayExtensionCubit, StayExtensionState>(
+      listener: _onStateChanged,
+      builder: (context, state) {
+        final isSubmitting = state is StayExtensionSubmitting;
 
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+        return Scaffold(
+          appBar: AppTopBar(title: 'stay_extension.title'.tr()),
+          bottomNavigationBar: PaymentLinkButton(
+            isLoading: isSubmitting,
+            onPressed: isSubmitting ? null : _submit,
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              const ExtensionHeader(),
-
-              const SizedBox(height: 40),
-
               BookingInfoCard(
-                residence: property?.title ?? 'Bien supprimé',
-                checkIn: _dateFormat.format(_reservation.startDate),
-                checkOut: _dateFormat.format(_reservation.endDate),
+                residence: property?.title ?? 'home.deleted_property'.tr(),
+                checkIn: DateFormatter.stayInstant(_reservation.checkInAt),
+                checkOut: DateFormatter.stayInstant(_reservation.checkOutAt),
               ),
-
-              const SizedBox(height: 24),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      NightCounter(
-                        value: _extraDays,
-                        onAdd: () => setState(() => _extraDays++),
-                        onRemove: () {
-                          if (_extraDays > 1) {
-                            setState(() => _extraDays--);
-                          }
-                        },
-                      ),
-
-                      const SizedBox(height: 12),
-                      Text(
-                        'Nouveau départ : ${_dateFormat.format(_newEndDate)}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xff252B5C),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      PriceSummaryCard(
-                        pricePerDay: CurrencyFormatter.fcfa(
-                          _reservation.dailyPrice,
-                        ),
-                        days: _extraDays,
-                        subtotal: CurrencyFormatter.fcfa(_extensionTotal),
-                        total: CurrencyFormatter.fcfa(_extensionTotal),
-                        discountPercent: _reservation.durationDiscountPercent,
-                      ),
-                    ],
-                  ),
+              const SizedBox(height: 12),
+              NightCounter(
+                value: _extraDays,
+                onAdd: isSubmitting
+                    ? () {}
+                    : () => setState(() => _extraDays++),
+                onRemove: isSubmitting
+                    ? () {}
+                    : () {
+                        if (_extraDays > 1) setState(() => _extraDays--);
+                      },
+              ),
+              const SizedBox(height: 12),
+              AppCallout(
+                icon: LucideIcons.calendarCheck,
+                tone: AppAccent.blue,
+                title: 'stay_extension.new_departure'.tr(),
+                // Date seule : le serveur cale la nouvelle sortie sur l'heure
+                // de départ du bien (`extensionCheckOutFor`), que la
+                // réservation ne porte pas — l'heure de la sortie actuelle,
+                // tardive peut-être, annoncerait une heure qui ne sera pas
+                // retenue.
+                message: DateFormatter.date(_newEndDate.toLocal()),
+              ),
+              const SizedBox(height: 12),
+              PriceSummaryCard(
+                // Un prix négocié se prolonge au prix négocié : c'est lui qui
+                // s'affiche, sans ligne de remise. Sinon, la grille puis sa
+                // remise de durée, comme avant.
+                pricePerDay: CurrencyFormatter.fcfa(
+                  _reservation.hasNegotiatedPrice
+                      ? _effectiveDailyPrice.roundToDouble()
+                      : _reservation.dailyPrice,
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              PaymentLinkButton(
-                // TODO(prolongation) : appeler `PATCH /client/bookings/:id` avec
-                // la nouvelle date de fin, puis enchaîner sur le paiement. La
-                // route côté client existe déjà ; il manque l'entrée
-                // correspondante dans `ApiEndpoints` et un cubit dédié.
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Mise à jour effectuée avec succès'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  context.router.back();
-                },
+                days: _extraDays,
+                subtotal: CurrencyFormatter.fcfa(_extensionTotal),
+                total: CurrencyFormatter.fcfa(_extensionTotal),
+                discountPercent: _reservation.hasNegotiatedPrice
+                    ? 0
+                    : _reservation.durationDiscountPercent,
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

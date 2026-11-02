@@ -1,3 +1,5 @@
+import 'api_paths.dart';
+
 abstract final class ApiEndpoints {
   static const String _v1 = '/api/v1';
 
@@ -12,86 +14,249 @@ abstract final class ApiEndpoints {
   static const String logout = '$_v1/auth/logout';
   static const String me = '$_v1/auth/me';
 
+  /// Appareils recevant les notifications push, tous rôles confondus.
+  static const String deviceTokens = '$_v1/auth/device-tokens';
+
   /// État d'abonnement du propriétaire connecté (essai, jours restants,
   /// statut du dossier de validation).
   static const String proprioSubscription = '$_v1/proprio/subscription';
+
+  /// Portefeuilles des résidences : l'argent payé par Wave par les clients.
+  /// Propriétaire seulement — le gérant ne voit pas l'argent de la maison.
+  static const String proprioWallets = '$_v1/proprio/wallets';
+
+  static String proprioWalletTransactions(String walletId) =>
+      '$proprioWallets/$walletId/transactions';
+
+  /// Demande de retrait : débitée aussitôt, versée par l'équipe RESI.
+  static String proprioWalletWithdrawals(String walletId) =>
+      '$proprioWallets/$walletId/withdrawals';
+
+  /// Toutes les demandes de retrait du propriétaire.
+  static const String proprioWithdrawals = '$_v1/proprio/withdrawals';
+
+  /// Retrait minimal et numéros Wave enregistrés.
+  static const String proprioPayoutSettings = '$_v1/proprio/payout-settings';
+
+  /// Numéros Wave de retrait, remplacés en bloc.
+  static const String proprioPayoutNumbers = '$_v1/proprio/payout-numbers';
+
+  /// Parrainage : code, gains, filleuls et règles du programme. Ouvert à tous
+  /// les paliers — inviter n'engage aucune fonction payante —, fermé au
+  /// gérant.
+  static const String sponsorship = '$_v1/sponsorship';
+
+  /// Vérifie un code avant l'inscription. Publique.
+  static String sponsorshipCode(String code) =>
+      '$sponsorship/codes/${Uri.encodeComponent(code)}';
+
+  /// Saisie après coup du code d'un parrain.
+  static const String sponsorshipApply = '$sponsorship/apply';
+
+  /// Filleuls et l'étape de chacun.
+  static const String sponsorshipSponsored = '$sponsorship/sponsored';
+
+  /// Retraits Wave et conversions des gains. `GET` pour lister, `POST` pour
+  /// demander.
+  static const String sponsorshipRedemptions = '$sponsorship/redemptions';
+
+  /// Forfaits proposés à la souscription, du moins cher au plus cher.
+  static const String proprioPlans = '$_v1/proprio/plans';
+
+  /// Lance le paiement Wave d'un forfait ; renvoie le lien de paiement.
+  static const String proprioSubscriptionCheckout =
+      '$_v1/proprio/subscription/checkout';
+
+  /// Constate l'issue d'un paiement au retour de Wave, sans attendre le
+  /// webhook : le serveur relit la session chez Wave.
+  static String proprioSubscriptionConfirm(String reference) =>
+      '$_v1/proprio/subscription/checkout/$reference/confirm';
+
+  /// Renouvellement ouvert ou non, remboursement d'une résiliation, prix des
+  /// montées de forfait.
+  static const String proprioSubscriptionOptions =
+      '$_v1/proprio/subscription/options';
+
+  /// Résilie le forfait payant en cours ; les jours restants sont rendus au
+  /// portefeuille RESI.
+  static const String proprioSubscriptionCancel =
+      '$_v1/proprio/subscription/cancel';
 
   /// Dossier de validation : coordonnées et pièces d'identité déposées à la
   /// suite de l'inscription. `GET` pour relire, `POST` (multipart) pour déposer.
   static const String proprioProfile = '$_v1/proprio/profile';
 
+  /// Compte du gérant connecté. `GET` pour relire, `PATCH` pour changer son nom
+  /// ou son mot de passe.
+  ///
+  /// Chemin fixe et non dérivé du rôle, contrairement aux listes : la route
+  /// rend un `ManagerDto` — nom, coordonnées, périmètre, état du compte —,
+  /// d'une forme sans rapport avec le dossier de validation servi par
+  /// `proprioProfile`. Les réunir derrière un `profile(role)` laisserait croire
+  /// à deux variantes d'une même ressource, et un modèle unique lirait à vide
+  /// les champs que l'autre ne porte pas.
+  static const String gerantProfile = '$_v1/gerant/profile';
+
   static const String homes = '/homes';
 
-  /// Annonces du propriétaire connecté. `GET` pour lister, `POST` pour créer.
-  static const String proprioProperties = '$_v1/proprio/properties';
+  /// Annonces servies par l'appelant — son parc entier pour le propriétaire,
+  /// ses seuls logements affectés pour le gérant.
+  /// `GET` pour lister, `POST` pour créer.
+  static String properties(String role) =>
+      '${basePathForRole(role)}/properties';
+
+  /// État instantané du parc : nombre d'unités au total, publiées, louées,
+  /// en brouillon. Sans bornes de période, contrairement au relevé financier.
+  static const String proprioPropertyStats = '$_v1/proprio/properties/stats';
 
   /// Dépôt des photos d'annonce, qui retourne leurs URLs publiques.
   ///
   /// Séparé de la création : le secret Cloudinary ne quittant pas le serveur,
   /// l'upload direct depuis le mobile est exclu.
   static const String proprioPropertyImages = '$_v1/proprio/properties/images';
-  /// Résidences du propriétaire : des lieux regroupant plusieurs logements.
-  /// `GET` pour lister, `POST` pour créer.
-  static const String proprioResidences = '$_v1/proprio/residences';
 
-  static String proprioResidence(String id) =>
-      '$_v1/proprio/residences/$id';
+  /// Résidences de l'appelant : des lieux regroupant plusieurs logements.
+  /// `GET` pour lister, `POST` pour créer.
+  static String residences(String role) =>
+      '${basePathForRole(role)}/residences';
+
+  static String residence(String role, String id) =>
+      '${basePathForRole(role)}/residences/$id';
 
   /// Rattache un bien à une résidence, ou l’en détache avec
   /// `residence_id: null`.
   ///
   /// Route dédiée et non un champ du PATCH générique : le rattachement
   /// déplace un compteur sur deux résidences et peut recopier l’adresse.
-  static String proprioPropertyResidence(String id) =>
-      '$_v1/proprio/properties/$id/residence';
+  static String propertyResidence(String role, String id) =>
+      '${basePathForRole(role)}/properties/$id/residence';
 
-  static String proprioProperty(String id) => '$_v1/proprio/properties/$id';
+  static String property(String role, String id) =>
+      '${basePathForRole(role)}/properties/$id';
+
+  /// Mise en ligne d'une annonce, et retrait de la vitrine.
+  ///
+  /// Deux routes dédiées plutôt qu'un champ de `PATCH :id` : la publication
+  /// exige un dossier d'identité déposé et horodate la mise en ligne.
+  static String proprioPropertyPublish(String id) =>
+      '$_v1/proprio/properties/$id/publish';
+
+  static String proprioPropertyUnpublish(String id) =>
+      '$_v1/proprio/properties/$id/unpublish';
 
   /// Périodes déjà réservées sur un bien, pour barrer les dates au calendrier
   /// de saisie plutôt que d'essuyer un refus après coup.
-  static const String proprioPropertyAvailability =
-      '$_v1/proprio/properties/availability';
+  static String propertyAvailability(String role) =>
+      '${basePathForRole(role)}/properties/availability';
 
-  /// Réservations reçues sur les biens du propriétaire connecté.
+  /// Réservations servies par l'appelant — son parc entier pour le
+  /// propriétaire, ses seuls logements affectés pour le gérant.
   /// `GET` pour lister, `POST` pour enregistrer une réservation au comptoir.
-  static const String proprioBookings = '$_v1/proprio/bookings';
+  static String bookings(String role) => '${basePathForRole(role)}/bookings';
 
-  /// Clôture d'un séjour : enregistre la sortie et cumule le montant sur la
-  /// fiche du client.
-  static String proprioBookingCheckOut(String id) =>
-      '$_v1/proprio/bookings/$id/check-out';
+  static String booking(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id';
+
+  /// Chiffres du tableau de bord des réservations : taux d'occupation du mois,
+  /// séjours à venir et en cours, revenu du mois rapporté au précédent.
+  ///
+  /// Sans paramètre de période, contrairement au relevé financier : l'écran
+  /// montre le mois en cours, et laisser le cadrage au client ferait diverger
+  /// les compteurs et le bloc revenus affichés côte à côte.
+  ///
+  /// Le serveur cloisonne ces compteurs sur les logements de l'appelant, taux
+  /// d'occupation compris : le gérant en lit les siens, et non ceux du parc.
+  /// Le chemin propriétaire écrit en dur rendait ici un 403 au gérant, qui
+  /// perdait des compteurs auxquels il a droit.
+  static String bookingStats(String role) =>
+      '${basePathForRole(role)}/bookings/stats';
+
+  /// Annulation d'une réservation non close, avec le sort de l'acompte.
+  static String bookingCancel(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/cancel';
+
+  /// Arrivée du client, enregistrée à partir du jour J.
+  static String bookingCheckIn(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/check-in';
+
+  /// Clôture d'un séjour, mené à terme ou écourté par un départ anticipé.
+  static String bookingCheckOut(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/check-out';
+
+  /// Chiffrage d'un départ anticipé, sans écriture : jours facturés, prorata
+  /// proposé et remboursement.
+  static String bookingCheckOutPreview(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/check-out/preview';
+
   /// Prolongation d’un séjour comptoir : repousse la sortie et réajuste le
   /// montant. Un 409 est un conflit de période à arbitrer, pas une panne.
-  static String proprioBookingExtend(String id) =>
-      '$_v1/proprio/bookings/$id/extend';
+  static String bookingExtend(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/extend';
 
-  /// Carnet de clients du propriétaire connecté — des clients qui se
-  /// présentent au comptoir et n'ont pas de compte sur la plateforme.
+  /// Carnet de clients de l'appelant — des clients qui se présentent au
+  /// comptoir et n'ont pas de compte sur la plateforme.
   /// `GET` pour lister et rechercher, `POST` (multipart) pour enregistrer.
-  static const String proprioClients = '$_v1/proprio/clients';
+  static String clients(String role) => '${basePathForRole(role)}/clients';
 
   /// Recherche d'une fiche par numéro, appelée pendant la saisie : le
   /// téléphone identifie le client, et proposer la fiche existante évite un
   /// doublon dans le carnet.
-  static const String proprioClientLookup = '$_v1/proprio/clients/lookup';
+  static String clientLookup(String role) =>
+      '${basePathForRole(role)}/clients/lookup';
 
-  static String proprioClient(String id) => '$_v1/proprio/clients/$id';
+  static String client(String role, String id) =>
+      '${basePathForRole(role)}/clients/$id';
 
-  static const String reservations = '/reservations';
+  /// Historique des séjours d'un client, statistiques recalculées comprises.
+  ///
+  /// Les cumuls sont servis ici plutôt que lus sur la fiche : ils dérivent des
+  /// mêmes réservations, et les demander à part exposerait à afficher un total
+  /// qui contredit la liste juste en dessous.
+  static String clientBookings(String role, String id) =>
+      '${basePathForRole(role)}/clients/$id/bookings';
 
-  /// Dépenses du propriétaire connecté. `GET` pour lister, `POST` pour créer.
-  static const String proprioExpenses = '$_v1/proprio/expenses';
+  /// Dépenses de l'appelant. `GET` pour lister, `POST` pour créer.
+  static String expenses(String role) => '${basePathForRole(role)}/expenses';
 
   /// Total et ventilation par catégorie, filtrés comme la liste.
-  static const String proprioExpenseSummary = '$_v1/proprio/expenses/summary';
+  static String expenseSummary(String role) =>
+      '${basePathForRole(role)}/expenses/summary';
 
-  static String proprioExpense(String id) => '$_v1/proprio/expenses/$id';
+  static String expense(String role, String id) =>
+      '${basePathForRole(role)}/expenses/$id';
 
-  /// Revenus, charges et bénéfice net du propriétaire connecté.
-  static const String proprioFinanceOverview =
-      '$_v1/proprio/finance/overview';
+  /// Revenus, charges et bénéfice net de l'appelant.
+  static String financeOverview(String role) =>
+      '${basePathForRole(role)}/finance/overview';
 
-  static const String stats = "/stats";
-  static const String rapports = "/rapports";
-  static const String clients = "/clients";
+  /// Revenus et taux d'occupation, sans charges : le relevé de RESI Basic.
+  /// Propriétaire seulement.
+  static const String financePerformance = '/proprio/finance/performance';
+
+  /// Avis et suggestions sur l'application, adressés à l'équipe RESI.
+  /// `GET` pour relire les siens, `POST` pour en envoyer un.
+  ///
+  /// Sans rapport avec les avis portant sur un bien : ici le propriétaire parle
+  /// du produit, et le lecteur est l'équipe qui le développe.
+  static const String proprioFeedbacks = '$_v1/proprio/feedbacks';
+
+  /// Génération d'un rapport PDF (financier, performance, réservations).
+  ///
+  /// La réponse porte une URL signée à durée limitée (15 minutes) vers le
+  /// fichier généré, jamais le fichier lui-même : rien à mettre en cache ici.
+  static const String reports = '$_v1/proprio/reports';
+
+  /// Gérants du propriétaire connecté : comptes et périmètres.
+  static const String proprioManagers = '$_v1/proprio/managers';
+
+  static String proprioManager(String id) => '$_v1/proprio/managers/$id';
+
+  /// Remplacement du périmètre — `PUT`, la liste complète des logements
+  /// affectés : un ajout et un retrait faits ensemble deviennent une seule
+  /// écriture, et l'état obtenu ne dépend pas de l'ordre des requêtes.
+  static String proprioManagerProperties(String id) =>
+      '$_v1/proprio/managers/$id/properties';
+
+  static String proprioManagerStatus(String id) =>
+      '$_v1/proprio/managers/$id/status';
 }

@@ -1,91 +1,71 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
 
 class StatsHeader extends StatelessWidget {
-  const StatsHeader({super.key});
+  const StatsHeader({
+    super.key,
+    required this.from,
+    required this.to,
+    required this.onPeriodPicked,
+  });
 
-  String _getCurrentMonth() {
-    final now = DateTime.now();
-    const months = [
-      'Janvier',
-      'Février',
-      'Mars',
-      'Avril',
-      'Mai',
-      'Juin',
-      'Juillet',
-      'Août',
-      'Septembre',
-      'Octobre',
-      'Novembre',
-      'Décembre',
-    ];
-    return '${months[now.month - 1]} ${now.year}';
+  /// Bornes du relevé affiché, reprises telles quelles dans le titre : le
+  /// libellé doit décrire la période des chiffres, pas le mois courant.
+  final DateTime from;
+  final DateTime to;
+
+  final ValueChanged<DateTimeRange> onPeriodPicked;
+
+  /// « Septembre 2026 » quand la période tient dans un mois, « 03/09 - 21/10 »
+  /// sinon : le nom du mois devient trompeur dès que la fenêtre le déborde.
+  String get _label {
+    if (from.year == to.year && from.month == to.month) {
+      // Le nom du mois vient d'intl, dans la langue de l'application ; le
+      // français l'écrit en minuscule, d'où la majuscule ajoutée.
+      return toBeginningOfSentenceCase(DateFormat('MMM y').format(from));
+    }
+
+    String short(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+    return '${short(from)} - ${short(to)}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          _getCurrentMonth(),
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('stats.period'.tr(), style: context.text.bodySmall),
+              Text(
+                _label,
+                style: context.text.titleMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
-        GestureDetector(
-          onTap: () async {
-            final DateTimeRange? picked = await showDateRangePicker(
+        AppButton(
+          label: 'stats.change'.tr(),
+          icon: LucideIcons.calendarRange,
+          variant: AppButtonVariant.secondary,
+          size: AppButtonSize.sm,
+          onPressed: () async {
+            // Le calendrier prend le thème de l'application, clair ou
+            // sombre : aucune surcharge de couleurs ici.
+            final picked = await showDateRangePicker(
               context: context,
               firstDate: DateTime(2020),
               lastDate: DateTime(2030),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: AppColors.primary,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
+              initialDateRange: DateTimeRange(start: from, end: to),
             );
-            if (picked != null) {
-              // TODO: Implement filtering logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Période sélectionnée : ${picked.start.day}/${picked.start.month} - ${picked.end.day}/${picked.end.month}',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
+            if (picked != null) onPeriodPicked(picked);
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.calendar_month_outlined,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Filtrer',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );

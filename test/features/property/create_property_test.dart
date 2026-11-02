@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/features/property/data/repositories/property_repository.dart';
 
@@ -69,7 +71,6 @@ CreatePropertyPayload _payload({
       livingRooms: 1,
       kitchens: 1,
       parkingSpaces: 2,
-      furnishing: Furnishing.furnished,
     ),
     amenities: amenities,
     images: images,
@@ -87,7 +88,7 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
     interceptor = _CapturingInterceptor();
     dio.interceptors.add(interceptor);
-    repository = PropertyRepository(dio);
+    repository = PropertyRepository(dio, sessionRoleFixture());
   });
 
   group('Contrat de création — champs exigés par l’API', () {
@@ -120,7 +121,7 @@ void main() {
       expect(details['living_rooms'], 1);
       expect(details['kitchens'], 1);
       expect(details['parking_spaces'], 2);
-      expect(details['furnishing'], 'furnished');
+      expect(details.containsKey('furnishing'), isFalse);
     });
 
     test('la surface est omise quand elle n’est pas renseignée', () async {
@@ -391,14 +392,6 @@ void main() {
         'parking',
         'pet_friendly',
         'smoking_allowed',
-      });
-    });
-
-    test('l’ameublement couvre exactement FURNISHING', () {
-      expect(Furnishing.values.map((f) => f.code).toSet(), {
-        'unfurnished',
-        'semi_furnished',
-        'furnished',
       });
     });
   });

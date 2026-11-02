@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import '../../../data/models/expense_model.dart';
 
+/// Case d'une catégorie : icône à la couleur du poste, libellé. La case
+/// retenue prend le filet `primary`, comme toute option choisie.
 class CategoryItem extends StatelessWidget {
   final ExpenseCategory category;
   final bool selected;
@@ -15,31 +20,45 @@ class CategoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: selected ? Colors.black : const Color(0xffF5F5FA),
-          borderRadius: BorderRadius.circular(14),
+    final t = context.tokens;
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: Material(
+        color: selected ? t.background : t.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.md,
+          side: BorderSide(
+            color: selected ? t.primary : t.border,
+            width: selected ? 1.5 : 1,
+          ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              category.icon,
-              color: selected ? Colors.white : const Color(0xff1D2452),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              category.label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: selected ? Colors.white : const Color(0xff1D2452),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // La teinte du poste reste visible une fois sélectionné : c'est
+              // elle qui identifie la catégorie d'un écran à l'autre, y
+              // compris dans l'anneau des statistiques.
+              Icon(category.icon, size: 18, color: category.colorIn(t)),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  category.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall!.copyWith(
+                    color: t.foreground,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

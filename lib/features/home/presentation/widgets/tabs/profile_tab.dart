@@ -1,19 +1,39 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:resi_africa/core/config/app_config.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/router/role_guard.dart';
+import 'package:resi_africa/core/session/session_role.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/core/utils/country_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
 import 'package:resi_africa/features/auth/business_logic/owner_profile_cubit.dart';
 import 'package:resi_africa/features/auth/business_logic/owner_profile_state.dart';
 import 'package:resi_africa/features/auth/data/models/owner_profile_model.dart';
 import 'package:resi_africa/features/auth/data/services/auth_service.dart';
+import 'package:resi_africa/features/gerant/data/models/gerant_account_model.dart';
+import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_gate.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_status_card.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_style.dart';
+import 'package:resi_africa/features/support/presentation/widgets/support_contact_sheet.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/confirm_dialog.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/shared/widgets/skeletons/profile_skeleton.dart';
+import 'package:resi_africa/shared/widgets/language_switcher.dart';
+import 'package:resi_africa/shared/widgets/theme_switcher.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 @RoutePage()
 class ProfileScreen extends StatelessWidget {
@@ -28,7 +48,6 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-
 @visibleForTesting
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -36,75 +55,42 @@ class ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: Column(
-        children: [
-          // ── AppBar
-          Container(
-            color: AppColors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SafeArea(
-              bottom: false,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.maybePop(),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 20,
-                      color: AppColors.black,
-                    ),
-                  ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Mon profil',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                ],
-              ),
-            ),
-          ),
+      appBar: AppTopBar(title: 'profile.title'.tr()),
+      body: BlocBuilder<OwnerProfileCubit, OwnerProfileState>(
+        builder: (context, state) {
+          if (state is OwnerProfileLoading || state is OwnerProfileInitial) {
+            return const ProfileSkeleton();
+          }
 
-          Expanded(
-            child: BlocBuilder<OwnerProfileCubit, OwnerProfileState>(
-              builder: (context, state) {
-                if (state is OwnerProfileLoading ||
-                    state is OwnerProfileInitial) {
-                  return const ProfileSkeleton();
-                }
+          // Branche distincte, et non un `_ProfileContent` aux champs nuls :
+          // c'est le type du state qui interdit qu'un dossier de validation
+          // ou une pièce d'identité atteigne l'écran du gérant,
+          // `GerantAccountModel` n'en portant aucun.
+          if (state is ManagerProfileReady) {
+            return _ManagerProfileContent(account: state.account);
+          }
 
-                final profile = switch (state) {
-                  OwnerProfileReady(:final profile) => profile,
-                  OwnerProfileError(:final profile) => profile,
-                  OwnerProfileSubmitted(:final profile) => profile,
-                  _ => null,
-                };
+          final profile = switch (state) {
+            OwnerProfileReady(:final profile) => profile,
+            OwnerProfileError(:final profile) => profile,
+            OwnerProfileSubmitted(:final profile) => profile,
+            _ => null,
+          };
 
-                // Échec de lecture sans dossier en cache : rien de fiable à
-                // montrer, mieux vaut proposer une nouvelle tentative que des
-                // champs vides qu'on prendrait pour un profil incomplet.
-                if (profile == null) {
-                  return ErrorState(
-                    message: state is OwnerProfileError
-                        ? state.message
-                        : 'Profil indisponible.',
-                    onRetry: () => context.read<OwnerProfileCubit>().load(),
-                  );
-                }
+          // Échec de lecture sans dossier en cache : rien de fiable à
+          // montrer, mieux vaut proposer une nouvelle tentative que des
+          // champs vides qu'on prendrait pour un profil incomplet.
+          if (profile == null) {
+            return ErrorState(
+              message: state is OwnerProfileError
+                  ? state.message
+                  : 'profile.unavailable'.tr(),
+              onRetry: () => context.read<OwnerProfileCubit>().load(),
+            );
+          }
 
-                return _ProfileContent(profile: profile);
-              },
-            ),
-          ),
-        ],
+          return _ProfileContent(profile: profile);
+        },
       ),
     );
   }
@@ -115,6 +101,15 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({required this.profile});
 
   final OwnerProfileModel profile;
+
+  /// Rôle de la session, `proprio` par défaut.
+  ///
+  /// Lu par `isRegistered` plutôt qu'en accès direct : cet écran se monte dans
+  /// des tests de widget qui ne câblent pas le conteneur, et y lever ferait
+  /// échouer des tests qui ne portent pas sur le rôle. Le repli sur `proprio`
+  /// n'ouvre rien : le garde de route refuse le gérant de toute façon.
+  String _currentRole() =>
+      sl.isRegistered<SessionRole>() ? sl<SessionRole>().value : 'proprio';
 
   /// Localisation résumée sous le nom : « Cocody · Abidjan ».
   ///
@@ -166,189 +161,354 @@ class _ProfileContent extends StatelessWidget {
     return national.isEmpty ? raw : national;
   }
 
+  Future<void> _editProfile(BuildContext context) async {
+    await context.router.push(PropertyManagerProfileRoute());
+    // Le dossier a pu changer pendant l'édition : on relit plutôt que
+    // d'afficher l'état d'avant.
+    if (context.mounted) await context.read<OwnerProfileCubit>().load();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Seules les informations réellement renseignées sont listées : une ligne
     // vide laisserait croire à une donnée manquante côté serveur.
-    final items = <_InfoItem>[
+    final items = <DetailItem>[
       if (profile.fullName.trim().isNotEmpty)
-        _InfoItem(
-          icon: FontAwesomeIcons.user,
-          label: 'Nom complet',
-          value: profile.fullName,
+        DetailItem(
+          'common.full_name'.tr(),
+          profile.fullName,
+          icon: LucideIcons.user,
         ),
       if (profile.email != null && profile.email!.trim().isNotEmpty)
-        _InfoItem(
-          icon: FontAwesomeIcons.envelope,
-          label: 'Email',
-          value: profile.email!,
-        ),
+        DetailItem('common.email'.tr(), profile.email, icon: LucideIcons.mail),
       if (_phone != null)
-        _InfoItem(
-          icon: FontAwesomeIcons.phone,
-          label: 'Téléphone',
-          value: _phone!,
-        ),
+        DetailItem('common.phone'.tr(), _phone, icon: LucideIcons.phone),
       if (_fullAddress != null)
-        _InfoItem(
-          icon: FontAwesomeIcons.locationDot,
-          label: 'Adresse',
-          value: _fullAddress!,
+        DetailItem(
+          'common.address'.tr(),
+          _fullAddress,
+          icon: LucideIcons.mapPin,
         ),
       if (_identityDocument != null)
-        _InfoItem(
-          icon: FontAwesomeIcons.idCard,
-          label: 'Pièce d’identité',
-          value: _identityDocument!,
+        DetailItem(
+          'profile.id_document'.tr(),
+          _identityDocument,
+          icon: LucideIcons.idCard,
+        ),
+    ];
+
+    final settings = <Widget>[
+      // L'écran d'édition est le formulaire du dossier propriétaire, que
+      // `OwnerRouteGuard` ferme au gérant : l'entrée disparaît pour qu'il ne
+      // bute pas sur une redirection muette.
+      if (isGestureAllowed(_currentRole(), 'profile_edit'))
+        AppSheetAction(
+          icon: LucideIcons.squarePen,
+          label: 'profile.edit_info'.tr(),
+          onTap: () => _editProfile(context),
+        ),
+      // Réservée au propriétaire : le gérant n'ouvre pas de compte gérant, et
+      // le garde de route ferme déjà l'écran. L'entrée disparaît pour qu'il ne
+      // bute pas sur une redirection.
+      if (_currentRole() != 'gerant')
+        AppSheetAction(
+          icon: AppSectionIcons.managers,
+          label: 'profile.my_managers'.tr(),
+          trailing: hasPlanFor(PremiumFeature.managers)
+              ? null
+              : const PremiumBadge(feature: PremiumFeature.managers),
+          onTap: () {
+            if (ensurePlanFor(context, PremiumFeature.managers)) {
+              context.router.push(const GerantListRoute());
+            }
+          },
         ),
     ];
 
     return RefreshIndicator(
       onRefresh: () => context.read<OwnerProfileCubit>().load(),
-      child: SingleChildScrollView(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ProfileHeader(
-              profile: profile,
-              locationSummary: _locationSummary,
-            ),
-            const SizedBox(height: 20),
-
-            _StatusCard(profile: profile),
-            const SizedBox(height: 24),
-
-            if (items.isNotEmpty) ...[
-              const _SectionTitle(title: 'Informations personnelles'),
-              const SizedBox(height: 12),
-              _InfoGroup(items: items),
-              const SizedBox(height: 24),
-            ],
-
-            const _SectionTitle(title: 'Paramètres'),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          _Identity(
+            name: profile.fullName,
+            subtitle: _locationSummary == null
+                ? 'profile.owner'.tr()
+                : 'profile.owner_with_location'.tr(args: [_locationSummary!]),
+            avatarUrl: profile.avatarUrl,
+          ),
+          const SizedBox(height: 16),
+          _StatusCard(
+            profile: profile,
+            onComplete: () => _editProfile(context),
+          ),
+          // Le forfait, sous le dossier : les deux conditionnent l'accès. Le
+          // gérant n'en a pas — c'est celui de son propriétaire.
+          if (_currentRole() != 'gerant') ...[
             const SizedBox(height: 12),
-            _SettingsGroup(
-              items: [
-                _SettingsItem(
-                  icon: FontAwesomeIcons.penToSquare,
-                  label: 'Modifier mes informations',
-                  onTap: () async {
-                    await context.router.push(
-                      PropertyManagerProfileRoute(),
-                    );
-                    // Le dossier a pu changer pendant l'édition : on relit
-                    // plutôt que d'afficher l'état d'avant.
-                    if (context.mounted) {
-                      await context.read<OwnerProfileCubit>().load();
-                    }
-                  },
-                ),
-                _SettingsItem(
-                  icon: FontAwesomeIcons.bell,
-                  label: 'Notifications',
-                  onTap: () {},
-                  trailing: _NotificationToggle(),
-                ),
-              ],
-            ),
-
-            // L'entrée disparaît si aucun identifiant Tawk.to n'est fourni au
-            // build : mieux vaut pas de support qu'un écran de chat vide.
-            if (AppConfig.isSupportChatEnabled) ...[
-              const SizedBox(height: 24),
-              const _SectionTitle(title: 'Assistance'),
-              const SizedBox(height: 12),
-              _SettingsGroup(
-                items: [
-                  _SettingsItem(
-                    icon: FontAwesomeIcons.headset,
-                    label: 'Aide & support',
-                    onTap: () => _openSupport(context, profile),
-                  ),
-                ],
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            const _SectionTitle(title: 'Compte'),
-            const SizedBox(height: 12),
-            _SettingsGroup(
-              items: [
-                _SettingsItem(
-                  icon: FontAwesomeIcons.rightFromBracket,
-                  label: 'Se déconnecter',
-                  onTap: () => _confirmLogout(context),
-                  color: AppColors.error,
-                ),
-              ],
+            PlanStatusCard(
+              onTap: () async {
+                if (!await ensureOnline(context) || !context.mounted) return;
+                context.router.push(SubscriptionPlansRoute());
+              },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// Ouvre le chat d'assistance, le visiteur déjà identifié.
-  ///
-  /// Le support voit ainsi qui écrit sans avoir à le demander, et peut
-  /// rattacher la conversation au dossier du propriétaire.
-  void _openSupport(BuildContext context, OwnerProfileModel profile) {
-    context.router.push(
-      SupportChatRoute(
-        visitorName: profile.fullName,
-        visitorEmail: profile.email,
-      ),
-    );
-  }
-
-  Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Se déconnecter'),
-        content: const Text('Voulez-vous vraiment quitter votre session ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'Se déconnecter',
-              style: TextStyle(color: AppColors.error),
+          if (items.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Section(
+              title: 'profile.personal_info'.tr(),
+              icon: AppSectionIcons.profile,
+              child: DetailList(items: items),
             ),
+          ],
+          if (settings.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _LinkGroup(title: 'profile.settings'.tr(), children: settings),
+          ],
+          const SizedBox(height: 16),
+          const _AppearanceSection(),
+          const SizedBox(height: 16),
+          const _LanguageSection(),
+          // L'entrée ne dépend plus de Tawk.to : la feuille propose aussi le
+          // téléphone, WhatsApp et le courriel, qui restent joignables même
+          // sans widget de chat configuré au build.
+          const SizedBox(height: 16),
+          _LinkGroup(
+            title: 'profile.assistance'.tr(),
+            children: [
+              AppSheetAction(
+                icon: AppSectionIcons.support,
+                label: 'common.help_support'.tr(),
+                onTap: () => showSupportContactSheet(
+                  context,
+                  visitorName: profile.fullName,
+                  visitorEmail: profile.email,
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 24),
+          const _LogoutButton(),
         ],
       ),
     );
+  }
+}
 
-    if (confirmed != true || !context.mounted) return;
+/// Confirme puis ferme la session.
+///
+/// Hors des deux contenus qui l'appellent, et non recopiée dans chacun : la
+/// déconnexion purge la base locale, et un second exemplaire finirait par en
+/// oublier une part le jour où la purge s'étoffe.
+Future<void> _confirmLogout(BuildContext context) async {
+  final confirmed = await showConfirmDialog(
+    context: context,
+    title: 'common.sign_out'.tr(),
+    message: 'profile.sign_out_confirm'.tr(),
+    confirmLabel: 'common.sign_out'.tr(),
+    danger: true,
+  );
 
-    // La purge locale prime : même si l'appel serveur échoue, la session ne
-    // doit pas survivre à une déconnexion demandée.
-    await sl<AuthService>().logout();
-    if (!context.mounted) return;
+  if (!confirmed || !context.mounted) return;
 
-    await context.router.replaceAll([const LoginRoute()]);
+  // La purge locale prime : même si l'appel serveur échoue, la session ne
+  // doit pas survivre à une déconnexion demandée.
+  await sl<AuthService>().logout();
+  // Le palier appartient à la session : le compte suivant ne doit pas hériter
+  // des verrous — ou de l'accès — du précédent.
+  await sl<PlanCubit>().clear();
+  if (!context.mounted) return;
+
+  await context.router.replaceAll([const LoginRoute()]);
+}
+
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      label: 'common.sign_out'.tr(),
+      icon: LucideIcons.logOut,
+      variant: AppButtonVariant.secondary,
+      expand: true,
+      onPressed: () => _confirmLogout(context),
+    );
+  }
+}
+
+/// Apparence de l'application, commune aux deux rôles.
+class _AppearanceSection extends StatelessWidget {
+  const _AppearanceSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Section(
+      title: 'profile.appearance'.tr(),
+      icon: LucideIcons.sunMoon,
+      child: const ThemeSwitcher(),
+    );
+  }
+}
+
+/// Langue de l'application, commune aux deux rôles.
+class _LanguageSection extends StatelessWidget {
+  const _LanguageSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Section(
+      title: 'profile.language'.tr(),
+      icon: LucideIcons.languages,
+      child: const LanguageSwitcher(),
+    );
+  }
+}
+
+/// Groupe de liens titré, lignes séparées par un filet.
+class _LinkGroup extends StatelessWidget {
+  const _LinkGroup({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Section(
+      title: title,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const Divider(height: 1),
+            children[i],
+          ],
+        ],
+      ),
+    );
   }
 }
 
 // ─────────────────────────────────────────
-// Header avatar
+// Profil du gérant
 // ─────────────────────────────────────────
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.profile, this.locationSummary});
 
-  final OwnerProfileModel profile;
-  final String? locationSummary;
+/// Corps de l'écran pour un gérant.
+///
+/// Écrit à part et non greffé sur `_ProfileContent` : ce que le gérant n'a pas
+/// — dossier de validation, pièce d'identité, adresse, ville — n'est pas une
+/// donnée manquante mais une notion sans objet pour lui. Les blocs
+/// correspondants disparaissent au lieu d'afficher du vide, qui se lirait
+/// comme un dossier à compléter alors qu'aucune route ne le lui permettrait.
+class _ManagerProfileContent extends StatelessWidget {
+  const _ManagerProfileContent({required this.account});
+
+  final GerantAccountModel account;
+
+  /// Le sous-titre annonce le nombre de logements plutôt qu'une ville, que le
+  /// compte ne porte pas. Zéro logement s'y écrit en toutes lettres : c'est un
+  /// fait servi par `property_ids`, non un relevé manquant — et un gérant sans
+  /// périmètre doit comprendre pourquoi ses écrans sont vides.
+  String get _subtitle {
+    final count = account.propertiesCount;
+    if (count == 0) return 'profile.manager_no_unit'.tr();
+    return 'profile.manager_units'.plural(count);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Mêmes règles que chez le propriétaire : seules les informations
+    // réellement renseignées sont listées. Le serveur garantit qu'au moins une
+    // des deux coordonnées existe, jamais les deux.
+    final items = <DetailItem>[
+      if (account.fullName.trim().isNotEmpty)
+        DetailItem(
+          'common.full_name'.tr(),
+          account.fullName,
+          icon: LucideIcons.user,
+        ),
+      if (account.email != null)
+        DetailItem('common.email'.tr(), account.email, icon: LucideIcons.mail),
+      if (account.phone != null)
+        DetailItem('common.phone'.tr(), account.phone, icon: LucideIcons.phone),
+    ];
+
+    final active = account.isActive;
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<OwnerProfileCubit>().load(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          _Identity(name: account.fullName, subtitle: _subtitle),
+          const SizedBox(height: 16),
+          // État du compte, sans bouton d'action : `is_active` croise l'état
+          // du compte et celui de l'affectation — c'est le propriétaire qui
+          // les rétablit, d'où l'absence de « Compléter » : lui proposer une
+          // action qu'il ne peut pas mener serait pire que l'information seule.
+          AppCallout(
+            icon: active ? LucideIcons.circleCheck : LucideIcons.circleAlert,
+            tone: active ? AppAccent.green : AppAccent.red,
+            title: active
+                ? 'profile.account_active'.tr()
+                : 'profile.account_suspended'.tr(),
+            message: active
+                ? 'profile.manager_active'.tr()
+                : 'profile.manager_suspended'.tr(),
+          ),
+          if (items.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            // « Mes informations » plutôt que « Informations personnelles » :
+            // `PATCH /gerant/profile` n'accepte ni l'e-mail ni le téléphone,
+            // et rien à l'écran ne doit laisser croire au gérant qu'il peut
+            // les corriger.
+            Section(
+              title: 'profile.my_info'.tr(),
+              icon: AppSectionIcons.profile,
+              child: DetailList(items: items),
+            ),
+          ],
+          const SizedBox(height: 16),
+          const _AppearanceSection(),
+          const SizedBox(height: 16),
+          const _LanguageSection(),
+          const SizedBox(height: 16),
+          _LinkGroup(
+            title: 'profile.assistance'.tr(),
+            children: [
+              AppSheetAction(
+                icon: AppSectionIcons.support,
+                label: 'common.help_support'.tr(),
+                onTap: () => showSupportContactSheet(
+                  context,
+                  visitorName: account.fullName,
+                  visitorEmail: account.email,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const _LogoutButton(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Identité en tête de profil : avatar carré (photo ou initiales), nom et
+/// sous-titre.
+class _Identity extends StatelessWidget {
+  const _Identity({required this.name, required this.subtitle, this.avatarUrl});
+
+  final String name;
+  final String subtitle;
+  final String? avatarUrl;
 
   /// Deux lettres au plus, à défaut de photo.
   String get _initials {
-    final words = profile.fullName.trim().split(RegExp(r'\s+'))
+    final words = name.trim().split(RegExp(r'\s+'))
       ..removeWhere((w) => w.isEmpty);
     if (words.isEmpty) return '?';
     if (words.length == 1) return words.first[0].toUpperCase();
@@ -357,29 +517,31 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatarUrl = profile.avatarUrl;
-    final subtitle = locationSummary == null
-        ? 'Propriétaire'
-        : 'Propriétaire · $locationSummary';
+    final t = context.tokens;
+    final url = avatarUrl;
+    final initials = Center(
+      child: Text(_initials, style: context.text.titleLarge),
+    );
 
     return Row(
       children: [
         Container(
-          width: 72,
-          height: 72,
+          width: 64,
+          height: 64,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
+            color: t.background,
+            borderRadius: AppRadius.pill,
+            border: Border.all(color: t.border),
           ),
-          child: avatarUrl == null || avatarUrl.isEmpty
-              ? _buildInitials()
+          child: url == null || url.isEmpty
+              ? initials
               : Image.network(
-                  avatarUrl,
+                  url,
                   fit: BoxFit.cover,
                   // L'URL signée expire : son échec ne doit pas laisser un
                   // trou à la place de l'avatar.
-                  errorBuilder: (_, _, _) => _buildInitials(),
+                  errorBuilder: (_, _, _) => initials,
                 ),
         ),
         const SizedBox(width: 16),
@@ -388,24 +550,15 @@ class _ProfileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                profile.fullName.trim().isEmpty
-                    ? 'Sans nom'
-                    : profile.fullName,
+                name.trim().isEmpty ? 'common.no_name'.tr() : name,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.black,
-                ),
+                style: context.text.titleLarge,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.grey500,
-                ),
+                style: context.mutedText,
               ),
             ],
           ),
@@ -413,378 +566,82 @@ class _ProfileHeader extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildInitials() => Center(
-    child: Text(
-      _initials,
-      style: const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: AppColors.primary,
-      ),
-    ),
-  );
 }
 
 // ─────────────────────────────────────────
 // État du dossier de validation
 // ─────────────────────────────────────────
 
-/// Bandeau d'état du dossier, avec accès à la régularisation si besoin.
+/// Encart d'état du dossier, avec accès à la régularisation si besoin.
 ///
 /// Remplace l'ancienne carte d'abonnement : l'état de validation est ce qui
-/// conditionne réellement l'accès aux fonctions du compte.
+/// conditionne réellement l'accès aux fonctions du compte. Le ton suit la
+/// grammaire des statuts : vert en règle, bleu pris en compte, ambre en
+/// attente d'action, rouge arrêté.
 class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.profile});
+  const _StatusCard({required this.profile, required this.onComplete});
 
   final OwnerProfileModel profile;
+  final VoidCallback onComplete;
 
-  ({Color color, Color background, FaIconData icon, String message}) get _style {
+  ({AppAccent tone, IconData icon, String message}) get _style {
     if (profile.isValidated) {
       return (
-        color: AppColors.success,
-        background: AppColors.successBg,
-        icon: FontAwesomeIcons.circleCheck,
-        message: 'Votre compte est vérifié.',
+        tone: AppAccent.green,
+        icon: LucideIcons.circleCheck,
+        message: 'profile.verified'.tr(),
       );
     }
     if (profile.isRejected) {
       final reason = profile.rejectionReason;
       return (
-        color: AppColors.error,
-        background: AppColors.errorBg,
-        icon: FontAwesomeIcons.circleExclamation,
+        tone: AppAccent.red,
+        icon: LucideIcons.circleAlert,
         message: reason == null || reason.isEmpty
-            ? 'Corrigez votre dossier et renvoyez-le.'
+            ? 'profile.fix_profile'.tr()
             : reason,
       );
     }
     if (profile.isSuspended) {
       return (
-        color: AppColors.error,
-        background: AppColors.errorBg,
-        icon: FontAwesomeIcons.ban,
-        message: 'Complétez votre dossier pour retrouver l’accès.',
+        tone: AppAccent.red,
+        icon: LucideIcons.ban,
+        message: 'profile.complete_to_regain'.tr(),
       );
     }
     if (profile.isSubmitted) {
       return (
-        color: AppColors.info,
-        background: AppColors.infoBg,
-        icon: FontAwesomeIcons.clock,
-        message: 'Votre dossier est en cours de vérification.',
+        tone: AppAccent.blue,
+        icon: LucideIcons.clock,
+        message: 'profile.under_review'.tr(),
       );
     }
     return (
-      color: AppColors.warning,
-      background: AppColors.warningBg,
-      icon: FontAwesomeIcons.circleInfo,
-      message: 'Déposez votre pièce d’identité pour valider votre compte.',
+      tone: AppAccent.amber,
+      icon: LucideIcons.info,
+      message: 'profile.upload_document'.tr(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final style = _style;
-    // Un dossier validé n'appelle aucune action : le bandeau reste informatif.
+    // Un dossier validé n'appelle aucune action : l'encart reste informatif.
     final needsAction = !profile.isValidated;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: style.background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: style.color.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: style.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: FaIcon(style.icon, color: style.color, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profile.statusLabel,
-                  style: TextStyle(
-                    color: style.color,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  style.message,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 12,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (needsAction) ...[
-            const SizedBox(width: 10),
-            GestureDetector(
-              onTap: () async {
-                await context.router.push(PropertyManagerProfileRoute());
-                if (context.mounted) {
-                  await context.read<OwnerProfileCubit>().load();
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: style.color,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Compléter',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────
-// Section title
-// ─────────────────────────────────────────
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.bold,
-        color: AppColors.black,
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────
-// Infos personnelles
-// ─────────────────────────────────────────
-class _InfoItem {
-  const _InfoItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-  final FaIconData icon;
-  final String label;
-  final String value;
-}
-
-class _InfoGroup extends StatelessWidget {
-  const _InfoGroup({required this.items});
-  final List<_InfoItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.grey200),
-      ),
-      child: Column(
-        children: List.generate(items.length, (i) {
-          final item = items[i];
-          final isLast = i == items.length - 1;
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: FaIcon(
-                          item.icon,
-                          size: 14,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.label,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.grey500,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.value,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isLast)
-                Divider(height: 1, color: AppColors.grey200, indent: 64),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────
-// Settings
-// ─────────────────────────────────────────
-class _SettingsItem {
-  const _SettingsItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
-    this.trailing,
-  });
-  final FaIconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-  final Widget? trailing;
-}
-
-class _SettingsGroup extends StatelessWidget {
-  const _SettingsGroup({required this.items});
-  final List<_SettingsItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.grey200),
-      ),
-      child: Column(
-        children: List.generate(items.length, (i) {
-          final item = items[i];
-          final isLast = i == items.length - 1;
-          final color = item.color ?? AppColors.black;
-          return Column(
-            children: [
-              GestureDetector(
-                onTap: item.onTap,
-                child: Container(
-                  color: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: item.color != null
-                              ? item.color!.withOpacity(0.1)
-                              : AppColors.surface,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: FaIcon(item.icon, size: 14, color: color),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: color,
-                          ),
-                        ),
-                      ),
-                      item.trailing ??
-                          Icon(
-                            Icons.chevron_right,
-                            size: 18,
-                            color: AppColors.grey400,
-                          ),
-                    ],
-                  ),
-                ),
-              ),
-              if (!isLast)
-                Divider(height: 1, color: AppColors.grey200, indent: 64),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────
-// Toggle notifications
-// ─────────────────────────────────────────
-class _NotificationToggle extends StatefulWidget {
-  @override
-  State<_NotificationToggle> createState() => _NotificationToggleState();
-}
-
-class _NotificationToggleState extends State<_NotificationToggle> {
-  bool _enabled = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return Switch(
-      value: _enabled,
-      onChanged: (v) => setState(() => _enabled = v),
-      activeColor: AppColors.primary,
+    return AppCallout(
+      icon: style.icon,
+      tone: style.tone,
+      title: profile.statusLabel,
+      message: style.message,
+      action: needsAction
+          ? AppButton(
+              label: 'owner_profile.banner_action'.tr(),
+              size: AppButtonSize.sm,
+              trailingIcon: LucideIcons.arrowRight,
+              onPressed: onComplete,
+            )
+          : null,
     );
   }
 }

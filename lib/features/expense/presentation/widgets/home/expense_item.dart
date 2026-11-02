@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/sync_state_badge.dart';
 
+/// Ligne d'une dépense : catégorie, bien concerné, note, montant et jour.
 class ExpenseItem extends StatelessWidget {
   final ExpenseModel expense;
 
@@ -15,61 +21,65 @@ class ExpenseItem extends StatelessWidget {
     this.showChevron = false,
   });
 
-  static final _dateFormat = DateFormat('d MMMM y', 'fr');
+  /// Date complète : la liste n'est plus groupée par mois, et une plage de
+  /// dates peut franchir le nouvel an.
+  static DateFormat get _dayFormat => DateFormat('d MMM y');
+  static DateFormat get _dayTimeFormat => DateFormat('d MMM y · HH:mm');
+
+  /// Jour et heure, ou le jour seul pour une saisie qui n'a pas d'heure.
+  ///
+  /// Le jour seul est lu en UTC, où il a été enregistré à minuit : converti
+  /// en heure locale à l'ouest de Greenwich, il reculerait d'un jour.
+  static String formatSpentAt(ExpenseModel expense) => expense.hasTime
+      ? _dayTimeFormat.format(expense.spentAt.toLocal())
+      : _dayFormat.format(expense.spentAt.toUtc());
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     final category = expense.category;
-    // Le bien peut avoir été supprimé depuis la saisie : la dépense reste,
-    // mais son rattachement n'est plus résoluble.
-    final propertyLabel = expense.property?.title ?? 'Bien supprimé';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
+          // L'icône porte la couleur de la catégorie, la même que dans
+          // l'anneau de répartition.
           Container(
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: category.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              color: t.background,
+              borderRadius: AppRadius.sm,
+              border: Border.all(color: t.border),
             ),
-            child: Icon(category.icon, size: 18, color: category.color),
+            child: Icon(category.icon, size: 16, color: category.colorIn(t)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(category.label, style: context.text.titleSmall),
+                if (expense.syncState case final syncState?) ...[
+                  const SizedBox(height: 4),
+                  SyncStateBadge(state: syncState),
+                ],
+                const SizedBox(height: 2),
                 Text(
-                  category.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  propertyLabel,
+                  expense.targetLabel,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _dateFormat.format(expense.spentAt),
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                  style: context.text.bodySmall,
                 ),
                 if (expense.note case final note?
                     when note.trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     note,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 11,
+                    style: context.text.bodySmall!.copyWith(
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -77,18 +87,21 @@ class ExpenseItem extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            CurrencyFormatter.format(expense.amount),
-            style: const TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                CurrencyFormatter.short(expense.amount),
+                style: context.text.amount,
+              ),
+              const SizedBox(height: 2),
+              Text(formatSpentAt(expense), style: context.text.bodySmall),
+            ],
           ),
           if (showChevron) ...[
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            Icon(LucideIcons.chevronRight, size: 16, color: t.muted),
           ],
         ],
       ),

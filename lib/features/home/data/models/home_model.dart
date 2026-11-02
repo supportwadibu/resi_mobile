@@ -15,9 +15,9 @@ class HomeModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        // TODO: map fields
-      };
+    'id': id,
+    // TODO: map fields
+  };
 
   HomeModel copyWith({
     String? id,

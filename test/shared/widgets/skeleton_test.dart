@@ -31,9 +31,7 @@ void main() {
   group('OwnerProfileFormSkeleton', () {
     testWidgets('reprend la structure de l’étape 1', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OwnerProfileFormSkeleton()),
-        ),
+        const MaterialApp(home: Scaffold(body: OwnerProfileFormSkeleton())),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -87,9 +85,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
-              child: Column(
-                children: [PropertyListSkeleton(itemCount: 2)],
-              ),
+              child: Column(children: [PropertyListSkeleton(itemCount: 2)]),
             ),
           ),
         ),

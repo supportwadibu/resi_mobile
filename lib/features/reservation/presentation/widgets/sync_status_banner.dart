@@ -1,5 +1,11 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/router/app_router.gr.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/sync/sync_service.dart';
@@ -21,62 +27,11 @@ class SyncStatusBanner extends StatelessWidget {
         return ValueListenableBuilder<int>(
           valueListenable: sync.conflictCount,
           builder: (context, conflicts, _) {
-            if (pending == 0 && conflicts == 0) {
-              return const SizedBox.shrink();
-            }
-
-            // Un conflit prime : il demande un arbitrage, là où une attente de
-            // réseau se résout seule.
-            final isConflict = conflicts > 0;
-
-            return Container(
-              margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: isConflict ? AppColors.errorBg : AppColors.warningBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: (isConflict ? AppColors.error : AppColors.warning)
-                      .withValues(alpha: 0.25),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isConflict
-                        ? Icons.error_outline
-                        : Icons.cloud_upload_outlined,
-                    size: 18,
-                    color: isConflict ? AppColors.error : AppColors.warning,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _label(pending, conflicts),
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textPrimary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  if (!isConflict)
-                    TextButton(
-                      onPressed: sync.synchronize,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: const Text(
-                        'Envoyer',
-                        style: TextStyle(fontSize: 12.5),
-                      ),
-                    ),
-                ],
-              ),
+            return ValueListenableBuilder<int>(
+              valueListenable: sync.rejectedCount,
+              builder: (context, rejected, _) {
+                return _banner(context, sync, pending, conflicts, rejected);
+              },
             );
           },
         );
@@ -84,15 +39,58 @@ class SyncStatusBanner extends StatelessWidget {
     );
   }
 
-  static String _label(int pending, int conflicts) {
-    if (conflicts > 0) {
-      return conflicts == 1
-          ? '1 réservation refusée : la période était déjà prise.'
-          : '$conflicts réservations refusées : périodes déjà prises.';
+  Widget _banner(
+    BuildContext context,
+    SyncService sync,
+    int pending,
+    int conflicts,
+    int rejected,
+  ) {
+    if (pending == 0 && conflicts == 0 && rejected == 0) {
+      return const SizedBox.shrink();
     }
 
-    return pending == 1
-        ? '1 réservation en attente d’envoi.'
-        : '$pending réservations en attente d’envoi.';
+    // Un refus du serveur est rouge, comme tout ce qu'une décision a arrêté ;
+    // une saisie qui attend le réseau est ambre, comme tout ce qui attend une
+    // action.
+    final isConflict = conflicts > 0 || rejected > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: AppCallout(
+        icon: isConflict ? LucideIcons.circleAlert : LucideIcons.cloudUpload,
+        tone: isConflict ? AppAccent.red : AppAccent.amber,
+        message: label(pending, conflicts, rejected),
+        // Un refus s'arbitre sur l'écran dédié ; une attente se relance.
+        action: isConflict
+            ? AppButton(
+                label: 'sync_banner.review'.tr(),
+                icon: LucideIcons.listChecks,
+                size: AppButtonSize.sm,
+                variant: AppButtonVariant.secondary,
+                onPressed: () => context.router.push(const SyncReviewRoute()),
+              )
+            : AppButton(
+                label: 'sync_banner.send_now'.tr(),
+                icon: LucideIcons.refreshCw,
+                size: AppButtonSize.sm,
+                variant: AppButtonVariant.secondary,
+                onPressed: sync.synchronize,
+              ),
+      ),
+    );
+  }
+
+  @visibleForTesting
+  static String label(int pending, int conflicts, int rejected) {
+    if (rejected > 0) {
+      return 'sync_banner.rejected'.plural(rejected);
+    }
+
+    if (conflicts > 0) {
+      return 'sync_banner.conflicts'.plural(conflicts);
+    }
+
+    return 'sync_banner.pending'.plural(pending);
   }
 }

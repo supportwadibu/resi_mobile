@@ -3,7 +3,7 @@ class StayExtension {
   final DateTime checkInDate;
   final DateTime checkOutDate;
 
-  /// Tarif d'une journée d'occupation (12h → 12h le lendemain).
+  /// Tarif d'une nuit, jusqu'à l'heure de départ du lendemain.
   final double pricePerDay;
 
   StayExtension({

@@ -1,6 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 
 class DocumentAddButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -9,29 +12,26 @@ class DocumentAddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 90,
-        height: 90,
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.green.withValues(alpha: 0.4),
-            style: BorderStyle.solid,
+    final t = context.tokens;
+    return Material(
+      color: t.background,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.md,
+        side: BorderSide(color: t.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox.square(
+          dimension: 90,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(LucideIcons.plus, size: 20, color: t.muted),
+              const SizedBox(height: 4),
+              Text('common.add'.tr(), style: context.text.bodySmall),
+            ],
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_rounded, size: 28, color: AppColors.green),
-            const SizedBox(height: 4),
-            Text(
-              'Ajouter',
-              style: AppTextStyles.labelSmall.copyWith(color: AppColors.green),
-            ),
-          ],
         ),
       ),
     );

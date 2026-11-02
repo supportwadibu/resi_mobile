@@ -1,0 +1,160 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../core/error/failures.dart';
+import '../../gerant/data/repositories/gerant_repository.dart';
+import '../../reservation/data/models/booking_stats_model.dart';
+import '../../reservation/data/repositories/reservation_repository.dart';
+import '../../stats/data/repositories/finance_repository.dart';
+import '../../stats/data/repositories/property_stats_repository.dart';
+import 'home_stats_state.dart';
+
+/// Chiffres de la rangée d'accueil.
+///
+/// Un seul cubit pour les deux rôles, et non un second pour le gérant : le
+/// rechargement de la rangée est câblé par type dans `HomeScreen` — au retour
+/// d'une saisie et au retour sur l'onglet. Le dupliquer laisserait, le jour où
+/// l'un des deux branchements serait oublié, un gérant devant les chiffres
+/// d'avant sa dernière réservation.
+class HomeStatsCubit extends Cubit<HomeStatsState> {
+  HomeStatsCubit(
+    this._properties,
+    this._bookings,
+    this._finance,
+    this._gerant,
+    this._roleOf, {
+    bool Function()? canReadFinance,
+  }) : _canReadFinance = canReadFinance ?? (() => true),
+       super(
+         // État initial déjà typé par le rôle, et non un `HomeStatsInitial`
+         // commun : `StatsRowWidget` choisit sa rangée sur le type du state, et
+         // un état neutre lui ferait rendre celle du propriétaire — « Mes
+         // biens » et « Bénéfice ce mois » sur l'écran d'un gérant, le temps du
+         // premier relevé.
+         _roleOf() == 'gerant'
+             ? const HomeStatsManagerLoaded()
+             : const HomeStatsInitial(),
+       );
+
+  final PropertyStatsRepository _properties;
+  final ReservationRepository _bookings;
+  final FinanceRepository _finance;
+  final GerantRepository _gerant;
+
+  /// Lecture du rôle courant, injectée pour rester testable hors widget —
+  /// même forme que dans `OwnerRouteGuard`.
+  final String Function() _roleOf;
+
+  /// Le palier ouvre-t-il le relevé financier (RESI Pro) ? Sous RESI Basic,
+  /// le bénéfice n'est pas demandé : l'API le refuserait, et le refus
+  /// relancerait la lecture du forfait à chaque retour sur l'accueil.
+  final bool Function() _canReadFinance;
+
+  /// L'attente est émise dans chaque branche, et non avant elles.
+  ///
+  /// `HomeStatsLoading` fait rendre à `StatsRowWidget` la rangée du
+  /// propriétaire, qui bifurque sur le type du state. L'émettre avant de
+  /// connaître le rôle montrait à un gérant « Mes biens » et « Bénéfice ce
+  /// mois » pendant toute la latence — et sur les connexions lentes du terrain
+  /// la fenêtre n'a rien de bref, l'écran sautant d'une rangée à l'autre.
+  Future<void> load() async {
+    if (_roleOf() == 'gerant') {
+      // La rangée du gérant en attente : ses trois tuiles, toutes au tiret.
+      emit(const HomeStatsManagerLoaded());
+      await _loadManager();
+      return;
+    }
+
+    emit(const HomeStatsLoading());
+    await _loadOwner();
+  }
+
+  /// Rangée du propriétaire : parc, séjours du mois, bénéfice net.
+  ///
+  /// Trois sources, car les trois notions ne se recouvrent pas : le parc n'a
+  /// pas de période, les séjours portent sur le mois en cours, le bénéfice net
+  /// rapproche revenus et charges sur cette même fenêtre.
+  Future<void> _loadOwner() async {
+    // Lancés ensemble : les trois appels sont indépendants, et les enchaîner
+    // triplerait l'attente sur les connexions lentes du terrain.
+    //
+    // Chacun est rattrapé séparément : une tuile manquante vaut mieux qu'une
+    // rangée vide, et rien ici n'est indispensable à l'écran.
+    final canReadFinance = _canReadFinance();
+    final results = await Future.wait<Object?>([
+      _guard(() async => (await _properties.getStats()).total),
+      _guard(_bookings.getStats),
+      if (canReadFinance)
+        _guard(() async {
+          final overview = await _finance.getOverview(
+            from: _startOfMonth(),
+            to: DateTime.now(),
+          );
+          return overview.summary.beneficeNet;
+        }),
+    ]);
+
+    if (isClosed) return;
+
+    final bookingStats = results[1] as BookingStatsModel?;
+    emit(
+      HomeStatsLoaded(
+        propertiesCount: (results[0] as num?)?.toInt(),
+        activeBookings: bookingStats == null
+            ? null
+            : bookingStats.upcoming + bookingStats.inProgress,
+        netIncome: canReadFinance ? (results[2] as num?)?.toDouble() : null,
+        // Servis à tous les paliers : c'est le suivi des revenus et de
+        // l'occupation de RESI Basic.
+        monthRevenue: bookingStats?.revenue.currentMonth,
+        occupancyRate: bookingStats?.tauxOccupation,
+      ),
+    );
+  }
+
+  /// Rangée du gérant : réservations, encaissements, occupation du mois.
+  ///
+  /// Un seul appel là où le propriétaire en fait trois. `properties/stats` et
+  /// `bookings/stats` n'ont aucun équivalent gérant : les appeler rendrait deux
+  /// 403 et des tirets là où le relevé gérant porte déjà les trois chiffres.
+  ///
+  /// Aucun bénéfice net n'est demandé ni calculé — `GET /gerant/finance/overview`
+  /// n'en rend aucun, et le reconstituer en retranchant `expenses_total` du brut
+  /// donnerait un chiffre faux sur un périmètre partiel.
+  Future<void> _loadManager() async {
+    final overview = await _guard(
+      () => _gerant.getOverview(from: _startOfMonth(), to: DateTime.now()),
+    );
+
+    if (isClosed) return;
+
+    emit(
+      HomeStatsManagerLoaded(
+        bookingsCount: overview?.bookingsCount,
+        grossRevenue: overview?.grossRevenue,
+        occupancyRate: overview?.occupancyRate,
+      ),
+    );
+  }
+
+  /// Premier jour du mois courant.
+  ///
+  /// Du 1er à aujourd'hui, comme l'onglet Statistiques : le même relevé lu sur
+  /// deux fenêtres différentes donnerait deux chiffres du mois.
+  static DateTime _startOfMonth() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+
+  /// Exécute un relevé, ou rend `null` s'il échoue.
+  ///
+  /// L'échec laisse la tuile au tiret plutôt qu'à zéro, qui se lirait comme un
+  /// fait — un gérant sans réservation et un relevé en panne ne sont pas la
+  /// même information.
+  Future<T?> _guard<T>(Future<T> Function() run) async {
+    try {
+      return await run();
+    } on AppFailure {
+      return null;
+    }
+  }
+}

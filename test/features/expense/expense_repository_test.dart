@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/session_role_fixture.dart';
 import 'package:resi_africa/features/expense/data/models/expense_model.dart';
 import 'package:resi_africa/features/expense/data/repositories/expense_repository.dart';
 
@@ -16,11 +18,7 @@ class _CapturingInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     captured = options;
     handler.resolve(
-      Response(
-        requestOptions: options,
-        statusCode: 200,
-        data: body(options),
-      ),
+      Response(requestOptions: options, statusCode: 200, data: body(options)),
     );
   }
 }
@@ -59,11 +57,15 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
     interceptor = _CapturingInterceptor(body);
     dio.interceptors.add(interceptor);
-    repository = ExpenseRepository(dio);
+    repository = ExpenseRepository(dio, sessionRoleFixture());
   }
 
   setUp(() {
-    arrange((_) => const {'data': [_expenseJson]});
+    arrange(
+      (_) => const {
+        'data': [_expenseJson],
+      },
+    );
   });
 
   group('Contrat de création', () {
@@ -78,12 +80,13 @@ void main() {
       expect(body['amount'], 25000);
     });
 
-    test('la date part en date simple, pas en instant ISO', () async {
+    test('la date part en instant ISO UTC, heure comprise', () async {
       await repository.create(_payload());
       final body = interceptor.captured!.data as Map<String, dynamic>;
 
-      // `vine.date()` attend `YYYY-MM-DD`.
-      expect(body['spent_at'], '2026-03-14');
+      // L'heure part avec le jour : l'historique l'affiche. L'API admet
+      // `YYYY-MM-DD` et l'ISO 8601.
+      expect(body['spent_at'], DateTime(2026, 3, 14).toUtc().toIso8601String());
     });
 
     test('une note vide est omise plutôt qu’envoyée à blanc', () async {
@@ -154,7 +157,10 @@ void main() {
     test('sans filtre, seule la pagination est envoyée', () async {
       await repository.getExpensePage();
 
-      expect(interceptor.captured!.queryParameters, {'page': 1, 'per_page': 20});
+      expect(interceptor.captured!.queryParameters, {
+        'page': 1,
+        'per_page': 20,
+      });
     });
 
     test('les filtres fournis partent en paramètres', () async {
@@ -212,7 +218,11 @@ void main() {
     });
 
     test('sans `meta`, une page unique est supposée', () async {
-      arrange((_) => const {'data': [_expenseJson]});
+      arrange(
+        (_) => const {
+          'data': [_expenseJson],
+        },
+      );
 
       final page = await repository.getExpensePage();
 
@@ -228,7 +238,12 @@ void main() {
           'data': [
             {..._expenseJson, 'id': 'exp_page_$page'},
           ],
-          'meta': {'total': 2, 'perPage': 1, 'currentPage': page, 'lastPage': 2},
+          'meta': {
+            'total': 2,
+            'perPage': 1,
+            'currentPage': page,
+            'lastPage': 2,
+          },
         };
       });
 
@@ -264,21 +279,21 @@ void main() {
       expect(body['note'], isNull);
     });
 
-    test('la date part en date simple', () async {
+    test('la date part en instant ISO UTC', () async {
       await repository.update(
         'exp_1',
-        UpdateExpensePayload(spentAt: DateTime(2026, 7, 9)),
+        UpdateExpensePayload(spentAt: DateTime(2026, 7, 9, 18, 5)),
       );
       final body = interceptor.captured!.data as Map<String, dynamic>;
 
-      expect(body['spent_at'], '2026-07-09');
+      expect(
+        body['spent_at'],
+        DateTime(2026, 7, 9, 18, 5).toUtc().toIso8601String(),
+      );
     });
 
     test('cible la dépense visée', () async {
-      await repository.update(
-        'exp_1',
-        const UpdateExpensePayload(amount: 1),
-      );
+      await repository.update('exp_1', const UpdateExpensePayload(amount: 1));
 
       expect(interceptor.captured!.path, '/api/v1/proprio/expenses/exp_1');
     });
@@ -322,10 +337,10 @@ void main() {
     test('la ventilation conserve l’ordre décroissant du serveur', () async {
       final summary = await repository.getSummary();
 
-      expect(
-        summary.byCategory.map((b) => b.category),
-        [ExpenseCategory.electricity, ExpenseCategory.water],
-      );
+      expect(summary.byCategory.map((b) => b.category), [
+        ExpenseCategory.electricity,
+        ExpenseCategory.water,
+      ]);
       expect(summary.byCategory.first.sharePercent, 63);
     });
 
@@ -351,6 +366,7 @@ void main() {
     test('les codes couvrent exactement EXPENSE_CATEGORIES', () {
       // Doit rester aligné sur `api_resi/app/models/expense.ts`.
       expect(ExpenseCategory.values.map((c) => c.code).toSet(), {
+        'rent',
         'electricity',
         'water',
         'internet',
@@ -358,6 +374,8 @@ void main() {
         'cleaning',
         'maintenance',
         'taxes',
+        'commission',
+        'subscription',
         'other',
       });
     });

@@ -10,24 +10,28 @@
 /// sélectionne historiquement un *bien* malgré son nom.
 library;
 
+import 'package:easy_localization/easy_localization.dart';
+
 /// Équipement d'une partie commune, aligné sur le serveur.
 ///
 /// Plus court que les commodités d'un bien : seuls les équipements du lieu
 /// figurent ici, la climatisation ou le balcon variant d'une unité à l'autre.
 enum ResidenceAmenity {
-  pool('pool', 'Piscine'),
-  gym('gym', 'Salle de sport'),
-  security('security', 'Gardiennage'),
-  concierge('concierge', 'Conciergerie'),
-  elevator('elevator', 'Ascenseur'),
-  parking('parking', 'Parking'),
-  garden('garden', 'Jardin'),
-  wifi('wifi', 'Wi-Fi');
+  pool('pool'),
+  gym('gym'),
+  security('security'),
+  concierge('concierge'),
+  elevator('elevator'),
+  parking('parking'),
+  garden('garden'),
+  wifi('wifi');
 
-  const ResidenceAmenity(this.code, this.label);
+  const ResidenceAmenity(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'residence_amenities.$code'.tr();
 
   static ResidenceAmenity? fromCode(String? code) {
     for (final value in ResidenceAmenity.values) {

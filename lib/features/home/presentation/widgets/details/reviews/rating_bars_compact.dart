@@ -1,4 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 class RatingBarsCompact extends StatelessWidget {
   const RatingBarsCompact({super.key});
@@ -6,12 +10,16 @@ class RatingBarsCompact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<RatingItem> ratings = [
-      RatingItem(label: 'Propreté', score: 4.9, percentage: 0.98),
-      RatingItem(label: 'Emplacement', score: 4.8, percentage: 0.96),
-      RatingItem(label: 'Confort', score: 4.9, percentage: 0.98),
-      RatingItem(label: 'Rapport qualité/prix', score: 4.7, percentage: 0.94),
-      RatingItem(label: 'Service', score: 4.8, percentage: 0.96),
-      RatingItem(label: 'Équipements', score: 4.7, percentage: 0.94),
+      RatingItem(
+        label: 'reviews.cleanliness'.tr(),
+        score: 4.9,
+        percentage: 0.98,
+      ),
+      RatingItem(label: 'reviews.location'.tr(), score: 4.8, percentage: 0.96),
+      RatingItem(label: 'reviews.comfort'.tr(), score: 4.9, percentage: 0.98),
+      RatingItem(label: 'reviews.value'.tr(), score: 4.7, percentage: 0.94),
+      RatingItem(label: 'reviews.service'.tr(), score: 4.8, percentage: 0.96),
+      RatingItem(label: 'reviews.equipment'.tr(), score: 4.7, percentage: 0.94),
     ];
 
     return Column(
@@ -24,16 +32,12 @@ class RatingBarsCompact extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    item.label,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                  ),
+                  Text(item.label, style: context.text.bodySmall),
                   Text(
                     item.score.toString(),
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: context.text.labelMedium!.copyWith(
+                      color: context.tokens.foreground,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
                     ),
                   ),
                 ],
@@ -41,18 +45,16 @@ class RatingBarsCompact extends StatelessWidget {
               const SizedBox(height: 4),
               Container(
                 height: 4,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4),
+                  color: context.tokens.border,
+                  borderRadius: AppRadius.pill,
                 ),
                 child: FractionallySizedBox(
                   widthFactor: item.percentage,
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                      ),
-                      borderRadius: BorderRadius.circular(4),
+                      color: context.tokens.accentAmber,
                     ),
                   ),
                 ),

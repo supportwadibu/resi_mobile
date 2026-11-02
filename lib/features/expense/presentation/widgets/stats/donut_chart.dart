@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import '../../../data/models/expense_category_model.dart';
 
 class DonutChart extends StatelessWidget {
@@ -23,6 +24,7 @@ class DonutChart extends StatelessWidget {
         painter: _DonutPainter(
           categories: categories,
           strokeWidth: strokeWidth,
+          tokens: context.tokens,
         ),
       ),
     );
@@ -33,7 +35,14 @@ class _DonutPainter extends CustomPainter {
   final List<ExpenseCategoryModel> categories;
   final double strokeWidth;
 
-  const _DonutPainter({required this.categories, required this.strokeWidth});
+  /// Jetons du mode courant : la couleur d'un poste en dépend.
+  final ResiTokens tokens;
+
+  const _DonutPainter({
+    required this.categories,
+    required this.strokeWidth,
+    required this.tokens,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -53,10 +62,11 @@ class _DonutPainter extends CustomPainter {
       final sweep = (category.amount / total) * (2 * pi) - gap;
 
       final paint = Paint()
-        ..color = category.color
+        ..color = category.category.colorIn(tokens)
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
+        // Extrémités droites, comme tout le reste de l'interface.
+        ..strokeCap = StrokeCap.butt;
 
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -72,5 +82,5 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter old) =>
-      old.categories != categories;
+      old.categories != categories || old.tokens != tokens;
 }

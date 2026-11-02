@@ -1,32 +1,138 @@
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:flutter/material.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import '../../../data/models/finance/revenue_point_model.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
+
+const double _kLabelWidth = 40;
+const double _kLabelGap = 8;
+const double _kChartLeft = _kLabelWidth + _kLabelGap;
+const double _kTopPadding = 14;
+const int _kDivisions = 4;
+
+/// Libellés de mois tels que l'API les renvoie dans `revenue_points` : ils
+/// servent de clé d'appariement, pas de texte affiché. L'affichage passe par
+/// [_displayMonth], dans la langue de l'application.
+const _kMonthLabels = [
+  'Jan',
+  'Fév',
+  'Mar',
+  'Avr',
+  'Mai',
+  'Juin',
+  'Juil',
+  'Août',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Déc',
+];
+
+List<RevenuePointModel> buildSixMonthWindow(
+  List<RevenuePointModel> data, {
+  DateTime? now,
+}) {
+  final ref = now ?? DateTime.now();
+  final byMonth = {for (final p in data) p.month: p};
+
+  return List.generate(6, (i) {
+    final d = DateTime(ref.year, ref.month - 3 + i, 1);
+    final label = _kMonthLabels[d.month - 1];
+    return byMonth[label] ?? RevenuePointModel(month: label, value: 0);
+  });
+}
+
+/// Les douze mois d'une année civile, de janvier à décembre.
+///
+/// Les libellés de l'API ne portent pas l'année : l'appariement n'est sûr que
+/// parce que le relevé d'une année ne contient qu'un mois de chaque nom.
+List<RevenuePointModel> buildYearWindow(List<RevenuePointModel> data) {
+  final byMonth = {for (final p in data) p.month: p};
+
+  return [
+    for (final label in _kMonthLabels)
+      byMonth[label] ?? RevenuePointModel(month: label, value: 0),
+  ];
+}
+
+/// Dernier mois tracé d'une année : la courbe s'arrête au mois courant, comme
+/// sur la fenêtre de six mois — au-delà, seules des réservations à venir.
+int yearLastDataIndex(int year, DateTime now) {
+  if (year < now.year) return 11;
+  if (year > now.year) return -1;
+  return now.month - 1;
+}
+
+/// Mois abrégé dans la langue de l'application ; un libellé inconnu de
+/// l'API est rendu tel quel plutôt que perdu.
+///
+/// [narrow] rend l'initiale seule : douze libellés abrégés ne tiennent pas
+/// sous le graphique d'une année sur un écran de téléphone.
+String _displayMonth(String apiLabel, {bool narrow = false}) {
+  final index = _kMonthLabels.indexOf(apiLabel);
+  if (index < 0) return apiLabel;
+  return DateFormat(narrow ? 'MMMMM' : 'MMM').format(DateTime(2000, index + 1));
+}
+
+double _niceStep(double raw) {
+  if (raw <= 0) return 1000;
+  final exp = math.pow(10, (math.log(raw) / math.ln10).floor()).toDouble();
+  final f = raw / exp;
+  final nice = f <= 1
+      ? 1.0
+      : f <= 2
+      ? 2.0
+      : f <= 2.5
+      ? 2.5
+      : f <= 5
+      ? 5.0
+      : 10.0;
+  return nice * exp;
+}
+
+String _formatK(double v) {
+  if (v == 0) return '0';
+  if (v < 1000) return v.toStringAsFixed(0);
+  final k = v / 1000;
+  return '${k.toStringAsFixed(k % 1 == 0 ? 0 : 1)}k';
+}
 
 class RevenueChart extends StatelessWidget {
   final List<RevenuePointModel> points;
 
-  const RevenueChart({super.key, required this.points});
+  /// Année civile tracée mois par mois ; `null` pour les six mois entourant
+  /// le mois courant.
+  final int? year;
+
+  const RevenueChart({super.key, required this.points, this.year});
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final year = this.year;
+    final window = year == null
+        ? buildSixMonthWindow(points, now: now)
+        : buildYearWindow(points);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Évolution des revenus mensuels',
-          style: AppTextStyles.sectionTitle,
-        ),
-        const SizedBox(height: 16),
         SizedBox(
-          height: 160,
+          height: 170,
           child: CustomPaint(
-            painter: _ChartPainter(points: points),
+            painter: _ChartPainter(
+              points: window,
+              lastDataIndex: year == null ? 3 : yearLastDataIndex(year, now),
+              tokens: context.tokens,
+              labelStyle: context.text.bodySmall!,
+            ),
             child: const SizedBox.expand(),
           ),
         ),
         const SizedBox(height: 8),
-        _MonthLabels(points: points),
+        _MonthLabels(points: window, narrow: year != null),
       ],
     );
   }
@@ -34,120 +140,153 @@ class RevenueChart extends StatelessWidget {
 
 class _MonthLabels extends StatelessWidget {
   final List<RevenuePointModel> points;
+  final bool narrow;
 
-  const _MonthLabels({required this.points});
+  const _MonthLabels({required this.points, this.narrow = false});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: points
-          .map((p) => Text(p.month, style: AppTextStyles.labelSmall))
-          .toList(),
+    return Padding(
+      padding: const EdgeInsets.only(left: _kChartLeft),
+      child: LayoutBuilder(
+        builder: (context, c) => SizedBox(
+          height: 16,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (int i = 0; i < points.length; i++)
+                Positioned(
+                  left: (i / (points.length - 1)) * c.maxWidth - 24,
+                  width: 48,
+                  child: Text(
+                    _displayMonth(points[i].month, narrow: narrow),
+                    textAlign: TextAlign.center,
+                    style: context.text.bodySmall,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _ChartPainter extends CustomPainter {
   final List<RevenuePointModel> points;
+  final int lastDataIndex;
 
-  const _ChartPainter({required this.points});
+  /// Jetons et style du mode courant : un peintre n'a pas de `BuildContext`.
+  final ResiTokens tokens;
+  final TextStyle labelStyle;
+
+  const _ChartPainter({
+    required this.points,
+    required this.lastDataIndex,
+    required this.tokens,
+    required this.labelStyle,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
+    if (points.length < 2) return;
 
-    final double minVal = 0;
-    final double maxVal =
-        points.map((p) => p.value).reduce((a, b) => a > b ? a : b) * 1.15;
-    final double valueRange = maxVal - minVal;
+    final rawMax = points.map((p) => p.value).fold<double>(0, math.max);
+    final step = _niceStep(rawMax <= 0 ? 4000 : rawMax / _kDivisions);
+    final maxVal = step * _kDivisions;
 
-    // Y axis labels
-    final yLabels = [0, 5500, 11000, 16500, 22000];
-    final labelPaint = TextPainter(textDirection: TextDirection.ltr);
-    const double labelWidth = 36;
+    final chartHeight = size.height - _kTopPadding;
+    final chartWidth = size.width - _kChartLeft;
 
-    for (final label in yLabels) {
-      final y = size.height - ((label - minVal) / valueRange) * size.height;
-      labelPaint.text = TextSpan(
-        text: label == 0
-            ? '0k'
-            : '${(label / 1000).toStringAsFixed(label % 1000 == 0 ? 0 : 1)}k',
-        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+    double yOf(double v) =>
+        _kTopPadding + chartHeight - (v / maxVal) * chartHeight;
+    double xOf(int i) => _kChartLeft + (i / (points.length - 1)) * chartWidth;
+
+    // Axe Y + grille
+    final labelPainter = TextPainter(textDirection: TextDirection.ltr);
+    final gridPaint = Paint()
+      ..color = tokens.border
+      ..strokeWidth = 1;
+
+    for (int i = 0; i <= _kDivisions; i++) {
+      final y = yOf(step * i);
+      labelPainter.text = TextSpan(text: _formatK(step * i), style: labelStyle);
+      labelPainter.layout();
+      labelPainter.paint(
+        canvas,
+        Offset(_kLabelWidth - labelPainter.width, y - labelPainter.height / 2),
       );
-      labelPaint.layout();
-      labelPaint.paint(canvas, Offset(0, y - labelPaint.height / 2));
-
-      // Grid line
-      if (label > 0) {
-        final gridPaint = Paint()
-          ..color = AppColors.chartGrid
-          ..strokeWidth = 1;
-        canvas.drawLine(
-          Offset(labelWidth + 8, y),
-          Offset(size.width, y),
-          gridPaint,
-        );
-      }
+      canvas.drawLine(Offset(_kChartLeft, y), Offset(size.width, y), gridPaint);
     }
 
-    final double chartLeft = labelWidth + 8;
-    final double chartWidth = size.width - chartLeft;
+    // Courbe limitée aux mois réels
+    final end = lastDataIndex.clamp(0, points.length - 1);
+    if (end < 1) return;
 
-    // Convert data points to canvas coordinates
-    List<Offset> offsets = [];
-    for (int i = 0; i < points.length; i++) {
-      final x = chartLeft + (i / (points.length - 1)) * chartWidth;
-      final y =
-          size.height - ((points[i].value - minVal) / valueRange) * size.height;
-      offsets.add(Offset(x, y));
-    }
+    final offsets = [
+      for (int i = 0; i <= end; i++) Offset(xOf(i), yOf(points[i].value)),
+    ];
 
-    // Draw line
-    final linePaint = Paint()
-      ..color = AppColors.chartLine
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final path = Path();
-    path.moveTo(offsets.first.dx, offsets.first.dy);
+    final path = Path()..moveTo(offsets.first.dx, offsets.first.dy);
     for (int i = 1; i < offsets.length; i++) {
-      final cp1 = Offset(
-        (offsets[i - 1].dx + offsets[i].dx) / 2,
-        offsets[i - 1].dy,
-      );
-      final cp2 = Offset(
-        (offsets[i - 1].dx + offsets[i].dx) / 2,
-        offsets[i].dy,
-      );
+      final midX = (offsets[i - 1].dx + offsets[i].dx) / 2;
       path.cubicTo(
-        cp1.dx,
-        cp1.dy,
-        cp2.dx,
-        cp2.dy,
+        midX,
+        offsets[i - 1].dy,
+        midX,
+        offsets[i].dy,
         offsets[i].dx,
         offsets[i].dy,
       );
     }
-    canvas.drawPath(path, linePaint);
 
-    // Draw dots
-    final dotPaint = Paint()
-      ..color = AppColors.chartDot
-      ..style = PaintingStyle.fill;
-    final dotBorderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
+    // Remplissage dégradé
+    final fillPath = Path.from(path)
+      ..lineTo(offsets.last.dx, size.height)
+      ..lineTo(offsets.first.dx, size.height)
+      ..close();
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            tokens.accentGreen.withValues(alpha: 0.18),
+            tokens.accentGreen.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
+    );
 
-    for (final offset in offsets) {
-      canvas.drawCircle(offset, 6, dotBorderPaint);
-      canvas.drawCircle(offset, 4, dotPaint);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = tokens.accentGreen
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.butt
+        ..strokeJoin = StrokeJoin.miter,
+    );
+
+    // Points carrés : aucun arrondi, jusque dans les graphiques.
+    final dotPaint = Paint()..color = tokens.accentGreen;
+    final borderPaint = Paint()..color = tokens.surface;
+    for (final o in offsets) {
+      canvas.drawRect(
+        Rect.fromCenter(center: o, width: 10, height: 10),
+        borderPaint,
+      );
+      canvas.drawRect(
+        Rect.fromCenter(center: o, width: 6, height: 6),
+        dotPaint,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(covariant _ChartPainter oldDelegate) =>
-      oldDelegate.points != points;
+  bool shouldRepaint(covariant _ChartPainter old) =>
+      old.lastDataIndex != lastDataIndex ||
+      old.tokens != tokens ||
+      old.points.length != points.length ||
+      !listEquals(old.points, points);
 }

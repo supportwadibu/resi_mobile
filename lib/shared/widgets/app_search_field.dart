@@ -1,10 +1,17 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'app_text_field.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/resi_tokens.dart';
+
+/// Faux champ de recherche qui ouvre l'écran de recherche au toucher, avec la
+/// loupe à gauche comme l'`Input type="search"` du backoffice.
 class AppSearchField extends StatelessWidget {
   const AppSearchField({
     required this.onTap,
-    this.hint = 'Rechercher...',
+    this.hint,
     this.padding,
     super.key,
   });
@@ -15,17 +22,34 @@ class AppSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppTextField(
-      label: '',
-      hint: hint,
-      readOnly: true,
-      onTap: onTap,
-      padding: padding,
-      prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-      suffixIcon: const SizedBox.shrink(), // pas de chevron
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
+    final t = context.tokens;
+    return Padding(
+      padding: padding ?? EdgeInsets.zero,
+      child: Material(
+        color: t.background,
+        shape: AppRadius.outlined(AppRadius.md, t.border),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            height: 44,
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Icon(LucideIcons.search, size: 16, color: t.muted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    hint ?? 'common.search_ellipsis'.tr(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodyMedium!.copyWith(color: t.muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

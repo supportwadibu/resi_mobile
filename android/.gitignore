@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Rapports de crash JVM, produits par un daemon Gradle tue par manque de memoire.
+hs_err_pid*.log
+replay_pid*.log
+*.hprof

@@ -1,5 +1,7 @@
 import '../../clients/data/models/client_model.dart';
+import '../../property/data/models/property_model.dart';
 import '../data/models/reservation_model.dart';
+import 'stay_quote.dart';
 
 /// Mode d'enregistrement, choisi à l'ouverture du formulaire.
 enum ReservationMode {
@@ -42,10 +44,13 @@ class AddReservationState {
     this.documentBackPath,
     this.propertyId,
     this.dailyPrice = 0,
+    this.priceTiers = const [],
+    this.lateCheckoutPolicy = const LateCheckoutPolicy(),
     this.stayType = StayType.fullDay,
+    this.explicitDaysCount,
     this.checkInAt,
     this.checkOutAt,
-    this.receivedAmount,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
     this.message,
     this.status = AddReservationStatus.idle,
@@ -54,6 +59,12 @@ class AddReservationState {
     this.duplicateClient,
     this.isLookingUpPhone = false,
     this.occupiedConflict,
+    this.hasReferrerEnabled = false,
+    this.referrerName = '',
+    this.referrerPhone = '',
+    this.idDocumentType,
+    this.idDocumentNumber,
+    this.identity = ClientIdentity.empty,
   });
 
   final ReservationMode mode;
@@ -66,19 +77,56 @@ class AddReservationState {
   final String? documentFrontPath;
   final String? documentBackPath;
 
+  /// Pièce lue par l'OCR. Non lus, ces champs se complètent plus tard depuis
+  /// la fiche client.
+  final ClientIdDocumentType? idDocumentType;
+  final String? idDocumentNumber;
+
+  /// Identité du registre de police, lue sur la pièce ou saisie. Transmise
+  /// avec le client nouveau, en ligne comme par la file hors ligne.
+  final ClientIdentity identity;
+
   final String? propertyId;
 
   /// Tarif journalier du bien choisi, pour calculer le montant attendu sans
   /// attendre le serveur.
   final double dailyPrice;
 
+  /// Grille de remises par durée du bien choisi.
+  ///
+  /// Vide pour un bien enregistré avant les paliers, comme pour un bien qui
+  /// n'en accorde aucun : le tarif plein s'applique alors quelle que soit la
+  /// durée.
+  final List<PriceTier> priceTiers;
+
+  /// Règle de départ tardif du bien choisi ; celle du serveur par défaut.
+  final LateCheckoutPolicy lateCheckoutPolicy;
+
   final StayType stayType;
+  final int? explicitDaysCount;
   final DateTime? checkInAt;
   final DateTime? checkOutAt;
 
-  /// Montant convenu avec le client. `null` tant qu'il n'a pas été saisi : le
-  /// montant attendu s'applique alors.
-  final double? receivedAmount;
+  /// Prix convenu **par unité** du type de séjour — par jour, par
+  /// demi-journée ou par passage. `null` tant qu'il n'a pas été saisi : le
+  /// tarif s'applique alors.
+  ///
+  /// Saisi à l'unité et non au total : au comptoir, le prix se négocie « à
+  /// tant la nuit ». Demander le total faisait multiplier de tête, et un
+  /// changement de dates laissait l'ancien total en place.
+  final double? agreedUnitPrice;
+
+  /// Montant convenu du séjour : prix unitaire convenu × unités facturées,
+  /// arrondi au franc comme au serveur. Suit les dates sans ressaisie.
+  ///
+  /// La remise de durée de la grille ne s'y ajoute pas : un prix négocié la
+  /// remplace, il ne la cumule pas.
+  double? get receivedAmount {
+    final unit = agreedUnitPrice;
+    if (unit == null) return null;
+    return quote.agreedAmount(unit);
+  }
+
   final double depositAmount;
   final String? message;
 
@@ -96,29 +144,45 @@ class AddReservationState {
   /// Réservation qui empiète sur les dates saisies, détectée avant l'envoi.
   final String? occupiedConflict;
 
-  /// Tarif d'une unité du type de séjour choisi.
-  ///
-  /// Reprend les ratios du serveur : la demi-journée vaut la moitié du tarif
-  /// journalier, le passage 30 %.
-  double get unitPrice => switch (stayType) {
-    StayType.fullDay => dailyPrice,
-    StayType.halfDay => (dailyPrice * 0.5).roundToDouble(),
-    StayType.passage => (dailyPrice * 0.3).roundToDouble(),
-  };
+  /// Bascule « apporteur d'affaire ». Éteinte, les champs sont masqués et rien
+  /// n'est envoyé.
+  final bool hasReferrerEnabled;
 
-  /// Nombre de jours facturés, au minimum un.
-  int get daysCount {
-    if (stayType != StayType.fullDay) return 1;
-    final start = checkInAt;
-    final end = checkOutAt;
-    if (start == null || end == null) return 1;
+  /// Apporteur d'affaire, facultatif. Vide = pas d'apporteur.
+  final String referrerName;
+  final String referrerPhone;
 
-    final hours = end.difference(start).inMinutes / 60;
-    return hours <= 0 ? 1 : (hours / 24).ceil().clamp(1, 3650);
-  }
+  /// Taux annoncé au comptoir. Le serveur applique et fige le sien : celui-ci
+  /// ne sert qu'à afficher la commission avant l'envoi.
+  static const referrerCommissionRate = 0.10;
 
-  /// Montant attendu selon la grille du bien, avant négociation.
-  double get expectedAmount => (unitPrice * daysCount).roundToDouble();
+  bool get hasReferrer => hasReferrerEnabled && referrerName.trim().length >= 2;
+
+  /// Commission annoncée, arrondie au franc comme le fait le serveur.
+  double get referrerCommission => hasReferrer
+      ? (effectiveAmount * referrerCommissionRate).roundToDouble()
+      : 0;
+
+  /// Chiffrage du séjour saisi, partagé avec l'écran de modification.
+  StayQuote get quote => StayQuote(
+    dailyPrice: dailyPrice,
+    priceTiers: priceTiers,
+    stayType: stayType,
+    checkInAt: checkInAt,
+    checkOutAt: checkOutAt,
+    explicitDaysCount: stayType == StayType.fullDay ? explicitDaysCount : 1,
+    lateCheckoutPolicy: lateCheckoutPolicy,
+  );
+
+  double get unitPrice => quote.unitPrice;
+
+  int get daysCount => quote.daysCount;
+
+  int get discountPercent => quote.discountPercent;
+
+  double get expectedAmount => quote.expectedAmount;
+
+  double get fullAmount => quote.fullAmount;
 
   /// Montant qui sera enregistré : le prix négocié s'il est saisi, le montant
   /// attendu sinon.
@@ -157,11 +221,14 @@ class AddReservationState {
     bool clearDocumentBack = false,
     String? propertyId,
     double? dailyPrice,
+    List<PriceTier>? priceTiers,
+    LateCheckoutPolicy? lateCheckoutPolicy,
     StayType? stayType,
+    int? daysCount,
     DateTime? checkInAt,
     DateTime? checkOutAt,
-    double? receivedAmount,
-    bool clearReceivedAmount = false,
+    double? agreedUnitPrice,
+    bool clearAgreedUnitPrice = false,
     double? depositAmount,
     String? message,
     AddReservationStatus? status,
@@ -173,7 +240,19 @@ class AddReservationState {
     bool? isLookingUpPhone,
     String? occupiedConflict,
     bool clearConflict = false,
+    bool? hasReferrerEnabled,
+    String? referrerName,
+    String? referrerPhone,
+    ClientIdDocumentType? idDocumentType,
+    String? idDocumentNumber,
+    ClientIdentity? identity,
   }) {
+    final resolvedExplicitDays =
+        daysCount ??
+        (checkOutAt != null && checkOutAt != this.checkOutAt
+            ? null
+            : explicitDaysCount);
+
     return AddReservationState(
       mode: mode ?? this.mode,
       selectedClient: clearSelectedClient
@@ -189,12 +268,15 @@ class AddReservationState {
           : (documentBackPath ?? this.documentBackPath),
       propertyId: propertyId ?? this.propertyId,
       dailyPrice: dailyPrice ?? this.dailyPrice,
+      priceTiers: priceTiers ?? this.priceTiers,
+      lateCheckoutPolicy: lateCheckoutPolicy ?? this.lateCheckoutPolicy,
       stayType: stayType ?? this.stayType,
+      explicitDaysCount: resolvedExplicitDays,
       checkInAt: checkInAt ?? this.checkInAt,
       checkOutAt: checkOutAt ?? this.checkOutAt,
-      receivedAmount: clearReceivedAmount
+      agreedUnitPrice: clearAgreedUnitPrice
           ? null
-          : (receivedAmount ?? this.receivedAmount),
+          : (agreedUnitPrice ?? this.agreedUnitPrice),
       depositAmount: depositAmount ?? this.depositAmount,
       message: message ?? this.message,
       status: status ?? this.status,
@@ -207,6 +289,12 @@ class AddReservationState {
       occupiedConflict: clearConflict
           ? null
           : (occupiedConflict ?? this.occupiedConflict),
+      hasReferrerEnabled: hasReferrerEnabled ?? this.hasReferrerEnabled,
+      referrerName: referrerName ?? this.referrerName,
+      referrerPhone: referrerPhone ?? this.referrerPhone,
+      idDocumentType: idDocumentType ?? this.idDocumentType,
+      idDocumentNumber: idDocumentNumber ?? this.idDocumentNumber,
+      identity: identity ?? this.identity,
     );
   }
 }

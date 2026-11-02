@@ -1,14 +1,22 @@
+import 'package:easy_localization/easy_localization.dart';
+
+import '../../../../core/offline/pending_action.dart';
+import '../../../../core/offline/pending_overlay.dart';
+import 'early_check_out_quote.dart';
+
 /// Statut d'une réservation, aligné sur `BookingStatus` du serveur.
 enum ReservationStatus {
-  confirmed('confirmed', 'Confirmée'),
-  inProgress('in_progress', 'En cours'),
-  cancelled('cancelled', 'Annulée'),
-  completed('completed', 'Terminée');
+  confirmed('confirmed'),
+  inProgress('in_progress'),
+  cancelled('cancelled'),
+  completed('completed');
 
-  const ReservationStatus(this.code, this.label);
+  const ReservationStatus(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'reservation_status.$code'.tr();
 
   static ReservationStatus fromCode(String? code) {
     for (final status in ReservationStatus.values) {
@@ -21,7 +29,8 @@ enum ReservationStatus {
 
   /// Le séjour immobilise le bien : ni annulé, ni terminé.
   bool get isActive =>
-      this == ReservationStatus.confirmed || this == ReservationStatus.inProgress;
+      this == ReservationStatus.confirmed ||
+      this == ReservationStatus.inProgress;
 }
 
 /// Type de séjour, aligné sur `STAY_TYPES` du serveur.
@@ -30,14 +39,16 @@ enum ReservationStatus {
 /// pour les réservations prises au comptoir, où un client peut n'occuper le
 /// bien que quelques heures.
 enum StayType {
-  passage('passage', 'Passage'),
-  halfDay('half_day', 'Demi-journée'),
-  fullDay('full_day', 'Journée complète');
+  passage('passage'),
+  halfDay('half_day'),
+  fullDay('full_day');
 
-  const StayType(this.code, this.label);
+  const StayType(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'stay_types.$code'.tr();
 
   static StayType fromCode(String? code) {
     for (final type in StayType.values) {
@@ -64,13 +75,15 @@ enum StayType {
 /// `online` prise par un client depuis l'application. Ne change jamais : à ne
 /// pas confondre avec l'état de synchronisation d'une saisie hors réseau.
 enum ReservationSource {
-  online('online', 'En ligne'),
-  offline('offline', 'Comptoir');
+  online('online'),
+  offline('offline');
 
-  const ReservationSource(this.code, this.label);
+  const ReservationSource(this.code);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'reservation_source.$code'.tr();
 
   static ReservationSource fromCode(String? code) =>
       code == 'offline' ? ReservationSource.offline : ReservationSource.online;
@@ -93,6 +106,22 @@ class ReservationClient {
       id: json['id'] as String? ?? '',
       fullName: json['full_name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
+    );
+  }
+}
+
+/// Apporteur d'affaire : la personne qui a amené le client, commissionnée sur
+/// le séjour. Saisie libre, sans compte.
+class ReservationReferrer {
+  const ReservationReferrer({required this.name, this.phone});
+
+  final String name;
+  final String? phone;
+
+  factory ReservationReferrer.fromJson(Map<String, dynamic> json) {
+    return ReservationReferrer(
+      name: json['name'] as String? ?? '',
+      phone: json['phone'] as String?,
     );
   }
 }
@@ -144,7 +173,21 @@ class ReservationModel {
     DateTime? checkOutAt,
     this.expectedAmount = 0,
     this.receivedAmount = 0,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
+    this.refundedAmount = 0,
+    this.lateCheckoutFee = 0,
+    this.retainedAmount = 0,
+    this.cancellationRefundedAmount = 0,
+    this.plannedTotalAmount,
+    this.plannedCheckOutAt,
+    this.actualCheckInAt,
+    this.referrer,
+    this.earlyCheckoutOption,
+    this.earlyCheckoutPenalty,
+    this.referrerCommissionRate = 0,
+    this.referrerCommissionAmount = 0,
+    this.syncState,
   }) : _checkInAt = checkInAt,
        _checkOutAt = checkOutAt;
 
@@ -157,6 +200,7 @@ class ReservationModel {
   final ReservationStatus status;
   final DateTime startDate;
   final DateTime endDate;
+
   /// Jours d'occupation facturés (12h → 12h le lendemain = 1 jour).
   final int daysCount;
   final double totalAmount;
@@ -192,14 +236,107 @@ class ReservationModel {
   /// Montant réellement convenu avec le client, saisi par le propriétaire.
   final double receivedAmount;
 
+  /// Prix négocié par unité du type de séjour, figé par le serveur. `null` au
+  /// tarif, et sur les réservations antérieures à son introduction.
+  final double? agreedUnitPrice;
+
   /// Acompte versé à la réservation.
   final double depositAmount;
+
+  /// Somme rendue au client sur un départ anticipé.
+  final double refundedAmount;
+
+  /// Supplément de départ tardif — une demi-journée —, déjà compris dans
+  /// [totalAmount].
+  final double lateCheckoutFee;
+
+  /// Acompte gardé par le propriétaire à l'annulation, compté en revenu.
+  final double retainedAmount;
+
+  /// Acompte rendu au client à l'annulation.
+  final double cancellationRefundedAmount;
+
+  /// Montant et sortie vendus, présents seulement sur un séjour écourté :
+  /// [totalAmount] et [checkOutAt] portent alors l'usage réel.
+  final double? plannedTotalAmount;
+  final DateTime? plannedCheckOutAt;
+
+  /// Option de facturation choisie pour un départ anticipé.
+  final EarlyCheckOutOption? earlyCheckoutOption;
+
+  /// Montant de pénalité appliqué, présent si l'option est `withPenalty`.
+  final double? earlyCheckoutPenalty;
+
+  /// Arrivée enregistrée au comptoir, `null` tant qu'elle ne l'est pas.
+  /// Informative : la période facturée reste [checkInAt].
+  final DateTime? actualCheckInAt;
+
+  /// Apporteur d'affaire, `null` sans apporteur.
+  final ReservationReferrer? referrer;
+
+  /// Taux figé à la réservation, entre 0 et 1.
+  final double referrerCommissionRate;
+
+  /// Commission due à l'apporteur, recalculée par le serveur quand le montant
+  /// du séjour change.
+  final double referrerCommissionAmount;
+
+  /// Saisie hors ligne pas encore acceptée par le serveur, `null` sinon.
+  /// Posé par la superposition de la file, jamais par l'API.
+  final PendingActionState? syncState;
+
+  /// Le séjour a été écourté par un départ anticipé.
+  bool get isEarlyCheckOut => plannedCheckOutAt != null;
 
   /// Heure d'entrée, ou la date de début pour une réservation en ligne.
   DateTime get checkInAt => _checkInAt ?? startDate;
 
   /// Heure de sortie, ou la date de fin pour une réservation en ligne.
   DateTime get checkOutAt => _checkOutAt ?? endDate;
+
+  /// Le client est entré — condition posée par le serveur à la clôture.
+  ///
+  /// Lit [checkInAt] et non [startDate] : un passage saisi pour 14 h a une date
+  /// de début dépassée dès minuit, alors que le client n'est pas encore là.
+  bool hasStarted(DateTime now) => !checkInAt.isAfter(now);
+
+  /// L'arrivée peut-elle s'enregistrer à [now] ?
+  ///
+  /// À partir du jour J — minuit du jour d'entrée, en heure locale — et
+  /// jusqu'à la sortie prévue, sur une réservation à venir. Même règle que le
+  /// serveur (`buildCheckInPatch`), qui raisonne en UTC : la Côte d'Ivoire est
+  /// à UTC+0, les deux jours coïncident.
+  bool canCheckIn(DateTime now) {
+    if (status != ReservationStatus.confirmed) return false;
+    final local = checkInAt.toLocal();
+    final dayStart = DateTime(local.year, local.month, local.day);
+    return !now.isBefore(dayStart) && now.isBefore(checkOutAt);
+  }
+
+  /// Tarif d'un jour ajouté par une prolongation, tel que le serveur le
+  /// facturera (`extendedAgreedAmount`).
+  ///
+  /// Un prix négocié à la réservation reste le prix de ce client : le jour
+  /// ajouté vaut le prix par jour convenu, pas le tarif de la grille. Le prix
+  /// unitaire figé fait foi ; le quotient prix convenu ÷ jours vendus n'est
+  /// qu'un repli pour l'historique, qui ne le porte pas. Sans négociation, la
+  /// grille s'applique, remise de durée comprise.
+  double get extensionDailyRate {
+    if (agreedUnitPrice case final unit?) return unit;
+    if (hasNegotiatedPrice)
+      return (receivedAmount - lateCheckoutFee) / daysCount;
+    return dailyPrice * (1 - durationDiscountPercent / 100);
+  }
+
+  /// Le prix du séjour a été convenu hors grille, au comptoir.
+  bool get hasNegotiatedPrice =>
+      source == ReservationSource.offline &&
+      (agreedUnitPrice != null ||
+          (receivedAmount != expectedAmount && daysCount > 0));
+
+  /// Montant du séjour revenant au propriétaire, commission de l'apporteur
+  /// retranchée — la règle du bénéfice net de Finance.
+  double get netAfterCommission => totalAmount - referrerCommissionAmount;
 
   /// Reste dû après l'acompte, jamais négatif.
   double get balanceDue =>
@@ -210,7 +347,9 @@ class ReservationModel {
       id: json['id'] as String,
       propertyId: json['property_id'] as String? ?? '',
       property: json['property'] is Map<String, dynamic>
-          ? ReservationProperty.fromJson(json['property'] as Map<String, dynamic>)
+          ? ReservationProperty.fromJson(
+              json['property'] as Map<String, dynamic>,
+            )
           : null,
       clientId: json['client_id'] as String? ?? '',
       status: ReservationStatus.fromCode(json['status'] as String?),
@@ -246,7 +385,43 @@ class ReservationModel {
           (json['received_amount'] as num?)?.toDouble() ??
           (json['total_amount'] as num?)?.toDouble() ??
           0,
+      // Absent de l'historique, d'un séjour au tarif et d'un serveur antérieur
+      // au prix unitaire : la prolongation retombe alors sur le quotient.
+      agreedUnitPrice: (json['agreed_unit_price'] as num?)?.toDouble(),
       depositAmount: (json['deposit_amount'] as num?)?.toDouble() ?? 0,
+      // Absents tant que le séjour n'a pas été écourté, et sur les réponses
+      // d'un serveur antérieur au départ anticipé.
+      refundedAmount: (json['refunded_amount'] as num?)?.toDouble() ?? 0,
+      // Absents hors annulation, de l'historique et d'un serveur antérieur au
+      // choix sur l'acompte.
+      // Absent de l'historique et d'un serveur antérieur au départ tardif.
+      lateCheckoutFee: (json['late_checkout_fee'] as num?)?.toDouble() ?? 0,
+      retainedAmount: (json['retained_amount'] as num?)?.toDouble() ?? 0,
+      cancellationRefundedAmount:
+          (json['cancellation_refunded_amount'] as num?)?.toDouble() ?? 0,
+      plannedTotalAmount: (json['planned_total_amount'] as num?)?.toDouble(),
+      plannedCheckOutAt: _date(json['planned_check_out_at']),
+      // Absente tant que l'arrivée n'est pas enregistrée, et de l'historique.
+      actualCheckInAt: _date(json['actual_check_in_at']),
+      // Absents des séjours menés à terme et d'un serveur antérieur aux options.
+      earlyCheckoutOption: json['early_checkout_option'] is String
+          ? EarlyCheckOutOption.fromString(
+              json['early_checkout_option'] as String,
+            )
+          : null,
+      earlyCheckoutPenalty: (json['early_checkout_penalty'] as num?)
+          ?.toDouble(),
+      // Absents de l'historique et d'un serveur antérieur aux apporteurs.
+      referrer: json['referrer'] is Map<String, dynamic>
+          ? ReservationReferrer.fromJson(
+              json['referrer'] as Map<String, dynamic>,
+            )
+          : null,
+      referrerCommissionRate:
+          (json['referrer_commission_rate'] as num?)?.toDouble() ?? 0,
+      referrerCommissionAmount:
+          (json['referrer_commission_amount'] as num?)?.toDouble() ?? 0,
+      syncState: localSyncState(json['sync_status']),
     );
   }
 
@@ -263,7 +438,7 @@ class ReservationModel {
   /// même la durée exacte sur laquelle le montant a été calculé.
   String get durationLabel => switch (stayType) {
     StayType.passage || StayType.halfDay => stayType.label,
-    StayType.fullDay => daysCount > 1 ? '$daysCount jours' : '1 jour',
+    StayType.fullDay => 'booking_form.days'.plural(daysCount),
   };
 
   @override

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../../core/theme/app_typography.dart';
+import '../../core/theme/resi_tokens.dart';
 
 class AppTextField extends StatelessWidget {
   const AppTextField({
@@ -46,20 +50,18 @@ class AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
+    // Bordures, fond et focus viennent de `inputDecorationTheme` : un champ
+    // de formulaire a la même allure qu'il passe par ce widget ou non.
     return Padding(
       padding: padding ?? EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A2E),
-            ),
-          ),
-          const SizedBox(height: 8),
+          if (label.isNotEmpty) ...[
+            Text(label, style: context.text.titleSmall),
+            const SizedBox(height: 6),
+          ],
           GestureDetector(
             onTap: readOnly ? onTap : null,
             child: AbsorbPointer(
@@ -75,61 +77,20 @@ class AppTextField extends StatelessWidget {
                 maxLines: maxLines,
                 enabled: enabled,
                 readOnly: readOnly,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: readOnly
-                      ? Colors.grey.shade600
-                      : const Color(0xFF1A1A2E),
-                ),
+                style: context.text.bodyMedium,
                 decoration: InputDecoration(
                   hintText: hint,
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 14,
-                  ),
                   prefixIcon: prefixIcon,
                   suffixIcon:
                       suffixIcon ??
                       (readOnly
                           ? Icon(
-                              Icons.chevron_right,
-                              color: Colors.grey.shade400,
+                              LucideIcons.chevronRight,
+                              size: 16,
+                              color: t.muted,
                             )
                           : null),
-                  filled: true,
-                  fillColor: readOnly
-                      ? const Color(0xFFF0F0F0)
-                      : const Color(0xFFF5F5F5),
-                  contentPadding:
-                      contentPadding ??
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade200),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF5B4FCF),
-                      width: 1.5,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade100),
-                  ),
+                  contentPadding: contentPadding,
                 ),
               ),
             ),

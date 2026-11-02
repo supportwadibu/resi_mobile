@@ -30,7 +30,11 @@ void main() {
         'category': 'electricity',
         'amount': 30000,
         'spent_at': '2026-09-01T00:00:00.000Z',
-        'residence': {'id': 'resi-adja', 'name': 'Resi Adja', 'city': 'Abidjan'},
+        'residence': {
+          'id': 'resi-adja',
+          'name': 'Resi Adja',
+          'city': 'Abidjan',
+        },
       });
 
       expect(expense.propertyId, isNull);
@@ -67,18 +71,82 @@ void main() {
       expect(expense.isCommonCharge, isFalse);
     });
 
-    test('une dépense antérieure aux résidences reste une charge de logement', () {
-      // Compatibilité ascendante : l'historique ne porte pas `residence_id`.
+    test(
+      'une dépense antérieure aux résidences reste une charge de logement',
+      () {
+        // Compatibilité ascendante : l'historique ne porte pas `residence_id`.
+        final expense = ExpenseModel.fromJson({
+          'id': 'exp_5',
+          'property_id': 'villa',
+          'category': 'taxes',
+          'amount': 50000,
+          'spent_at': '2026-01-01T00:00:00.000Z',
+        });
+
+        expect(expense.isCommonCharge, isFalse);
+        expect(expense.residenceId, isNull);
+      },
+    );
+  });
+
+  group('ExpenseModel — abonnement et heure', () {
+    test('l’abonnement n’est pas un bien supprimé', () {
+      // Le serveur l'enregistre sans logement ni résidence : c'est un coût de
+      // la plateforme, que l'historique présentait en « Bien supprimé ».
       final expense = ExpenseModel.fromJson({
-        'id': 'exp_5',
-        'property_id': 'villa',
-        'category': 'taxes',
-        'amount': 50000,
-        'spent_at': '2026-01-01T00:00:00.000Z',
+        'id': 'exp_sub',
+        'property_id': null,
+        'residence_id': null,
+        'category': 'subscription',
+        'amount': 5000,
+        'spent_at': '2026-10-24T14:32:10.000Z',
+        'note': 'Abonnement RESI Pro',
       });
 
-      expect(expense.isCommonCharge, isFalse);
-      expect(expense.residenceId, isNull);
+      expect(expense.isPlatformCharge, isTrue);
+      expect(expense.targetLabel, 'Frais de plateforme RESI');
+    });
+
+    test('une dépense horodatée porte une heure', () {
+      final expense = ExpenseModel.fromJson({
+        'id': 'exp_t',
+        'property_id': 'studio-1',
+        'category': 'cleaning',
+        'amount': 5000,
+        'spent_at': '2026-10-24T14:32:10.000Z',
+      });
+
+      expect(expense.hasTime, isTrue);
+    });
+
+    test('une saisie au jour seul n’invente pas de minuit', () {
+      // Les saisies antérieures n'envoyaient que le jour, enregistré à minuit
+      // UTC : afficher « 00:00 » donnerait une heure que personne n'a saisie.
+      final expense = ExpenseModel.fromJson({
+        'id': 'exp_d',
+        'property_id': 'studio-1',
+        'category': 'cleaning',
+        'amount': 5000,
+        'spent_at': '2026-10-24T00:00:00.000Z',
+      });
+
+      expect(expense.hasTime, isFalse);
+    });
+
+    test('la charge utile envoie l’instant en UTC', () {
+      final at = DateTime.utc(2026, 10, 24, 14, 32);
+      final json = CreateExpensePayload.forProperty(
+        propertyId: 'studio-1',
+        category: ExpenseCategory.cleaning,
+        amount: 5000,
+        spentAt: at,
+      ).toJson();
+
+      expect(json['spent_at'], '2026-10-24T14:32:00.000Z');
+      expect(
+        UpdateExpensePayload(spentAt: at).toJson()['spent_at'],
+        '2026-10-24T14:32:00.000Z',
+      );
     });
   });
 
@@ -152,10 +220,15 @@ void main() {
         isNull,
       );
       expect(
-        const UpdateExpensePayload(clearNote: true).toJson().containsKey('note'),
+        const UpdateExpensePayload(
+          clearNote: true,
+        ).toJson().containsKey('note'),
         isTrue,
       );
-      expect(const UpdateExpensePayload().toJson().containsKey('note'), isFalse);
+      expect(
+        const UpdateExpensePayload().toJson().containsKey('note'),
+        isFalse,
+      );
     });
   });
 }

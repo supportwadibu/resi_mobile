@@ -1,4 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/utils/city_service.dart';
 import 'package:resi_africa/shared/widgets/app_option_picker_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
@@ -14,7 +16,7 @@ class AppCommuneField extends StatefulWidget {
     required this.countryIso2,
     required this.city,
     required this.controller,
-    this.label = 'Commune',
+    this.label,
     this.validator,
   });
 
@@ -25,7 +27,7 @@ class AppCommuneField extends StatefulWidget {
   final String city;
 
   final TextEditingController controller;
-  final String label;
+  final String? label;
   final String? Function(String?)? validator;
 
   @override
@@ -79,8 +81,8 @@ class _AppCommuneFieldState extends State<AppCommuneField> {
     final selected = await showAppOptionPicker(
       context: context,
       options: _communes,
-      searchHint: 'Rechercher une commune',
-      emptyLabel: 'Aucune commune trouvée',
+      searchHint: 'fields.commune_search'.tr(),
+      emptyLabel: 'fields.commune_empty'.tr(),
     );
 
     if (selected != null) {
@@ -96,12 +98,12 @@ class _AppCommuneFieldState extends State<AppCommuneField> {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: AppTextField(
-        label: widget.label,
-        hint: 'Choisissez votre commune',
+        label: widget.label ?? 'fields.commune'.tr(),
+        hint: 'fields.commune_choose'.tr(),
         controller: widget.controller,
         readOnly: true,
         onTap: _openPicker,
-        prefixIcon: const Icon(Icons.apartment_outlined, size: 18),
+        prefixIcon: const Icon(LucideIcons.building2, size: 18),
         validator: widget.validator,
       ),
     );

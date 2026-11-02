@@ -1,39 +1,50 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 import '../../../../property/data/models/property_model.dart';
+import '../../../../residence/data/models/residence_model.dart';
 import '../../../business_logic/expense_state.dart';
 import '../../../data/models/expense_model.dart';
+import 'expense_month_stepper.dart';
 
-/// Feuille de filtres de l'historique : bien, catégorie et période.
+/// Feuille de filtres de l'historique : bien ou résidence, catégorie et
+/// période.
 ///
 /// Retourne les filtres retenus, ou `null` si l'utilisateur ferme la feuille
-/// sans valider — à distinguer d'une remise à zéro, qui renvoie des filtres
-/// vides.
+/// sans valider — à distinguer d'une remise à zéro, qui renvoie les filtres
+/// d'ouverture.
 class ExpenseFilterSheet extends StatefulWidget {
   const ExpenseFilterSheet({
     super.key,
     required this.initial,
     required this.properties,
+    required this.residences,
   });
 
   final ExpenseFilters initial;
   final List<PropertyModel> properties;
+  final List<ResidenceModel> residences;
 
   static Future<ExpenseFilters?> show(
     BuildContext context, {
     required ExpenseFilters initial,
     required List<PropertyModel> properties,
+    required List<ResidenceModel> residences,
   }) {
-    return showModalBottomSheet<ExpenseFilters>(
+    return showAppSheet<ExpenseFilters>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (_) => ExpenseFilterSheet(
+        initial: initial,
+        properties: properties,
+        residences: residences,
       ),
-      builder: (_) =>
-          ExpenseFilterSheet(initial: initial, properties: properties),
     );
   }
 
@@ -43,11 +54,29 @@ class ExpenseFilterSheet extends StatefulWidget {
 
 class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
   late String? _propertyId = widget.initial.propertyId;
+  late String? _residenceId = widget.initial.residenceId;
   late ExpenseCategory? _category = widget.initial.category;
-  late DateTime? _from = widget.initial.from;
-  late DateTime? _to = widget.initial.to;
+  late ExpensePeriodKind _periodKind = widget.initial.periodKind;
 
-  static final _dateFormat = DateFormat('d MMM y', 'fr');
+  /// Mois retenu en mode mensuel. Gardé même hors de ce mode : revenir sur
+  /// « Par mois » retrouve le mois choisi plutôt que de repartir du mois en
+  /// cours.
+  late DateTime _month = widget.initial.month ?? _currentMonth;
+
+  /// Plage retenue en mode libre, gardée de la même façon.
+  late DateTimeRange? _range =
+      widget.initial.periodKind == ExpensePeriodKind.range &&
+          widget.initial.from != null &&
+          widget.initial.to != null
+      ? DateTimeRange(start: widget.initial.from!, end: widget.initial.to!)
+      : null;
+
+  static DateFormat get _dateFormat => DateFormat('d MMM y');
+
+  static DateTime get _currentMonth {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
 
   Future<void> _pickRange() async {
     final now = DateTime.now();
@@ -55,251 +84,250 @@ class _ExpenseFilterSheetState extends State<ExpenseFilterSheet> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: now,
-      initialDateRange: _from != null && _to != null
-          ? DateTimeRange(start: _from!, end: _to!)
-          : null,
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Colors.black,
-            onPrimary: Colors.white,
-            onSurface: Colors.black,
-          ),
-        ),
-        child: child!,
-      ),
+      initialDateRange: _range,
     );
 
-    if (picked != null) {
-      setState(() {
-        _from = picked.start;
-        _to = picked.end;
-      });
-    }
+    if (picked != null) setState(() => _range = picked);
+  }
+
+  /// Filtres à rendre. Une plage libre non choisie retombe sur tout
+  /// l'historique : valider « Entre deux dates » sans dates ne doit pas
+  /// laisser croire à un filtre.
+  ExpenseFilters _result() {
+    final base = ExpenseFilters(
+      propertyId: _propertyId,
+      residenceId: _residenceId,
+      category: _category,
+    );
+
+    return switch (_periodKind) {
+      ExpensePeriodKind.month => base.withMonth(_month),
+      ExpensePeriodKind.range when _range != null => base.copyWith(
+        periodKind: ExpensePeriodKind.range,
+        from: _range!.start,
+        to: _range!.end,
+      ),
+      _ => base,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        20 + MediaQuery.of(context).viewInsets.bottom,
+    return AppSheet(
+      title: 'expense.filter_title'.tr(),
+      footer: Row(
+        children: [
+          Expanded(
+            child: AppButton(
+              label: 'expense.reset'.tr(),
+              variant: AppButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.pop(context, ExpenseFilters.initial()),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppButton(
+              label: 'expense.apply'.tr(),
+              expand: true,
+              onPressed: () => Navigator.pop(context, _result()),
+            ),
+          ),
+        ],
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('expense.property'.tr(), style: context.text.titleSmall),
+          const SizedBox(height: 8),
+          _TargetChips(
+            properties: widget.properties,
+            residences: widget.residences,
+            propertyId: _propertyId,
+            residenceId: _residenceId,
+            // Une dépense porte l'un ou l'autre rattachement : en retenir un
+            // lève l'autre, faute de quoi la liste serait toujours vide.
+            onProperty: (id) => setState(() {
+              _propertyId = id;
+              _residenceId = null;
+            }),
+            onResidence: (id) => setState(() {
+              _residenceId = id;
+              _propertyId = null;
+            }),
+          ),
+          const SizedBox(height: 20),
+          Text('expense.category'.tr(), style: context.text.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final category in ExpenseCategory.values)
+                AppChoiceChip(
+                  label: category.label,
+                  icon: category.icon,
+                  selected: _category == category,
+                  // Retoucher le même choix l'annule : plus court qu'un
+                  // bouton « toutes catégories ».
+                  onTap: () => setState(
+                    () => _category = _category == category ? null : category,
+                  ),
                 ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text('expense.period'.tr(), style: context.text.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final kind in ExpensePeriodKind.values)
+                AppChoiceChip(
+                  label: 'expense.period_kind.${kind.name}'.tr(),
+                  selected: _periodKind == kind,
+                  onTap: () => setState(() => _periodKind = kind),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          switch (_periodKind) {
+            ExpensePeriodKind.month => ExpenseMonthStepper(
+              month: _month,
+              onPrevious: () => setState(
+                () => _month = DateTime(_month.year, _month.month - 1),
+              ),
+              onNext: () => setState(
+                () => _month = DateTime(_month.year, _month.month + 1),
               ),
             ),
-            const SizedBox(height: 20),
-
-            const Text(
-              'Filtrer les dépenses',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-
-            const Text('Bien', style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            _PropertyChips(
-              properties: widget.properties,
-              selected: _propertyId,
-              onSelected: (id) => setState(() => _propertyId = id),
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text('Catégorie', style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final category in ExpenseCategory.values)
-                  _Chip(
-                    label: category.label,
-                    selected: _category == category,
-                    // Retoucher le même choix l'annule : plus court qu'un
-                    // bouton « toutes catégories ».
-                    onTap: () => setState(
-                      () => _category = _category == category ? null : category,
-                    ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text('Période', style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            InkWell(
+            ExpensePeriodKind.range => _RangeField(
+              label: _range == null
+                  ? null
+                  : '${_dateFormat.format(_range!.start)} → '
+                        '${_dateFormat.format(_range!.end)}',
               onTap: _pickRange,
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xffF5F5FA),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 18,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _from != null && _to != null
-                            ? '${_dateFormat.format(_from!)} → ${_dateFormat.format(_to!)}'
-                            : 'Toutes les dates',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                    if (_from != null || _to != null)
-                      GestureDetector(
-                        onTap: () => setState(() {
-                          _from = null;
-                          _to = null;
-                        }),
-                        child: const Icon(Icons.close, size: 18),
-                      ),
-                  ],
-                ),
-              ),
+              onClear: _range == null
+                  ? null
+                  : () => setState(() => _range = null),
             ),
-
-            const SizedBox(height: 28),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () =>
-                        Navigator.pop(context, const ExpenseFilters()),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text('Réinitialiser'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(
-                      context,
-                      ExpenseFilters(
-                        propertyId: _propertyId,
-                        category: _category,
-                        from: _from,
-                        to: _to,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      'Appliquer',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
+            ExpensePeriodKind.all => Text(
+              'expense.all_dates_hint'.tr(),
+              style: context.mutedText,
             ),
-          ],
-        ),
+          },
+        ],
       ),
     );
   }
 }
 
-/// Biens sélectionnables. Réduit à un message si le parc est vide.
-class _PropertyChips extends StatelessWidget {
-  const _PropertyChips({
+/// Résidences puis biens sélectionnables. Réduit à un message si le parc est
+/// vide.
+///
+/// Une résidence retient ses charges communes **et** celles de ses logements :
+/// c'est la question « que me coûte cette résidence ? ».
+class _TargetChips extends StatelessWidget {
+  const _TargetChips({
     required this.properties,
-    required this.selected,
-    required this.onSelected,
+    required this.residences,
+    required this.propertyId,
+    required this.residenceId,
+    required this.onProperty,
+    required this.onResidence,
   });
 
   final List<PropertyModel> properties;
-  final String? selected;
-  final ValueChanged<String?> onSelected;
+  final List<ResidenceModel> residences;
+  final String? propertyId;
+  final String? residenceId;
+  final ValueChanged<String?> onProperty;
+  final ValueChanged<String?> onResidence;
 
   @override
   Widget build(BuildContext context) {
-    if (properties.isEmpty) {
-      return Text(
-        'Aucun bien enregistré',
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-      );
+    if (properties.isEmpty && residences.isEmpty) {
+      return Text('expense.no_property'.tr(), style: context.mutedText);
     }
+
+    final residenceNames = {for (final r in residences) r.id: r.name};
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (final property in properties)
-          _Chip(
-            label: property.title,
-            selected: selected == property.id,
+        for (final residence in residences)
+          AppChoiceChip(
+            label: residence.name,
+            icon: AppSectionIcons.residences,
+            selected: residenceId == residence.id,
             onTap: () =>
-                onSelected(selected == property.id ? null : property.id),
+                onResidence(residenceId == residence.id ? null : residence.id),
+          ),
+        for (final property in properties)
+          AppChoiceChip(
+            label: _propertyLabel(property, residenceNames),
+            selected: propertyId == property.id,
+            onTap: () =>
+                onProperty(propertyId == property.id ? null : property.id),
           ),
       ],
     );
   }
+
+  /// « Resi Adja › Studio 1 » pour une unité : deux résidences ont souvent
+  /// chacune leur « Studio 1 », et le titre seul ne les distinguait pas.
+  static String _propertyLabel(
+    PropertyModel property,
+    Map<String, String> residenceNames,
+  ) {
+    final residence = residenceNames[property.residenceId]?.trim();
+    if (residence == null || residence.isEmpty) return property.title;
+
+    final unit = property.unitLabel?.trim();
+    return '$residence › ${unit == null || unit.isEmpty ? property.title : unit}';
+  }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+/// Champ de plage de dates, vide tant qu'aucune plage n'est choisie.
+class _RangeField extends StatelessWidget {
+  const _RangeField({required this.label, required this.onTap, this.onClear});
 
-  final String label;
-  final bool selected;
+  final String? label;
   final VoidCallback onTap;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? Colors.black : const Color(0xffF5F5FA),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: selected ? Colors.white : const Color(0xff1D2452),
+    final t = context.tokens;
+    final label = this.label;
+    return Material(
+      color: t.background,
+      shape: AppRadius.outlined(AppRadius.md, t.border),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Icon(LucideIcons.calendar, size: 16, color: t.muted),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label ?? 'expense.choose_dates'.tr(),
+                  style: label != null
+                      ? context.text.bodyMedium
+                      : context.mutedText,
+                ),
+              ),
+              if (onClear case final clear?)
+                InkWell(
+                  onTap: clear,
+                  child: Icon(LucideIcons.x, size: 16, color: t.muted),
+                ),
+            ],
           ),
         ),
       ),

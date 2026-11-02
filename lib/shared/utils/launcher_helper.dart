@@ -47,13 +47,22 @@ class LauncherHelper {
     if (await canLaunchUrl(uri)) {
       await _launch(uri);
     } else {
-      await openNavigation(latitude: latitude, longitude: longitude, label: label);
+      await openNavigation(
+        latitude: latitude,
+        longitude: longitude,
+        label: label,
+      );
     }
   }
 
-  static Future<void> openWhatsApp(String phoneNumber, {String? message}) async {
+  static Future<void> openWhatsApp(
+    String phoneNumber, {
+    String? message,
+  }) async {
     final encoded = message != null ? Uri.encodeComponent(message) : '';
-    final uri = Uri.parse('https://wa.me/$phoneNumber${message != null ? '?text=$encoded' : ''}');
+    final uri = Uri.parse(
+      'https://wa.me/$phoneNumber${message != null ? '?text=$encoded' : ''}',
+    );
     await _launch(uri, mode: LaunchMode.externalApplication);
   }
 

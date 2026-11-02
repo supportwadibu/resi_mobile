@@ -1,112 +1,44 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 
 class OccupancyCard extends StatelessWidget {
-  const OccupancyCard({super.key});
+  const OccupancyCard({
+    super.key,
+    required this.occupancyRate,
+    this.rented,
+    this.idle,
+  });
+
+  /// Taux d'occupation de la période, en fraction de 0 à 1 — l'échelle servie
+  /// par `taux_occupation`, convertie ici à l'affichage.
+  final double occupancyRate;
+
+  /// Logements ayant porté au moins un séjour sur la période, et ceux qui
+  /// n'en ont porté aucun — la même fenêtre que le taux, si bien que la note
+  /// suit le mois choisi.
+  ///
+  /// Nuls chez le gérant, dont le relevé ne les porte pas, ou face à un
+  /// serveur qui ne les sert pas encore. La note disparaît alors, plutôt que
+  /// d'afficher deux zéros qui se liraient comme un parc vide.
+  final int? rented;
+  final int? idle;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3322AC), Color(0xFF000000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Taux d\'occupation',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '78%',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: const [
-                    OccupancyStat(label: 'Unités louées', value: '14'),
-                    SizedBox(width: 24),
-                    OccupancyStat(label: 'Disponibles', value: '4'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              Positioned(
-                right: -10,
-                top: -10,
-                child: FaIcon(
-                  FontAwesomeIcons.chartPie,
-                  size: 60,
-                  color: Colors.white.withOpacity(0.15),
-                ),
-              ),
-              Positioned.fill(
-                child: Center(
-                  child: FaIcon(
-                    FontAwesomeIcons.chartPie,
-                    size: 28,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class OccupancyStat extends StatelessWidget {
-  const OccupancyStat({super.key, required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    final rented = this.rented;
+    final idle = this.idle;
+    return StatTile(
+      label: 'stats.occupancy_rate'.tr(),
+      value: '${(occupancyRate * 100).round()} %',
+      icon: LucideIcons.chartPie,
+      accent: AppAccent.amber,
+      note: rented != null && idle != null
+          ? '${'stats.units_rented'.plural(rented)} · '
+                '${'stats.units_idle'.plural(idle)}'
+          : null,
     );
   }
 }

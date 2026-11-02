@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
@@ -31,6 +32,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
     required List<String> imagePaths,
     required PropertyPricing pricing,
     required DateTime availableFrom,
+    PropertyNegotiation negotiation = PropertyNegotiation.disabled,
     bool chargesIncluded = false,
     double? additionalCharges,
   }) async {
@@ -55,6 +57,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
           images: _uploadedImages,
           pricing: pricing,
           availableFrom: availableFrom,
+          negotiation: negotiation,
           chargesIncluded: chargesIncluded,
           additionalCharges: additionalCharges,
         ),
@@ -62,14 +65,24 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
 
       if (!isClosed) emit(CreatePropertySuccess(property));
     } on AppFailure catch (f) {
-      if (!isClosed) {
-        emit(
-          CreatePropertyFailure(
-            f.userMessage,
-            uploadedImages: _uploadedImages.isEmpty ? null : _uploadedImages,
-          ),
-        );
-      }
+      _fail(f.userMessage);
+    } catch (_) {
+      // Même raison que dans `EditPropertyCubit` : l'écran neutralise toute
+      // interaction pendant l'envoi, si bien qu'une exception imprévue qui
+      // s'échapperait d'ici figerait le formulaire pour de bon.
+      _fail('property_form.save_failed'.tr());
     }
+  }
+
+  /// Émet l'échec en conservant les photos déjà déposées.
+  void _fail(String message) {
+    if (isClosed) return;
+
+    emit(
+      CreatePropertyFailure(
+        message,
+        uploadedImages: _uploadedImages.isEmpty ? null : _uploadedImages,
+      ),
+    );
   }
 }

@@ -1,4 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 class RatingDistributionChart extends StatelessWidget {
   const RatingDistributionChart({super.key});
@@ -16,26 +21,24 @@ class RatingDistributionChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: context.tokens.surface,
+        borderRadius: AppRadius.md,
+        border: Border.all(color: context.tokens.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Distribution des notes',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
+          Text(
+            'reviews.distribution'.tr(),
+            style: context.text.titleMedium!.copyWith(
+              color: context.tokens.foreground,
             ),
           ),
           const SizedBox(height: 16),
           ...distributions.map(
             (dist) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildDistributionBar(dist),
+              child: _buildDistributionBar(context, dist),
             ),
           ),
         ],
@@ -43,38 +46,34 @@ class RatingDistributionChart extends StatelessWidget {
     );
   }
 
-  Widget _buildDistributionBar(RatingDistribution dist) {
+  Widget _buildDistributionBar(BuildContext context, RatingDistribution dist) {
     return Row(
       children: [
         SizedBox(
           width: 60,
           child: Row(
             children: [
-              Text(
-                '${dist.stars}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+              Text('${dist.stars}', style: context.text.titleSmall),
+              Icon(
+                LucideIcons.star,
+                size: 14,
+                color: context.tokens.accentAmber,
               ),
-              const Icon(Icons.star, size: 14, color: Color(0xFFF59E0B)),
             ],
           ),
         ),
         Expanded(
           child: Container(
             height: 8,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(4),
+              color: context.tokens.border,
+              borderRadius: AppRadius.pill,
             ),
             child: FractionallySizedBox(
               widthFactor: dist.percentage,
               child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                decoration: BoxDecoration(color: context.tokens.accentAmber),
               ),
             ),
           ),
@@ -84,7 +83,7 @@ class RatingDistributionChart extends StatelessWidget {
           width: 40,
           child: Text(
             '${dist.count}',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: context.mutedText,
             textAlign: TextAlign.right,
           ),
         ),

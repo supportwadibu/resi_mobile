@@ -1,10 +1,12 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
-import 'package:resi_africa/core/theme/app_text_styles.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/utils/date_formatter.dart';
+import 'package:resi_africa/shared/widgets/status_badge.dart';
 import '../../data/models/client_reservation_model.dart';
 
+/// Ligne d'un séjour dans l'historique du client.
 class ReservationHistoryCard extends StatelessWidget {
   final ClientReservationModel reservation;
 
@@ -12,30 +14,36 @@ class ReservationHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          _StatusDot(status: reservation.status),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  reservation.residenceName,
-                  style: AppTextStyles.valueSmall,
+                  // Vide si le bien a été supprimé depuis : l'historique du
+                  // client reste lisible sans lui.
+                  reservation.propertyTitle.isEmpty
+                      ? 'home.deleted_property'.tr()
+                      : reservation.propertyTitle,
+                  style: context.text.titleSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  '${_fmt(reservation.startDate)} → ${_fmt(reservation.endDate)}  ·  ${reservation.days} jour${reservation.days > 1 ? 's' : ''}',
-                  style: AppTextStyles.labelSmall,
+                  'clients.history_line'.plural(
+                    reservation.days,
+                    namedArgs: {
+                      'period': DateFormatter.stayPeriod(
+                        reservation.startDate,
+                        reservation.endDate,
+                      ),
+                      'count': '${reservation.days}',
+                    },
+                  ),
+                  style: context.text.bodySmall,
                 ),
               ],
             ),
@@ -45,77 +53,18 @@ class ReservationHistoryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                CurrencyFormatter.format(reservation.amount),
-                style: AppTextStyles.valueSmall,
+                CurrencyFormatter.short(reservation.amount),
+                style: context.text.amount,
               ),
               const SizedBox(height: 4),
-              _StatusLabel(status: reservation.status),
+              StatusBadge(
+                label: reservation.status.label,
+                tone: StatusTones.booking(reservation.status.code),
+              ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  String _fmt(DateTime d) => DateFormat('dd MMM', 'fr_FR').format(d);
-}
-
-class _StatusDot extends StatelessWidget {
-  final ReservationStatus status;
-  const _StatusDot({required this.status});
-
-  Color get _color {
-    switch (status) {
-      case ReservationStatus.paid:
-        return AppColors.green;
-      case ReservationStatus.pending:
-        return const Color(0xFFF39C12);
-      case ReservationStatus.cancelled:
-        return AppColors.red;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: _color, shape: BoxShape.circle),
-    );
-  }
-}
-
-class _StatusLabel extends StatelessWidget {
-  final ReservationStatus status;
-  const _StatusLabel({required this.status});
-
-  String get _label {
-    switch (status) {
-      case ReservationStatus.paid:
-        return 'Réglé';
-      case ReservationStatus.pending:
-        return 'En attente';
-      case ReservationStatus.cancelled:
-        return 'Annulé';
-    }
-  }
-
-  Color get _color {
-    switch (status) {
-      case ReservationStatus.paid:
-        return AppColors.green;
-      case ReservationStatus.pending:
-        return const Color(0xFFF39C12);
-      case ReservationStatus.cancelled:
-        return AppColors.red;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _label,
-      style: AppTextStyles.labelSmall.copyWith(color: _color, fontSize: 10),
     );
   }
 }

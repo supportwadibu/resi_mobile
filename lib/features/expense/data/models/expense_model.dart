@@ -1,28 +1,64 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/offline/pending_action.dart';
+import 'package:resi_africa/core/offline/pending_overlay.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 /// Catégorie de dépense, alignée sur `EXPENSE_CATEGORIES` du serveur.
 ///
 /// Le code part à l'API, le libellé et l'icône restent côté client : traduire
 /// côté serveur imposerait de redéployer pour corriger un intitulé.
 enum ExpenseCategory {
-  electricity('electricity', 'Électricité', Icons.bolt_outlined, Color(0xFFF39C12)),
-  water('water', 'Eau / SODECI', Icons.water_drop_outlined, Color(0xFF3498DB)),
-  internet('internet', 'Internet', Icons.wifi, Color(0xFF1ABC9C)),
-  tv('tv', 'Canal+ / TV', Icons.tv_outlined, Color(0xFF34495E)),
-  cleaning('cleaning', 'Ménage', Icons.cleaning_services_outlined, Color(0xFF2ECC71)),
-  maintenance('maintenance', 'Maintenance', Icons.handyman_outlined, Color(0xFF9B59B6)),
-  taxes('taxes', 'Taxes', Icons.receipt_long_outlined, Color(0xFFE74C3C)),
-  other('other', 'Autre', Icons.more_horiz, Color(0xFF95A5A6));
+  // En tête : poste le plus lourd d'un propriétaire qui sous-loue, il ouvre
+  // la grille de saisie.
+  rent('rent', LucideIcons.house),
+  electricity('electricity', LucideIcons.zap),
+  water('water', LucideIcons.droplet),
+  internet('internet', LucideIcons.wifi),
+  tv('tv', LucideIcons.tv),
+  cleaning('cleaning', LucideIcons.sprayCan),
+  maintenance('maintenance', LucideIcons.wrench),
+  taxes('taxes', LucideIcons.receiptText),
+  commission('commission', LucideIcons.handshake),
+  subscription('subscription', LucideIcons.creditCard),
+  other('other', LucideIcons.ellipsis);
 
-  const ExpenseCategory(this.code, this.label, this.icon, this.color);
+  const ExpenseCategory(this.code, this.icon);
 
   final String code;
-  final String label;
+
+  /// Libellé dans la langue de l'application.
+  String get label => 'expense_categories.$code'.tr();
   final IconData icon;
+
+  /// Catégories créées automatiquement par le serveur, non sélectionnables
+  /// dans le formulaire de saisie manuelle.
+  bool get isAutomatic => this == commission || this == subscription;
+
+  /// Catégories que le propriétaire peut saisir manuellement.
+  static List<ExpenseCategory> get manual =>
+      values.where((c) => !c.isAutomatic).toList();
 
   /// Couleur de la catégorie dans l'anneau et sa légende, fixée par catégorie
   /// pour qu'un poste garde la même teinte d'un écran à l'autre.
-  final Color color;
+  ///
+  /// Tirée des jetons du mode courant plutôt que d'une teinte fixe : l'anneau
+  /// reste lisible en sombre. Plus de postes que d'accents : les autres
+  /// prennent les variantes douces et les neutres (texte, secondaire, filet).
+  Color colorIn(ResiTokens t) => switch (this) {
+    ExpenseCategory.rent => t.accentVioletSoft,
+    ExpenseCategory.electricity => t.accentAmber,
+    ExpenseCategory.water => t.accentBlue,
+    ExpenseCategory.internet => t.accentViolet,
+    ExpenseCategory.tv => t.foreground,
+    ExpenseCategory.cleaning => t.accentGreen,
+    ExpenseCategory.maintenance => t.muted,
+    ExpenseCategory.taxes => t.accentRed,
+    ExpenseCategory.commission => t.accentAmberSoft,
+    ExpenseCategory.subscription => t.accentBlueSoft,
+    ExpenseCategory.other => t.border,
+  };
 
   static ExpenseCategory? fromCode(String? code) {
     for (final value in ExpenseCategory.values) {
@@ -96,6 +132,7 @@ class ExpenseModel {
     this.property,
     this.residence,
     this.note,
+    this.syncState,
   });
 
   final String id;
@@ -120,17 +157,44 @@ class ExpenseModel {
   final ExpenseResidence? residence;
   final String? note;
 
+  /// Dépense saisie hors ligne, pas encore acceptée par le serveur ; `null`
+  /// sinon. Posée par la superposition de la file.
+  final PendingActionState? syncState;
+
   /// Vrai pour une charge commune du lieu, réparties sur aucune unité.
   bool get isCommonCharge => residenceId != null;
+
+  /// Vrai pour un coût de la plateforme — l'abonnement RESI —, que le serveur
+  /// enregistre sans logement ni résidence.
+  bool get isPlatformCharge => propertyId == null && residenceId == null;
+
+  /// La dépense porte-t-elle une heure ?
+  ///
+  /// Les saisies antérieures à l'heure n'envoyaient que le jour, enregistré à
+  /// minuit UTC pile : leur afficher « 00:00 » donnerait une heure que
+  /// personne n'a saisie. Une saisie horodatée tombant à la milliseconde
+  /// près sur minuit UTC est assez improbable pour servir de signal.
+  bool get hasTime {
+    final utc = spentAt.toUtc();
+    return utc.hour != 0 ||
+        utc.minute != 0 ||
+        utc.second != 0 ||
+        utc.millisecond != 0;
+  }
 
   /// Libellé de la cible, quel que soit son type.
   ///
   /// Une cible supprimée depuis la saisie ne laisse qu’un identifiant : le
-  /// repli évite d’afficher une ligne vide dans l’historique.
+  /// repli évite d’afficher une ligne vide dans l’historique. Une dépense sans
+  /// aucune cible n'est pas une cible supprimée mais l'abonnement : la
+  /// présenter en « Bien supprimé » laissait croire à une perte de données.
   String get targetLabel {
     if (residence != null) return residence!.name;
     if (property != null) return property!.title;
-    return isCommonCharge ? 'Résidence supprimée' : 'Bien supprimé';
+    if (isPlatformCharge) return 'expense.platform_charge'.tr();
+    return isCommonCharge
+        ? 'expense.deleted_residence'.tr()
+        : 'home.deleted_property'.tr();
   }
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
@@ -152,6 +216,7 @@ class ExpenseModel {
           ? ExpenseResidence.fromJson(json['residence'] as Map<String, dynamic>)
           : null,
       note: json['note'] as String?,
+      syncState: localSyncState(json['sync_status']),
     );
   }
 
@@ -166,12 +231,12 @@ class ExpenseModel {
   int get hashCode => id.hashCode;
 }
 
-/// Date au format attendu par `vine.date()` : `YYYY-MM-DD`, sans heure.
-String formatApiDate(DateTime date) {
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '${date.year}-$month-$day';
-}
+/// Instant d'une dépense tel que l'API l'attend : ISO 8601 en UTC.
+///
+/// Le jour seul (`YYYY-MM-DD`) partait auparavant : l'historique ne pouvait
+/// pas afficher d'heure. Les saisies déjà en file hors ligne gardent leur
+/// jour seul, que l'API accepte toujours.
+String formatApiDateTime(DateTime date) => date.toUtc().toIso8601String();
 
 /// Charge utile de création, distincte du modèle de lecture.
 ///
@@ -197,6 +262,36 @@ class CreateExpensePayload {
     this.note,
   }) : propertyId = null;
 
+  /// Relit une charge utile mise en file hors ligne, telle que [toJson] l'a
+  /// écrite. Une saisie sans bien vaut charge de résidence : c'est la seule
+  /// autre forme que [toJson] produit.
+  factory CreateExpensePayload.fromJson(Map<String, dynamic> json) {
+    final category =
+        ExpenseCategory.fromCode(json['category'] as String?) ??
+        ExpenseCategory.other;
+    final amount = (json['amount'] as num?)?.toDouble() ?? 0;
+    final spentAt =
+        DateTime.tryParse(json['spent_at'] as String? ?? '') ?? DateTime.now();
+    final note = json['note'] as String?;
+    final propertyId = json['property_id'] as String?;
+
+    return propertyId != null
+        ? CreateExpensePayload.forProperty(
+            propertyId: propertyId,
+            category: category,
+            amount: amount,
+            spentAt: spentAt,
+            note: note,
+          )
+        : CreateExpensePayload.forResidence(
+            residenceId: json['residence_id'] as String? ?? '',
+            category: category,
+            amount: amount,
+            spentAt: spentAt,
+            note: note,
+          );
+  }
+
   final String? propertyId;
   final String? residenceId;
   final ExpenseCategory category;
@@ -209,7 +304,7 @@ class CreateExpensePayload {
     if (residenceId != null) 'residence_id': residenceId,
     'category': category.code,
     'amount': amount,
-    'spent_at': formatApiDate(spentAt),
+    'spent_at': formatApiDateTime(spentAt),
     if (note != null && note!.trim().isNotEmpty) 'note': note!.trim(),
   };
 }
@@ -284,9 +379,11 @@ class UpdateExpensePayload {
     },
     if (category != null) 'category': category!.code,
     if (amount != null) 'amount': amount,
-    if (spentAt != null) 'spent_at': formatApiDate(spentAt!),
-    if (clearNote) 'note': null
-    else if (note != null && note!.trim().isNotEmpty) 'note': note!.trim(),
+    if (spentAt != null) 'spent_at': formatApiDateTime(spentAt!),
+    if (clearNote)
+      'note': null
+    else if (note != null && note!.trim().isNotEmpty)
+      'note': note!.trim(),
   };
 
   bool get isEmpty => toJson().isEmpty;

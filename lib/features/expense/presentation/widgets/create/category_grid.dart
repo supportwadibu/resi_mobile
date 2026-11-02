@@ -20,11 +20,14 @@ class CategoryGrid extends StatelessWidget {
       shrinkWrap: true,
       itemCount: categories.length,
       physics: const NeverScrollableScrollPhysics(),
+      // Quatre colonnes : les huit catégories tiennent alors en deux rangées
+      // visibles d'un coup, là où trois colonnes en imposaient trois et
+      // repoussaient la date sous la ligne de flottaison.
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.15,
+        crossAxisCount: 4,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.92,
       ),
       itemBuilder: (_, index) {
         final category = categories[index];

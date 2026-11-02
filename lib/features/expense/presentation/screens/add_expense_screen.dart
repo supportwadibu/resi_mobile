@@ -1,10 +1,19 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/router/role_guard.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../../property/business_logic/property_state.dart';
 import '../../../residence/business_logic/residence_cubit.dart';
@@ -12,7 +21,6 @@ import '../../../residence/business_logic/residence_state.dart';
 import '../../business_logic/add_expense_cubit.dart';
 import '../../business_logic/add_expense_state.dart';
 import '../../data/models/expense_model.dart';
-import '../widgets/create/add_expense_header.dart';
 import '../widgets/create/amount_field.dart';
 import '../widgets/create/category_grid.dart';
 import '../widgets/create/date_picker_field.dart';
@@ -71,6 +79,27 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   ExpenseModel? get _original => widget.expense;
   bool get _isEditing => _original != null;
 
+  /// Abonnement RESI enregistré par le serveur, sans logement ni résidence.
+  ///
+  /// Ni rattachement ni catégorie ne se proposent : le serveur crée ce coût
+  /// hors de tout bien, et exiger un logement à la modification forçait le
+  /// propriétaire à imputer un frais de plateforme à une unité.
+  bool get _isPlatformCharge => _original?.isPlatformCharge ?? false;
+
+  /// Une charge commune de résidence est-elle offerte à ce rôle ?
+  ///
+  /// `POST /gerant/expenses` exige un `property_id` et répond 422
+  /// `property_required` sans lui : une charge commune n'est rattachée à aucun
+  /// logement, porte sur la résidence entière — y compris des logements hors du
+  /// périmètre du gérant — et entre dans le net du propriétaire, que le gérant
+  /// ne voit pas. Le choix disparaît donc plutôt que d'échouer à l'envoi.
+  ///
+  /// Le rôle se lit sur la session, comme partout ailleurs dans le projet.
+  late final bool _canChargeCommon = isGestureAllowed(
+    sl<SessionRole>().value,
+    'expense_common_charge',
+  );
+
   @override
   void initState() {
     super.initState();
@@ -82,9 +111,14 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     _noteController = TextEditingController(text: original?.note ?? '');
     _propertyId = original?.propertyId;
     _residenceId = original?.residenceId;
-    _isCommonCharge = original?.isCommonCharge ?? false;
+    // Le rôle prime sur la dépense relue : le gérant n'ayant pas le type
+    // commun, l'écran ne peut pas s'ouvrir dessus — il présenterait un
+    // sélecteur de résidence sans le choix qui l'explique.
+    _isCommonCharge = _canChargeCommon && (original?.isCommonCharge ?? false);
     _category = original?.category;
-    _spentAt = original?.spentAt ?? DateTime.now();
+    // En heure locale : le sélecteur raisonne en jours locaux, et l'heure de
+    // la saisie est reportée sur le jour choisi (`_pickDate`).
+    _spentAt = (original?.spentAt ?? DateTime.now()).toLocal();
   }
 
   @override
@@ -101,15 +135,35 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   /// Les règles reprennent celles du validateur serveur : mieux vaut un refus
   /// immédiat et situé qu'une erreur 422 après coup.
   String? _validate() {
-    if (_isCommonCharge && _residenceId == null) {
-      return 'Choisissez la résidence concernée.';
+    if (!_isPlatformCharge) {
+      if (_isCommonCharge && _residenceId == null) {
+        return 'expense.choose_residence'.tr();
+      }
+      if (!_isCommonCharge && _propertyId == null) {
+        return 'expense.choose_property'.tr();
+      }
     }
-    if (!_isCommonCharge && _propertyId == null) {
-      return 'Choisissez le bien concerné.';
-    }
-    if (_category == null) return 'Choisissez une catégorie.';
-    if (_amount <= 0) return 'Indiquez un montant supérieur à zéro.';
+    if (_category == null) return 'expense.choose_category'.tr();
+    if (_amount <= 0) return 'expense.amount_positive'.tr();
     return null;
+  }
+
+  /// Nom et ville de la cible choisie, pour qu'une dépense mise en file
+  /// s'affiche nommée avant que le serveur ne les joigne.
+  ({String title, String city})? _targetLabel() {
+    if (_isCommonCharge) {
+      final state = context.read<ResidenceCubit>().state;
+      if (state is! ResidenceLoaded) return null;
+      final residence = state.items.where((r) => r.id == _residenceId);
+      if (residence.isEmpty) return null;
+      return (title: residence.first.name, city: residence.first.address.city);
+    }
+
+    final state = context.read<PropertyCubit>().state;
+    if (state is! PropertyLoaded) return null;
+    final property = state.items.where((p) => p.id == _propertyId);
+    if (property.isEmpty) return null;
+    return (title: property.first.title, city: property.first.address.city);
   }
 
   void _submit() {
@@ -123,6 +177,7 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     final original = _original;
 
     if (original == null) {
+      final target = _targetLabel();
       cubit.submit(
         propertyId: _isCommonCharge ? null : _propertyId,
         residenceId: _isCommonCharge ? _residenceId : null,
@@ -130,12 +185,16 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
         amount: _amount,
         spentAt: _spentAt,
         note: _noteController.text,
+        targetTitle: target?.title,
+        targetCity: target?.city,
       );
     } else {
       cubit.update(
         original: original,
-        propertyId: _isCommonCharge ? null : _propertyId,
-        residenceId: _isCommonCharge ? _residenceId : null,
+        propertyId: _isPlatformCharge || _isCommonCharge ? null : _propertyId,
+        residenceId: _isPlatformCharge || !_isCommonCharge
+            ? null
+            : _residenceId,
         category: _category!,
         amount: _amount,
         spentAt: _spentAt,
@@ -145,9 +204,7 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.error(message, context: context);
   }
 
   Future<void> _pickDate() async {
@@ -157,19 +214,22 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
       firstDate: DateTime(2000),
       // Une dépense future n'a pas de sens dans un relevé de charges.
       lastDate: DateTime.now(),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Colors.black,
-            onPrimary: Colors.white,
-            onSurface: Colors.black,
-          ),
-        ),
-        child: child!,
-      ),
     );
 
-    if (picked != null) setState(() => _spentAt = picked);
+    // Le sélecteur rend le jour à minuit : l'heure déjà retenue est gardée,
+    // celle de la saisie pour une nouvelle dépense, l'heure enregistrée pour
+    // une modification.
+    if (picked != null) {
+      setState(
+        () => _spentAt = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _spentAt.hour,
+          _spentAt.minute,
+        ),
+      );
+    }
   }
 
   @override
@@ -177,7 +237,8 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
     return BlocConsumer<AddExpenseCubit, AddExpenseState>(
       listener: (context, state) {
         switch (state) {
-          case AddExpenseSuccess():
+          case AddExpenseSuccess(:final queued):
+            if (queued) AppToast.success('offline_queue.saved'.tr());
             // `true` : l'écran d'historique s'en sert pour se recharger.
             context.router.maybePop(true);
           case AddExpenseFailure(:final message):
@@ -190,96 +251,83 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
         final isBusy = state is AddExpenseSubmitting;
 
         return Scaffold(
-          backgroundColor: Colors.white,
-
-          body: SafeArea(
-            child: AbsorbPointer(
-              absorbing: isBusy,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AddExpenseHeader(
-                      title: _isEditing
-                          ? 'Modifier la dépense'
-                          : 'Nouvelle dépense',
+          appBar: AppTopBar(
+            title: _isEditing
+                ? 'expense.edit_title'.tr()
+                : 'expense.new_title'.tr(),
+          ),
+          bottomNavigationBar: SaveExpenseButton(
+            onPressed: isBusy ? null : _submit,
+            isBusy: isBusy,
+            label: _isEditing ? 'property_form.save_changes'.tr() : null,
+          ),
+          body: AbsorbPointer(
+            absorbing: isBusy,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Le montant ouvre la saisie : c'est la donnée que le
+                  // propriétaire a en tête en arrivant sur l'écran, et la
+                  // placer au troisième rang l'obligeait à parcourir deux
+                  // sélecteurs avant de la poser.
+                  AmountField(controller: _amountController),
+                  const SizedBox(height: 24),
+                  if (_isPlatformCharge) ...[
+                    AppCallout(
+                      icon: LucideIcons.info,
+                      tone: AppAccent.neutral,
+                      message: 'expense.platform_charge_notice'.tr(),
                     ),
-
-                    const SizedBox(height: 40),
-
-                    const Text("Type de dépense"),
-                    const SizedBox(height: 10),
-                    _chargeKindPicker(),
-
-                    const SizedBox(height: 24),
-
-                    Text(
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    if (_canChargeCommon) ...[
+                      _FieldLabel('expense.charge_kind'.tr()),
+                      _chargeKindPicker(),
+                      const SizedBox(height: 20),
+                    ],
+                    _FieldLabel(
                       _isCommonCharge
-                          ? "Sélectionner la résidence"
-                          : "Sélectionner le logement",
+                          ? 'expense.residence_concerned'.tr()
+                          : 'expense.unit_concerned'.tr(),
                     ),
-                    const SizedBox(height: 10),
-                    if (_isCommonCharge) _residenceTargetPicker() else _residencePicker(),
-
-                    const SizedBox(height: 24),
-
-                    const Text("Montant de la dépense (Fcfa)"),
-                    const SizedBox(height: 10),
-                    AmountField(controller: _amountController),
-
-                    const SizedBox(height: 24),
-
-                    const Text("Catégorie"),
-                    const SizedBox(height: 12),
+                    if (_isCommonCharge)
+                      _residenceTargetPicker()
+                    else
+                      _residencePicker(),
+                    const SizedBox(height: 20),
+                    _FieldLabel('expense.category'.tr()),
                     CategoryGrid(
-                      categories: ExpenseCategory.values,
+                      categories: ExpenseCategory.manual,
                       selected: _category,
                       onSelected: (category) =>
                           setState(() => _category = category),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    const Text("Date"),
-                    const SizedBox(height: 10),
-                    DatePickerField(
-                      date: DateFormat('dd MMMM yyyy', 'fr').format(_spentAt),
-                      onTap: _pickDate,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    const Text("Note (facultatif)"),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _noteController,
-                      maxLength: 500,
-                      maxLines: 2,
-                      inputFormatters: [LengthLimitingTextInputFormatter(500)],
-                      decoration: InputDecoration(
-                        hintText: 'Ex : facture de janvier',
-                        filled: true,
-                        fillColor: const Color(0xffF5F5FA),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    SaveExpenseButton(
-                      onPressed: isBusy ? null : _submit,
-                      label: switch ((isBusy, _isEditing)) {
-                        (true, _) => 'Enregistrement...',
-                        (false, true) => 'Enregistrer les modifications',
-                        (false, false) => null,
-                      },
-                    ),
+                    const SizedBox(height: 20),
                   ],
-                ),
+                  _FieldLabel('expense.date'.tr()),
+                  DatePickerField(
+                    date: DateFormat('d MMM y').format(_spentAt),
+                    onTap: _pickDate,
+                  ),
+                  const SizedBox(height: 20),
+                  _FieldLabel('expense.note'.tr(), isOptional: true),
+                  TextField(
+                    controller: _noteController,
+                    maxLength: 500,
+                    maxLines: 2,
+                    style: context.text.bodyMedium,
+                    inputFormatters: [LengthLimitingTextInputFormatter(500)],
+                    decoration: InputDecoration(
+                      hintText: 'expense.note_hint'.tr(),
+                      // Le compteur de caractères double le libellé
+                      // « facultatif » et alourdit la section pour une
+                      // limite qu'une note courte n'approche jamais.
+                      counterText: '',
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -294,23 +342,25 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   /// logement, et présenter les deux sélecteurs ensemble laisserait croire
   /// qu’on peut renseigner les deux — ce que le serveur refuse.
   Widget _chargeKindPicker() {
-    return SegmentedButton<bool>(
-      segments: const [
-        ButtonSegment(
-          value: false,
-          label: Text('Un logement'),
-          icon: Icon(Icons.meeting_room_outlined, size: 18),
-        ),
-        ButtonSegment(
-          value: true,
-          label: Text('Partie commune'),
-          icon: Icon(Icons.apartment_outlined, size: 18),
-        ),
-      ],
-      selected: {_isCommonCharge},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) =>
-          setState(() => _isCommonCharge = selection.first),
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<bool>(
+        showSelectedIcon: false,
+        segments: [
+          ButtonSegment(
+            value: false,
+            icon: const Icon(LucideIcons.doorOpen, size: 16),
+            label: Text('expense.a_unit'.tr()),
+          ),
+          ButtonSegment(
+            value: true,
+            icon: const Icon(LucideIcons.building2, size: 16),
+            label: Text('expense.common_area'.tr()),
+          ),
+        ],
+        selected: {_isCommonCharge},
+        onSelectionChanged: (s) => setState(() => _isCommonCharge = s.first),
+      ),
     );
   }
 
@@ -321,33 +371,14 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   Widget _residenceTargetPicker() {
     return BlocBuilder<ResidenceCubit, ResidenceState>(
       builder: (context, state) => switch (state) {
-        ResidenceLoading() || ResidenceInitial() => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Chargement de vos résidences...',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-        ResidenceError(:final message) => Text(
-          message,
-          style: const TextStyle(fontSize: 12, color: Colors.red),
-        ),
-        ResidenceLoaded(:final items) when items.isEmpty => Text(
-          'Créez d’abord une résidence pour y imputer une charge commune.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ResidenceLoading() ||
+        ResidenceInitial() => _PickerLoading('expense.loading_residences'.tr()),
+        ResidenceError(:final message) => _PickerNotice(message, isError: true),
+        ResidenceLoaded(:final items) when items.isEmpty => _PickerNotice(
+          'expense.create_residence_first'.tr(),
         ),
         ResidenceLoaded(:final items) => ResidenceDropdown(
-          hint: 'Choisir une résidence',
+          hint: 'booking_form.choose_residence'.tr(),
           // La résidence d’une dépense en cours d’édition peut avoir été
           // supprimée : sans ce garde-fou, `DropdownButtonFormField` lèverait
           // sur une valeur absente de ses éléments.
@@ -366,30 +397,11 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
   Widget _residencePicker() {
     return BlocBuilder<PropertyCubit, PropertyState>(
       builder: (context, state) => switch (state) {
-        PropertyLoading() || PropertyInitial() => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Chargement de vos biens...',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-        PropertyError(:final message) => Text(
-          message,
-          style: const TextStyle(fontSize: 12, color: Colors.red),
-        ),
-        PropertyLoaded(:final items) when items.isEmpty => Text(
-          'Enregistrez d’abord un bien pour pouvoir y imputer une dépense.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        PropertyLoading() ||
+        PropertyInitial() => _PickerLoading('expense.loading_properties'.tr()),
+        PropertyError(:final message) => _PickerNotice(message, isError: true),
+        PropertyLoaded(:final items) when items.isEmpty => _PickerNotice(
+          'expense.create_property_first'.tr(),
         ),
         PropertyLoaded(:final items) => ResidenceDropdown(
           // Le bien d'une dépense en cours d'édition peut avoir été supprimé :
@@ -403,6 +415,75 @@ class _AddExpenseViewState extends State<_AddExpenseView> {
           onChanged: (value) => setState(() => _propertyId = value),
         ),
       },
+    );
+  }
+}
+
+/// Libellé d'un champ de la saisie.
+///
+/// Porte son propre espacement bas : réparti dans l'écran, il variait d'un
+/// champ à l'autre (10 ici, 12 là) sans que rien ne le justifie.
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text, {this.isOptional = false});
+
+  final String text;
+
+  /// Champ facultatif, signalé à côté du libellé plutôt que dans une
+  /// parenthèse du texte : la mention est une information de saisie, pas une
+  /// partie du nom du champ.
+  final bool isOptional;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Text(text, style: context.text.titleSmall),
+          if (isOptional) ...[
+            const SizedBox(width: 6),
+            Text('common.optional'.tr(), style: context.text.bodySmall),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Attente du chargement d'un sélecteur.
+class _PickerLoading extends StatelessWidget {
+  const _PickerLoading(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          const AppLoader(size: 20),
+          const SizedBox(width: 10),
+          Text(message, style: context.mutedText),
+        ],
+      ),
+    );
+  }
+}
+
+/// Message tenant la place d'un sélecteur qui n'a rien à proposer.
+class _PickerNotice extends StatelessWidget {
+  const _PickerNotice(this.message, {this.isError = false});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCallout(
+      icon: isError ? LucideIcons.circleAlert : LucideIcons.info,
+      tone: isError ? AppAccent.red : AppAccent.neutral,
+      message: message,
     );
   }
 }

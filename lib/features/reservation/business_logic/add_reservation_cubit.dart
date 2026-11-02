@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -5,8 +6,12 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
+import '../../clients/data/models/client_creation_result.dart';
 import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../clients/data/services/id_card_reading.dart';
+import '../../property/data/models/property_model.dart';
+import '../../../shared/models/late_checkout_policy.dart';
 import '../data/datasources/reservation_local_store.dart';
 import '../data/models/occupied_period_model.dart';
 import '../data/models/reservation_model.dart';
@@ -25,14 +30,21 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     this._store,
     this._connectivity, {
     required ReservationMode mode,
-  }) : super(
-         AddReservationState(
-           mode: mode,
-           // Un check-in enregistre une arrivée qui a lieu maintenant : la
-           // date n'est pas à choisir.
-           checkInAt: mode == ReservationMode.checkIn ? DateTime.now() : null,
-         ),
-       );
+  }) : super(_initialState(mode, DateTime.now()));
+
+  /// Un check-in enregistre une arrivée qui a lieu maintenant : la date n'est
+  /// pas à choisir, et la sortie d'une nuit s'en déduit aussitôt — le champ
+  /// de sortie d'un séjour complet ne se saisit pas, il ne doit pas rester
+  /// vide.
+  static AddReservationState _initialState(ReservationMode mode, DateTime now) {
+    if (mode != ReservationMode.checkIn) return AddReservationState(mode: mode);
+    const policy = LateCheckoutPolicy();
+    return AddReservationState(
+      mode: mode,
+      checkInAt: now,
+      checkOutAt: policy.checkOutFor(now, 1),
+    );
+  }
 
   final ReservationRepository _reservations;
   final ClientsRepository _clients;
@@ -142,14 +154,62 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         : state.copyWith(documentBackPath: path),
   );
 
+  /// Reprend la lecture de la pièce : la photo devient la face arrière, et ce
+  /// que la pièce a livré préremplit le client.
+  ///
+  /// Le nom lu remplace la saisie : le propriétaire vient de scanner la pièce
+  /// du client présent, c'est la source la plus sûre qu'il ait.
+  void applyIdScan(String imagePath, IdCardReading? result) {
+    emit(
+      state.copyWith(
+        documentBackPath: imagePath,
+        fullName: result?.fullName,
+        idDocumentType: result?.documentType,
+        idDocumentNumber: result?.documentNumber,
+      ),
+    );
+  }
+
+  /// Pièce et identité du client nouveau, telles que le formulaire les
+  /// présente — lues sur la pièce, corrigées à la main. Reportées juste avant
+  /// l'envoi : ce sont elles qui partent, en ligne comme en file.
+  void setClientIdentity({
+    ClientIdDocumentType? documentType,
+    String? documentNumber,
+    required ClientIdentity identity,
+  }) {
+    emit(
+      state.copyWith(
+        idDocumentType: documentType,
+        idDocumentNumber: documentNumber,
+        identity: identity,
+      ),
+    );
+  }
+
   // ── Séjour ────────────────────────────────────────────────────────────────
 
   /// Choisit le bien et charge ses périodes déjà réservées.
-  Future<void> setProperty(String propertyId, {required double dailyPrice}) async {
+  Future<void> setProperty(
+    String propertyId, {
+    required double dailyPrice,
+    List<PriceTier> priceTiers = const [],
+    LateCheckoutPolicy lateCheckoutPolicy = const LateCheckoutPolicy(),
+  }) async {
+    final checkIn = state.checkInAt;
     emit(
       state.copyWith(
         propertyId: propertyId,
         dailyPrice: dailyPrice,
+        lateCheckoutPolicy: lateCheckoutPolicy,
+        // Triés à l'entrée : le calcul de remise n'en dépend pas, mais l'écran
+        // les présente dans l'ordre où le propriétaire les lit.
+        priceTiers: PriceTierList.sorted(priceTiers),
+        // L'heure de départ change d'un bien à l'autre : la sortie déjà
+        // affichée suivait celle du bien précédent.
+        checkOutAt: checkIn != null && state.stayType == StayType.fullDay
+            ? lateCheckoutPolicy.checkOutFor(checkIn, state.daysCount)
+            : state.checkOutAt,
         clearConflict: true,
       ),
     );
@@ -173,9 +233,27 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     emit(
       state.copyWith(
         stayType: type,
-        // La sortie suit le type choisi tant que le propriétaire ne l'a pas
-        // fixée lui-même.
-        checkOutAt: checkIn?.add(type.defaultDuration),
+        checkOutAt: checkIn == null
+            ? null
+            : _checkOutFor(type, checkIn, state.daysCount),
+      ),
+    );
+    _revalidateDates();
+  }
+
+  /// Modifie la durée en nuits (pour un séjour complet).
+  ///
+  /// La sortie tombe à l'heure de départ du bien après la dernière nuit,
+  /// quelle que soit l'heure d'arrivée.
+  void setDaysCount(int count) {
+    if (count < 1) return;
+    final checkIn = state.checkInAt;
+    emit(
+      state.copyWith(
+        daysCount: count,
+        checkOutAt: checkIn == null
+            ? null
+            : state.lateCheckoutPolicy.checkOutFor(checkIn, count),
       ),
     );
     _revalidateDates();
@@ -185,29 +263,65 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     emit(
       state.copyWith(
         checkInAt: value,
-        checkOutAt: value.add(state.stayType.defaultDuration),
+        checkOutAt: _checkOutFor(state.stayType, value, state.daysCount),
       ),
     );
     _revalidateDates();
   }
 
+  /// Sortie proposée : l'heure de départ du bien après [nights] nuits pour un
+  /// séjour complet, la durée type sinon.
+  DateTime _checkOutFor(StayType type, DateTime checkIn, int nights) =>
+      type == StayType.fullDay
+      ? state.lateCheckoutPolicy.checkOutFor(checkIn, nights)
+      : checkIn.add(type.defaultDuration);
+
   void setCheckOut(DateTime value) {
-    emit(state.copyWith(checkOutAt: value));
+    int newDays = state.daysCount;
+    if (state.stayType == StayType.fullDay &&
+        state.checkInAt != null &&
+        value.isAfter(state.checkInAt!)) {
+      // Les jours suivent la règle de départ tardif du bien, comme au
+      // serveur : une sortie à 16h le lendemain d'une entrée à 12h reste un
+      // jour — plus une demi-journée —, une sortie à 20h en fait deux. Le
+      // décompte calendaire laissait un jour pour toute sortie du lendemain.
+      newDays = state.lateCheckoutPolicy.resolve(state.checkInAt!, value).days;
+    }
+
+    emit(state.copyWith(checkOutAt: value, daysCount: newDays));
     _revalidateDates();
   }
 
   // ── Montants ──────────────────────────────────────────────────────────────
 
-  void setReceivedAmount(double? value) => emit(
+  /// Prix convenu par unité : le total se recalcule avec les dates.
+  void setAgreedUnitPrice(double? value) => emit(
     value == null
-        ? state.copyWith(clearReceivedAmount: true)
-        : state.copyWith(receivedAmount: value),
+        ? state.copyWith(clearAgreedUnitPrice: true)
+        : state.copyWith(agreedUnitPrice: value),
   );
 
   void setDepositAmount(double value) =>
       emit(state.copyWith(depositAmount: value));
 
   void setMessage(String value) => emit(state.copyWith(message: value));
+
+  /// Éteindre la bascule vide aussi la saisie : les champs, sans contrôleur,
+  /// réapparaîtraient vides au rallumage alors que l'état garderait l'ancien
+  /// nom, et la commission annoncée ne correspondrait plus à l'écran.
+  void setReferrerEnabled(bool value) => emit(
+    state.copyWith(
+      hasReferrerEnabled: value,
+      referrerName: value ? null : '',
+      referrerPhone: value ? null : '',
+    ),
+  );
+
+  void setReferrerName(String value) =>
+      emit(state.copyWith(referrerName: value));
+
+  void setReferrerPhone(String value) =>
+      emit(state.copyWith(referrerPhone: value));
 
   // ── Envoi ─────────────────────────────────────────────────────────────────
 
@@ -218,10 +332,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     }
 
     emit(
-      state.copyWith(
-        status: AddReservationStatus.submitting,
-        clearError: true,
-      ),
+      state.copyWith(status: AddReservationStatus.submitting, clearError: true),
     );
 
     // Sans réseau, la réservation part en file plutôt que d'échouer : au
@@ -242,11 +353,15 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         stayType: state.stayType,
         checkInAt: state.checkInAt!,
         checkOutAt: state.checkOutAt,
+        daysCount: state.stayType == StayType.fullDay ? state.daysCount : 1,
         receivedAmount: state.effectiveAmount,
+        agreedUnitPrice: state.agreedUnitPrice,
         depositAmount: state.depositAmount,
         message: state.message,
         isCheckIn: state.mode == ReservationMode.checkIn,
         clientRequestId: _requestId,
+        referrerName: state.hasReferrer ? state.referrerName : null,
+        referrerPhone: state.hasReferrer ? state.referrerPhone : null,
       );
 
       if (!isClosed) {
@@ -292,11 +407,18 @@ class AddReservationCubit extends Cubit<AddReservationState> {
           stayType: state.stayType,
           checkInAt: state.checkInAt!,
           checkOutAt: state.checkOutAt,
+          daysCount: state.stayType == StayType.fullDay ? state.daysCount : 1,
           receivedAmount: state.effectiveAmount,
+          agreedUnitPrice: state.agreedUnitPrice,
           depositAmount: state.depositAmount,
           message: state.message,
           isCheckIn: state.mode == ReservationMode.checkIn,
           createdAt: DateTime.now(),
+          referrerName: state.hasReferrer ? state.referrerName.trim() : null,
+          referrerPhone:
+              state.hasReferrer && state.referrerPhone.trim().isNotEmpty
+              ? state.referrerPhone.trim()
+              : null,
         ),
         newClient: localClientId == null
             ? null
@@ -306,6 +428,9 @@ class AddReservationCubit extends Cubit<AddReservationState> {
                 phone: state.phone.trim(),
                 documentFrontPath: state.documentFrontPath,
                 documentBackPath: state.documentBackPath,
+                idDocumentType: state.idDocumentType,
+                idDocumentNumber: state.idDocumentNumber,
+                identity: state.identity,
               ),
       );
 
@@ -318,8 +443,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         emit(
           state.copyWith(
             status: AddReservationStatus.failure,
-            errorMessage:
-                'Impossible d’enregistrer la réservation sur l’appareil.',
+            errorMessage: 'booking_form.local_save_failed'.tr(),
           ),
         );
       }
@@ -353,6 +477,10 @@ class AddReservationCubit extends Cubit<AddReservationState> {
   /// Le serveur retourne la fiche existante si le numéro est déjà au carnet,
   /// sans en créer une seconde : aucun doublon n'est possible même si la
   /// recherche pendant la saisie n'a rien vu.
+  ///
+  /// Sauf pour un gérant dont le périmètre ne couvre pas cette fiche : le
+  /// serveur accuse sans la livrer, il n'y a alors aucun identifiant à
+  /// rattacher et la réservation ne peut pas aboutir.
   Future<String> _resolveClientId() async {
     final selected = state.selectedClient;
     if (selected != null) return selected.id;
@@ -362,9 +490,24 @@ class AddReservationCubit extends Cubit<AddReservationState> {
       phone: state.phone.trim(),
       documentFrontPath: state.documentFrontPath,
       documentBackPath: state.documentBackPath,
+      idDocumentType: state.idDocumentType,
+      idDocumentNumber: state.idDocumentNumber,
+      identity: state.identity,
     );
 
-    return created.client.id;
+    final client = created.client;
+    if (client == null) {
+      // Levé en 403 et non sans statut : `_isNetworkFailure` traite l'absence
+      // de code comme une panne et mettrait la saisie en file, où chaque passe
+      // rejouerait le même refus pendant que l'écran annonce un
+      // enregistrement. Un refus de périmètre est définitif.
+      throw AppFailure.forbidden(
+        message: clientOutOfScopeMessage,
+        code: 'client_out_of_scope',
+      );
+    }
+
+    return client.id;
   }
 
   /// Signale un chevauchement avec une réservation connue.
@@ -383,7 +526,7 @@ class AddReservationCubit extends Cubit<AddReservationState> {
     if (!end.isAfter(start)) {
       emit(
         state.copyWith(
-          occupiedConflict: 'La sortie doit être après l’entrée.',
+          occupiedConflict: 'booking_form.checkout_after_checkin'.tr(),
         ),
       );
       return;
@@ -396,8 +539,8 @@ class AddReservationCubit extends Cubit<AddReservationState> {
         emit(
           state.copyWith(
             occupiedConflict: who == null
-                ? 'Ce bien est déjà réservé sur cette période.'
-                : 'Déjà réservé sur cette période par $who.',
+                ? 'booking_form.period_taken'.tr()
+                : 'booking_form.period_taken_by'.tr(args: [who]),
           ),
         );
         return;

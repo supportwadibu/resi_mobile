@@ -1,20 +1,25 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/core/utils/country_helper.dart';
 import 'package:resi_africa/core/utils/phone_helper.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_step_header.dart';
 import 'package:resi_africa/shared/widgets/skeletons/form_skeleton.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../business_logic/owner_profile_cubit.dart';
 import '../../business_logic/owner_profile_state.dart';
+import '../../../clients/data/models/client_model.dart';
+import '../../../clients/data/services/id_scan_service.dart';
 import '../../data/models/owner_profile_model.dart';
 import '../widgets/owner_profile/steps/step_identity_document_widget.dart';
 import '../widgets/owner_profile/steps/step_personal_info_widget.dart';
@@ -60,7 +65,10 @@ class _PropertyManagerProfileViewState
 
   final ImagePicker _imagePicker = ImagePicker();
 
-  static const _stepTitles = ['Informations personnelles', 'Pièce d’identité'];
+  static const _stepTitles = [
+    'owner_profile.step_personal',
+    'owner_profile.step_document',
+  ];
 
   /// Marché principal de l'application : le pays est présélectionné pour
   /// éviter une manipulation à la très grande majorité des utilisateurs.
@@ -165,12 +173,43 @@ class _PropertyManagerProfileViewState
     _backRemoteUrl = profile.idDocumentBackUrl;
   }
 
+  /// Dépose une face de la pièce, puis la lit pour préremplir le numéro.
+  ///
+  /// Deux sources : ML Kit analyse une image sans piloter l'appareil photo,
+  /// la prise de vue revient donc à `image_picker` — photo sur le moment ou
+  /// image déjà sur le téléphone. Les deux sont lues de la même façon.
   Future<void> _pickImage({required bool isFront}) async {
+    final source = await showAppSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => AppSheet(
+        title: isFront ? 'owner_profile.front'.tr() : 'owner_profile.back'.tr(),
+        description: 'ocr.owner_hint'.tr(),
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          children: [
+            AppSheetAction(
+              icon: LucideIcons.scanText,
+              label: 'ocr.source_camera'.tr(),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            AppSheetAction(
+              icon: LucideIcons.images,
+              label: 'ocr.source_gallery'.tr(),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
     final image = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
+      // Assez fin pour la bande MRZ, assez léger pour l'envoi.
+      maxWidth: 2000,
       imageQuality: 80,
     );
-    if (image == null) return;
+    if (image == null || !mounted) return;
 
     setState(() {
       if (isFront) {
@@ -179,7 +218,45 @@ class _PropertyManagerProfileViewState
         _backImagePath = image.path;
       }
     });
+
+    await _readDocument(image.path);
   }
+
+  /// Préremplit numéro et nature de la pièce depuis la photo déposée.
+  ///
+  /// Ne comble que les champs vides : une seconde face, ou une photo
+  /// redéposée, ne défait pas une correction faite à la main. Le numéro reste
+  /// modifiable, et c'est au propriétaire de le vérifier — d'où le message.
+  Future<void> _readDocument(String path) async {
+    final reading = await const IdScanService().scan(path);
+    if (reading == null || !mounted) return;
+
+    var filled = false;
+    setState(() {
+      final number = reading.documentNumber;
+      if (number != null && _idNumberController.text.trim().isEmpty) {
+        _idNumberController.text = number;
+        filled = true;
+      }
+      final type = _ownerDocumentType(reading.documentType);
+      if (type != null && _documentType == null) {
+        _documentType = type;
+        filled = true;
+      }
+    });
+
+    if (filled) AppToast.info('ocr.owner_found'.tr(), context: context);
+  }
+
+  /// Nature de pièce du carnet → celle du dossier propriétaire : deux
+  /// énumérations distinctes côté mobile, pour les mêmes codes serveur.
+  static IdDocumentType? _ownerDocumentType(ClientIdDocumentType? type) =>
+      switch (type) {
+        ClientIdDocumentType.cni => IdDocumentType.cni,
+        ClientIdDocumentType.passeport => IdDocumentType.passport,
+        ClientIdDocumentType.permis => IdDocumentType.drivingLicence,
+        null => null,
+      };
 
   void _next() {
     if (_isFirstStep) {
@@ -202,15 +279,15 @@ class _PropertyManagerProfileViewState
     if (!_documentFormKey.currentState!.validate()) return;
 
     if (_documentType == null) {
-      _showMessage('Sélectionnez le type de pièce d’identité.');
+      _showMessage('owner_profile.select_type'.tr());
       return;
     }
     if (!_hasFront) {
-      _showMessage('Ajoutez le recto de votre pièce d’identité.');
+      _showMessage('owner_profile.add_front'.tr());
       return;
     }
     if (_backRequired && !_hasBack) {
-      _showMessage('Ajoutez le verso de votre pièce d’identité.');
+      _showMessage('owner_profile.add_back'.tr());
       return;
     }
 
@@ -240,9 +317,7 @@ class _PropertyManagerProfileViewState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppToast.error(message, context: context);
   }
 
   void _continue() {
@@ -265,9 +340,7 @@ class _PropertyManagerProfileViewState
             });
           case OwnerProfileSubmitted(:final profile):
             setState(() => _profile = profile);
-            _showMessage(
-              'Dossier transmis. Vous serez informé de sa validation.',
-            );
+            AppToast.success('owner_profile.submitted'.tr(), context: context);
             _continue();
           case OwnerProfileError(:final profile, :final message):
             // Un échec de dépôt renvoie le dossier antérieur : il reste la
@@ -284,12 +357,11 @@ class _PropertyManagerProfileViewState
           // barre d'action — pour que l'arrivée des données ne redessine pas
           // l'écran.
           return Scaffold(
-            backgroundColor: AppColors.white,
             body: SafeArea(
               child: Column(
                 children: [
                   AppStepHeader(
-                    title: _stepTitles.first,
+                    title: _stepTitles.first.tr(),
                     onBack: widget.isOnboarding ? null : _back,
                     currentStep: 0,
                     totalSteps: _stepTitles.length,
@@ -311,14 +383,13 @@ class _PropertyManagerProfileViewState
         final profile = _profile;
 
         return Scaffold(
-          backgroundColor: AppColors.white,
           body: SafeArea(
             child: AbsorbPointer(
               absorbing: isSubmitting,
               child: Column(
                 children: [
                   AppStepHeader(
-                    title: _stepTitles[_currentStep],
+                    title: _stepTitles[_currentStep].tr(),
                     onBack: widget.isOnboarding && _isFirstStep ? null : _back,
                     currentStep: _currentStep,
                     totalSteps: _stepTitles.length,
@@ -326,7 +397,7 @@ class _PropertyManagerProfileViewState
 
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                      padding: const EdgeInsets.all(16),
                       child: _buildStep(profile),
                     ),
                   ),
@@ -334,32 +405,22 @@ class _PropertyManagerProfileViewState
                   AppBottomActionBar(
                     primaryLabel: _isLastStep
                         ? (widget.isOnboarding
-                              ? 'Envoyer mon dossier'
-                              : 'Enregistrer')
-                        : 'Suivant',
+                              ? 'owner_profile.send'.tr()
+                              : 'common.save'.tr())
+                        : 'owner_profile.next'.tr(),
                     onPrimary: _next,
-                    primaryIcon: AppButtonIcon.material(
-                      _isLastStep
-                          ? Icons.check_rounded
-                          : Icons.arrow_forward_rounded,
-                    ),
-                    secondaryLabel: _isFirstStep ? null : 'Retour',
+                    primaryIcon: _isLastStep
+                        ? LucideIcons.check
+                        : LucideIcons.arrowRight,
+                    secondaryLabel: _isFirstStep ? null : 'common.back'.tr(),
                     onSecondary: _isFirstStep ? null : _back,
-                    secondaryIcon: AppButtonIcon.material(
-                      Icons.arrow_back_rounded,
-                    ),
+                    secondaryIcon: LucideIcons.chevronLeft,
                     isLoading: isSubmitting,
                     footer: widget.isOnboarding
-                        ? TextButton(
+                        ? AppButton(
+                            label: 'owner_profile.later'.tr(),
+                            variant: AppButtonVariant.ghost,
                             onPressed: isSubmitting ? null : _continue,
-                            child: const Text(
-                              'Plus tard',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.grey600,
-                              ),
-                            ),
                           )
                         : null,
                   ),

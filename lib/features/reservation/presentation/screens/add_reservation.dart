@@ -1,19 +1,38 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
+import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_top_bar.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 
 import '../../../clients/presentation/widgets/client_picker_sheet.dart';
+import '../../../clients/data/services/id_card_reading.dart';
+import '../../../clients/data/services/id_scan_service.dart';
+import '../../../clients/presentation/widgets/create/client_identity_controller.dart';
+import '../../../clients/presentation/widgets/create/client_identity_fields.dart';
+import '../../../clients/presentation/widgets/create/id_scan_button.dart';
 import '../../../property/business_logic/property_cubit.dart';
 import '../../business_logic/add_reservation_cubit.dart';
+import '../../business_logic/agreed_price.dart';
 import '../../business_logic/add_reservation_state.dart';
+import '../../data/models/reservation_model.dart';
 import '../widgets/create/client_field_group.dart';
 import '../widgets/create/date_time_field.dart';
 import '../widgets/create/property_selector.dart';
+import '../widgets/create/referrer_fields.dart';
+import '../../../subscription/presentation/widgets/plan_gate.dart';
+import '../../../subscription/presentation/widgets/plan_style.dart';
 import '../widgets/create/reservation_document_picker.dart';
 import '../widgets/create/reservation_section_title.dart';
+import '../widgets/create/stay_duration_picker.dart';
+import '../widgets/create/stay_tier_hints.dart';
 import '../widgets/create/stay_type_picker.dart';
 
 /// Enregistrement d'une réservation prise au comptoir.
@@ -52,13 +71,48 @@ class _AddReservationViewState extends State<_AddReservationView> {
   final _amountController = TextEditingController();
   final _depositController = TextEditingController();
 
+  /// Pièce et identité du client nouveau, préremplies par la lecture de la
+  /// pièce et reportées au cubit à l'envoi.
+  final _identity = ClientIdentityController();
+
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _amountController.dispose();
     _depositController.dispose();
+    _identity.dispose();
     super.dispose();
+  }
+
+  /// Reporte une lecture de la pièce : un scan remplace la saisie, une photo
+  /// déposée dans une case ne comble que les vides.
+  void _applyReading(IdCardReading reading, {required bool overwrite}) {
+    _identity.apply(reading, overwrite: overwrite);
+
+    final name = reading.fullName;
+    if (name != null && (overwrite || _nameController.text.trim().isEmpty)) {
+      _nameController.text = name;
+      context.read<AddReservationCubit>().setFullName(name);
+    }
+  }
+
+  /// Lit une face déposée, en arrière-plan : son échec ne se signale pas.
+  Future<void> _readDocument(String? path) async {
+    if (path == null) return;
+    final reading = await const IdScanService().scan(path);
+    if (reading == null || !mounted) return;
+    _applyReading(reading, overwrite: false);
+  }
+
+  void _submit() {
+    final cubit = context.read<AddReservationCubit>();
+    cubit.setClientIdentity(
+      documentType: _identity.documentType,
+      documentNumber: _identity.documentNumberValue,
+      identity: _identity.identity,
+    );
+    cubit.submit();
   }
 
   @override
@@ -71,41 +125,36 @@ class _AddReservationViewState extends State<_AddReservationView> {
         final isCheckIn = state.mode == ReservationMode.checkIn;
 
         return Scaffold(
-          backgroundColor: AppColors.white,
-          appBar: AppBar(
-            backgroundColor: AppColors.white,
-            elevation: 0,
-            leading: GestureDetector(
-              onTap: () => context.router.maybePop(),
-              child: const Icon(
-                Icons.chevron_left,
-                color: AppColors.textPrimary,
-                size: 28,
-              ),
-            ),
-            title: Text(
-              isCheckIn ? 'Check-in immédiat' : 'Réservation future',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            centerTitle: true,
+          appBar: AppTopBar(
+            title: isCheckIn
+                ? 'booking_form.title_check_in'.tr()
+                : 'booking_form.title_future'.tr(),
+          ),
+          // Barre fixe : l'enregistrement reste atteignable sans dérouler un
+          // formulaire long, au comptoir, client en face.
+          bottomNavigationBar: AppBottomActionBar(
+            primaryLabel: isCheckIn
+                ? 'booking_form.save_check_in'.tr()
+                : 'booking_form.save_booking'.tr(),
+            primaryIcon: LucideIcons.check,
+            isLoading: state.status == AddReservationStatus.submitting,
+            onPrimary: state.isValid ? _submit : null,
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ReservationSectionTitle(title: 'Client'),
+                ReservationSectionTitle(title: 'booking_form.client'.tr()),
                 ClientFieldGroup(
                   selected: state.selectedClient,
                   nameController: _nameController,
                   phoneController: _phoneController,
                   onNameChanged: cubit.setFullName,
                   onPhoneChanged: cubit.setPhone,
-                  onPickFromBook: () => _pickClient(cubit),
+                  onPickFromBook: hasPlanFor(PremiumFeature.clients)
+                      ? () => _pickClient(cubit)
+                      : null,
                   onClearSelection: cubit.clearSelectedClient,
                   duplicate: state.duplicateClient,
                   isLookingUp: state.isLookingUpPhone,
@@ -121,38 +170,72 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 // fiche existante sont déjà au dossier.
                 if (state.selectedClient == null) ...[
                   const SizedBox(height: 20),
-                  const ReservationSectionTitle(
-                    title: 'Pièce d’identité (facultative)',
+                  ReservationSectionTitle(
+                    title: 'booking_form.id_optional'.tr(),
                   ),
+                  // Tout ce qui est lu voyage avec la réservation, file hors
+                  // ligne comprise : le registre de police en dépend.
+                  IdScanButton(
+                    onScanned: (path, result) {
+                      cubit.applyIdScan(path, result);
+                      if (result != null) {
+                        _applyReading(result, overwrite: true);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   ReservationDocumentPicker(
                     frontPath: state.documentFrontPath,
                     backPath: state.documentBackPath,
-                    onFrontChanged: cubit.setDocumentFront,
-                    onBackChanged: cubit.setDocumentBack,
+                    onFrontChanged: (path) {
+                      cubit.setDocumentFront(path);
+                      _readDocument(path);
+                    },
+                    onBackChanged: (path) {
+                      cubit.setDocumentBack(path);
+                      _readDocument(path);
+                    },
                   ),
+                  const SizedBox(height: 20),
+                  ClientIdentityFields(controller: _identity),
                 ],
 
                 const SizedBox(height: 24),
-                const ReservationSectionTitle(title: 'Résidence'),
+                ReservationSectionTitle(title: 'booking_form.residence'.tr()),
                 PropertySelector(
                   selectedId: state.propertyId,
                   onSelected: (property) => cubit.setProperty(
                     property.id,
                     dailyPrice: property.pricing.dailyPrice,
+                    priceTiers: property.pricing.priceTiers,
+                    lateCheckoutPolicy: property.pricing.lateCheckoutPolicy,
                   ),
                 ),
 
                 const SizedBox(height: 24),
-                const ReservationSectionTitle(title: 'Type de séjour'),
+                ReservationSectionTitle(title: 'booking_form.stay_type'.tr()),
                 StayTypePicker(
                   selected: state.stayType,
                   dailyPrice: state.dailyPrice,
                   onSelected: cubit.setStayType,
                 ),
+                StayTierHints(
+                  tiers: state.priceTiers,
+                  activeDiscountPercent: state.discountPercent,
+                ),
+                if (state.stayType == StayType.fullDay) ...[
+                  const SizedBox(height: 12),
+                  StayDurationPicker(
+                    days: state.daysCount,
+                    onChanged: cubit.setDaysCount,
+                  ),
+                ],
 
                 const SizedBox(height: 24),
                 ReservationSectionTitle(
-                  title: isCheckIn ? 'Entrée (maintenant)' : 'Date d’entrée',
+                  title: isCheckIn
+                      ? 'booking_form.check_in_now'.tr()
+                      : 'booking_form.check_in_date'.tr(),
                 ),
                 DateTimeField(
                   value: state.checkInAt,
@@ -161,9 +244,15 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   onChanged: cubit.setCheckIn,
                 ),
                 const SizedBox(height: 12),
-                const ReservationSectionTitle(title: 'Sortie prévue'),
+                ReservationSectionTitle(
+                  title: 'booking_form.planned_check_out'.tr(),
+                ),
+                // Pour un séjour à la journée, la sortie découle de la durée
+                // choisie plus haut : la saisir ici ferait deux commandes pour
+                // une seule valeur.
                 DateTimeField(
                   value: state.checkOutAt,
+                  enabled: state.stayType != StayType.fullDay,
                   firstDate: state.checkInAt,
                   onChanged: cubit.setCheckOut,
                 ),
@@ -174,37 +263,58 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 ],
 
                 const SizedBox(height: 24),
-                const ReservationSectionTitle(title: 'Paiement'),
+                ReservationSectionTitle(title: 'booking_form.payment'.tr()),
                 _AmountSummary(state: state),
                 const SizedBox(height: 12),
+                // « Prix convenu » et non « Montant reçu » : le serveur en fait
+                // le montant du séjour, et l'écart au tarif une remise. Libellé
+                // « reçu », il recueillait l'argent versé ce jour-là — un
+                // séjour de onze jours enregistré à 15 000 F. Saisi à l'unité,
+                // le total se calcule seul et suit les dates.
                 _AmountField(
                   controller: _amountController,
-                  hint: 'Montant reçu — ${_money(state.expectedAmount)} F',
-                  onChanged: (v) => cubit.setReceivedAmount(_parse(v)),
+                  label:
+                      'booking_amounts.agreed_unit_label.${state.stayType.code}'
+                          .tr(),
+                  hint: 'booking_amounts.agreed_hint'.tr(
+                    args: [_money(state.unitPrice)],
+                  ),
+                  helper: 'booking_amounts.agreed_unit_helper'.tr(),
+                  onChanged: (v) => cubit.setAgreedUnitPrice(_parse(v)),
                 ),
+                if (AgreedPrice.looksLikePayment(
+                  expected: state.unitPrice,
+                  agreed: state.agreedUnitPrice,
+                )) ...[
+                  const SizedBox(height: 8),
+                  AppCallout(
+                    icon: LucideIcons.triangleAlert,
+                    tone: AppAccent.amber,
+                    message: 'booking_amounts.suspicious'.tr(
+                      args: [_money(state.unitPrice)],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 _AmountField(
                   controller: _depositController,
-                  hint: 'Acompte versé (facultatif)',
+                  label: 'booking_amounts.deposit_label'.tr(),
+                  hint: 'booking_amounts.deposit_hint'.tr(),
                   onChanged: (v) => cubit.setDepositAmount(_parse(v) ?? 0),
+                ),
+
+                const SizedBox(height: 24),
+                ReferrerFields(
+                  state: state,
+                  onEnabledChanged: cubit.setReferrerEnabled,
+                  onNameChanged: cubit.setReferrerName,
+                  onPhoneChanged: cubit.setReferrerPhone,
                 ),
 
                 if (state.errorMessage != null) ...[
                   const SizedBox(height: 16),
                   _ConflictBanner(message: state.errorMessage!),
                 ],
-
-                const SizedBox(height: 28),
-                _SubmitButton(
-                  enabled: state.isValid,
-                  isSubmitting:
-                      state.status == AddReservationStatus.submitting,
-                  label: isCheckIn
-                      ? 'Enregistrer le check-in'
-                      : 'Enregistrer la réservation',
-                  onPressed: cubit.submit,
-                ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -235,19 +345,20 @@ class _AddReservationViewState extends State<_AddReservationView> {
     router.replace(
       SuccessRoute(
         title: isQueued
-            ? 'Enregistrée sur l’appareil'
-            : 'Réservation enregistrée',
+            ? 'booking_form.saved_on_device'.tr()
+            : 'booking_form.saved'.tr(),
         // Une saisie hors réseau ne doit pas passer pour confirmée : le
         // propriétaire doit savoir qu'elle attend encore d'être transmise.
         subtitle: isQueued
-            ? 'Elle sera transmise dès le retour de la connexion.'
+            ? 'booking_form.queued_hint'.tr()
             : state.mode == ReservationMode.checkIn
-            ? 'Le séjour est en cours.'
-            : 'La réservation est confirmée.',
-        buttonText: 'Retour à l’accueil',
-        secondaryButtonText: 'Nouvelle réservation',
+            ? 'booking_form.stay_in_progress'.tr()
+            : 'booking_form.confirmed'.tr(),
+        buttonText: 'booking_form.back_home'.tr(),
+        secondaryButtonText: 'booking_form.new_booking'.tr(),
         onPrimaryAction: () => router.replaceAll([const HomeRoute()]),
-        onSecondaryAction: () => router.replace(AddReservationRoute(mode: mode)),
+        onSecondaryAction: () =>
+            router.replace(AddReservationRoute(mode: mode)),
       ),
     );
   }
@@ -268,26 +379,91 @@ class _AmountSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
+    return AppCard(
       child: Column(
         children: [
-          _Row(label: 'Montant attendu', value: state.expectedAmount),
+          // Le détail n'apparaît que lorsqu'un palier joue : sans lui, le
+          // montant attendu semblerait ne pas suivre le tarif affiché.
+          if (state.discountPercent > 0) ...[
+            _Row(
+              label: 'booking_amounts.agreed_breakdown'.tr(
+                namedArgs: {
+                  'count': '${state.daysCount}',
+                  'price': _money(state.unitPrice),
+                },
+              ),
+              value: state.fullAmount,
+            ),
+            const SizedBox(height: 8),
+            // Montant positif, le libellé portant le signe : `_money` groupe
+            // les milliers sur les chiffres seuls et décalerait l'espace sur
+            // un nombre négatif.
+            _Row(
+              label: 'booking_form.length_discount'.tr(
+                args: ['${state.discountPercent}'],
+              ),
+              value: state.quote.durationDiscount,
+            ),
+            const Divider(height: 20),
+          ],
+          // Annoncé avant l'envoi : sans lui, une sortie à 16h le lendemain
+          // ferait voir un montant attendu qui ne suit plus le nombre de jours.
+          if (state.quote.lateCheckout) ...[
+            _Row(
+              label: 'late_checkout.fee'.tr(),
+              value: state.quote.lateCheckoutFee,
+            ),
+            const SizedBox(height: 8),
+          ],
+          _Row(
+            label: 'booking_form.expected_amount'.tr(),
+            value: state.expectedAmount,
+          ),
           if (state.receivedAmount != null &&
               state.receivedAmount != state.expectedAmount) ...[
+            // La remise est montrée avant l'envoi : c'est elle qui trahit un
+            // versement saisi comme prix du séjour.
+            if (AgreedPrice.discount(
+                  expected: state.expectedAmount,
+                  agreed: state.receivedAmount,
+                ) >
+                0) ...[
+              const SizedBox(height: 8),
+              _Row(
+                label: 'booking_amounts.negotiated_discount'.tr(),
+                value: AgreedPrice.discount(
+                  expected: state.expectedAmount,
+                  agreed: state.receivedAmount,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
-            _Row(label: 'Montant convenu', value: state.effectiveAmount),
+            // Le calcul est montré : c'est lui qui rend le total vérifiable
+            // d'un coup d'œil, client en face.
+            _Row(
+              label: state.stayType == StayType.fullDay
+                  ? 'booking_amounts.agreed_breakdown'.tr(
+                      namedArgs: {
+                        'count': '${state.daysCount}',
+                        'price': _money(state.agreedUnitPrice ?? 0),
+                      },
+                    )
+                  : 'booking_amounts.agreed_label'.tr(),
+              value: state.effectiveAmount,
+            ),
           ],
           if (state.depositAmount > 0) ...[
             const SizedBox(height: 8),
-            _Row(label: 'Acompte', value: state.depositAmount),
-            const Divider(height: 20, color: AppColors.divider),
-            _Row(label: 'Reste dû', value: state.balanceDue, strong: true),
+            _Row(
+              label: 'booking_form.deposit'.tr(),
+              value: state.depositAmount,
+            ),
+            const Divider(height: 20),
+            _Row(
+              label: 'booking_amounts.balance_due'.tr(),
+              value: state.balanceDue,
+              strong: true,
+            ),
           ],
         ],
       ),
@@ -296,11 +472,7 @@ class _AmountSummary extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({
-    required this.label,
-    required this.value,
-    this.strong = false,
-  });
+  const _Row({required this.label, required this.value, this.strong = false});
 
   final String label;
   final double value;
@@ -313,19 +485,15 @@ class _Row extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 13,
-            color: strong ? AppColors.textPrimary : AppColors.textSecondary,
-            fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
-          ),
+          style: strong
+              ? context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600)
+              : context.mutedText,
         ),
         Text(
           '${_money(value)} F',
-          style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
-            color: strong ? AppColors.primary : AppColors.textPrimary,
-          ),
+          style: strong
+              ? context.text.figure.copyWith(fontSize: 18)
+              : context.text.amount,
         ),
       ],
     );
@@ -335,12 +503,19 @@ class _Row extends StatelessWidget {
 class _AmountField extends StatelessWidget {
   const _AmountField({
     required this.controller,
+    required this.label,
     required this.hint,
     required this.onChanged,
+    this.helper,
   });
 
   final TextEditingController controller;
+
+  /// Toujours visible, contrairement à [hint] qui s'efface à la saisie : le
+  /// sens du champ doit rester lisible une fois le montant tapé.
+  final String label;
   final String hint;
+  final String? helper;
   final ValueChanged<String> onChanged;
 
   @override
@@ -349,31 +524,13 @@ class _AmountField extends StatelessWidget {
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 13.5),
+      style: context.text.bodyMedium,
       decoration: InputDecoration(
+        labelText: label,
         hintText: hint,
-        hintStyle: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13,
-        ),
-        filled: true,
-        fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
+        helperText: helper,
+        helperMaxLines: 3,
+        prefixIcon: const Icon(LucideIcons.banknote, size: 16),
       ),
     );
   }
@@ -386,78 +543,10 @@ class _ConflictBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 18, color: AppColors.error),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                fontSize: 12.5,
-                color: AppColors.textPrimary,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.enabled,
-    required this.isSubmitting,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final bool enabled;
-  final bool isSubmitting;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: enabled && !isSubmitting ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          disabledBackgroundColor: AppColors.grey200,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: isSubmitting
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.white,
-                ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
+    return AppCallout(
+      icon: LucideIcons.circleAlert,
+      tone: AppAccent.red,
+      message: message,
     );
   }
 }

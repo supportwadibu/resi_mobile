@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/utils/phone_helper.dart';
 import '../models/auth_model.dart';
 import '../models/register_init_model.dart';
 import '../models/subscription_status_model.dart';
@@ -9,11 +10,32 @@ class AuthRepository {
   final Dio _dio;
   const AuthRepository(this._dio);
 
-  Future<AuthModel> login(String email, String password) async {
+  /// Pays présumé d'un numéro saisi sans indicatif à la connexion.
+  ///
+  /// Le champ de connexion n'a pas de sélecteur de pays, contrairement aux
+  /// écrans de création de compte : il faut donc une présomption. La Côte
+  /// d'Ivoire est le marché de la plateforme, et c'est déjà le pays que
+  /// `AddGerantScreen` fixe en dur. Un numéro saisi avec son `+` est reconnu
+  /// pour ce qu'il est, quel que soit ce réglage.
+  static const _defaultCountryIso2 = 'CI';
+
+  /// [identifier] est une adresse e-mail **ou** un numéro de téléphone : c'est
+  /// le même champ à l'écran, et le serveur les distingue sur `@`.
+  Future<AuthModel> login(String identifier, String password) async {
     try {
       final res = await _dio.post(
         ApiEndpoints.login,
-        data: {'identifier': email, 'password': password},
+        // Mis en forme ici, et non dans l'écran : la connexion passe toute par
+        // ce point, alors qu'un identifiant composé côté écran divergerait au
+        // premier appelant qui l'oublierait — c'est exactement ce qui s'est
+        // produit entre la création d'un gérant et sa connexion.
+        data: {
+          'identifier': PhoneHelper.normalizeLoginIdentifier(
+            identifier,
+            _defaultCountryIso2,
+          ),
+          'password': password,
+        },
       );
       return AuthModel.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -21,11 +43,16 @@ class AuthRepository {
     }
   }
 
-  Future<AuthModel> loginWithGoogle(String idToken) async {
+  /// [sponsorshipCode] : code du parrain, lu par l'API à la création du
+  /// compte seulement — ignoré pour un compte qui existe déjà.
+  Future<AuthModel> loginWithGoogle(
+    String idToken, {
+    String? sponsorshipCode,
+  }) async {
     try {
       final res = await _dio.post(
         ApiEndpoints.googleLogin,
-        data: {'id_token': idToken},
+        data: {'id_token': idToken, 'sponsorship_code': ?sponsorshipCode},
       );
       return AuthModel.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -82,6 +109,17 @@ class AuthRepository {
         ApiEndpoints.logout,
         data: {'refresh_token': refreshToken},
       );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Compte de la session en cours, tel que l'API le connaît aujourd'hui.
+  Future<AuthUser> fetchMe() async {
+    try {
+      final res = await _dio.get(ApiEndpoints.me);
+      final data = res.data as Map<String, dynamic>;
+      return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

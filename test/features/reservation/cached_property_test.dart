@@ -64,13 +64,16 @@ void main() {
       expect(cached.displayLabel, 'Resi Adja › Studio 1');
     });
 
-    test('retombe sur le titre de l’annonce quand l’unité n’est pas nommée', () {
-      final cached = CachedProperty.fromRow(
-        _row(residenceName: 'Resi Adja', title: 'Studio meublé Cocody'),
-      );
+    test(
+      'retombe sur le titre de l’annonce quand l’unité n’est pas nommée',
+      () {
+        final cached = CachedProperty.fromRow(
+          _row(residenceName: 'Resi Adja', title: 'Studio meublé Cocody'),
+        );
 
-      expect(cached.displayLabel, 'Resi Adja › Studio meublé Cocody');
-    });
+        expect(cached.displayLabel, 'Resi Adja › Studio meublé Cocody');
+      },
+    );
 
     test('un bien autonome garde son seul titre', () {
       final cached = CachedProperty.fromRow(_row(title: 'Villa Belvédère'));

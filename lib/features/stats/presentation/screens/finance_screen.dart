@@ -1,9 +1,19 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/service_locator.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/error/failures.dart';
 import '../../../expense/business_logic/expense_cubit.dart';
 import '../../../expense/business_logic/expense_state.dart';
@@ -12,11 +22,14 @@ import '../../../expense/presentation/widgets/stats/expense_breakdown_card.dart'
 import '../../business_logic/finance_cubit.dart';
 import '../../business_logic/finance_state.dart';
 import '../../data/models/finance/finance_overview_model.dart';
+import '../../data/models/finance/finance_period.dart';
+import '../../../property/data/models/property_model.dart';
+import '../../../property/data/repositories/property_repository.dart';
 import '../../../residence/data/models/residence_model.dart';
 import '../../../residence/data/repositories/residence_repository.dart';
 import '../widgets/finance/finance_app_bar.dart';
-import '../widgets/finance/finance_residence_sheet.dart';
-import '../widgets/finance/finance_summary_card.dart';
+import '../widgets/finance/finance_period_sheet.dart';
+import '../widgets/finance/finance_scope_sheet.dart';
 import '../widgets/finance/revenue_chart.dart';
 import '../widgets/finance/stats_row.dart';
 
@@ -29,8 +42,22 @@ class FinanceScreen extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => sl<FinanceCubit>()..load()),
-        // La ventilation par catégorie vient du même endpoint que l'historique.
-        BlocProvider(create: (_) => sl<ExpenseCubit>()..load()),
+        BlocProvider(
+          create: (_) {
+            // La ventilation porte sur la fenêtre du relevé. Sans bornes, elle
+            // couvrait tout l'historique sous un relevé de douze mois, et ses
+            // catégories ne sommaient pas au total « Dépenses » affiché
+            // au-dessus.
+            final bounds = const FinancePeriod.rolling().bounds(DateTime.now());
+            return sl<ExpenseCubit>()..load(
+              filters: ExpenseFilters(
+                periodKind: ExpensePeriodKind.range,
+                from: bounds.from,
+                to: bounds.to,
+              ),
+            );
+          },
+        ),
       ],
       child: const _FinanceView(),
     );
@@ -46,100 +73,197 @@ class _FinanceView extends StatefulWidget {
 
 class _FinanceViewState extends State<_FinanceView>
     with AutoRouteAwareStateMixin<_FinanceView> {
-  /// Nom de la résidence retenue, pour l’afficher dans la barre.
-  ///
-  /// Conservé ici et non dans le cubit : celui-ci ne connaît que
-  /// l’identifiant, et lui faire porter un libellé d’affichage mêlerait la
-  /// présentation à l’état métier.
-  String? _scopeLabel;
-
-  /// L'écran redevient visible : revenus et charges sont relus.
-  ///
-  /// Une dépense saisie depuis un autre écran change le bénéfice net affiché
-  /// ici ; sans ce rechargement, le chiffre resterait celui d'avant.
-  ///
-  /// Le périmètre est conservé : il vit dans le cubit, que ce rechargement ne
-  /// réinitialise pas.
   @override
   void didPopNext() {
     context.read<FinanceCubit>().load();
     context.read<ExpenseCubit>().refresh();
   }
 
-  /// Ouvre le choix du périmètre, puis recharge si la sélection a changé.
   Future<void> _pickScope() async {
     final cubit = context.read<FinanceCubit>();
-    final messenger = ScaffoldMessenger.of(context);
 
-    List<ResidenceModel> residences;
+    final List<ResidenceModel> residences;
+    final List<PropertyModel> properties;
     try {
-      residences = await sl<ResidenceRepository>().getAllResidences();
+      // `Future.wait` relève la première erreur telle quelle : l'`AppFailure`
+      // d'un des deux appels arrive ici sans enveloppe.
+      final [
+        residenceList as List<ResidenceModel>,
+        propertyList as List<PropertyModel>,
+      ] = await Future.wait<Object>([
+        sl<ResidenceRepository>().getAllResidences(),
+        sl<PropertyRepository>().getAllProperties(),
+      ]);
+      residences = residenceList;
+      properties = propertyList;
     } on AppFailure catch (f) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
+      AppToast.error(f.userMessage);
       return;
     }
 
     if (!mounted) return;
 
-    final selection = await showModalBottomSheet<FinanceScopeSelection>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => FinanceResidenceSheet(
-        residences: residences,
-        selectedId: cubit.residenceId,
-      ),
+    final scope = await FinanceScopeSheet.show(
+      context,
+      residences: residences,
+      properties: properties,
+      selected: cubit.scope,
     );
 
-    // `null` ici est une annulation, pas « tout le parc » : c’est la raison
-    // d’être de l’enveloppe `FinanceScopeSelection`.
-    if (selection == null || !mounted) return;
+    if (scope == null || !mounted) return;
 
-    setState(() {
-      _scopeLabel = selection.residenceId == null
-          ? null
-          : residences
-                .firstWhere((r) => r.id == selection.residenceId)
-                .name;
-    });
-
-    await cubit.filterByResidence(selection.residenceId);
+    await cubit.filterByScope(scope);
 
     if (!mounted) return;
 
-    // La ventilation par catégorie suit le même périmètre : la carte
-    // « Dépenses » et l’anneau juste en dessous viennent de deux endpoints
-    // distincts, et les laisser divergents afficherait deux totaux
-    // contradictoires sur la même page.
+    // La ventilation suit le même périmètre que le relevé, faute de quoi ses
+    // catégories ne sommeraient pas au total « Dépenses » affiché au-dessus.
+    // Les deux rattachements sont exclusifs côté dépenses aussi : poser l'un
+    // lève l'autre.
     final expenses = context.read<ExpenseCubit>();
     await expenses.applyFilters(
-      selection.residenceId == null
-          ? expenses.filters.copyWith(clearResidence: true)
-          : expenses.filters.copyWith(residenceId: selection.residenceId),
+      expenses.filters.copyWith(
+        residenceId: scope.residenceId,
+        propertyId: scope.propertyId,
+        clearResidence: scope.residenceId == null,
+        clearProperty: scope.propertyId == null,
+      ),
+    );
+  }
+
+  Future<void> _pickPeriod() async {
+    final cubit = context.read<FinanceCubit>();
+
+    final period = await FinancePeriodSheet.show(
+      context,
+      selected: cubit.period,
+    );
+
+    if (period == null || !mounted) return;
+
+    await cubit.filterByPeriod(period);
+
+    if (!mounted) return;
+
+    // Bornes lues sur le cubit, celles-là mêmes qui ont servi au relevé : la
+    // ventilation des dépenses doit sommer au total « Dépenses » affiché.
+    final expenses = context.read<ExpenseCubit>();
+    await expenses.applyFilters(
+      expenses.filters.copyWith(from: cubit.from, to: cubit.to),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: FinanceAppBar(
         onFilterTap: _pickScope,
-        scopeLabel: _scopeLabel,
+        // Lu sur le cubit, qui garde le périmètre d'un rechargement à l'autre :
+        // le libellé ne peut pas annoncer un autre périmètre que les chiffres.
+        scopeLabel: context.select<FinanceCubit, String?>(
+          (cubit) => cubit.scope.label,
+        ),
       ),
-      body: BlocBuilder<FinanceCubit, FinanceState>(
-        builder: (context, state) => switch (state) {
-          FinanceInitial() || FinanceLoading() => const Center(
-            child: CircularProgressIndicator(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Hors de la liste : la période reste lisible, et modifiable,
+          // pendant le chargement comme après une erreur.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: _PeriodHeader(onChange: _pickPeriod),
           ),
-          FinanceError(:final message) => _ErrorView(
-            message: message,
-            onRetry: () => context.read<FinanceCubit>().load(),
+          Expanded(
+            child: BlocBuilder<FinanceCubit, FinanceState>(
+              builder: (context, state) => switch (state) {
+                FinanceInitial() ||
+                FinanceLoading() => const Center(child: AppLoader()),
+                FinanceError(:final message) => ErrorState(
+                  message: message,
+                  onRetry: () => context.read<FinanceCubit>().load(),
+                ),
+                FinanceLoaded(:final overview) => _Content(overview: overview),
+              },
+            ),
           ),
-          FinanceLoaded(:final overview) => _Content(overview: overview),
-        },
+        ],
       ),
+    );
+  }
+}
+
+/// Période couverte par le relevé, et le bouton qui la change.
+///
+/// Les bornes sont lues sur le cubit plutôt que recalculées : une seconde
+/// formule dériverait du jour au lendemain et annoncerait une fenêtre
+/// différente de celle des chiffres affichés juste en dessous.
+///
+/// Annoncée avant les montants : les douze mois glissants par défaut diffèrent
+/// de l'onglet Statistiques, qui n'affiche que le mois courant. Le même
+/// `ca_brut` y prend deux valeurs, et sans cette mention les deux écrans
+/// semblent se contredire.
+class _PeriodHeader extends StatelessWidget {
+  const _PeriodHeader({required this.onChange});
+
+  final VoidCallback onChange;
+
+  @override
+  Widget build(BuildContext context) {
+    // `watch` : chaque changement de période passe par un nouvel état.
+    final cubit = context.watch<FinanceCubit>();
+    final period = cubit.period;
+    final from = cubit.from;
+    final to = cubit.to;
+
+    // Nom du mois dans la langue de l'application ; le français l'écrit en
+    // minuscule, d'où la majuscule ajoutée en tête de libellé.
+    String monthYear(DateTime d) => DateFormat('MMM y').format(d);
+
+    // Mois abrégé pour une plage : « nov. 2025 - nov. 2026 » tient sur une
+    // ligne, là où les mois en toutes lettres étaient coupés.
+    String shortMonthYear(DateTime d) => DateFormat('MMM y').format(d);
+
+    final label = switch ((period.year, period.month)) {
+      (final int year, null) => 'finance_page.year_label'.tr(
+        namedArgs: {'year': '$year'},
+      ),
+      (final int year, final int month) => toBeginningOfSentenceCase(
+        monthYear(DateTime(year, month)),
+      ),
+      _ when from != null && to != null => 'finance_page.range'.tr(
+        namedArgs: {'from': shortMonthYear(from), 'to': shortMonthYear(to)},
+      ),
+      _ => '',
+    };
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('stats.period'.tr(), style: context.text.bodySmall),
+              Text(
+                label,
+                style: context.text.titleMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        AppButton(
+          label: 'stats.change'.tr(),
+          icon: LucideIcons.calendarRange,
+          // Période restreinte : le bouton passe en noir, comme celui du
+          // périmètre, pour qu'on lise que le relevé n'est pas celui par
+          // défaut.
+          variant: period.isRolling
+              ? AppButtonVariant.secondary
+              : AppButtonVariant.primary,
+          size: AppButtonSize.sm,
+          onPressed: onChange,
+        ),
+      ],
     );
   }
 }
@@ -152,6 +276,8 @@ class _Content extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final summary = overview.summary;
+    final isLoss = summary.beneficeNet < 0;
+    final period = context.read<FinanceCubit>().period;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -160,152 +286,95 @@ class _Content extends StatelessWidget {
           context.read<ExpenseCubit>().refresh(),
         ]);
       },
-      child: SingleChildScrollView(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FinanceSummaryCard(
-              label: 'CA Brut',
-              amount: summary.caBrut,
-              valueStyle: AppTextStyles.valueMedium,
-            ),
-            const SizedBox(height: 12),
-            FinanceSummaryCard(
-              label: 'Dépenses',
-              amount: summary.depenses,
-              valueStyle: AppTextStyles.valueMedium,
-              trailing: const Icon(
-                Icons.arrow_downward_rounded,
-                color: AppColors.red,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 12),
-            FinanceSummaryCard(
-              label: 'Bénéfice Net',
-              amount: summary.beneficeNet,
-              valueStyle: AppTextStyles.valueLarge,
-              // Une perte doit se lire comme telle : un bénéfice négatif sans
-              // signal visuel passerait pour un gain.
-              trailing: summary.beneficeNet < 0
-                  ? const Icon(
-                      Icons.trending_down_rounded,
-                      color: AppColors.red,
-                      size: 18,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 24),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: overview.revenuePoints.isEmpty
-                  ? _Placeholder(
-                      message: 'Aucun revenu sur la période.',
-                    )
-                  : RevenueChart(points: overview.revenuePoints),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: StatsRow(
-                tauxOccupation: summary.tauxOccupation,
-                reservations: summary.reservations,
-                moyenSejour: summary.moyenSejour,
-              ),
-            ),
-            const SizedBox(height: 24),
-            BlocBuilder<ExpenseCubit, ExpenseState>(
-              builder: (context, state) => ExpenseBreakdownCard(
-                categories: state is ExpenseLoaded
-                    ? ExpenseCategoryModel.fromSummary(state.summary)
-                    : const [],
-                onExport: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Export disponible depuis l’historique des dépenses',
-                      ),
-                      duration: Duration(seconds: 3),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      child: Center(
-        child: Text(
-          message,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          StatTile(
+            label: 'finance_page.net_profit'.tr(),
+            value: CurrencyFormatter.format(summary.beneficeNet),
+            icon: LucideIcons.wallet,
+            accent: isLoss ? AppAccent.red : AppAccent.green,
+            note: isLoss ? 'finance_page.period_loss'.tr() : null,
+            noteTone: isLoss ? StatNoteTone.down : null,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 40,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
+          const SizedBox(height: 12),
+          StatGrid(
+            children: [
+              StatTile(
+                label: 'finance_page.gross_revenue'.tr(),
+                value: CurrencyFormatter.short(summary.caBrut),
+                icon: LucideIcons.trendingUp,
+                accent: AppAccent.green,
               ),
-            ),
+              StatTile(
+                label: 'finance_page.expenses'.tr(),
+                value: CurrencyFormatter.short(summary.depenses),
+                icon: LucideIcons.trendingDown,
+                accent: AppAccent.red,
+                // Mention et non tuile : la commission est déjà dans les
+                // dépenses, une tuile à côté se lirait comme une charge de
+                // plus. Absente sans apporteur sur la période.
+                note: summary.commissions > 0
+                    ? 'finance.including_commissions'.tr(
+                        namedArgs: {
+                          'amount': CurrencyFormatter.short(
+                            summary.commissions,
+                          ),
+                        },
+                      )
+                    : null,
+              ),
+              // Masquée à zéro : la plupart des périodes n'ont aucun départ
+              // anticipé, et une tuile vide ferait croire à un manque.
+              if (summary.remboursements > 0)
+                StatTile(
+                  label: 'finance.refunds'.tr(),
+                  value: CurrencyFormatter.short(summary.remboursements),
+                  icon: LucideIcons.undo2,
+                  accent: AppAccent.amber,
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          StatsRow(
+            tauxOccupation: summary.tauxOccupation,
+            reservations: summary.reservations,
+            moyenSejour: summary.moyenSejour,
+          ),
+          // Sur un mois seul, la courbe n'aurait qu'un point : le CA brut
+          // ci-dessus dit déjà tout.
+          if (period.month == null) ...[
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Réessayer')),
+            Section(
+              title: 'finance_page.monthly_revenue'.tr(),
+              icon: LucideIcons.chartLine,
+              child: overview.revenuePoints.isEmpty
+                  ? EmptyState(
+                      message: 'finance_page.no_revenue'.tr(),
+                      icon: LucideIcons.chartLine,
+                    )
+                  : RevenueChart(
+                      points: overview.revenuePoints,
+                      year: period.year,
+                    ),
+            ),
           ],
-        ),
+          const SizedBox(height: 16),
+          BlocBuilder<ExpenseCubit, ExpenseState>(
+            builder: (context, state) => ExpenseBreakdownCard(
+              categories: state is ExpenseLoaded
+                  ? ExpenseCategoryModel.fromSummary(state.summary)
+                  : const [],
+              onExport: () {
+                AppToast.info(
+                  'finance_page.export_from_history'.tr(),
+                  context: context,
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

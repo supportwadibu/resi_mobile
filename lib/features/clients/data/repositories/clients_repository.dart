@@ -1,13 +1,21 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/client_creation_result.dart';
 import '../models/client_model.dart';
+import '../models/client_reservation_model.dart';
 
 /// Une page du carnet, avec de quoi savoir s'il en reste.
 class ClientPage {
-  const ClientPage({required this.items, required this.total, required this.page, required this.lastPage});
+  const ClientPage({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.lastPage,
+  });
 
   final List<ClientModel> items;
   final int total;
@@ -27,6 +35,30 @@ class ClientPage {
       total: (meta['total'] as num?)?.toInt() ?? data.length,
       page: (meta['currentPage'] as num?)?.toInt() ?? 1,
       lastPage: (meta['lastPage'] as num?)?.toInt() ?? 1,
+    );
+  }
+}
+
+/// Historique des séjours d'un client, avec les cumuls qui en découlent.
+class ClientHistory {
+  const ClientHistory({required this.reservations, required this.stats});
+
+  final List<ClientReservationModel> reservations;
+
+  /// Cumuls recalculés par le serveur sur ces mêmes réservations. Ils priment
+  /// sur ceux portés par la fiche, qui n'en est qu'un cache.
+  final ClientStats stats;
+
+  factory ClientHistory.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as List? ?? const [];
+
+    return ClientHistory(
+      reservations: data
+          .map(
+            (e) => ClientReservationModel.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(growable: false),
+      stats: ClientStats.fromJson(json['stats'] as Map<String, dynamic>?),
     );
   }
 }
@@ -54,8 +86,9 @@ class ClientLookup {
 
 /// Carnet de clients du propriétaire connecté.
 class ClientsRepository {
-  const ClientsRepository(this._dio);
+  const ClientsRepository(this._dio, this._role);
   final Dio _dio;
+  final SessionRole _role;
 
   /// Une page du carnet, la plus récemment modifiée d'abord.
   Future<ClientPage> getClientPage({
@@ -66,7 +99,7 @@ class ClientsRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioClients,
+        ApiEndpoints.clients(_role.value),
         queryParameters: {
           if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
           if (status != null) 'status': status.code,
@@ -85,9 +118,27 @@ class ClientsRepository {
   /// Fiche complète, avec les URLs signées vers les pièces déposées.
   Future<ClientModel> getClient(String id) async {
     try {
-      final response = await _dio.get(ApiEndpoints.proprioClient(id));
+      final response = await _dio.get(ApiEndpoints.client(_role.value, id));
       final data = (response.data as Map<String, dynamic>)['data'];
       return ClientModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Historique des séjours d'un client, avec ses cumuls recalculés.
+  ///
+  /// Les statistiques viennent de la même réponse que la liste : elles sont
+  /// dérivées des mêmes réservations, et deux appels séparés pourraient
+  /// afficher un total qui contredit l'historique montré en dessous.
+  Future<ClientHistory> getClientHistory(String id) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.clientBookings(_role.value, id),
+      );
+      return ClientHistory.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);
     } catch (e) {
@@ -102,7 +153,7 @@ class ClientsRepository {
   Future<ClientLookup> lookupByPhone(String phone) async {
     try {
       final response = await _dio.post(
-        ApiEndpoints.proprioClientLookup,
+        ApiEndpoints.clientLookup(_role.value),
         data: {'phone': phone},
       );
       return ClientLookup.fromJson(response.data as Map<String, dynamic>);
@@ -118,12 +169,17 @@ class ClientsRepository {
   /// Le serveur répond `already_existed` quand le numéro est déjà au carnet :
   /// aucune fiche n'est créée, et celle qui existe est retournée pour que
   /// l'application propose de la réutiliser.
-  Future<({ClientModel client, bool alreadyExisted})> create({
+  ///
+  /// Pour un gérant, cette fiche existante peut être **hors de son périmètre** :
+  /// le serveur l'accuse alors sans la livrer, et `client` est nul. Voir
+  /// [ClientCreationResult.isOutOfScope].
+  Future<ClientCreationResult> create({
     required String fullName,
     required String phone,
     String? whatsapp,
     ClientIdDocumentType? idDocumentType,
     String? idDocumentNumber,
+    ClientIdentity? identity,
     String? documentFrontPath,
     String? documentBackPath,
   }) async {
@@ -135,6 +191,7 @@ class ClientsRepository {
         if (idDocumentType != null) 'id_document_type': idDocumentType.code,
         if (idDocumentNumber != null && idDocumentNumber.isNotEmpty)
           'id_document_number': idDocumentNumber,
+        ...?identity?.toFormFields(),
         if (documentFrontPath != null)
           'id_document_front': await _imageFile(documentFrontPath),
         if (documentBackPath != null)
@@ -142,15 +199,13 @@ class ClientsRepository {
       });
 
       final response = await _dio.post(
-        ApiEndpoints.proprioClients,
+        ApiEndpoints.clients(_role.value),
         data: form,
         options: Options(contentType: Headers.multipartFormDataContentType),
       );
 
-      final body = response.data as Map<String, dynamic>;
-      return (
-        client: ClientModel.fromJson(body['data'] as Map<String, dynamic>),
-        alreadyExisted: body['already_existed'] as bool? ?? false,
+      return ClientCreationResult.fromJson(
+        response.data as Map<String, dynamic>,
       );
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);
@@ -167,6 +222,7 @@ class ClientsRepository {
     String? whatsapp,
     ClientIdDocumentType? idDocumentType,
     String? idDocumentNumber,
+    ClientIdentity? identity,
     ClientStatus? status,
     String? documentFrontPath,
     String? documentBackPath,
@@ -181,6 +237,9 @@ class ClientsRepository {
         'whatsapp': ?whatsapp,
         if (idDocumentType != null) 'id_document_type': idDocumentType.code,
         'id_document_number': ?idDocumentNumber,
+        // Champs vides envoyés vides : c'est ainsi qu'un formulaire multipart
+        // efface une valeur, le serveur lisant `''` comme `null`.
+        ...?identity?.toFormFields(includeEmpty: true),
         if (status != null) 'status': status.code,
         if (documentFrontPath != null)
           'id_document_front': await _imageFile(documentFrontPath),
@@ -189,7 +248,7 @@ class ClientsRepository {
       });
 
       final response = await _dio.patch(
-        ApiEndpoints.proprioClient(id),
+        ApiEndpoints.client(_role.value, id),
         data: form,
         options: Options(contentType: Headers.multipartFormDataContentType),
       );

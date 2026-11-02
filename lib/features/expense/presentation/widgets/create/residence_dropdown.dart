@@ -1,4 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 
 /// Bien auquel imputer la dépense.
 ///
@@ -30,15 +35,18 @@ class ResidenceDropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      hint: Text(hint ?? 'Choisir un bien'),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xffF5F5FA),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+      hint: Text(
+        hint ?? 'expense.choose_property_hint'.tr(),
+        style: context.mutedText,
       ),
+      style: context.text.bodyMedium,
+      icon: Icon(
+        LucideIcons.chevronDown,
+        size: 16,
+        color: context.tokens.muted,
+      ),
+      borderRadius: AppRadius.md,
+      dropdownColor: context.tokens.surface,
       items: residences
           .map(
             (e) => DropdownMenuItem(

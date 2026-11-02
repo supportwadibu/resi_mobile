@@ -1,11 +1,14 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/business_logic/property_state.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/shared/widgets/property_card.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
 
@@ -28,8 +31,8 @@ class PropertyGridWidget extends StatelessWidget {
           padding: EdgeInsets.zero,
         ),
         PropertyError(:final message) => _Notice(message: message),
-        PropertyLoaded(:final items) when items.isEmpty => const _Notice(
-          message: 'Aucun bien enregistré pour le moment.',
+        PropertyLoaded(:final items) when items.isEmpty => _Notice(
+          message: 'home.no_property_yet'.tr(),
         ),
         PropertyLoaded(:final items) => _buildGrid(
           context,
@@ -45,9 +48,9 @@ class PropertyGridWidget extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.78,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
       ),
       itemCount: items.length,
       itemBuilder: (_, i) => PropertyCard(
@@ -59,7 +62,7 @@ class PropertyGridWidget extends StatelessWidget {
   }
 }
 
-/// Message discret tenant la place de la grille.
+/// Message tenant la place de la grille, dans le cadre d'un état vide.
 class _Notice extends StatelessWidget {
   const _Notice({required this.message});
 
@@ -67,15 +70,8 @@ class _Notice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: AppColors.grey500),
-        ),
-      ),
+    return AppCard(
+      child: EmptyState(message: message, icon: AppSectionIcons.properties),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/storage/app_database.dart';
@@ -19,13 +20,17 @@ class PendingBooking {
     this.localClientId,
     this.remoteClientId,
     this.checkOutAt,
+    this.daysCount,
     this.receivedAmount,
+    this.agreedUnitPrice,
     this.depositAmount = 0,
     this.message,
     this.isCheckIn = false,
     this.syncStatus = PendingSyncStatus.pending,
     this.lastError,
     this.attempts = 0,
+    this.referrerName,
+    this.referrerPhone,
   });
 
   /// Identifiant tiré sur l'appareil, qui rend l'envoi idempotent.
@@ -41,7 +46,13 @@ class PendingBooking {
   final StayType stayType;
   final DateTime checkInAt;
   final DateTime? checkOutAt;
+
+  /// Durée explicite en jours choisie au comptoir.
+  final int? daysCount;
   final double? receivedAmount;
+
+  /// Prix convenu par unité, transmis pour que le serveur le fige.
+  final double? agreedUnitPrice;
   final double depositAmount;
   final String? message;
   final bool isCheckIn;
@@ -50,6 +61,11 @@ class PendingBooking {
   final int attempts;
   final DateTime createdAt;
 
+  /// Apporteur d'affaire. La commission n'est pas stockée : le serveur la
+  /// calcule et la fige à la réception.
+  final String? referrerName;
+  final String? referrerPhone;
+
   factory PendingBooking.fromRow(Map<String, Object?> row) {
     return PendingBooking(
       clientRequestId: row['client_request_id'] as String,
@@ -57,13 +73,15 @@ class PendingBooking {
       remoteClientId: row['remote_client_id'] as String?,
       propertyId: row['property_id'] as String,
       stayType: StayType.fromCode(row['stay_type'] as String?),
-      checkInAt: DateTime.fromMillisecondsSinceEpoch(
-        row['check_in_at'] as int,
-      ),
+      checkInAt: DateTime.fromMillisecondsSinceEpoch(row['check_in_at'] as int),
       checkOutAt: row['check_out_at'] == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(row['check_out_at'] as int),
+      // Colonne ajoutée en version 7 : `NULL` sur les saisies plus anciennes.
+      daysCount: row['days_count'] as int?,
       receivedAmount: (row['received_amount'] as num?)?.toDouble(),
+      // Colonne ajoutée en version 6 : `NULL` sur les saisies plus anciennes.
+      agreedUnitPrice: (row['agreed_unit_price'] as num?)?.toDouble(),
       depositAmount: (row['deposit_amount'] as num?)?.toDouble() ?? 0,
       message: row['message'] as String?,
       isCheckIn: (row['is_check_in'] as int? ?? 0) == 1,
@@ -71,6 +89,10 @@ class PendingBooking {
       lastError: row['last_error'] as String?,
       attempts: (row['attempts'] as int?) ?? 0,
       createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
+      // Colonnes ajoutées en version 3 du schéma : `NULL` sur les saisies
+      // mises en file avant, c'est-à-dire sans apporteur.
+      referrerName: row['referrer_name'] as String?,
+      referrerPhone: row['referrer_phone'] as String?,
     );
   }
 }
@@ -83,14 +105,31 @@ enum PendingSyncStatus {
   /// Refusée par le serveur pour cause de chevauchement. Jamais supprimée :
   /// le propriétaire doit arbitrer, la machine ne sait pas qui occupe
   /// réellement le logement.
-  conflict('conflict');
+  conflict('conflict'),
+
+  /// Refusée définitivement : le logement a quitté le périmètre du gérant, ou
+  /// son affectation a été suspendue.
+  ///
+  /// Sortie de la file d'envoi — la rejouer donnerait le même refus — mais
+  /// **conservée** : la saisie porte de l'argent encaissé au comptoir, et la
+  /// détruire laisserait le gérant sans rien à montrer au propriétaire.
+  rejected('rejected');
 
   const PendingSyncStatus(this.code);
 
   final String code;
 
-  static PendingSyncStatus fromCode(String? code) =>
-      code == 'conflict' ? PendingSyncStatus.conflict : PendingSyncStatus.pending;
+  /// Un code inconnu vaut `pending`.
+  ///
+  /// Repli délibéré : les lignes écrites avant ce statut n'ont que `pending` ou
+  /// `conflict`, et une base d'une version ultérieure ne doit pas faire lever
+  /// la lecture. Réessayer une saisie est toujours moins grave que la perdre.
+  static PendingSyncStatus fromCode(String? code) {
+    for (final status in PendingSyncStatus.values) {
+      if (status.code == code) return status;
+    }
+    return PendingSyncStatus.pending;
+  }
 }
 
 /// Client saisi hors ligne, en attente de création côté serveur.
@@ -102,6 +141,9 @@ class PendingClient {
     this.remoteId,
     this.documentFrontPath,
     this.documentBackPath,
+    this.idDocumentType,
+    this.idDocumentNumber,
+    this.identity = ClientIdentity.empty,
   });
 
   final String localId;
@@ -111,6 +153,28 @@ class PendingClient {
   final String? documentFrontPath;
   final String? documentBackPath;
 
+  /// Pièce et identité lues au comptoir. Sans elles, un client saisi hors
+  /// ligne arriverait au carnet sans rien de ce que le registre de police
+  /// exige, et il faudrait tout ressaisir.
+  final ClientIdDocumentType? idDocumentType;
+  final String? idDocumentNumber;
+  final ClientIdentity identity;
+
+  /// Ligne de `pending_clients`. L'identité y est rangée en JSON, sous la
+  /// forme même que le formulaire multipart enverra.
+  Map<String, Object?> toRow({required int createdAt}) => {
+    'local_id': localId,
+    'remote_id': remoteId,
+    'full_name': fullName,
+    'phone': phone,
+    'document_front_path': documentFrontPath,
+    'document_back_path': documentBackPath,
+    'created_at': createdAt,
+    'id_document_type': idDocumentType?.code,
+    'id_document_number': idDocumentNumber,
+    'identity_fields': jsonEncode(identity.toFormFields()),
+  };
+
   factory PendingClient.fromRow(Map<String, Object?> row) {
     return PendingClient(
       localId: row['local_id'] as String,
@@ -119,7 +183,26 @@ class PendingClient {
       phone: row['phone'] as String,
       documentFrontPath: row['document_front_path'] as String?,
       documentBackPath: row['document_back_path'] as String?,
+      // Absents des lignes écrites avant la v4 du schéma.
+      idDocumentType: ClientIdDocumentType.fromCode(
+        row['id_document_type'] as String?,
+      ),
+      idDocumentNumber: row['id_document_number'] as String?,
+      identity: _identityFrom(row['identity_fields']),
     );
+  }
+
+  /// Une identité illisible vaut une identité vide : la réservation, qui porte
+  /// de l'argent encaissé, doit partir quand même.
+  static ClientIdentity _identityFrom(Object? raw) {
+    if (raw is! String || raw.isEmpty) return ClientIdentity.empty;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return ClientIdentity.empty;
+      return ClientIdentity.fromJson(decoded);
+    } on FormatException {
+      return ClientIdentity.empty;
+    }
   }
 }
 
@@ -228,7 +311,9 @@ class ReservationLocalStore {
     if (query != null && query.trim().isNotEmpty) {
       final term = '%${query.trim().toLowerCase()}%';
       where.add('(LOWER(full_name) LIKE ? OR phone LIKE ?)');
-      args..add(term)..add(term);
+      args
+        ..add(term)
+        ..add(term);
     }
 
     final rows = await db.query(
@@ -240,9 +325,11 @@ class ReservationLocalStore {
     );
 
     return rows
-        .map((r) => ClientModel.fromJson(
-              jsonDecode(r['payload'] as String) as Map<String, dynamic>,
-            ))
+        .map(
+          (r) => ClientModel.fromJson(
+            jsonDecode(r['payload'] as String) as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
   }
 
@@ -336,9 +423,7 @@ class ReservationLocalStore {
           ),
           checkOutAt: row['check_out_at'] == null
               ? DateTime.fromMillisecondsSinceEpoch(row['check_in_at'] as int)
-              : DateTime.fromMillisecondsSinceEpoch(
-                  row['check_out_at'] as int,
-                ),
+              : DateTime.fromMillisecondsSinceEpoch(row['check_out_at'] as int),
           // En file d'attente : le bien est pris, même si le serveur l'ignore
           // encore.
           status: ReservationStatus.confirmed,
@@ -364,13 +449,8 @@ class ReservationLocalStore {
     await db.transaction((txn) async {
       if (newClient != null) {
         await txn.insert('pending_clients', {
-          'local_id': newClient.localId,
-          'remote_id': newClient.remoteId,
-          'full_name': newClient.fullName,
+          ...newClient.toRow(createdAt: DateTime.now().millisecondsSinceEpoch),
           'phone': _normalizePhone(newClient.phone),
-          'document_front_path': newClient.documentFrontPath,
-          'document_back_path': newClient.documentBackPath,
-          'created_at': DateTime.now().millisecondsSinceEpoch,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
@@ -382,12 +462,16 @@ class ReservationLocalStore {
         'stay_type': booking.stayType.code,
         'check_in_at': booking.checkInAt.millisecondsSinceEpoch,
         'check_out_at': booking.checkOutAt?.millisecondsSinceEpoch,
+        'days_count': booking.daysCount,
         'received_amount': booking.receivedAmount,
+        'agreed_unit_price': booking.agreedUnitPrice,
         'deposit_amount': booking.depositAmount,
         'message': booking.message,
         'is_check_in': booking.isCheckIn ? 1 : 0,
         'sync_status': booking.syncStatus.code,
         'created_at': booking.createdAt.millisecondsSinceEpoch,
+        'referrer_name': booking.referrerName,
+        'referrer_phone': booking.referrerPhone,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     });
   }
@@ -464,6 +548,144 @@ class ReservationLocalStore {
     );
   }
 
+  /// Réservations de la file, tous états confondus, mises en forme de réponse
+  /// d'API — pour que les listes les affichent avant leur envoi.
+  ///
+  /// Le nom du client et le titre du bien sont joints ici depuis les caches :
+  /// une ligne de liste sans eux ne dirait rien au propriétaire.
+  Future<List<Map<String, dynamic>>> pendingBookingsAsJson() async {
+    final db = await _db;
+    final rows = await db.rawQuery('''
+      SELECT b.*,
+             pc.full_name AS pending_client_name,
+             pc.phone     AS pending_client_phone,
+             cc.full_name AS cached_client_name,
+             cc.phone     AS cached_client_phone,
+             p.title      AS property_title
+      FROM pending_bookings b
+      LEFT JOIN pending_clients pc ON pc.local_id = b.local_client_id
+      LEFT JOIN cached_clients cc ON cc.id = b.remote_client_id
+      LEFT JOIN cached_properties p ON p.id = b.property_id
+      ORDER BY b.created_at ASC
+    ''');
+    return rows.map(pendingBookingJson).toList(growable: false);
+  }
+
+  /// Remet une réservation refusée dans la file d'envoi, à la demande du
+  /// propriétaire — après avoir libéré la période, par exemple.
+  Future<void> requeue(String clientRequestId) async {
+    final db = await _db;
+    await db.update(
+      'pending_bookings',
+      {'sync_status': PendingSyncStatus.pending.code, 'last_error': null},
+      where: 'client_request_id = ?',
+      whereArgs: [clientRequestId],
+    );
+  }
+
+  /// Abandonne une réservation refusée, sur décision du propriétaire.
+  ///
+  /// Son client local part avec elle s'il n'est rattaché à aucune autre
+  /// saisie : une fiche orpheline en file serait créée au serveur sans
+  /// raison.
+  Future<void> discard(String clientRequestId) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'pending_bookings',
+        columns: ['local_client_id'],
+        where: 'client_request_id = ?',
+        whereArgs: [clientRequestId],
+        limit: 1,
+      );
+      await txn.delete(
+        'pending_bookings',
+        where: 'client_request_id = ?',
+        whereArgs: [clientRequestId],
+      );
+
+      final localClient = rows.isEmpty
+          ? null
+          : rows.first['local_client_id'] as String?;
+      if (localClient == null) return;
+
+      final others = await txn.query(
+        'pending_bookings',
+        columns: ['client_request_id'],
+        where: 'local_client_id = ?',
+        whereArgs: [localClient],
+        limit: 1,
+      );
+      if (others.isEmpty) {
+        await txn.delete(
+          'pending_clients',
+          where: 'local_id = ?',
+          whereArgs: [localClient],
+        );
+      }
+    });
+  }
+
+  /// Identifiant affiché d'une réservation en file, avant que le serveur ne
+  /// lui en donne un.
+  static String localBookingId(String clientRequestId) =>
+      'local-$clientRequestId';
+
+  /// Ligne jointe de la file, au format d'une réservation de l'API.
+  @visibleForTesting
+  static Map<String, dynamic> pendingBookingJson(Map<String, Object?> row) {
+    final booking = PendingBooking.fromRow(row);
+    final checkIn = booking.checkInAt.toUtc().toIso8601String();
+    // Un passage peut partir sans heure de sortie : il occupe le bien à
+    // l'entrée seulement, comme dans le contrôle de chevauchement.
+    final checkOut = (booking.checkOutAt ?? booking.checkInAt)
+        .toUtc()
+        .toIso8601String();
+    final amount = booking.receivedAmount ?? 0;
+    final clientId = booking.remoteClientId ?? booking.localClientId ?? '';
+
+    return {
+      'id': localBookingId(booking.clientRequestId),
+      'property_id': booking.propertyId,
+      'property': {
+        'id': booking.propertyId,
+        'title': row['property_title'] as String? ?? '',
+        'city': '',
+      },
+      'client_id': clientId,
+      'client': {
+        'id': clientId,
+        'full_name':
+            row['pending_client_name'] ?? row['cached_client_name'] ?? '',
+        'phone':
+            row['pending_client_phone'] ?? row['cached_client_phone'] ?? '',
+      },
+      'status': booking.isCheckIn ? 'in_progress' : 'confirmed',
+      'source': 'offline',
+      'stay_type': booking.stayType.code,
+      'start_date': checkIn,
+      'check_in_at': checkIn,
+      'end_date': checkOut,
+      'check_out_at': checkOut,
+      'total_amount': amount,
+      'expected_amount': amount,
+      'received_amount': amount,
+      // Une prolongation saisie avant l'envoi s'annonce ainsi au prix convenu.
+      'agreed_unit_price': booking.agreedUnitPrice,
+      'deposit_amount': booking.depositAmount,
+      'message': booking.message,
+      if (booking.referrerName != null)
+        'referrer': {
+          'name': booking.referrerName,
+          'phone': booking.referrerPhone,
+        },
+      'sync_status': booking.syncStatus.code,
+      // Pour l'arbitrage : le motif d'un refus et l'heure de la saisie.
+      'last_error': booking.lastError,
+      'created_at': booking.createdAt.toUtc().toIso8601String(),
+    };
+  }
+
   Future<int> pendingCount() async {
     final db = await _db;
     final result = await db.rawQuery(
@@ -478,6 +700,15 @@ class ReservationLocalStore {
     final result = await db.rawQuery(
       'SELECT COUNT(*) AS total FROM pending_bookings WHERE sync_status = ?',
       [PendingSyncStatus.conflict.code],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<int> rejectedCount() async {
+    final db = await _db;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM pending_bookings WHERE sync_status = ?',
+      [PendingSyncStatus.rejected.code],
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }

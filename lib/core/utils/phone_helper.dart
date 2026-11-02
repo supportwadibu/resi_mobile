@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 class PhoneHelper {
@@ -30,6 +31,44 @@ class PhoneHelper {
     return parsed.international;
   }
 
+  /// Met un identifiant de connexion sous la forme retenue en base.
+  ///
+  /// Les comptes sont enregistrés avec un numéro déjà mis en forme
+  /// internationale — `AddGerantScreen` et `PropertyManagerProfileScreen`
+  /// appellent tous deux [toE164] avant l'envoi. Or l'écran de connexion n'a
+  /// qu'un champ « e-mail ou téléphone », sans indicatif : un gérant y tape
+  /// son numéro national, et l'API cherche par égalité stricte. `0102030405`
+  /// ne trouvait donc pas le compte enregistré sous `+2250102030405`, et
+  /// répondait « Identifiants invalides » sur des données pourtant exactes.
+  ///
+  /// Une adresse e-mail est rendue telle quelle : la reconnaissance se fait
+  /// sur `@`, comme côté serveur. Un numéro que la bibliothèque ne sait pas
+  /// lire est lui aussi rendu inchangé — mieux vaut laisser l'API refuser que
+  /// transformer une saisie en une autre.
+  static String normalizeLoginIdentifier(String input, String iso2) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty || trimmed.contains('@')) return trimmed;
+
+    return toE164(trimmed, iso2) ?? trimmed;
+  }
+
+  /// Numéro au format attendu par `wa.me` : indicatif et numéro, chiffres
+  /// seuls, sans `+`.
+  ///
+  /// Le carnet garde les numéros tels que saisis — national (`07 12 34 56 78`)
+  /// ou international (`+225…`) ; préfixer `225` à l'aveugle doublait
+  /// l'indicatif des seconds. `null` pour un numéro illisible : mieux vaut ne
+  /// rien ouvrir que la conversation d'un inconnu.
+  static String? toWhatsApp(String? input, String iso2) {
+    final raw = input?.trim() ?? '';
+    if (raw.isEmpty) return null;
+
+    final parsed = tryParse(raw, iso2);
+    if (parsed == null || !parsed.isValid()) return null;
+
+    return '${parsed.countryCode}${parsed.nsn}';
+  }
+
   static String toNational(String? e164, String iso2) {
     final raw = e164?.trim() ?? '';
     if (raw.isEmpty) return '';
@@ -41,14 +80,16 @@ class PhoneHelper {
   }
 
   static String? validate(String? input, String iso2) {
-    if (input == null || input.trim().isEmpty) return 'Ce champ est requis';
+    if (input == null || input.trim().isEmpty) {
+      return 'common.field_required'.tr();
+    }
     if (isoCodeOf(iso2) == null) return null;
-    if (!isValid(input, iso2)) return 'Numéro invalide pour ce pays';
+    if (!isValid(input, iso2)) return 'fields.phone_invalid'.tr();
     return null;
   }
 
   static String hintFor(String iso2) => switch (isoCodeOf(iso2)) {
     IsoCode.CI => '07 00 00 00 00',
-    _ => 'Numéro sans indicatif',
+    _ => 'fields.phone_hint_generic'.tr(),
   };
 }

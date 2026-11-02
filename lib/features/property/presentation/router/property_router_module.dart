@@ -9,13 +9,12 @@ import 'property_router_module.gr.dart';
 )
 class PropertyRouterModule extends RootStackRouter {
   @override
-  RouteType get defaultRouteType => RouteType.custom(
-        transitionsBuilder: customTransitionBuilder,
-      );
+  RouteType get defaultRouteType =>
+      RouteType.custom(transitionsBuilder: customTransitionBuilder);
 
   @override
   List<AutoRoute> get routes => [
-        AutoRoute(page: PropertyRoute.page),
-        AutoRoute(page: PropertyDetailRoute.page),
-      ];
+    AutoRoute(page: PropertyRoute.page),
+    AutoRoute(page: PropertyDetailRoute.page),
+  ];
 }

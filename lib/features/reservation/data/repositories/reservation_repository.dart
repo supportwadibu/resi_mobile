@@ -1,8 +1,12 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/booking_stats_model.dart';
+import '../models/deposit_action.dart';
+import '../models/early_check_out_quote.dart';
 import '../models/occupied_period_model.dart';
 import '../models/reservation_model.dart';
 
@@ -39,8 +43,9 @@ class ReservationPage {
 
 /// Réservations reçues par le propriétaire connecté.
 class ReservationRepository {
-  const ReservationRepository(this._dio);
+  const ReservationRepository(this._dio, this._role);
   final Dio _dio;
+  final SessionRole _role;
 
   /// Une page de réservations, la plus récente d'abord.
   Future<ReservationPage> getReservationPage({
@@ -51,7 +56,7 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioBookings,
+        ApiEndpoints.bookings(_role.value),
         queryParameters: {
           if (propertyId != null && propertyId.isNotEmpty)
             'property_id': propertyId,
@@ -68,11 +73,18 @@ class ReservationRepository {
     }
   }
 
-  /// Première page seulement — conservé pour les écrans qui n'exploitent pas
-  /// encore la pagination.
-  Future<List<ReservationModel>> getReservationList() async {
-    final page = await getReservationPage();
-    return page.items;
+  /// Chiffres du tableau de bord : occupation du mois, séjours à venir et en
+  /// cours, revenu du mois rapporté au précédent.
+  Future<BookingStatsModel> getStats() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.bookingStats(_role.value));
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return BookingStatsModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
   }
 
   /// Enregistre une réservation prise au comptoir.
@@ -87,15 +99,19 @@ class ReservationRepository {
     required StayType stayType,
     required DateTime checkInAt,
     DateTime? checkOutAt,
+    int? daysCount,
     double? receivedAmount,
+    double? agreedUnitPrice,
     double? depositAmount,
     String? message,
     bool isCheckIn = false,
     String? clientRequestId,
+    String? referrerName,
+    String? referrerPhone,
   }) async {
     try {
       final response = await _dio.post(
-        ApiEndpoints.proprioBookings,
+        ApiEndpoints.bookings(_role.value),
         data: {
           'property_id': propertyId,
           'client_id': clientId,
@@ -103,13 +119,25 @@ class ReservationRepository {
           'check_in_at': checkInAt.toUtc().toIso8601String(),
           if (checkOutAt != null)
             'check_out_at': checkOutAt.toUtc().toIso8601String(),
+          'days_count': ?daysCount,
           // `?` plutôt qu'un `if` : la clé n'est posée que si la valeur
           // existe, et le serveur applique alors sa propre valeur par défaut.
           'received_amount': ?receivedAmount,
+          // Le prix unitaire prime sur le total : le serveur le multiplie par
+          // sa propre durée et le fige pour tarifer une prolongation.
+          'agreed_unit_price': ?agreedUnitPrice,
           'deposit_amount': ?depositAmount,
           if (message != null && message.isNotEmpty) 'message': message,
           'is_check_in': isCheckIn,
           'client_request_id': ?clientRequestId,
+          // La commission est calculée par le serveur, au taux en vigueur :
+          // l'appareil n'envoie que l'identité de l'apporteur.
+          if (referrerName != null && referrerName.trim().isNotEmpty)
+            'referrer': {
+              'name': referrerName.trim(),
+              if (referrerPhone != null && referrerPhone.trim().isNotEmpty)
+                'phone': referrerPhone.trim(),
+            },
         },
       );
 
@@ -122,12 +150,140 @@ class ReservationRepository {
     }
   }
 
-  /// Clôture un séjour : enregistre la sortie et cumule le montant sur la
-  /// fiche du client.
-  Future<ReservationModel> checkOut(String id) async {
+  /// Annule une réservation à venir ou en cours.
+  ///
+  /// [depositAction] est exigé par le serveur dès qu'un acompte a été versé
+  /// (422 `deposit_action_required`). Un 409 signale un séjour déjà clos ou
+  /// déjà annulé.
+  Future<ReservationModel> cancel(
+    String id, {
+    String? reason,
+    DepositAction? depositAction,
+  }) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioBookingCheckOut(id),
+        ApiEndpoints.bookingCancel(_role.value, id),
+        data: {
+          if (reason != null && reason.trim().isNotEmpty)
+            'reason': reason.trim(),
+          'deposit_action': ?depositAction?.code,
+        },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Enregistre l'arrivée du client sur une réservation à venir.
+  ///
+  /// [actualCheckInAt] : heure saisie hors ligne. Sans elle, le serveur
+  /// consigne l'heure de l'envoi. Un 422 signale une arrivée hors du séjour —
+  /// avant le jour J ou après la sortie prévue.
+  Future<ReservationModel> checkIn(
+    String id, {
+    DateTime? actualCheckInAt,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.bookingCheckIn(_role.value, id),
+        data: actualCheckInAt == null
+            ? null
+            : {'actual_check_in_at': actualCheckInAt.toUtc().toIso8601String()},
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Clôture un séjour mené à terme : le serveur consigne la sortie réelle
+  /// sans toucher à la période facturée, qui porte la répartition du revenu.
+  ///
+  /// Sans corps, comme avant le départ anticipé : le serveur lit une clôture
+  /// sans corps comme un séjour complet.
+  ///
+  /// Un 422 signale un séjour pas encore commencé : il s'annule, il ne se
+  /// clôture pas.
+  ///
+  /// [actualCheckOutAt] : heure de sortie saisie hors ligne. Sans elle, le
+  /// serveur consigne l'heure de la synchronisation, qui peut suivre le départ
+  /// réel de plusieurs heures.
+  Future<ReservationModel> checkOut(
+    String id, {
+    DateTime? actualCheckOutAt,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.bookingCheckOut(_role.value, id),
+        data: actualCheckOutAt == null
+            ? null
+            : {
+                'actual_check_out_at': actualCheckOutAt
+                    .toUtc()
+                    .toIso8601String(),
+              },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Chiffre un départ anticipé à [at] sans rien enregistrer.
+  ///
+  /// Un 422 signale une heure de sortie refusée — antérieure à l'entrée, dans
+  /// le futur, ou pas avant la fin prévue.
+  Future<EarlyCheckOutQuote> previewEarlyCheckOut(
+    String id, {
+    required DateTime at,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.bookingCheckOutPreview(_role.value, id),
+        queryParameters: {'at': at.toUtc().toIso8601String()},
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return EarlyCheckOutQuote.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Clôture un séjour écourté : le serveur ramène la période et le montant à
+  /// l'usage réel et consigne l'écart comme remboursé.
+  ///
+  /// [finalAmount] est le montant retenu ; à défaut, le serveur applique son
+  /// prorata. Il ne peut dépasser le montant réglé.
+  Future<ReservationModel> checkOutEarly(
+    String id, {
+    required DateTime actualCheckOutAt,
+    num? finalAmount,
+    String? earlyCheckoutOption,
+    num? penaltyAmount,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        ApiEndpoints.bookingCheckOut(_role.value, id),
+        data: {
+          'full_stay': false,
+          'actual_check_out_at': actualCheckOutAt.toUtc().toIso8601String(),
+          if (finalAmount != null) 'final_amount': finalAmount,
+          if (earlyCheckoutOption != null)
+            'early_checkout_option': earlyCheckoutOption,
+          if (penaltyAmount != null) 'penalty_amount': penaltyAmount,
+        },
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);
@@ -153,12 +309,62 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.patch(
-        ApiEndpoints.proprioBookingExtend(id),
+        ApiEndpoints.bookingExtend(_role.value, id),
         data: {
           'check_out_at': checkOutAt.toUtc().toIso8601String(),
           // `?` plutôt qu'un `if`, comme à la création : sans la clé, le
           // serveur réajuste sur le montant attendu.
           'received_amount': ?receivedAmount,
+        },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Ressaisit une réservation comptoir non terminée.
+  ///
+  /// La réservation part **entière** (`PUT`) : le serveur recalcule montant
+  /// attendu et chevauchement sur l'ensemble, et un champ absent ne dirait
+  /// pas s'il est inchangé ou oublié. Le client, lui, ne change pas : il est
+  /// figé dans l'instantané de la réservation.
+  ///
+  /// [agreedAmount] et [agreedUnitPrice] `null` : le serveur applique le
+  /// montant attendu. Le prix unitaire prime sur le total.
+  /// [message] vide efface le message.
+  ///
+  /// Comme la prolongation, la modification n'est pas mise en file hors
+  /// réseau : elle porte sur un séjour que le serveur connaît déjà, et un 409
+  /// est un conflit de période à arbitrer sur place.
+  Future<ReservationModel> update(
+    String id, {
+    required String propertyId,
+    required StayType stayType,
+    required DateTime checkInAt,
+    required DateTime checkOutAt,
+    int? daysCount,
+    double? agreedAmount,
+    double? agreedUnitPrice,
+    required double depositAmount,
+    required String message,
+  }) async {
+    try {
+      final response = await _dio.put(
+        ApiEndpoints.booking(_role.value, id),
+        data: {
+          'property_id': propertyId,
+          'stay_type': stayType.code,
+          'check_in_at': checkInAt.toUtc().toIso8601String(),
+          'check_out_at': checkOutAt.toUtc().toIso8601String(),
+          'days_count': ?daysCount,
+          'received_amount': ?agreedAmount,
+          'agreed_unit_price': ?agreedUnitPrice,
+          'deposit_amount': depositAmount,
+          'message': message.trim().isEmpty ? null : message.trim(),
         },
       );
       final data = (response.data as Map<String, dynamic>)['data'];
@@ -181,7 +387,7 @@ class ReservationRepository {
   }) async {
     try {
       final response = await _dio.get(
-        ApiEndpoints.proprioPropertyAvailability,
+        ApiEndpoints.propertyAvailability(_role.value),
         queryParameters: {
           'property_id': propertyId,
           if (from != null) 'from': from.toUtc().toIso8601String(),
@@ -189,8 +395,8 @@ class ReservationRepository {
         },
       );
 
-      final data = (response.data as Map<String, dynamic>)['data'] as List? ??
-          const [];
+      final data =
+          (response.data as Map<String, dynamic>)['data'] as List? ?? const [];
       return data
           .map((e) => OccupiedPeriodModel.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);

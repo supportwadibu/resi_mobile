@@ -7,14 +7,19 @@ class ConnectivityInterceptor extends Interceptor {
   final Connectivity _connectivity;
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final results = await _connectivity.checkConnectivity();
     if (results.every((r) => r == ConnectivityResult.none)) {
-      handler.reject(DioException(
-        requestOptions: options,
-        error: AppFailure.noInternet(),
-        type: DioExceptionType.connectionError,
-      ));
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error: AppFailure.noInternet(),
+          type: DioExceptionType.connectionError,
+        ),
+      );
       return;
     }
     handler.next(options);

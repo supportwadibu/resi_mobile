@@ -1,87 +1,53 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_gate.dart';
+import 'package:resi_africa/features/subscription/presentation/widgets/plan_style.dart';
+import 'package:resi_africa/shared/utils/currency_formatter.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 
 class KpiRow extends StatelessWidget {
-  const KpiRow({super.key});
+  const KpiRow({super.key, required this.entrees, required this.sorties});
+
+  /// Chiffre d'affaires brut de la période.
+  final double entrees;
+
+  /// Dépenses engagées sur la même période ; `null` sous RESI Basic, où le
+  /// suivi des dépenses n'est pas inclus.
+  final double? sorties;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
-        Expanded(
-          child: KpiCard(
-            label: 'Entrées',
-            value: '1 260 840 F',
-            icon: FontAwesomeIcons.arrowTrendUp,
-            color: Color(0xFF14A985),
-          ),
+    final sorties = this.sorties;
+
+    return StatGrid(
+      children: [
+        StatTile(
+          label: 'stats.income'.tr(),
+          value: CurrencyFormatter.fcfa(entrees),
+          icon: LucideIcons.trendingUp,
+          accent: AppAccent.green,
         ),
-        SizedBox(width: 12),
-        Expanded(
-          child: KpiCard(
-            label: 'Sorties',
-            value: '342 000 F',
-            icon: FontAwesomeIcons.arrowTrendDown,
-            color: Color(0xFFEF4444),
+        // Tuile gardée et verrouillée plutôt que retirée : un tiret et l'offre
+        // qui l'ouvre disent ce qui manque, là où une absence ne dit rien — et
+        // un zéro se lirait comme « aucune dépense ».
+        if (sorties == null)
+          StatTile(
+            label: 'stats.outflow'.tr(),
+            value: '—',
+            icon: LucideIcons.trendingDown,
+            note: 'stats.outflow_locked'.tr(),
+            onTap: () => ensurePlanFor(context, PremiumFeature.expenses),
+          )
+        else
+          StatTile(
+            label: 'stats.outflow'.tr(),
+            value: CurrencyFormatter.fcfa(sorties),
+            icon: LucideIcons.trendingDown,
+            accent: AppAccent.red,
           ),
-        ),
       ],
-    );
-  }
-}
-
-class KpiCard extends StatelessWidget {
-  const KpiCard({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final FaIconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: FaIcon(icon, size: 14, color: color),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
     );
   }
 }

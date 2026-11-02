@@ -1,20 +1,24 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:resi_africa/core/di/service_locator.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
-import 'package:resi_africa/core/theme/app_colors.dart';
+import 'package:resi_africa/core/theme/app_icons.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/features/property/business_logic/property_cubit.dart';
 import 'package:resi_africa/features/property/business_logic/property_state.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
-import 'package:resi_africa/shared/widgets/filter_bottom_sheet.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/shared/widgets/empty_state.dart';
+import 'package:resi_africa/shared/widgets/error_state.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/shared/widgets/property_card.dart';
 import 'package:resi_africa/shared/widgets/skeletons/list_skeleton.dart';
-import '../../../../../core/error/failures.dart';
-import '../../../../residence/data/models/residence_model.dart';
-import '../../../../residence/data/repositories/residence_repository.dart';
-import '../../../../residence/presentation/widgets/attach_residence_sheet.dart';
+import 'package:resi_africa/shared/utils/ensure_online.dart';
 
 /// Onglet « Mes biens » : les annonces du propriétaire connecté.
 class PropertyTab extends StatelessWidget {
@@ -22,10 +26,8 @@ class PropertyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<PropertyCubit>()..load(),
-      child: const _PropertyTabView(),
-    );
+    // Le cubit vient de l'écran d'accueil, partagé avec l'onglet du même parc.
+    return const _PropertyTabView();
   }
 }
 
@@ -38,12 +40,39 @@ class _PropertyTabView extends StatefulWidget {
 
 class _PropertyTabViewState extends State<_PropertyTabView> {
   bool _isGrid = true;
+  String _query = '';
 
   /// Relance la liste au retour de l'écran de dépôt, pour que l'annonce
   /// tout juste créée y figure sans que l'utilisateur ait à rafraîchir.
   Future<void> _openAddProperty() async {
-    await context.router.push(const AddPropertyRoute());
+    if (!await ensureOnline(context) || !mounted) return;
+    await context.router.push(AddPropertyRoute());
     if (mounted) context.read<PropertyCubit>().load();
+  }
+
+  /// Ouvre la liste des résidences.
+  ///
+  /// Doublon assumé de la carte de l'onglet « Statistiques » : les résidences
+  /// se gèrent en même temps que le parc, et non en consultant des chiffres.
+  /// La liste des biens est rechargée au retour, un rattachement ou une
+  /// suppression de résidence ayant pu y changer le nom affiché.
+  Future<void> _openResidences() async {
+    await context.router.push(const ResidenceRoute());
+    if (mounted) context.read<PropertyCubit>().load();
+  }
+
+  /// Recherche locale sur le nom et la ville : la liste est déjà chargée en
+  /// entier, et la filtrer sur place répond aussi hors ligne.
+  List<PropertyModel> _filter(List<PropertyModel> items) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return items;
+    return items
+        .where(
+          (p) =>
+              p.title.toLowerCase().contains(q) ||
+              p.address.city.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   @override
@@ -52,49 +81,42 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
     // cette vue n'avait pas de hauteur bornée dans l'`IndexedStack` de
     // l'écran d'accueil, d'où l'échec de mise en page (`hasSize`).
     return Scaffold(
-      backgroundColor: AppColors.white,
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            color: AppColors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            // L'encoche est déjà traitée par le `SafeArea` de l'écran hôte.
-            child: Row(
-              children: [
-                const Text(
-                  'Mes biens',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
-                ),
-                const Spacer(),
-                AppButton(
-                  onPressed: _openAddProperty,
-                  label: 'Ajouter un bien',
-                  backgroundColor: AppColors.black,
-                  leadingIcon: AppButtonIcon.material(Icons.add, size: 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                ),
-              ],
-            ),
+          // L'encoche est déjà traitée par le `SafeArea` de l'écran hôte.
+          PageHeader(
+            title: 'home.my_properties'.tr(),
+            actions: [
+              AppIconButton(
+                icon: AppSectionIcons.residences,
+                label: 'property_tab.my_residences'.tr(),
+                bordered: true,
+                onPressed: _openResidences,
+              ),
+              AppButton(
+                label: 'common.add'.tr(),
+                icon: LucideIcons.plus,
+                onPressed: _openAddProperty,
+              ),
+            ],
           ),
-
           Expanded(
             child: BlocBuilder<PropertyCubit, PropertyState>(
               builder: (context, state) => switch (state) {
                 PropertyInitial() ||
                 PropertyLoading() => const PropertyListSkeleton(),
-                PropertyError(:final message) => _ErrorView(
+                PropertyError(:final message) => ErrorState(
                   message: message,
                   onRetry: () => context.read<PropertyCubit>().load(),
                 ),
-                PropertyLoaded(:final items) when items.isEmpty => _EmptyView(
-                  onAdd: _openAddProperty,
+                PropertyLoaded(:final items) when items.isEmpty => EmptyState(
+                  title: 'property_tab.empty_title'.tr(),
+                  message: 'property_tab.empty_body'.tr(),
+                  icon: AppSectionIcons.properties,
+                  actionLabel: 'home_actions.add_property'.tr(),
+                  actionIcon: LucideIcons.plus,
+                  onAction: _openAddProperty,
                 ),
                 PropertyLoaded(:final items) => _buildContent(items),
               },
@@ -105,98 +127,56 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
     );
   }
 
-  Widget _buildContent(List<PropertyModel> items) {
+  Widget _buildContent(List<PropertyModel> all) {
+    final items = _filter(all);
+    final t = context.tokens;
     return RefreshIndicator(
       onRefresh: () => context.read<PropertyCubit>().load(),
-      child: SingleChildScrollView(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.search, color: AppColors.grey400, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Rechercher un bien...',
-                          style: TextStyle(
-                            color: AppColors.grey400,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: () async {
-                    await FilterBottomSheet.show(context);
-                  },
-                  child: Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.tune_rounded,
-                      color: AppColors.black,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                Text(
-                  items.length > 1
-                      ? '${items.length} propriétés trouvées'
-                      : '${items.length} propriété trouvée',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
-                ),
-                const Spacer(),
-                _ToggleButton(
-                  icon: Icons.grid_view_rounded,
-                  isActive: _isGrid,
-                  onTap: () => setState(() => _isGrid = true),
-                ),
-                const SizedBox(width: 8),
-                _ToggleButton(
-                  icon: Icons.view_list_rounded,
-                  isActive: !_isGrid,
-                  onTap: () => setState(() => _isGrid = false),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            _isGrid ? _buildGrid(items) : _buildList(items),
-          ],
+        // Marge basse : hauteur de la barre flottante, voir `HomeTab`.
+        padding: EdgeInsets.fromLTRB(
+          16,
+          4,
+          16,
+          MediaQuery.paddingOf(context).bottom + 16,
         ),
+        children: [
+          TextField(
+            onChanged: (value) => setState(() => _query = value),
+            style: context.text.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'property_tab.search_hint'.tr(),
+              prefixIcon: Icon(LucideIcons.search, size: 16),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'property_tab.count'.plural(items.length),
+                  style: context.text.bodyMedium!.copyWith(color: t.muted),
+                ),
+              ),
+              _ViewToggle(
+                isGrid: _isGrid,
+                onChanged: (grid) => setState(() => _isGrid = grid),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: EmptyState(
+                message: 'property_tab.no_match'.tr(),
+                icon: LucideIcons.searchX,
+              ),
+            )
+          else
+            _isGrid ? _buildGrid(items) : _buildList(items),
+        ],
       ),
     );
   }
@@ -207,18 +187,14 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.75,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
       ),
       itemCount: items.length,
       itemBuilder: (_, i) => PropertyCard(
         data: propertyCardData(items[i]),
-        isListMode: false,
         onTap: () => _openDetail(items[i]),
-        onLongPress: () => _attachResidence(items[i]),
-        onDelete: () => _confirmDelete(items[i]),
-        onShare: () {},
       ),
     );
   }
@@ -228,205 +204,71 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (_, i) => PropertyCard(
         data: propertyCardData(items[i]),
         isListMode: true,
         onTap: () => _openDetail(items[i]),
-        onLongPress: () => _attachResidence(items[i]),
-        onDelete: () => _confirmDelete(items[i]),
-        onShare: () {},
       ),
     );
   }
 
-  /// Ouvre la fiche, puis recharge : le bien a pu y être modifié.
+  /// Ouvre la fiche du bien, puis recharge la liste.
+  ///
+  /// Le détail porte la modification, la publication et le rattachement à une
+  /// résidence : le nom, le tarif ou la visibilité affichés ici ont pu changer
+  /// pendant la consultation.
   Future<void> _openDetail(PropertyModel property) async {
     await context.router.push(PropertyDetailRoute(property: property));
     if (mounted) context.read<PropertyCubit>().load();
   }
-
-  /// Rattache le bien à une résidence, ou l’en détache.
-  ///
-  /// Appui long plutôt qu’un bouton : l’action est occasionnelle, et la carte
-  /// est déjà dense. Les résidences sont lues à l’ouverture, la feuille devant
-  /// proposer la liste à jour.
-  Future<void> _attachResidence(PropertyModel property) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final repository = sl<ResidenceRepository>();
-
-    List<ResidenceModel> residences;
-    try {
-      residences = await repository.getAllResidences();
-    } on AppFailure catch (f) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
-      return;
-    }
-
-    if (!mounted) return;
-
-    final result = await showModalBottomSheet<AttachResidenceResult>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => AttachResidenceSheet(
-        residences: residences,
-        propertyTitle: property.title,
-        currentResidenceId: property.residenceId,
-        currentUnitLabel: property.unitLabel,
-      ),
-    );
-
-    if (result == null || !mounted) return;
-
-    try {
-      await repository.attachToResidence(
-        property.id,
-        residenceId: result.residenceId,
-        unitLabel: result.unitLabel,
-        copyAddress: result.copyAddress,
-      );
-      if (mounted) context.read<PropertyCubit>().load();
-    } on AppFailure catch (f) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(f.userMessage)));
-    }
-  }
-
-  void _confirmDelete(PropertyModel property) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Supprimer ce bien ?'),
-        content: Text('Voulez-vous supprimer "${property.title}" ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Supprimer',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-/// Aucune annonce déposée : l'action utile est mise en avant.
-class _EmptyView extends StatelessWidget {
-  const _EmptyView({required this.onAdd});
+/// Bascule grille / liste, deux boutons accolés dans un même cadre.
+class _ViewToggle extends StatelessWidget {
+  const _ViewToggle({required this.isGrid, required this.onChanged});
 
-  final VoidCallback onAdd;
+  final bool isGrid;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.home_work_outlined, size: 56, color: AppColors.grey400),
-            const SizedBox(height: 16),
-            const Text(
-              'Aucun bien enregistré',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.black,
+    final t = context.tokens;
+    Widget button(IconData icon, String label, bool active, bool value) =>
+        Tooltip(
+          message: label,
+          child: Material(
+            color: active ? t.primary : t.surface,
+            child: InkWell(
+              onTap: () => onChanged(value),
+              child: SizedBox.square(
+                dimension: 32,
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: active ? t.primaryForeground : t.muted,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Déposez votre première annonce pour la voir apparaître ici.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.grey500),
-            ),
-            const SizedBox(height: 20),
-            AppButton(
-              onPressed: onAdd,
-              label: 'Ajouter un bien',
-              backgroundColor: AppColors.black,
-              leadingIcon: AppButtonIcon.material(Icons.add, size: 16),
-            ),
-          ],
-        ),
+          ),
+        );
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        border: Border.all(color: t.border),
+        borderRadius: AppRadius.md,
       ),
-    );
-  }
-}
-
-/// Échec de chargement : le message du serveur, et une seconde tentative.
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.grey400),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AppColors.black),
-            ),
-            const SizedBox(height: 20),
-            AppButton(
-              onPressed: onRetry,
-              label: 'Réessayer',
-              backgroundColor: AppColors.black,
-              leadingIcon: AppButtonIcon.material(Icons.refresh, size: 16),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ToggleButton extends StatelessWidget {
-  const _ToggleButton({
-    required this.icon,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.black : AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: isActive ? AppColors.white : AppColors.grey400,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button(
+            LucideIcons.layoutGrid,
+            'property_tab.grid'.tr(),
+            isGrid,
+            true,
+          ),
+          button(LucideIcons.list, 'property_tab.list'.tr(), !isGrid, false),
+        ],
       ),
     );
   }

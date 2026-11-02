@@ -1,33 +1,39 @@
-enum ReportType { financial, performance, maintenance, reservations, fiscal }
+import 'package:easy_localization/easy_localization.dart';
+
+// `maintenance` et `fiscal` ont existé dans la maquette mais n'ont rien
+// derrière côté API : aucune donnée d'intervention ni de prestataire pour la
+// maintenance, aucun marqueur de déductibilité pour le fiscal. Retirés plutôt
+// que branchés sur des champs qui n'existent pas.
+//
+// `police` est le registre des personnes hébergées remis à la Brigade
+// mondaine : un formulaire administratif, en paysage, que le propriétaire
+// imprime tel quel.
+enum ReportType { financial, performance, reservations, police }
 
 extension ReportTypeExt on ReportType {
   String get label {
     switch (this) {
       case ReportType.financial:
-        return 'Bilan Financier';
+        return 'report.financial'.tr();
       case ReportType.performance:
-        return 'Performance & Occupation';
-      case ReportType.maintenance:
-        return 'État des Lieux & Maintenance';
+        return 'report.performance'.tr();
       case ReportType.reservations:
-        return 'Relevé des Réservations';
-      case ReportType.fiscal:
-        return 'Rapport Fiscal';
+        return 'report.reservations'.tr();
+      case ReportType.police:
+        return 'report.police'.tr();
     }
   }
 
   String get description {
     switch (this) {
       case ReportType.financial:
-        return 'Revenus vs dépenses, bénéfice net';
+        return 'report.financial_hint'.tr();
       case ReportType.performance:
-        return 'Taux d\'occupation, RevPAR, nuitées';
-      case ReportType.maintenance:
-        return 'Interventions, coûts, prestataires';
+        return 'report.performance_hint'.tr();
       case ReportType.reservations:
-        return 'Historique locataires, paiements';
-      case ReportType.fiscal:
-        return 'CA brut, charges déductibles';
+        return 'report.reservations_hint'.tr();
+      case ReportType.police:
+        return 'report.police_hint'.tr();
     }
   }
 
@@ -37,12 +43,26 @@ extension ReportTypeExt on ReportType {
         return 'trending_up';
       case ReportType.performance:
         return 'bar_chart';
-      case ReportType.maintenance:
-        return 'build';
       case ReportType.reservations:
         return 'people';
-      case ReportType.fiscal:
-        return 'receipt_long';
+      case ReportType.police:
+        return 'shield';
+    }
+  }
+}
+
+/// Valeur attendue par l'API pour le champ `type` du corps de la requête.
+extension ReportTypeApiExt on ReportType {
+  String get apiValue {
+    switch (this) {
+      case ReportType.financial:
+        return 'financial';
+      case ReportType.performance:
+        return 'performance';
+      case ReportType.reservations:
+        return 'reservations';
+      case ReportType.police:
+        return 'police';
     }
   }
 }

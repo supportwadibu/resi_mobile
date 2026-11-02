@@ -1,29 +1,32 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 
+/// Barre de validation de la prolongation.
 class PaymentLinkButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  /// `null` désactive le bouton — pendant l'envoi, notamment.
+  final VoidCallback? onPressed;
 
-  const PaymentLinkButton({super.key, required this.onPressed});
+  /// Remplace le libellé par un indicateur de progression.
+  ///
+  /// Sans lui, rien ne distinguerait un envoi en cours d'un appui sans effet,
+  /// et le propriétaire réappuierait en croyant que rien ne s'est passé.
+  final bool isLoading;
+
+  const PaymentLinkButton({
+    super.key,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 58,
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: const Text(
-          "Envoyer le lien de paiement au client",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
-        ),
-      ),
+    return AppBottomActionBar(
+      primaryLabel: 'stay_extension.title'.tr(),
+      primaryIcon: LucideIcons.calendarPlus,
+      isLoading: isLoading,
+      onPrimary: onPressed,
     );
   }
 }
