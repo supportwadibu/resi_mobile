@@ -43,8 +43,8 @@ class ExpenseItem extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          // L'icône porte la couleur de la catégorie, la même que dans
-          // l'anneau de répartition.
+          // L'icône porte la famille de teinte de la catégorie, celle de
+          // l'anneau de répartition, en version pleine pour rester lisible.
           Container(
             width: 36,
             height: 36,
@@ -54,7 +54,11 @@ class ExpenseItem extends StatelessWidget {
               borderRadius: AppRadius.sm,
               border: Border.all(color: t.border),
             ),
-            child: Icon(category.icon, size: 16, color: category.colorIn(t)),
+            child: Icon(
+              category.icon,
+              size: 16,
+              color: category.iconColorIn(t),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

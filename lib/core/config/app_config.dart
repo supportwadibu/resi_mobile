@@ -75,7 +75,7 @@ class AppConfig {
 
   static const String _devApiUrl = String.fromEnvironment(
     'DEV_API_URL',
-    defaultValue: 'https://api-resi-africa.onrender.com',
+    defaultValue: 'https://api.resi.africa',
   );
 
   static const dev = AppConfig(
@@ -90,13 +90,13 @@ class AppConfig {
   /// clients réels dans une console lisible par quiconque tient l'appareil.
   static const staging = AppConfig(
     flavor: AppFlavor.staging,
-    baseUrl: 'https://api-resi-africa.onrender.com',
+    baseUrl: 'https://api.resi.africa',
     appName: 'App (Staging)',
   );
 
   static const prod = AppConfig(
     flavor: AppFlavor.prod,
-    baseUrl: 'https://api-resi-africa.onrender.com',
+    baseUrl: 'https://api.resi.africa',
     appName: 'App',
   );
 }

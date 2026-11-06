@@ -60,6 +60,21 @@ enum ExpenseCategory {
     ExpenseCategory.other => t.border,
   };
 
+  /// Couleur de l'icône du poste, toujours lisible sur une carte.
+  ///
+  /// [colorIn] ne convient pas : ses variantes douces et le filet sont des
+  /// teintes de **fond**, et posées en trait sur `surface` elles disparaissent
+  /// — l'icône du loyer, de la commission ou de l'abonnement ne se voyait
+  /// plus. Chaque poste garde ici la famille de sa teinte d'anneau, dans sa
+  /// version pleine : le loyer reste violet d'un écran à l'autre.
+  Color iconColorIn(ResiTokens t) => switch (this) {
+    ExpenseCategory.rent => t.accentViolet,
+    ExpenseCategory.commission => t.accentAmber,
+    ExpenseCategory.subscription => t.accentBlue,
+    ExpenseCategory.other => t.muted,
+    _ => colorIn(t),
+  };
+
   static ExpenseCategory? fromCode(String? code) {
     for (final value in ExpenseCategory.values) {
       if (value.code == code) return value;

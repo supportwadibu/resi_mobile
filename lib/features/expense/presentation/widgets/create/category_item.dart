@@ -42,7 +42,7 @@ class CategoryItem extends StatelessWidget {
               // La teinte du poste reste visible une fois sélectionné : c'est
               // elle qui identifie la catégorie d'un écran à l'autre, y
               // compris dans l'anneau des statistiques.
-              Icon(category.icon, size: 18, color: category.colorIn(t)),
+              Icon(category.icon, size: 18, color: category.iconColorIn(t)),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
