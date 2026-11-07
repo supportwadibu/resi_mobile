@@ -11,6 +11,8 @@ import 'package:resi_africa/shared/widgets/app_logo.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../subscription/data/models/plan_access.dart';
+import '../../../subscription/presentation/widgets/plan_style.dart';
 import '../../data/models/subscription_status_model.dart';
 import '../../data/services/auth_service.dart';
 
@@ -76,7 +78,11 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                         style: context.text.headlineSmall,
                       ),
                       const SizedBox(height: 8),
-                      _RichSubtitle(days: days, loading: loading),
+                      _RichSubtitle(
+                        days: days,
+                        loading: loading,
+                        planLabel: _trialPlanLabel(status),
+                      ),
                       const SizedBox(height: 24),
                       if (!loading)
                         AppCallout(
@@ -127,6 +133,14 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
     return status.daysRemaining > 0 ? status.daysRemaining : 0;
   }
 
+  /// Nom du forfait essayé ; `null` pour un essai ouvert avant le choix du
+  /// forfait, qui garde le texte générique.
+  String? _trialPlanLabel(SubscriptionStatusModel? status) {
+    final tier = status?.trialTier;
+    if (tier == null) return null;
+    return PlanStyle.of(PlanAccess.fromApi(tier))?.label;
+  }
+
   String _terms(int days) {
     if (days == 0) {
       return 'trial.terms_free'.tr();
@@ -137,10 +151,15 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
 
 /// Sous-titre avec amorce en gras, comme sur la maquette.
 class _RichSubtitle extends StatelessWidget {
-  const _RichSubtitle({required this.days, required this.loading});
+  const _RichSubtitle({
+    required this.days,
+    required this.loading,
+    this.planLabel,
+  });
 
   final int days;
   final bool loading;
+  final String? planLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -166,9 +185,13 @@ class _RichSubtitle extends StatelessWidget {
             ),
           ),
           TextSpan(
-            text: days > 0
-                ? 'trial.ready_trial'.tr()
-                : 'trial.ready_plain'.tr(),
+            text: switch ((days > 0, planLabel)) {
+              (true, final String label) => 'trial.ready_trial_plan'.tr(
+                args: [label],
+              ),
+              (true, null) => 'trial.ready_trial'.tr(),
+              (false, _) => 'trial.ready_plain'.tr(),
+            },
           ),
         ],
       ),

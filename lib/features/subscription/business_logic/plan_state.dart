@@ -24,7 +24,21 @@ final class PlanKnown extends PlanState {
     this.daysRemaining,
     this.isTrial = false,
     this.endDate,
+    this.trialChoiceRequired = false,
+    this.trialTier,
+    this.endedTrialTier,
   });
+
+  /// Le propriétaire doit choisir le forfait de son essai : l'application le
+  /// retient sur l'écran de choix.
+  final bool trialChoiceRequired;
+
+  /// Forfait de l'essai en cours, `null` hors essai.
+  final PlanAccess? trialTier;
+
+  /// Forfait de l'essai terminé, sans abonnement depuis : l'écran de fin
+  /// d'essai propose de le continuer ou d'en changer.
+  final PlanAccess? endedTrialTier;
 
   final PlanAccess _access;
 

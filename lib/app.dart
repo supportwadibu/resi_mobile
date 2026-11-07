@@ -9,6 +9,8 @@ import 'core/router/app_router.gr.dart';
 import 'core/session/session_role.dart';
 import 'features/subscription/business_logic/plan_cubit.dart';
 import 'features/subscription/business_logic/plan_state.dart';
+import 'features/subscription/business_logic/trial_gate.dart';
+import 'core/storage/local_storage.dart';
 import 'features/reservation/presentation/widgets/sync_result_listener.dart';
 import 'features/subscription/data/models/plan_access.dart';
 import 'package:auto_route/auto_route.dart';
@@ -78,6 +80,38 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     _router.replaceAll([SubscriptionPlansRoute(blocking: true)]);
   }
 
+  /// Écran imposé par l'essai : son choix tant qu'aucun forfait n'est
+  /// choisi, sa fin une fois terminé.
+  TrialGate _trialGate(PlanState state) => trialGate(
+    state,
+    role: sl<SessionRole>().value,
+    endedSeen: sl<LocalStorage>().trialEndedSeen,
+  );
+
+  /// Le dépôt des pièces, juste après l'inscription, mène lui-même au choix :
+  /// l'interrompre ferait sauter cette étape.
+  static const _trialGateExempt = {
+    TrialPlanChoiceRoute.name,
+    TrialEndedRoute.name,
+    PropertyManagerProfileRoute.name,
+    LoginRoute.name,
+    AuthRoute.name,
+    RegisterRoute.name,
+  };
+
+  void _onTrialGate(BuildContext context, PlanState state) {
+    if (_trialGateExempt.contains(_router.current.name)) return;
+    switch (_trialGate(state)) {
+      case TrialGate.choose:
+        _router.replaceAll([const TrialPlanChoiceRoute()]);
+      case TrialGate.ended:
+        final tier = (state as PlanKnown).endedTrialTier!;
+        _router.push(TrialEndedRoute(tier: tier));
+      case TrialGate.none:
+        return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // L'apparence est écoutée ici, au-dessus du routeur : un choix fait dans
@@ -109,10 +143,21 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       routerConfig: _router.config(
         navigatorObservers: () => [AutoRouteObserver()],
       ),
-      builder: (context, child) => BlocListener<PlanCubit, PlanState>(
-        bloc: sl<PlanCubit>(),
-        listenWhen: (_, current) => _isLockedOut(current.access),
-        listener: _onPlanChanged,
+      builder: (context, child) => MultiBlocListener(
+        listeners: [
+          BlocListener<PlanCubit, PlanState>(
+            bloc: sl<PlanCubit>(),
+            listenWhen: (_, current) => _isLockedOut(current.access),
+            listener: _onPlanChanged,
+          ),
+          BlocListener<PlanCubit, PlanState>(
+            bloc: sl<PlanCubit>(),
+            listenWhen: (_, current) =>
+                !_isLockedOut(current.access) &&
+                _trialGate(current) != TrialGate.none,
+            listener: _onTrialGate,
+          ),
+        ],
         child: SyncResultListener(
           child: _LocaleRebuilder(child: child ?? const SizedBox.shrink()),
         ),

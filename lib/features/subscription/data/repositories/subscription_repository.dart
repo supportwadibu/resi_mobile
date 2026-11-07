@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/plan_access.dart';
 import '../models/subscription_plan_model.dart';
 
 /// Forfaits et paiement Wave de l'abonnement.
@@ -22,6 +23,21 @@ class SubscriptionRepository {
           .whereType<Map<String, dynamic>>()
           .map(SubscriptionPlanModel.fromJson)
           .toList(growable: false);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Ouvre l'essai gratuit sur [tier] (RESI Pro ou RESI Pro+). Le serveur
+  /// refuse un second essai (409) : le message renvoyé est affichable.
+  Future<void> startTrial(PlanAccess tier) async {
+    try {
+      await _dio.post(
+        ApiEndpoints.proprioSubscriptionTrial,
+        data: {'tier': tier.code},
+      );
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);
     } catch (e) {

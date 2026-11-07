@@ -54,12 +54,18 @@ class PlanCubit extends Cubit<PlanState> {
           daysRemaining: status.daysRemaining,
           isTrial: status.isTrial,
           endDate: status.endDate,
+          trialChoiceRequired: status.trialChoiceRequired,
+          trialTier: _tierOf(status.trialTier),
+          endedTrialTier: _tierOf(status.endedTrialTier),
         ),
       );
     } on AppFailure {
       // Hors réseau, l'état connu reste valable : l'API tranchera au retour.
     }
   }
+
+  static PlanAccess? _tierOf(String? code) =>
+      code == null ? null : PlanAccess.fromApi(code);
 
   Future<void> clear() async {
     await _storage.clearPlanAccess();
