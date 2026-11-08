@@ -15,7 +15,22 @@ class SubscriptionStatusModel {
     this.status,
     this.endDate,
     this.planAccess,
+    this.trialChoiceRequired = false,
+    this.trialTier,
+    this.endedTrialTier,
   });
+
+  /// Rien essayé ni souscrit : le propriétaire doit choisir le forfait de son
+  /// essai avant d'utiliser l'application. Absent d'un serveur antérieur, qui
+  /// ouvrait l'essai lui-même : faux.
+  final bool trialChoiceRequired;
+
+  /// Forfait essayé pendant l'essai en cours (`pro`, `pro_plus`), `null` hors
+  /// essai.
+  final String? trialTier;
+
+  /// Forfait de l'essai terminé, tant qu'aucun abonnement n'a pris le relais.
+  final String? endedTrialTier;
 
   /// L'abonnement en cours est un essai gratuit.
   final bool isTrial;
@@ -60,8 +75,13 @@ class SubscriptionStatusModel {
     final subscription = json['subscription'] as Map<String, dynamic>?;
     final endDate = subscription?['end_date'] as String?;
 
+    final isTrial = json['is_trial'] as bool? ?? false;
+
     return SubscriptionStatusModel(
-      isTrial: json['is_trial'] as bool? ?? false,
+      isTrial: isTrial,
+      trialChoiceRequired: json['trial_choice_required'] as bool? ?? false,
+      trialTier: isTrial ? (subscription?['plan_tier'] as String?) : null,
+      endedTrialTier: json['ended_trial_tier'] as String?,
       daysRemaining: json['days_remaining'] as int? ?? 0,
       canOperate: json['can_operate'] as bool? ?? false,
       awaitingValidation: json['awaiting_validation'] as bool? ?? false,

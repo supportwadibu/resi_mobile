@@ -322,7 +322,7 @@ class _PropertyManagerProfileViewState
 
   void _continue() {
     if (widget.isOnboarding) {
-      context.router.replaceAll([const TrialWelcomeRoute()]);
+      context.router.replaceAll([const TrialPlanChoiceRoute()]);
     } else {
       context.router.maybePop();
     }

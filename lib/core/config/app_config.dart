@@ -34,13 +34,13 @@ class AppConfig {
       'https://tawk.to/chat/$tawkPropertyId/$tawkWidgetId';
 
   static const String supportPhone = String.fromEnvironment(
-    '2250757780335',
+    'SUPPORT_PHONE',
     defaultValue: '2250757780335',
   );
 
   static const String supportWhatsApp = String.fromEnvironment(
-    '2250566511641',
-    defaultValue: "2250566511641",
+    'SUPPORT_WHATSAPP',
+    defaultValue: '2250566511641',
   );
 
   static const String supportEmail = String.fromEnvironment(
@@ -94,9 +94,11 @@ class AppConfig {
     appName: 'App (Staging)',
   );
 
+  /// `appName` est le titre de `MaterialApp`, qu'Android affiche dans
+  /// l'écran des applications récentes : il reprend le libellé du lanceur.
   static const prod = AppConfig(
     flavor: AppFlavor.prod,
     baseUrl: 'https://api.resi.africa',
-    appName: 'App',
+    appName: 'Resi Pro',
   );
 }

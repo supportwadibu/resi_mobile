@@ -20,6 +20,10 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: LoginRoute.page),
     AutoRoute(page: RegisterRoute.page),
     AutoRoute(page: TrialWelcomeRoute.page),
+    // Choix du forfait de l'essai, puis sa fin : imposés par `app.dart` au
+    // propriétaire, jamais au gérant.
+    AutoRoute(page: TrialPlanChoiceRoute.page, guards: [_ownerOnly]),
+    AutoRoute(page: TrialEndedRoute.page, guards: [_ownerOnly]),
     // Ouverte à un compte inactif : c'est par elle qu'il redevient actif.
     AutoRoute(page: SubscriptionPlansRoute.page),
     AutoRoute(page: HomeRoute.page),

@@ -12,6 +12,7 @@ class LocalStorage {
   static const String _sessionRoleKey = 'session_role';
   static const String _planAccessKey = 'plan_access';
   static const String _accountNameKey = 'account_name';
+  static const String _trialEndedSeenKey = 'trial_ended_seen';
 
   Future<void> saveRole(String role) async {
     await _prefs.setString(_sessionRoleKey, role);
@@ -36,6 +37,15 @@ class LocalStorage {
   Future<void> clearPlanAccess() async {
     await _prefs.remove(_planAccessKey);
   }
+
+  /// L'écran de fin d'essai a été montré : il ne s'affiche qu'une fois. Effacé
+  /// avec la session, si bien qu'un propriétaire qui se reconnecte le revoit
+  /// — un rappel de plus, sans conséquence.
+  Future<void> markTrialEndedSeen() async {
+    await _prefs.setBool(_trialEndedSeenKey, true);
+  }
+
+  bool get trialEndedSeen => _prefs.getBool(_trialEndedSeenKey) ?? false;
 
   /// Nom du compte connecté : l'accueil salue sans requête, donc hors ligne.
   /// Distinct du brouillon `property_manager`, qui n'existe que le temps

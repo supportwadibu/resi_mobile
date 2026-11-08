@@ -29,6 +29,7 @@ import '../../business_logic/subscription_plans_cubit.dart';
 import '../../business_logic/subscription_plans_state.dart';
 import '../../data/models/plan_access.dart';
 import '../../data/models/subscription_plan_model.dart';
+import '../widgets/plan_feature_line.dart';
 import '../widgets/plan_status_card.dart';
 import '../widgets/plan_style.dart';
 
@@ -37,11 +38,15 @@ import '../widgets/plan_style.dart';
 /// [blocking] : le compte est inactif, l'écran remplace l'application. Pas de
 /// retour possible — l'API refuserait tout le reste —, seulement la
 /// souscription ou la déconnexion.
+///
+/// [focus] : palier mis en avant, à la place de Pro+ — celui que le
+/// propriétaire vient de choisir sur l'écran de fin d'essai.
 @RoutePage()
 class SubscriptionPlansScreen extends StatelessWidget {
-  const SubscriptionPlansScreen({this.blocking = false, super.key});
+  const SubscriptionPlansScreen({this.blocking = false, this.focus, super.key});
 
   final bool blocking;
+  final PlanAccess? focus;
 
   @override
   Widget build(BuildContext context) {
@@ -53,15 +58,16 @@ class SubscriptionPlansScreen extends StatelessWidget {
 
     return BlocProvider(
       create: (_) => sl<SubscriptionPlansCubit>()..load(),
-      child: _PlansView(blocking: blocking),
+      child: _PlansView(blocking: blocking, focus: focus),
     );
   }
 }
 
 class _PlansView extends StatefulWidget {
-  const _PlansView({required this.blocking});
+  const _PlansView({required this.blocking, this.focus});
 
   final bool blocking;
+  final PlanAccess? focus;
 
   @override
   State<_PlansView> createState() => _PlansViewState();
@@ -255,6 +261,7 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
             ),
             SubscriptionPlansLoaded() => _LoadedView(
               state: state,
+              focus: widget.focus ?? PlanAccess.proPlus,
               onPay: _pay,
               onVerify: () =>
                   context.read<SubscriptionPlansCubit>().confirmPending(),
@@ -271,6 +278,7 @@ class _PlansViewState extends State<_PlansView> with WidgetsBindingObserver {
 class _LoadedView extends StatelessWidget {
   const _LoadedView({
     required this.state,
+    required this.focus,
     required this.onPay,
     required this.onVerify,
     required this.onCancel,
@@ -278,6 +286,9 @@ class _LoadedView extends StatelessWidget {
   });
 
   final SubscriptionPlansLoaded state;
+
+  /// Palier mis en avant comme recommandé.
+  final PlanAccess focus;
   final ValueChanged<SubscriptionPlanModel> onPay;
   final VoidCallback onVerify;
   final VoidCallback onCancel;
@@ -346,6 +357,7 @@ class _LoadedView extends StatelessWidget {
               for (final offer in state.plans) ...[
                 _PlanCard(
                   plan: offer,
+                  isRecommended: offer.access == focus,
                   isCurrent: current == PlanStyle.of(offer.access),
                   isPaying: state.payingPlanId == offer.id,
                   options: state.options,
@@ -370,6 +382,7 @@ class _LoadedView extends StatelessWidget {
 class _PlanCard extends StatelessWidget {
   const _PlanCard({
     required this.plan,
+    required this.isRecommended,
     required this.isCurrent,
     required this.isPaying,
     required this.options,
@@ -380,6 +393,7 @@ class _PlanCard extends StatelessWidget {
   });
 
   final SubscriptionPlanModel plan;
+  final bool isRecommended;
   final bool isCurrent;
   final bool isPaying;
   final SubscriptionOptionsModel options;
@@ -391,7 +405,6 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = PlanStyle.of(plan.access) ?? PlanStyle.pro;
-    final isRecommended = plan.access == PlanAccess.proPlus;
     // Forfait en cours ou recommandé : filet `primary`, comme toute option
     // mise en avant.
     final highlight = isCurrent || isRecommended;
@@ -462,7 +475,7 @@ class _PlanCard extends StatelessWidget {
             const Divider(height: 1),
             const SizedBox(height: 14),
             for (final line in plan.features)
-              _FeatureLine(text: line, color: style.colorOf(context)),
+              PlanFeatureLine(text: line, color: style.colorOf(context)),
           ],
           const SizedBox(height: 16),
           ..._actions(highlight),
@@ -610,11 +623,11 @@ class _TrialCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _FeatureLine(
+          PlanFeatureLine(
             text: 'plans.trial_body'.tr(),
             color: style.colorOf(context),
           ),
-          _FeatureLine(
+          PlanFeatureLine(
             text: 'plans.trial_then'.tr(),
             color: style.colorOf(context),
           ),
@@ -665,32 +678,7 @@ class _FreeCard extends StatelessWidget {
             'plans.free_occupancy',
             'plans.free_wallet',
           ])
-            _FeatureLine(text: key.tr(), color: style.colorOf(context)),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeatureLine extends StatelessWidget {
-  const _FeatureLine({required this.text, required this.color});
-
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(LucideIcons.circleCheck, size: 14, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: context.text.bodyMedium)),
+            PlanFeatureLine(text: key.tr(), color: style.colorOf(context)),
         ],
       ),
     );

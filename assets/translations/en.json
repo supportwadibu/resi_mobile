@@ -306,7 +306,7 @@
   },
   "plans": {
     "trial_name": "Free trial",
-    "trial_tagline": "All of RESI, free to get started",
+    "trial_tagline": "The plan of your choice, free to get started",
     "my_plan": "My plan",
     "days_left": {
       "one": "1 day left",
@@ -318,8 +318,8 @@
     "recommended": "Recommended",
     "in_progress": "Active",
     "per_days": "/ {} days",
-    "trial_body": "Full access to every feature, no commitment, no payment.",
-    "trial_then": "When the trial ends, you move to RESI Basic, free. Choose Pro or Pro+ to keep every feature.",
+    "trial_body": "Every feature of the chosen plan, no commitment, no payment.",
+    "trial_then": "When the trial ends, you move to RESI Basic, free. Choose Pro or Pro+ to keep your features.",
     "see_plans": "See plans",
     "renew": "Renew",
     "change_plan": "Change plan",
@@ -628,7 +628,22 @@
     },
     "ready": "Your account is ready. ",
     "ready_trial": "Manage your properties and tenants without limits for the whole trial.",
-    "ready_plain": "Manage your properties and tenants from one place."
+    "ready_plain": "Manage your properties and tenants from one place.",
+    "ready_trial_plan": "Enjoy every feature of {} for the whole trial.",
+    "choose_title": "Choose your trial",
+    "choose_body": "30 days free, no commitment, no payment. You will then decide whether to continue.",
+    "try_plan": "Try {} for free",
+    "then_price": "Then {} / {} days",
+    "ended_title": "Your {} trial has ended",
+    "ended_body_pro": "Keep RESI Pro, or discover RESI Pro+ to work even better:",
+    "ended_body_pro_plus": "Keep all of RESI with Pro+, or switch to RESI Pro for the essentials.",
+    "extra_managers": "Your managers, their workspace and their follow-up",
+    "extra_invoices": "Invoices for your clients",
+    "extra_reports": "PDF reports, including the police register",
+    "continue_with": "Continue with {}",
+    "discover_pro_plus": "Discover RESI Pro+",
+    "switch_to": "Switch to {}",
+    "stay_free": "Continue with RESI Basic, free"
   },
   "home_actions": {
     "add_property": "Add a property",

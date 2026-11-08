@@ -48,6 +48,14 @@ class MemoryLocalStorage implements LocalStorage {
   @override
   Future<void> clearPropertyManager() async {}
 
+  bool endedSeen = false;
+
+  @override
+  Future<void> markTrialEndedSeen() async => endedSeen = true;
+
+  @override
+  bool get trialEndedSeen => endedSeen;
+
   @override
   Future<void> clear() async => role = null;
 }

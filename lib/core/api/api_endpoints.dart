@@ -63,6 +63,11 @@ abstract final class ApiEndpoints {
   /// Forfaits proposés à la souscription, du moins cher au plus cher.
   static const String proprioPlans = '$_v1/proprio/plans';
 
+  /// Ouvre l'essai gratuit sur le forfait choisi (`{ tier }`), une fois par
+  /// compte.
+  static const String proprioSubscriptionTrial =
+      '$_v1/proprio/subscription/trial';
+
   /// Lance le paiement Wave d'un forfait ; renvoie le lien de paiement.
   static const String proprioSubscriptionCheckout =
       '$_v1/proprio/subscription/checkout';

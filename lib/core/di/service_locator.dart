@@ -67,6 +67,7 @@ import 'package:resi_africa/features/wallet/business_logic/wallet_cubit.dart';
 import 'package:resi_africa/features/wallet/business_logic/wallet_transactions_cubit.dart';
 import 'package:resi_africa/features/wallet/data/repositories/wallet_repository.dart';
 import 'package:resi_africa/features/subscription/business_logic/subscription_plans_cubit.dart';
+import 'package:resi_africa/features/subscription/business_logic/trial_choice_cubit.dart';
 import 'package:resi_africa/features/subscription/data/repositories/subscription_repository.dart';
 
 import '../api/api_client.dart';
@@ -480,5 +481,8 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerFactory(
     () => SubscriptionPlansCubit(sl<SubscriptionRepository>(), sl<PlanCubit>()),
+  );
+  sl.registerFactory(
+    () => TrialChoiceCubit(sl<SubscriptionRepository>(), sl<PlanCubit>()),
   );
 }

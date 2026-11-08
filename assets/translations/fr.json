@@ -306,7 +306,7 @@
   },
   "plans": {
     "trial_name": "Essai gratuit",
-    "trial_tagline": "Tout RESI, offert pour démarrer",
+    "trial_tagline": "Le forfait de votre choix, offert pour démarrer",
     "my_plan": "Mon forfait",
     "days_left": {
       "one": "1 jour restant",
@@ -318,8 +318,8 @@
     "recommended": "Recommandé",
     "in_progress": "En cours",
     "per_days": "/ {} jours",
-    "trial_body": "Accès complet à toutes les fonctions, sans engagement ni paiement.",
-    "trial_then": "À la fin de l’essai, vous passez sur RESI Basic, gratuit. Choisissez Pro ou Pro+ pour garder toutes les fonctions.",
+    "trial_body": "Toutes les fonctions du forfait choisi, sans engagement ni paiement.",
+    "trial_then": "À la fin de l’essai, vous passez sur RESI Basic, gratuit. Choisissez Pro ou Pro+ pour garder vos fonctions.",
     "see_plans": "Voir les forfaits",
     "renew": "Renouveler",
     "change_plan": "Changer de forfait",
@@ -628,7 +628,22 @@
     },
     "ready": "Votre compte est prêt. ",
     "ready_trial": "Gérez vos biens et vos locataires sans limite pendant toute la durée de l’essai.",
-    "ready_plain": "Gérez vos biens et vos locataires depuis un seul endroit."
+    "ready_plain": "Gérez vos biens et vos locataires depuis un seul endroit.",
+    "ready_trial_plan": "Profitez de toutes les fonctions de {} pendant toute la durée de l’essai.",
+    "choose_title": "Choisissez votre essai",
+    "choose_body": "30 jours offerts, sans engagement ni paiement. Vous choisirez ensuite de continuer ou non.",
+    "try_plan": "Essayer {} gratuitement",
+    "then_price": "Puis {} / {} jours",
+    "ended_title": "Votre essai {} est terminé",
+    "ended_body_pro": "Continuez avec RESI Pro, ou découvrez RESI Pro+ pour travailler encore mieux :",
+    "ended_body_pro_plus": "Gardez tout RESI avec Pro+, ou passez à RESI Pro pour l’essentiel de la gestion.",
+    "extra_managers": "Vos gérants, leur interface et leur suivi",
+    "extra_invoices": "Les factures de vos clients",
+    "extra_reports": "Les rapports PDF, dont le registre de police",
+    "continue_with": "Continuer avec {}",
+    "discover_pro_plus": "Découvrir RESI Pro+",
+    "switch_to": "Passer à {}",
+    "stay_free": "Continuer avec RESI Basic, gratuit"
   },
   "home_actions": {
     "add_property": "Ajouter un bien",

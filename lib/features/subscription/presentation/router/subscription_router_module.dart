@@ -12,5 +12,9 @@ class SubscriptionRouterModule extends RootStackRouter {
       RouteType.custom(transitionsBuilder: customTransitionBuilder);
 
   @override
-  List<AutoRoute> get routes => [AutoRoute(page: SubscriptionPlansRoute.page)];
+  List<AutoRoute> get routes => [
+    AutoRoute(page: SubscriptionPlansRoute.page),
+    AutoRoute(page: TrialPlanChoiceRoute.page),
+    AutoRoute(page: TrialEndedRoute.page),
+  ];
 }
