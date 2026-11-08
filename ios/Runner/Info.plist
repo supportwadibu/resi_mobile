@@ -50,7 +50,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.985472923092-gqbd2radrn4rm1k5bing7hkr370jsjr1</string>
+				<string>com.googleusercontent.apps.985472923092-pdd5hvd9e3csb1tn9vd97lbf0k00rh0a</string>
 			</array>
 		</dict>
 		<!-- Retour d'un paiement Wave : `resi://abonnement?statut=…`, ouvert
@@ -59,7 +59,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>africa.resi.app.payment</string>
+			<string>africa.resi.pro.payment</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>resi</string>

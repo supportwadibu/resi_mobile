@@ -33,7 +33,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "africa.resi.app"
+        // Nom imposé par la fiche Play Console, définitif. Il diffère du
+        // `namespace`, qui ne fixe que le package Kotlin de `MainActivity` :
+        // les aligner obligerait à déplacer les sources sans rien y gagner.
+        applicationId = "africa.resi.pro"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

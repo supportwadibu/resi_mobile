@@ -40,7 +40,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD7-rB0SVNZ1yjCkNdpZ4VEVZUJg7bKLy8',
-    appId: '1:985472923092:android:52390589ba919b3bce1241',
+    appId: '1:985472923092:android:d318e03d7bb6394ece1241',
     messagingSenderId: '985472923092',
     projectId: 'resi-5c32a',
     storageBucket: 'resi-5c32a.firebasestorage.app',
@@ -48,24 +48,24 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCc9ZqAclTn73t5eQsYi2Q6zhrD2bre20A',
-    appId: '1:985472923092:ios:0daf1a372c542a58ce1241',
+    appId: '1:985472923092:ios:0930852497c8685cce1241',
     messagingSenderId: '985472923092',
     projectId: 'resi-5c32a',
     storageBucket: 'resi-5c32a.firebasestorage.app',
     iosClientId:
-        '985472923092-gqbd2radrn4rm1k5bing7hkr370jsjr1.apps.googleusercontent.com',
-    iosBundleId: 'africa.resi.app',
+        '985472923092-pdd5hvd9e3csb1tn9vd97lbf0k00rh0a.apps.googleusercontent.com',
+    iosBundleId: 'africa.resi.pro',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCc9ZqAclTn73t5eQsYi2Q6zhrD2bre20A',
-    appId: '1:985472923092:ios:0daf1a372c542a58ce1241',
+    appId: '1:985472923092:ios:0930852497c8685cce1241',
     messagingSenderId: '985472923092',
     projectId: 'resi-5c32a',
     storageBucket: 'resi-5c32a.firebasestorage.app',
     iosClientId:
-        '985472923092-gqbd2radrn4rm1k5bing7hkr370jsjr1.apps.googleusercontent.com',
-    iosBundleId: 'africa.resi.app',
+        '985472923092-pdd5hvd9e3csb1tn9vd97lbf0k00rh0a.apps.googleusercontent.com',
+    iosBundleId: 'africa.resi.pro',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

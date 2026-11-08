@@ -38,6 +38,101 @@
             {
               "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "985472923092-pdd5hvd9e3csb1tn9vd97lbf0k00rh0a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "africa.resi.pro"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985472923092:android:bf894d18d58551f7ce1241",
+        "android_client_info": {
+          "package_name": "africa.resi.client"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7-rB0SVNZ1yjCkNdpZ4VEVZUJg7bKLy8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "985472923092-pdd5hvd9e3csb1tn9vd97lbf0k00rh0a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "africa.resi.pro"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985472923092:android:d318e03d7bb6394ece1241",
+        "android_client_info": {
+          "package_name": "africa.resi.pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "985472923092-3phacvmharjjlsfk0m9qljmgph71f9b9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "africa.resi.pro",
+            "certificate_hash": "f4166cb5ff6f67b690802ea18608ee38b488beb0"
+          }
+        },
+        {
+          "client_id": "985472923092-bcfdh0qbetl447n50mcl5hog3sudhtgn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "africa.resi.pro",
+            "certificate_hash": "70cc7409cf622a3a8cc5e5fa06c520fe2416fbf7"
+          }
+        },
+        {
+          "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7-rB0SVNZ1yjCkNdpZ4VEVZUJg7bKLy8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "985472923092-22afjagqr55i117gtq2cl6hp0n2mma75.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "985472923092-pdd5hvd9e3csb1tn9vd97lbf0k00rh0a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "africa.resi.pro"
+              }
             }
           ]
         }
