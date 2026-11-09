@@ -290,6 +290,8 @@ class _ProfileContent extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           const _LogoutButton(),
+          const SizedBox(height: 8),
+          const _DeleteAccountButton(),
         ],
       ),
     );
@@ -334,6 +336,23 @@ class _LogoutButton extends StatelessWidget {
       variant: AppButtonVariant.secondary,
       expand: true,
       onPressed: () => _confirmLogout(context),
+    );
+  }
+}
+
+/// Entrée de la suppression du compte, sous la déconnexion : discrète, mais
+/// à portée — les stores exigent qu'elle se trouve dans l'application.
+class _DeleteAccountButton extends StatelessWidget {
+  const _DeleteAccountButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      label: 'account_deletion.entry'.tr(),
+      icon: LucideIcons.userX,
+      variant: AppButtonVariant.ghost,
+      expand: true,
+      onPressed: () => context.router.push(const AccountDeletionRoute()),
     );
   }
 }
@@ -491,6 +510,8 @@ class _ManagerProfileContent extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           const _LogoutButton(),
+          const SizedBox(height: 8),
+          const _DeleteAccountButton(),
         ],
       ),
     );

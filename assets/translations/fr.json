@@ -1652,5 +1652,22 @@
   "checkout_time": {
     "title": "Heure de départ",
     "subtitle": "Fin de chaque nuit, le lendemain de l’arrivée, quelle que soit l’heure d’entrée."
+  },
+  "account_deletion": {
+    "title": "Supprimer mon compte",
+    "entry": "Supprimer mon compte",
+    "lead": "Votre compte est fermé immédiatement, puis effacé définitivement au bout de {} jours.",
+    "grace": "D’ici là, le support peut annuler la suppression si vous changez d’avis. Après ce délai, rien ne peut être récupéré.",
+    "blockers_title": "À régler avant de supprimer",
+    "warnings_title": "Ce que vous perdrez",
+    "offline_warning": "Les saisies faites hors ligne et pas encore envoyées seront perdues.",
+    "reason_label": "Pourquoi partez-vous ? (facultatif)",
+    "reason_hint": "Votre avis nous aide à améliorer Resi.",
+    "confirm_check": "Je comprends que mon compte et mes données seront supprimés définitivement.",
+    "submit": "Supprimer définitivement",
+    "confirm_title": "Supprimer votre compte ?",
+    "confirm_message": "Vous serez déconnecté de tous vos appareils. Cette action ne peut être annulée que par le support, dans les {} jours.",
+    "done": "Votre compte a été supprimé.",
+    "policy_link": "Comment nous traitons vos données"
   }
 }

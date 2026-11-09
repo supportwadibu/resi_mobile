@@ -14,6 +14,10 @@ abstract final class ApiEndpoints {
   static const String logout = '$_v1/auth/logout';
   static const String me = '$_v1/auth/me';
 
+  /// Compte de l'utilisateur connecté : suppression et son aperçu.
+  static const String account = '$_v1/auth/account';
+  static const String accountDeletion = '$_v1/auth/account/deletion';
+
   /// Appareils recevant les notifications push, tous rôles confondus.
   static const String deviceTokens = '$_v1/auth/device-tokens';
 

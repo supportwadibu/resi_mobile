@@ -1652,5 +1652,22 @@
   "checkout_time": {
     "title": "Check-out time",
     "subtitle": "End of each night, the day after arrival, whatever the check-in time."
+  },
+  "account_deletion": {
+    "title": "Delete my account",
+    "entry": "Delete my account",
+    "lead": "Your account is closed right away, then permanently erased after {} days.",
+    "grace": "Until then, support can cancel the deletion if you change your mind. After that, nothing can be recovered.",
+    "blockers_title": "To settle before deleting",
+    "warnings_title": "What you will lose",
+    "offline_warning": "Entries made offline and not sent yet will be lost.",
+    "reason_label": "Why are you leaving? (optional)",
+    "reason_hint": "Your feedback helps us improve Resi.",
+    "confirm_check": "I understand that my account and my data will be permanently deleted.",
+    "submit": "Delete permanently",
+    "confirm_title": "Delete your account?",
+    "confirm_message": "You will be signed out of all your devices. Only support can undo this, within {} days.",
+    "done": "Your account has been deleted.",
+    "policy_link": "How we handle your data"
   }
 }

@@ -9,11 +9,10 @@ Application : `africa.resi.app`, libellé « Resi Pro », point d'entrée
 Ces points ne sont pas de la configuration : ils demandent une décision ou du
 développement.
 
-1. **Suppression de compte.** Google exige, pour toute application où l'on
-   crée un compte, un moyen de demander la suppression **dans l'application**
-   et **une URL web** déclarée dans la fiche « Sécurité des données ». Aucun
-   des deux n'existe (l'API ne sait supprimer un compte que depuis le
-   back-office). Sans eux, la fiche est refusée.
+1. ~~**Suppression de compte.**~~ Levé : Profil → « Supprimer mon compte »
+   dans Resi Pro et dans l'app client (`DELETE /auth/account`), page web
+   `https://resi.africa/fr/suppression-compte` à déclarer dans « Sécurité des
+   données » (champ « URL de suppression du compte »).
 2. **Paiement de l'abonnement par Wave dans l'application.** Le forfait
    propriétaire débloque des fonctions de l'application : pour Google, c'est
    un bien numérique, qui doit passer par Google Play Billing (15 % sur les
@@ -93,7 +92,8 @@ Valeurs modifiables au build par `--dart-define` (voir
 ## 5. Fiche et formulaires
 
 - **Règles de confidentialité** : URL publique obligatoire (pièces
-  d'identité, position, téléphone, e-mail).
+  d'identité, position, téléphone, e-mail) —
+  `https://resi.africa/fr/confidentialite`.
 - **Sécurité des données** — déclarer au moins :
   - nom, e-mail, téléphone, pièce d'identité (numéro, nature, date de
     naissance, nationalité) — compte et réservations ;
@@ -102,8 +102,8 @@ Valeurs modifiables au build par `--dart-define` (voir
   - identifiants d'appareil — jeton de notification ;
   - données envoyées à des tiers : Cloudinary (photos), Wave (paiement),
     Google (Firebase, Places), DUGU (OTP WhatsApp) ;
-  - chiffrement en transit : oui ; suppression sur demande : oui (une fois
-    le bloquant 1 levé).
+  - chiffrement en transit : oui ; suppression sur demande : oui
+    (dans l'application et par la page web).
 - **Classification du contenu**, **public cible** (adultes), catégorie
   « Professionnel » ou « Maison ».
 - **Permission de position précise** : justifier par le préremplissage de

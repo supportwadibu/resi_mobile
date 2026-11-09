@@ -58,6 +58,8 @@ class AppRouter extends RootStackRouter {
     // Le parrainage est celui du compte : le gérant n'en a pas, l'API le
     // refuse à son rôle.
     AutoRoute(page: SponsorshipRoute.page, guards: [_ownerOnly]),
+    // Tous rôles : le gérant comme le propriétaire supprime son propre compte.
+    AutoRoute(page: AccountDeletionRoute.page),
     AutoRoute(page: ClientsRoute.page),
     AutoRoute(page: AddClientRoute.page),
     AutoRoute(page: SupportChatRoute.page),

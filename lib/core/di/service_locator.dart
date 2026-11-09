@@ -61,6 +61,8 @@ import 'package:resi_africa/features/stats/data/repositories/finance_repository.
 import 'package:resi_africa/features/stats/data/repositories/property_stats_repository.dart';
 import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
 import 'package:resi_africa/features/subscription/data/models/plan_access.dart';
+import 'package:resi_africa/features/auth/business_logic/account_deletion_cubit.dart';
+import 'package:resi_africa/features/auth/data/repositories/account_repository.dart';
 import 'package:resi_africa/features/sponsorship/business_logic/sponsorship_cubit.dart';
 import 'package:resi_africa/features/sponsorship/data/repositories/sponsorship_repository.dart';
 import 'package:resi_africa/features/wallet/business_logic/wallet_cubit.dart';
@@ -204,6 +206,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   );
   sl.registerLazySingleton<WalletRepository>(() => WalletRepository(sl<Dio>()));
   sl.registerLazySingleton(() => SponsorshipRepository(sl<Dio>()));
+  sl.registerLazySingleton(() => AccountRepository(sl<Dio>()));
   sl.registerLazySingleton(
     () => ResidenceRepository(sl<Dio>(), sl<SessionRole>()),
   );
@@ -396,6 +399,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => WithdrawalRequestCubit(sl<WalletRepository>()));
   sl.registerFactory(() => PayoutNumbersCubit(sl<WalletRepository>()));
   sl.registerFactory(() => SponsorshipCubit(sl<SponsorshipRepository>()));
+  sl.registerFactory(() => AccountDeletionCubit(sl<AccountRepository>()));
   sl.registerFactory(() => RedemptionRequestCubit(sl<SponsorshipRepository>()));
   sl.registerFactory(
     () => ApplySponsorshipCodeCubit(sl<SponsorshipRepository>()),
