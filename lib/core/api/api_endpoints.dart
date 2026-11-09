@@ -12,6 +12,11 @@ abstract final class ApiEndpoints {
   static const String googleLogin = '$_v1/auth/google';
   static const String refresh = '$_v1/auth/refresh';
   static const String logout = '$_v1/auth/logout';
+
+  /// Mot de passe oublié : code par WhatsApp (DUGU) ou e-mail, puis nouveau
+  /// mot de passe.
+  static const String passwordForgot = '$_v1/auth/password/forgot';
+  static const String passwordReset = '$_v1/auth/password/reset';
   static const String me = '$_v1/auth/me';
 
   /// Compte de l'utilisateur connecté : suppression et son aperçu.

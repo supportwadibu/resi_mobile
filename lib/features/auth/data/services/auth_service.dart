@@ -6,6 +6,7 @@ import '../../../../core/storage/app_database.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../models/auth_model.dart';
+import '../models/password_reset_model.dart';
 import '../models/register_init_model.dart';
 import '../models/subscription_status_model.dart';
 import '../repositories/auth_repository.dart';
@@ -82,6 +83,25 @@ class AuthService {
       channel: channel,
       target: target,
       code: code,
+    );
+    await _persist(auth);
+    return auth;
+  }
+
+  Future<PasswordResetRequest> requestPasswordReset(String identifier) =>
+      _repository.requestPasswordReset(identifier);
+
+  /// Nouveau mot de passe avec le code reçu : l'API ouvre la session, que
+  /// l'appareil enregistre comme après une connexion.
+  Future<AuthModel> resetPassword({
+    required String identifier,
+    required String code,
+    required String password,
+  }) async {
+    final auth = await _repository.resetPassword(
+      identifier: identifier,
+      code: code,
+      password: password,
     );
     await _persist(auth);
     return auth;

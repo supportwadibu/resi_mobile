@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:resi_africa/core/storage/secure_storage.dart';
 import 'package:resi_africa/features/auth/data/models/auth_model.dart';
+import 'package:resi_africa/features/auth/data/models/password_reset_model.dart';
 import 'package:resi_africa/features/auth/data/models/register_init_model.dart';
 import 'package:resi_africa/features/auth/data/models/subscription_status_model.dart';
 import 'package:resi_africa/features/auth/data/repositories/auth_repository.dart';
@@ -91,6 +92,17 @@ class _StubAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> fetchMe() => throw UnimplementedError();
+
+  @override
+  Future<PasswordResetRequest> requestPasswordReset(String identifier) =>
+      throw UnimplementedError();
+
+  @override
+  Future<AuthModel> resetPassword({
+    required String identifier,
+    required String code,
+    required String password,
+  }) => throw UnimplementedError();
 }
 
 /// Le SDK Google exige le binding natif : seul `signOut` est simulé.

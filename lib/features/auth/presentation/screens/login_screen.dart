@@ -106,7 +106,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? 'common.field_required'.tr()
                         : null,
                   ),
-                  const SizedBox(height: 24),
+                  // Le code part sur WhatsApp, vers le numéro déjà saisi.
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: loading
+                          ? null
+                          : () => context.router.push(
+                              ForgotPasswordRoute(
+                                identifier:
+                                    _identifierController.text.trim().isEmpty
+                                    ? null
+                                    : _identifierController.text.trim(),
+                              ),
+                            ),
+                      child: Text('auth.forgot_password'.tr()),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   AppButton(
                     label: 'auth.sign_in'.tr(),
                     isLoading: loading,

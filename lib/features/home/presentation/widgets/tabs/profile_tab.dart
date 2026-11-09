@@ -490,6 +490,21 @@ class _ManagerProfileContent extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
+          // Le mot de passe initial vient du propriétaire : le gérant le
+          // remplace ici par un mot de passe que lui seul connaît.
+          _LinkGroup(
+            title: 'profile.security'.tr(),
+            children: [
+              AppSheetAction(
+                icon: LucideIcons.keyRound,
+                label: 'auth.change_password_title'.tr(),
+                onTap: () => context.router.push(
+                  ChangePasswordRoute(phone: account.phone),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           const _AppearanceSection(),
           const SizedBox(height: 16),
           const _LanguageSection(),

@@ -3,6 +3,7 @@ import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/phone_helper.dart';
 import '../models/auth_model.dart';
+import '../models/password_reset_model.dart';
 import '../models/register_init_model.dart';
 import '../models/subscription_status_model.dart';
 
@@ -96,6 +97,53 @@ class AuthRepository {
       final res = await _dio.post(
         ApiEndpoints.registerVerify,
         data: {'channel': channel, 'target': target, 'code': code},
+      );
+      return AuthModel.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Demande un code de réinitialisation. [identifier] est mis en forme comme
+  /// à la connexion : le code doit partir vers le numéro que le compte porte.
+  ///
+  /// L'API répond de la même façon qu'un compte existe ou non ; le code n'est
+  /// donc pas une preuve que le numéro est inscrit.
+  Future<PasswordResetRequest> requestPasswordReset(String identifier) async {
+    final normalized = PhoneHelper.normalizeLoginIdentifier(
+      identifier,
+      _defaultCountryIso2,
+    );
+    try {
+      final res = await _dio.post(
+        ApiEndpoints.passwordForgot,
+        data: {'identifier': normalized},
+      );
+      return PasswordResetRequest.fromJson(
+        normalized,
+        res.data as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Remplace le mot de passe avec le code reçu ; l'API ouvre la session.
+  /// [identifier] est celui que [requestPasswordReset] a rendu, déjà normalisé.
+  Future<AuthModel> resetPassword({
+    required String identifier,
+    required String code,
+    required String password,
+  }) async {
+    try {
+      final res = await _dio.post(
+        ApiEndpoints.passwordReset,
+        data: {
+          'identifier': identifier,
+          'code': code,
+          'password': password,
+          'password_confirmation': password,
+        },
       );
       return AuthModel.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {

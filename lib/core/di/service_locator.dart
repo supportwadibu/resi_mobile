@@ -51,6 +51,7 @@ import 'package:resi_africa/features/reservation/business_logic/add_reservation_
 import 'package:resi_africa/features/reservation/business_logic/reservation_cubit.dart';
 import 'package:resi_africa/features/reservation/data/datasources/reservation_local_store.dart';
 import 'package:resi_africa/features/reservation/data/repositories/reservation_repository.dart';
+import 'package:resi_africa/features/gerant/business_logic/change_password_cubit.dart';
 import 'package:resi_africa/features/gerant/business_logic/gerant_list_cubit.dart';
 import 'package:resi_africa/features/gerant/business_logic/gerant_scope_cubit.dart';
 import 'package:resi_africa/features/gerant/data/repositories/gerant_admin_repository.dart';
@@ -62,6 +63,7 @@ import 'package:resi_africa/features/stats/data/repositories/property_stats_repo
 import 'package:resi_africa/features/subscription/business_logic/plan_cubit.dart';
 import 'package:resi_africa/features/subscription/data/models/plan_access.dart';
 import 'package:resi_africa/features/auth/business_logic/account_deletion_cubit.dart';
+import 'package:resi_africa/features/auth/business_logic/password_reset_cubit.dart';
 import 'package:resi_africa/features/auth/data/repositories/account_repository.dart';
 import 'package:resi_africa/features/sponsorship/business_logic/sponsorship_cubit.dart';
 import 'package:resi_africa/features/sponsorship/data/repositories/sponsorship_repository.dart';
@@ -400,6 +402,8 @@ Future<void> setupServiceLocator(AppConfig config) async {
   sl.registerFactory(() => PayoutNumbersCubit(sl<WalletRepository>()));
   sl.registerFactory(() => SponsorshipCubit(sl<SponsorshipRepository>()));
   sl.registerFactory(() => AccountDeletionCubit(sl<AccountRepository>()));
+  sl.registerFactory(() => PasswordResetCubit(sl<AuthService>()));
+  sl.registerFactory(() => ChangePasswordCubit(sl<GerantRepository>()));
   sl.registerFactory(() => RedemptionRequestCubit(sl<SponsorshipRepository>()));
   sl.registerFactory(
     () => ApplySponsorshipCodeCubit(sl<SponsorshipRepository>()),

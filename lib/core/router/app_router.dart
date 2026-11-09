@@ -60,6 +60,9 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: SponsorshipRoute.page, guards: [_ownerOnly]),
     // Tous rôles : le gérant comme le propriétaire supprime son propre compte.
     AutoRoute(page: AccountDeletionRoute.page),
+    // Mot de passe oublié : avant connexion, donc sans garde.
+    AutoRoute(page: ForgotPasswordRoute.page),
+    AutoRoute(page: ChangePasswordRoute.page),
     AutoRoute(page: ClientsRoute.page),
     AutoRoute(page: AddClientRoute.page),
     AutoRoute(page: SupportChatRoute.page),

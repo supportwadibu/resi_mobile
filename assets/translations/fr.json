@@ -572,7 +572,31 @@
     "tagline_sub": "Réservations, clients, dépenses et revenus.",
     "or": "ou",
     "sponsorship_code": "Code de parrainage (facultatif)",
-    "sponsorship_code_hint": "Ex. KOF7Q2M"
+    "sponsorship_code_hint": "Ex. KOF7Q2M",
+    "forgot_password": "Mot de passe oublié ?",
+    "forgot_title": "Mot de passe oublié",
+    "forgot_description": "Recevez un code sur WhatsApp, puis choisissez un nouveau mot de passe.",
+    "send_code": "Recevoir le code",
+    "code_sent_whatsapp": "Code envoyé sur WhatsApp au {}.",
+    "code_sent_email": "Code envoyé à {}.",
+    "code": "Code reçu",
+    "code_invalid": "Le code compte 6 chiffres.",
+    "code_expiry": "Le code est valable 10 minutes.",
+    "new_password": "Nouveau mot de passe",
+    "confirm_password": "Confirmer le mot de passe",
+    "passwords_mismatch": "Les deux mots de passe ne correspondent pas.",
+    "password_too_short": "8 caractères minimum.",
+    "password_too_long": "64 caractères maximum.",
+    "password_unchanged": "Choisissez un mot de passe différent de l’actuel.",
+    "reset_submit": "Changer le mot de passe",
+    "resend_code": "Renvoyer le code",
+    "change_number": "Modifier le numéro",
+    "password_reset_done": "Mot de passe changé. Vous êtes connecté.",
+    "change_password_title": "Modifier mon mot de passe",
+    "change_password_lead": "Remplacez le mot de passe donné par votre propriétaire par un mot de passe que vous seul connaissez.",
+    "current_password": "Mot de passe actuel",
+    "change_password_submit": "Enregistrer le mot de passe",
+    "password_changed": "Mot de passe modifié."
   },
   "owner_profile": {
     "step_personal": "Informations personnelles",
@@ -807,7 +831,8 @@
     "complete_to_regain": "Complétez votre dossier pour retrouver l’accès.",
     "under_review": "Votre dossier est en cours de vérification.",
     "upload_document": "Déposez votre pièce d’identité pour valider votre compte.",
-    "language": "Langue"
+    "language": "Langue",
+    "security": "Sécurité"
   },
   "property_types": {
     "apartment": "Appartement",

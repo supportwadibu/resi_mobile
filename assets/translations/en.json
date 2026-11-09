@@ -572,7 +572,31 @@
     "tagline_sub": "Bookings, clients, expenses and income.",
     "or": "or",
     "sponsorship_code": "Referral code (optional)",
-    "sponsorship_code_hint": "E.g. KOF7Q2M"
+    "sponsorship_code_hint": "E.g. KOF7Q2M",
+    "forgot_password": "Forgot your password?",
+    "forgot_title": "Forgot password",
+    "forgot_description": "Get a code on WhatsApp, then choose a new password.",
+    "send_code": "Get the code",
+    "code_sent_whatsapp": "Code sent on WhatsApp to {}.",
+    "code_sent_email": "Code sent to {}.",
+    "code": "Code received",
+    "code_invalid": "The code has 6 digits.",
+    "code_expiry": "The code is valid for 10 minutes.",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "passwords_mismatch": "The two passwords don’t match.",
+    "password_too_short": "At least 8 characters.",
+    "password_too_long": "At most 64 characters.",
+    "password_unchanged": "Choose a password different from your current one.",
+    "reset_submit": "Change password",
+    "resend_code": "Resend the code",
+    "change_number": "Change number",
+    "password_reset_done": "Password changed. You’re signed in.",
+    "change_password_title": "Change my password",
+    "change_password_lead": "Replace the password your owner gave you with one only you know.",
+    "current_password": "Current password",
+    "change_password_submit": "Save password",
+    "password_changed": "Password changed."
   },
   "owner_profile": {
     "step_personal": "Personal information",
@@ -807,7 +831,8 @@
     "complete_to_regain": "Complete your profile to regain access.",
     "under_review": "Your profile is under review.",
     "upload_document": "Upload your ID document to verify your account.",
-    "language": "Language"
+    "language": "Language",
+    "security": "Security"
   },
   "property_types": {
     "apartment": "Apartment",

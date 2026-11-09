@@ -70,6 +70,25 @@ class GerantRepository {
     }
   }
 
+  /// Change le mot de passe du gérant connecté, l'ancien contrôlé par l'API
+  /// (`invalid_credentials`, 422, s'il est faux).
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.patch(
+        ApiEndpoints.gerantProfile,
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    }
+  }
+
   static String _formatDate(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
