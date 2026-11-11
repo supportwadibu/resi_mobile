@@ -772,7 +772,7 @@
     "wallet": "Wallet",
     "wallet_hint": "Wave payments received and withdrawals",
     "sponsorship": "Referrals",
-    "sponsorship_hint": "Invite and earn on every paid sign-up"
+    "sponsorship_hint": "Invite and earn on every payment of your referrals"
   },
   "stats": {
     "income": "Income",
@@ -1630,10 +1630,10 @@
     "payout_name": "Account holder (optional)",
     "how_title": "How it works",
     "how_share": "Share your code with an owner or a guest.",
-    "how_owner": "An owner signs up with your code and pays a subscription: you earn {}.",
-    "how_client": "A guest signs up with your code and completes a stay paid online: you earn {}.",
+    "how_owner": "An owner signs up with your code: you earn {} on each subscription they pay.",
+    "how_client": "A guest signs up with your code: you earn {} of the RESI commission on each stay they pay online.",
     "how_redeem": "From {}, withdraw your rewards to Wave or use them on your subscription.",
-    "reward_percent": "{}% of the payment",
+    "reward_percent": "{}%",
     "reward_capped": "{}, up to {}",
     "sponsored_by": "Referred by {}",
     "apply_cta": "I have a referral code",
@@ -1644,7 +1644,7 @@
     "code_label": "Code",
     "sponsored_title": "My referrals ({})",
     "sponsored_empty_title": "No referrals yet",
-    "sponsored_empty_body": "Share your code: every paid sign-up earns you a reward.",
+    "sponsored_empty_body": "Share your code: every payment of your referrals earns you a reward.",
     "sponsored_waiting": "Reward on first payment",
     "sponsored_pending": "{amount}, available on {date}",
     "role_owner": "Owner",

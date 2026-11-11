@@ -772,7 +772,7 @@
     "wallet": "Portefeuille",
     "wallet_hint": "Paiements Wave reçus et retraits",
     "sponsorship": "Parrainage",
-    "sponsorship_hint": "Invitez, gagnez à chaque inscription payée"
+    "sponsorship_hint": "Invitez, gagnez à chaque paiement de vos filleuls"
   },
   "stats": {
     "income": "Entrées",
@@ -1630,10 +1630,10 @@
     "payout_name": "Nom du titulaire (facultatif)",
     "how_title": "Comment ça marche",
     "how_share": "Partagez votre code à un propriétaire ou à un client.",
-    "how_owner": "Un propriétaire s’inscrit avec votre code et paie son abonnement : vous gagnez {}.",
-    "how_client": "Un client s’inscrit avec votre code et termine un séjour payé en ligne : vous gagnez {}.",
+    "how_owner": "Un propriétaire s’inscrit avec votre code : vous gagnez {} sur chacun de ses abonnements payés.",
+    "how_client": "Un client s’inscrit avec votre code : vous gagnez {} sur la commission RESI de chacun de ses séjours payés en ligne.",
     "how_redeem": "Dès {}, retirez vos gains sur Wave ou utilisez-les sur votre abonnement.",
-    "reward_percent": "{} % du paiement",
+    "reward_percent": "{} %",
     "reward_capped": "{}, jusqu’à {}",
     "sponsored_by": "Parrainé par {}",
     "apply_cta": "J’ai un code de parrainage",
@@ -1644,7 +1644,7 @@
     "code_label": "Code",
     "sponsored_title": "Mes filleuls ({})",
     "sponsored_empty_title": "Aucun filleul pour l’instant",
-    "sponsored_empty_body": "Partagez votre code : chaque inscription payée vous rapporte.",
+    "sponsored_empty_body": "Partagez votre code : chaque paiement de vos filleuls vous rapporte.",
     "sponsored_waiting": "Gain au premier paiement",
     "sponsored_pending": "{amount}, disponibles le {date}",
     "role_owner": "Propriétaire",
