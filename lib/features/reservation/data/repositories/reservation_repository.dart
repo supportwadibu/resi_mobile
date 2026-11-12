@@ -220,16 +220,24 @@ class ReservationRepository {
   /// [actualCheckInAt] : heure saisie hors ligne. Sans elle, le serveur
   /// consigne l'heure de l'envoi. Un 422 signale une arrivée hors du séjour —
   /// avant le jour J ou après la sortie prévue.
+  ///
+  /// [arrivalCode] : QR scanné ou PIN saisi. Le serveur l'exige pour une
+  /// réservation en ligne (`arrival_code_required`) : c'est la preuve que le
+  /// client est au comptoir.
   Future<ReservationModel> checkIn(
     String id, {
     DateTime? actualCheckInAt,
+    String? arrivalCode,
   }) async {
     try {
+      final body = {
+        if (actualCheckInAt != null)
+          'actual_check_in_at': actualCheckInAt.toUtc().toIso8601String(),
+        'arrival_code': ?arrivalCode,
+      };
       final response = await _dio.patch(
         ApiEndpoints.bookingCheckIn(_role.value, id),
-        data: actualCheckInAt == null
-            ? null
-            : {'actual_check_in_at': actualCheckInAt.toUtc().toIso8601String()},
+        data: body.isEmpty ? null : body,
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);

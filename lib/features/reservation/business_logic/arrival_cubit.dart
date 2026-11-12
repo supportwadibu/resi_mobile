@@ -65,6 +65,8 @@ class ArrivalCubit extends Cubit<ArrivalState> {
     try {
       final reservation = await _repository.checkIn(
         current.arrival.reservation.id,
+        // Le code qui a ouvert la fiche : la preuve de présence du client.
+        arrivalCode: _code,
       );
       if (!isClosed) emit(ArrivalCompleted(reservation));
     } on AppFailure catch (f) {

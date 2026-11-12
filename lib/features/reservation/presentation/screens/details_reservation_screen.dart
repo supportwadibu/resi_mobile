@@ -315,6 +315,15 @@ class DetailsReservationScreen extends StatelessWidget {
   /// Confirme l'arrivée avant de l'enregistrer : le geste fait passer le
   /// séjour « en cours » et n'a pas d'annulation.
   Future<void> _confirmCheckIn(BuildContext context) async {
+    // En ligne, le serveur exige le QR ou le PIN du client : sans lui,
+    // l'arrivée serait refusée. Le scan l'apporte, et encaisse le reste dû.
+    if (reservation.source == ReservationSource.online) {
+      final router = context.router;
+      final changed = await router.push<bool>(const ArrivalRoute());
+      if (changed == true) router.maybePop(true);
+      return;
+    }
+
     final cubit = context.read<StayCheckInCubit>();
 
     final confirmed = await showConfirmDialog(
