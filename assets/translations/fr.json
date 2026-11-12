@@ -1595,7 +1595,9 @@
       "withdrawal_reversal": "Retrait refusé, montant recrédité",
       "refund": "Remboursement au client",
       "subscription_refund": "Remboursement d’abonnement",
-      "other": "Mouvement"
+      "other": "Mouvement",
+      "deposit_release": "Acompte débloqué à l’arrivée",
+      "commission_charge": "Commission RESI retenue"
     },
     "status": {
       "pending": "En attente",
@@ -1694,5 +1696,55 @@
     "confirm_message": "Vous serez déconnecté de tous vos appareils. Cette action ne peut être annulée que par le support, dans les {} jours.",
     "done": "Votre compte a été supprimé.",
     "policy_link": "Comment nous traitons vos données"
+  },
+  "arrival": {
+    "title": "Arrivée d'un client",
+    "entry": "Scanner une arrivée",
+    "scan_hint": "Scannez le QR code « Démarrer mon séjour » que le client affiche dans son application.",
+    "camera_unavailable": "Caméra indisponible. Saisissez le code PIN du client ci-dessous.",
+    "pin_title": "Code PIN",
+    "pin_label": "Code PIN à 6 chiffres",
+    "pin_submit": "Rechercher la réservation",
+    "booking": "Réservation",
+    "property": "Logement",
+    "client": "Client",
+    "period": "Séjour",
+    "payment_option": "Paiement choisi",
+    "option_full": "Totalité en ligne",
+    "option_deposit": "Acompte en ligne, reste au comptoir",
+    "amounts": "Paiement",
+    "paid_online": "Payé en ligne",
+    "paid_counter": "Versé au comptoir",
+    "ready_title": "Tout est réglé",
+    "ready_message": "Validez l'arrivée, puis remettez les clés.",
+    "balance_title": "Reste à payer : {amount}",
+    "balance_message": "Encaissez le reste avant de remettre les clés.",
+    "blocked_title": "Arrivée impossible pour l'instant",
+    "collect_title": "Encaisser le reste",
+    "collect_label": "Montant reçu (F)",
+    "collect_submit": "Enregistrer le versement",
+    "check_in": "Valider l'arrivée",
+    "done_title": "Arrivée enregistrée",
+    "done_message": "Remettez les clés au client. Bon séjour !",
+    "next_client": "Client suivant",
+    "finish": "Terminer",
+    "no_show": "Arrivée",
+    "no_show_value": "Client absent"
+  },
+  "property_deposit": {
+    "title": "Acompte",
+    "enabled": "Accepter un acompte",
+    "enabled_hint": "Le client verse l'acompte dans l'application et règle le reste au comptoir, avant la remise des clés.",
+    "type": "Type",
+    "percent": "Pourcentage du séjour",
+    "fixed": "Montant fixe",
+    "value_percent": "Pourcentage (%)",
+    "value_fixed": "Montant (F)",
+    "default_hint": "Par défaut : {value}. L'acompte ne descend jamais sous la commission de RESI.",
+    "invalid": "Indiquez un acompte supérieur à zéro (au plus 99 %)."
+  },
+  "wallet_held": {
+    "label": "Acomptes en attente d'arrivée",
+    "hint": "Débloqués à l'arrivée du client, ou à la fin d'un séjour où il ne s'est pas présenté."
   }
 }

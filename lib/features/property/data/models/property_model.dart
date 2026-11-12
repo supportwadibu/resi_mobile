@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'property_deposit.dart';
 
 import '../../../../shared/models/late_checkout_policy.dart';
 
@@ -536,6 +537,7 @@ class PropertyModel {
     required this.pricing,
     required this.availableFrom,
     this.negotiation = PropertyNegotiation.disabled,
+    this.deposit,
     this.chargesIncluded = false,
     this.additionalCharges = 0,
     this.isPublic = false,
@@ -559,6 +561,10 @@ class PropertyModel {
 
   /// Absente des biens antérieurs à la négociation : non négociable.
   final PropertyNegotiation negotiation;
+
+  /// Acompte réglé par le propriétaire ; `null` s'il n'en a jamais réglé —
+  /// la règle de RESI s'applique alors.
+  final PropertyDeposit? deposit;
   final bool chargesIncluded;
   final double additionalCharges;
   final bool isPublic;
@@ -618,6 +624,8 @@ class PropertyModel {
       negotiation: PropertyNegotiation.fromJson(
         json['negotiation'] as Map<String, dynamic>?,
       ),
+      // Absent d'un serveur antérieur à l'acompte et des biens jamais réglés.
+      deposit: PropertyDeposit.fromJson(json['deposit']),
       chargesIncluded: json['charges_included'] as bool? ?? false,
       additionalCharges: (json['additional_charges'] as num?)?.toDouble() ?? 0,
       isPublic: visibility['is_public'] as bool? ?? false,
@@ -658,6 +666,7 @@ class CreatePropertyPayload {
     required this.pricing,
     required this.availableFrom,
     this.negotiation = PropertyNegotiation.disabled,
+    this.deposit,
     this.chargesIncluded = false,
     this.additionalCharges,
   });
@@ -672,6 +681,9 @@ class CreatePropertyPayload {
   final PropertyPricing pricing;
   final DateTime availableFrom;
   final PropertyNegotiation negotiation;
+
+  /// Acompte du logement ; `null` : non réglé, rien n'est envoyé.
+  final PropertyDeposit? deposit;
   final bool chargesIncluded;
   final double? additionalCharges;
 
@@ -688,6 +700,7 @@ class CreatePropertyPayload {
     'pricing': pricing.toJson(),
     // Seulement activée : un bien non négociable n'a rien à déclarer.
     if (negotiation.enabled) 'negotiation': negotiation.toJson(),
+    if (deposit case final deposit?) 'deposit': deposit.toJson(),
     'charges_included': chargesIncluded,
     if (additionalCharges != null) 'additional_charges': additionalCharges,
     // `vine.date()` attend une date, pas un instant ISO complet.
@@ -732,6 +745,7 @@ class UpdatePropertyPayload {
     required List<String> images,
     required PropertyPricing pricing,
     PropertyNegotiation? negotiation,
+    PropertyDeposit? deposit,
     bool? chargesIncluded,
     double? additionalCharges,
     DateTime? availableFrom,
@@ -786,6 +800,12 @@ class UpdatePropertyPayload {
     if (negotiation != null &&
         !_sameJson(negotiation.toJson(), original.negotiation.toJson())) {
       fields['negotiation'] = negotiation.toJson();
+    }
+
+    // Remplacé en entier, comme la négociation.
+    if (deposit != null &&
+        !_sameJson(deposit.toJson(), original.deposit?.toJson() ?? const {})) {
+      fields['deposit'] = deposit.toJson();
     }
 
     if (chargesIncluded != null &&

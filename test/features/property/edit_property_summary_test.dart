@@ -6,6 +6,7 @@ import 'package:resi_africa/features/property/business_logic/create_property_cub
 import 'package:resi_africa/features/property/business_logic/create_property_state.dart';
 import 'package:resi_africa/features/property/business_logic/edit_property_cubit.dart';
 import 'package:resi_africa/features/property/business_logic/edit_property_state.dart';
+import 'package:resi_africa/features/property/data/models/property_deposit.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/features/property/presentation/screens/add_property_screen.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
@@ -29,6 +30,7 @@ class _FakeEditCubit extends Cubit<EditPropertyState>
     required List<String> images,
     required PropertyPricing pricing,
     PropertyNegotiation? negotiation,
+    PropertyDeposit? deposit,
   }) async {
     submitCount++;
   }
@@ -84,6 +86,7 @@ class _FakeCreateCubit extends Cubit<CreatePropertyState>
     required PropertyPricing pricing,
     required DateTime availableFrom,
     PropertyNegotiation negotiation = PropertyNegotiation.disabled,
+    PropertyDeposit? deposit,
     bool chargesIncluded = false,
     double? additionalCharges,
   }) async {}

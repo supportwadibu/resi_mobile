@@ -15,6 +15,7 @@ class WalletModel {
     required this.totalWithdrawn,
     required this.pendingWithdrawals,
     this.feeFreeBalance = 0,
+    this.heldBalance = 0,
   });
 
   final String id;
@@ -33,6 +34,11 @@ class WalletModel {
   /// d'abonnement. Absente d'un serveur antérieur : 0.
   final double feeFreeBalance;
 
+  /// Acomptes encaissés, hors de [balance] : débloqués à l'arrivée du client,
+  /// ou à la fin d'un séjour où il ne s'est pas présenté. Absent d'un serveur
+  /// antérieur : 0.
+  final double heldBalance;
+
   factory WalletModel.fromJson(Map<String, dynamic> json) => WalletModel(
     id: json['id'] as String? ?? '',
     residenceId: json['residence_id'] as String?,
@@ -42,6 +48,7 @@ class WalletModel {
     totalWithdrawn: (json['total_withdrawn'] as num?)?.toDouble() ?? 0,
     pendingWithdrawals: (json['pending_withdrawals'] as num?)?.toDouble() ?? 0,
     feeFreeBalance: (json['fee_free_balance'] as num?)?.toDouble() ?? 0,
+    heldBalance: (json['held_balance'] as num?)?.toDouble() ?? 0,
   );
 }
 
@@ -52,6 +59,8 @@ enum WalletTransactionType {
   withdrawalReversal('withdrawal_reversal', LucideIcons.undo2),
   refund('refund', LucideIcons.rotateCcw),
   subscriptionRefund('subscription_refund', LucideIcons.creditCard),
+  depositRelease('deposit_release', LucideIcons.lockOpen),
+  commissionCharge('commission_charge', LucideIcons.percent),
 
   /// Type ajouté au serveur après cette version de l'application : le
   /// mouvement reste affiché, sous un libellé générique, plutôt que de faire

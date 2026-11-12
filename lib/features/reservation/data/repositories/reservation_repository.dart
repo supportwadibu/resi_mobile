@@ -4,6 +4,7 @@ import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/arrival_model.dart';
 import '../models/booking_stats_model.dart';
 import '../models/deposit_action.dart';
 import '../models/early_check_out_quote.dart';
@@ -168,6 +169,42 @@ class ReservationRepository {
             'reason': reason.trim(),
           'deposit_action': ?depositAction?.code,
         },
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ReservationModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Réservation présentée au comptoir — contenu du QR scanné ou PIN saisi —
+  /// et ce qui s'oppose encore à la remise des clés.
+  ///
+  /// Un 404 est un code non reconnu (inconnu, ou réservation d'un autre) ; un
+  /// 429, trop d'essais : le serveur borne la saisie du PIN.
+  Future<ArrivalModel> findArrival(String code) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.bookingArrival(_role.value, code),
+      );
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return ArrivalModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Versement reçu au comptoir : le reste d'un acompte avant les clés.
+  /// Un 422 signale un montant au-delà du reste dû.
+  Future<ReservationModel> recordPayment(String id, double amount) async {
+    try {
+      final response = await _dio.post(
+        ApiEndpoints.bookingPayments(_role.value, id),
+        data: {'amount': amount},
       );
       final data = (response.data as Map<String, dynamic>)['data'];
       return ReservationModel.fromJson(data as Map<String, dynamic>);

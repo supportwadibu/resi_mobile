@@ -4,6 +4,7 @@ import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../models/property_deposit.dart';
 import '../models/property_model.dart';
 
 /// Annonces du propriétaire connecté.
@@ -197,6 +198,20 @@ class PropertyRepository {
       final response = await _dio.patch(endpoint);
       final data = (response.data as Map<String, dynamic>)['data'];
       return PropertyModel.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  /// Réglage de l'acompte par RESI : le formulaire d'un logement ne montre
+  /// l'acompte que si le propriétaire peut le régler.
+  Future<DepositSettings> depositSettings() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.depositSettings);
+      final data = (response.data as Map<String, dynamic>)['data'];
+      return DepositSettings.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw mapDioExceptionToFailure(e);
     } catch (e) {

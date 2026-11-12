@@ -29,7 +29,7 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Pour scanner vos documents d'identité</string>
+	<string>Pour scanner vos documents d'identité et le QR code d'arrivée de vos clients</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Pour sélectionner vos documents d'identité</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

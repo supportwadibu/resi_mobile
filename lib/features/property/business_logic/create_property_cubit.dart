@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
+import '../data/models/property_deposit.dart';
 import '../data/models/property_model.dart';
 import '../data/repositories/property_repository.dart';
 import 'create_property_state.dart';
@@ -33,6 +34,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
     required PropertyPricing pricing,
     required DateTime availableFrom,
     PropertyNegotiation negotiation = PropertyNegotiation.disabled,
+    PropertyDeposit? deposit,
     bool chargesIncluded = false,
     double? additionalCharges,
   }) async {
@@ -58,6 +60,7 @@ class CreatePropertyCubit extends Cubit<CreatePropertyState> {
           pricing: pricing,
           availableFrom: availableFrom,
           negotiation: negotiation,
+          deposit: deposit,
           chargesIncluded: chargesIncluded,
           additionalCharges: additionalCharges,
         ),

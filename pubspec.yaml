@@ -65,6 +65,10 @@ dependencies:
   # que des liens `https` universels, qui exigeraient de publier
   # `assetlinks.json` et `apple-app-site-association` sur le domaine.
   app_links: ^7.0.0
+  # Lecture du QR « Démarrer mon séjour » que le client présente au comptoir.
+  # ML Kit, déjà embarqué par la reconnaissance des pièces d'identité : pas
+  # de second moteur de vision. Le PIN reste le secours sans caméra.
+  mobile_scanner: ^7.5.0
 
 dev_dependencies:
   flutter_test:

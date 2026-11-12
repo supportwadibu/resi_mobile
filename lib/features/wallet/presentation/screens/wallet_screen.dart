@@ -271,6 +271,18 @@ class _WalletCard extends StatelessWidget {
               ),
             ),
           ],
+          // Hors du solde retirable : sans cette ligne, un acompte reçu
+          // n'apparaîtrait nulle part avant l'arrivée du client.
+          if (wallet.heldBalance > 0) ...[
+            const SizedBox(height: 12),
+            AppCallout(
+              icon: LucideIcons.lock,
+              tone: AppAccent.blue,
+              title:
+                  '${'wallet_held.label'.tr()} : ${CurrencyFormatter.fcfa(wallet.heldBalance)}',
+              message: 'wallet_held.hint'.tr(),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [

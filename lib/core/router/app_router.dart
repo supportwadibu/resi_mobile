@@ -47,6 +47,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: AddExpenseRoute.page),
     AutoRoute(page: ReservationRoute.page),
     AutoRoute(page: DetailsReservationRoute.page),
+    AutoRoute(page: ArrivalRoute.page),
     AutoRoute(page: StayExtensionRoute.page),
     AutoRoute(page: EditReservationRoute.page),
     AutoRoute(page: SyncReviewRoute.page),

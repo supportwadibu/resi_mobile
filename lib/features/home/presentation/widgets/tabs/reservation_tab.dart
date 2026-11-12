@@ -54,7 +54,24 @@ class _ReservationTabView extends StatelessWidget {
             bottom: MediaQuery.paddingOf(context).bottom + 16,
           ),
           children: [
-            PageHeader(title: 'home.bookings_title'.tr()),
+            PageHeader(
+              title: 'home.bookings_title'.tr(),
+              actions: [
+                AppButton(
+                  label: 'arrival.entry'.tr(),
+                  icon: LucideIcons.scanLine,
+                  size: AppButtonSize.sm,
+                  onPressed: () async {
+                    final cubit = context.read<ReservationCubit>();
+                    final changed = await context.router.push<bool>(
+                      const ArrivalRoute(),
+                    );
+                    // Une arrivée validée change le statut affiché.
+                    if (changed == true) cubit.load();
+                  },
+                ),
+              ],
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(

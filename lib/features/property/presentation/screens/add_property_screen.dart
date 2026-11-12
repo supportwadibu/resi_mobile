@@ -18,7 +18,11 @@ import '../../business_logic/create_property_cubit.dart';
 import '../../business_logic/create_property_state.dart';
 import '../../business_logic/edit_property_cubit.dart';
 import '../../business_logic/edit_property_state.dart';
+import '../../../../core/error/failures.dart';
+import '../../data/models/property_deposit.dart';
 import '../../data/models/property_model.dart';
+import '../../data/repositories/property_repository.dart';
+import '../widgets/add_property/deposit_card.dart';
 import '../widgets/add_property/steps/step_amenities_widget.dart';
 import '../widgets/add_property/steps/step_details_widget.dart';
 import '../widgets/add_property/steps/step_identification_widget.dart';
@@ -171,9 +175,18 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   String _checkoutTime = LateCheckoutPolicy.defaultCheckoutTime;
   PropertyNegotiation _negotiation = PropertyNegotiation.disabled;
 
+  /// Acompte du logement, `null` tant qu'il n'est ni réglé ni retouché : rien
+  /// n'est alors envoyé, la règle de RESI s'applique.
+  PropertyDeposit? _deposit;
+
+  /// Réglage de RESI, lu à l'ouverture. Sans lui — hors ligne, serveur
+  /// antérieur —, la carte d'acompte ne s'affiche pas.
+  DepositSettings? _depositSettings;
+
   @override
   void initState() {
     super.initState();
+    _loadDepositSettings();
 
     final property = _original;
     if (property == null) return;
@@ -202,6 +215,20 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     _lateCheckoutHalfDayHours = property.pricing.lateCheckoutHalfDayHours;
     _checkoutTime = property.pricing.checkoutTime;
     _negotiation = property.negotiation;
+    _deposit = property.deposit;
+  }
+
+  /// Le formulaire reste utilisable sans ce réglage : la carte d'acompte
+  /// n'apparaît simplement pas.
+  Future<void> _loadDepositSettings() async {
+    // Arbres de widget montés sans le dépôt — les tests du formulaire.
+    if (!sl.isRegistered<PropertyRepository>()) return;
+    try {
+      final settings = await sl<PropertyRepository>().depositSettings();
+      if (mounted) setState(() => _depositSettings = settings);
+    } on AppFailure {
+      // Hors ligne ou serveur antérieur à l'acompte : rien à proposer.
+    }
   }
 
   bool get _isLastStep => _currentStep == _stepTitles.length - 1;
@@ -238,6 +265,8 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       3 when _surfaceArea != null && _surfaceArea! <= 0 =>
         'property_form.surface_positive'.tr(),
       6 when _dailyPrice <= 0 => 'property_form.price_required'.tr(),
+      6 when !isValidPropertyDeposit(_deposit) =>
+        'property_deposit.invalid'.tr(),
       6 when !_negotiation.isValidFor(_dailyPrice) =>
         'property_form.negotiation_invalid'.tr(),
       _ => null,
@@ -486,6 +515,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         images: _images,
         pricing: _pricing,
         negotiation: _negotiation,
+        deposit: _deposit,
       );
       return;
     }
@@ -500,6 +530,7 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       imagePaths: _images,
       pricing: _pricing,
       negotiation: _negotiation,
+      deposit: _deposit,
       // `available_from` reste exigé par l'API. L'étape « Conditions » ayant
       // disparu, le bien est réputé disponible dès son dépôt.
       availableFrom: DateTime.now(),
@@ -766,6 +797,9 @@ class _AddPropertyViewState extends State<AddPropertyView> {
         }),
         negotiation: _negotiation,
         onNegotiationChanged: (v) => setState(() => _negotiation = v),
+        deposit: _deposit,
+        depositSettings: _depositSettings,
+        onDepositChanged: (v) => setState(() => _deposit = v),
       ),
       _ => const SizedBox.shrink(),
     };

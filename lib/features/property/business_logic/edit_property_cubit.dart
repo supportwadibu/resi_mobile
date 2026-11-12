@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
+import '../data/models/property_deposit.dart';
 import '../data/models/property_model.dart';
 import '../data/repositories/property_repository.dart';
 import 'edit_property_state.dart';
@@ -40,6 +41,7 @@ class EditPropertyCubit extends Cubit<EditPropertyState> {
     required List<String> images,
     required PropertyPricing pricing,
     PropertyNegotiation? negotiation,
+    PropertyDeposit? deposit,
   }) async {
     try {
       final resolved = await _resolveImages(images);
@@ -56,6 +58,7 @@ class EditPropertyCubit extends Cubit<EditPropertyState> {
         images: resolved,
         pricing: pricing,
         negotiation: negotiation,
+        deposit: deposit,
       );
 
       // Rien n'a bougé : l'appel serait sans effet, et l'API refuse un corps

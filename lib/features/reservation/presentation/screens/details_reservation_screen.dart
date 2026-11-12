@@ -422,16 +422,25 @@ class DetailsReservationScreen extends StatelessWidget {
         'booking_amounts.stay_amount'.tr(),
         formatAmount(reservation.totalAmount),
       ),
-      if (reservation.depositAmount > 0) ...[
+      // Acompte payé par le client dans l'app : seule la part du propriétaire
+      // est montrée, celle qui entre à son portefeuille.
+      if (reservation.isDepositBooking)
+        DetailItem(
+          'arrival.paid_online'.tr(),
+          formatAmount(reservation.prepaidAmount),
+        ),
+      if (reservation.depositAmount > 0)
         DetailItem(
           'booking_amounts.deposit_label'.tr(),
           formatAmount(reservation.depositAmount),
         ),
+      if (reservation.depositAmount > 0 || reservation.isDepositBooking)
         DetailItem(
           'booking_amounts.balance_due'.tr(),
           formatAmount(reservation.balanceDue),
         ),
-      ],
+      if (reservation.noShow)
+        DetailItem('arrival.no_show'.tr(), 'arrival.no_show_value'.tr()),
       // Séjour écourté : les dates et le montant ci-dessus portent l'usage
       // réel, la vente d'origine reste lisible pour un litige.
       if (reservation.plannedTotalAmount case final planned?)

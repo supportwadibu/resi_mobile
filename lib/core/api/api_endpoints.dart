@@ -193,6 +193,19 @@ abstract final class ApiEndpoints {
   static String bookingCheckIn(String role, String id) =>
       '${basePathForRole(role)}/bookings/$id/check-in';
 
+  /// Réservation présentée au comptoir : contenu du QR scanné, ou PIN saisi.
+  /// Le serveur borne le nombre d'essais : le PIN n'a que six chiffres.
+  static String bookingArrival(String role, String code) =>
+      '${basePathForRole(role)}/bookings/arrival/${Uri.encodeComponent(code)}';
+
+  /// Versement reçu au comptoir — le reste d'un acompte avant les clés.
+  static String bookingPayments(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/payments';
+
+  /// Réglage de l'acompte par RESI : proposé ou non, et réglable ou non par
+  /// le propriétaire sur ses logements.
+  static const String depositSettings = '$_v1/proprio/settings/deposit';
+
   /// Clôture d'un séjour, mené à terme ou écourté par un départ anticipé.
   static String bookingCheckOut(String role, String id) =>
       '${basePathForRole(role)}/bookings/$id/check-out';

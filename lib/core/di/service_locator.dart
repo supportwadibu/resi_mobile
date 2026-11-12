@@ -30,6 +30,7 @@ import 'package:resi_africa/features/reservation/business_logic/edit_reservation
 import 'package:resi_africa/features/reservation/data/models/reservation_model.dart';
 import 'package:resi_africa/features/reservation/business_logic/early_check_out_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_check_in_cubit.dart';
+import 'package:resi_africa/features/reservation/business_logic/arrival_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_cancel_cubit.dart';
 import 'package:resi_africa/features/reservation/business_logic/stay_check_out_cubit.dart';
 import 'package:resi_africa/features/home/business_logic/home_stats_cubit.dart';
@@ -358,6 +359,7 @@ Future<void> setupServiceLocator(AppConfig config) async {
     ),
   );
   sl.registerFactory(() => StayCancelCubit(sl<ReservationRepository>()));
+  sl.registerFactory(() => ArrivalCubit(sl<ReservationRepository>()));
   sl.registerFactory(
     () => StayCheckInCubit(
       sl<ReservationRepository>(),

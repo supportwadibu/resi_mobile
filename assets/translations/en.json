@@ -1595,7 +1595,9 @@
       "withdrawal_reversal": "Withdrawal rejected, amount credited back",
       "refund": "Refund to client",
       "subscription_refund": "Subscription refund",
-      "other": "Transaction"
+      "other": "Transaction",
+      "deposit_release": "Deposit released on arrival",
+      "commission_charge": "RESI commission charged"
     },
     "status": {
       "pending": "Pending",
@@ -1694,5 +1696,55 @@
     "confirm_message": "You will be signed out of all your devices. Only support can undo this, within {} days.",
     "done": "Your account has been deleted.",
     "policy_link": "How we handle your data"
+  },
+  "arrival": {
+    "title": "Guest arrival",
+    "entry": "Scan an arrival",
+    "scan_hint": "Scan the “Start my stay” QR code the guest shows in their app.",
+    "camera_unavailable": "Camera unavailable. Enter the guest's PIN code below.",
+    "pin_title": "PIN code",
+    "pin_label": "6-digit PIN code",
+    "pin_submit": "Find the booking",
+    "booking": "Booking",
+    "property": "Unit",
+    "client": "Guest",
+    "period": "Stay",
+    "payment_option": "Payment chosen",
+    "option_full": "Paid in full online",
+    "option_deposit": "Deposit online, balance at the desk",
+    "amounts": "Payment",
+    "paid_online": "Paid online",
+    "paid_counter": "Paid at the desk",
+    "ready_title": "Fully paid",
+    "ready_message": "Confirm the arrival, then hand over the keys.",
+    "balance_title": "Balance due: {amount}",
+    "balance_message": "Collect the balance before handing over the keys.",
+    "blocked_title": "Arrival not possible yet",
+    "collect_title": "Collect the balance",
+    "collect_label": "Amount received (F)",
+    "collect_submit": "Record the payment",
+    "check_in": "Confirm arrival",
+    "done_title": "Arrival recorded",
+    "done_message": "Hand the keys to the guest. Enjoy the stay!",
+    "next_client": "Next guest",
+    "finish": "Done",
+    "no_show": "Arrival",
+    "no_show_value": "Guest did not show up"
+  },
+  "property_deposit": {
+    "title": "Deposit",
+    "enabled": "Accept a deposit",
+    "enabled_hint": "The guest pays the deposit in the app and settles the balance at the desk, before getting the keys.",
+    "type": "Type",
+    "percent": "Percentage of the stay",
+    "fixed": "Fixed amount",
+    "value_percent": "Percentage (%)",
+    "value_fixed": "Amount (F)",
+    "default_hint": "Default: {value}. The deposit never goes below RESI's commission.",
+    "invalid": "Enter a deposit above zero (at most 99%)."
+  },
+  "wallet_held": {
+    "label": "Deposits awaiting arrival",
+    "hint": "Released when the guest arrives, or at the end of a stay they did not show up for."
   }
 }

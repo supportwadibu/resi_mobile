@@ -15,7 +15,9 @@ import 'package:resi_africa/shared/utils/currency_formatter.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 import 'package:resi_africa/shared/models/late_checkout_policy.dart';
 import '../../../../data/models/property_model.dart';
+import '../deposit_card.dart';
 import '../negotiation_card.dart';
+import '../../../../data/models/property_deposit.dart';
 
 /// Tarification : un prix par nuit, remisé selon la durée du séjour.
 ///
@@ -36,6 +38,9 @@ class StepPricingWidget extends StatefulWidget {
     required this.onLateCheckoutChanged,
     this.negotiation = PropertyNegotiation.disabled,
     this.onNegotiationChanged,
+    this.deposit,
+    this.depositSettings,
+    this.onDepositChanged,
   });
 
   final double dailyPrice;
@@ -55,6 +60,12 @@ class StepPricingWidget extends StatefulWidget {
   /// Paliers de négociation ; sans [onNegotiationChanged], la carte est masquée.
   final PropertyNegotiation negotiation;
   final ValueChanged<PropertyNegotiation>? onNegotiationChanged;
+
+  /// Acompte du logement. La carte n'apparaît que si RESI laisse le
+  /// propriétaire le régler ([depositSettings]) et qu'on sait le recevoir.
+  final PropertyDeposit? deposit;
+  final DepositSettings? depositSettings;
+  final ValueChanged<PropertyDeposit>? onDepositChanged;
 
   @override
   State<StepPricingWidget> createState() => _StepPricingWidgetState();
@@ -193,6 +204,18 @@ class _StepPricingWidgetState extends State<StepPricingWidget> {
           NegotiationCard(
             negotiation: widget.negotiation,
             dailyPrice: widget.dailyPrice,
+            onChanged: onChanged,
+          ),
+        ],
+
+        if ((widget.depositSettings, widget.onDepositChanged) case (
+          final settings?,
+          final onChanged?,
+        ) when settings.editableByOwner) ...[
+          const SizedBox(height: 24),
+          DepositCard(
+            deposit: widget.deposit,
+            settings: settings,
             onChanged: onChanged,
           ),
         ],

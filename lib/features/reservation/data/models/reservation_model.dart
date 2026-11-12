@@ -175,6 +175,9 @@ class ReservationModel {
     this.receivedAmount = 0,
     this.agreedUnitPrice,
     this.depositAmount = 0,
+    this.paymentOption = PaymentOption.full,
+    this.prepaidAmount = 0,
+    this.noShow = false,
     this.refundedAmount = 0,
     this.lateCheckoutFee = 0,
     this.retainedAmount = 0,
@@ -242,6 +245,16 @@ class ReservationModel {
 
   /// Acompte versé à la réservation.
   final double depositAmount;
+
+  /// Option choisie par le client en ligne : tout payer, ou un acompte dont
+  /// le reste se règle au comptoir avant la remise des clés.
+  final PaymentOption paymentOption;
+
+  /// Part du propriétaire déjà reçue en ligne, au portefeuille.
+  final double prepaidAmount;
+
+  /// Close sans que le client se soit présenté.
+  final bool noShow;
 
   /// Somme rendue au client sur un départ anticipé.
   final double refundedAmount;
@@ -338,9 +351,13 @@ class ReservationModel {
   /// retranchée — la règle du bénéfice net de Finance.
   double get netAfterCommission => totalAmount - referrerCommissionAmount;
 
-  /// Reste dû après l'acompte, jamais négatif.
-  double get balanceDue =>
-      (receivedAmount - depositAmount).clamp(0, double.infinity);
+  /// Reste dû après ce qui est déjà reçu — de la main à la main et en ligne —,
+  /// jamais négatif. Même calcul que `ownerBalanceDue` côté API.
+  double get balanceDue => (receivedAmount - depositAmount - prepaidAmount)
+      .clamp(0, double.infinity);
+
+  /// Réservation en ligne avec acompte : le reste se solde avant l'arrivée.
+  bool get isDepositBooking => paymentOption == PaymentOption.deposit;
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     return ReservationModel(
@@ -389,6 +406,13 @@ class ReservationModel {
       // au prix unitaire : la prolongation retombe alors sur le quotient.
       agreedUnitPrice: (json['agreed_unit_price'] as num?)?.toDouble(),
       depositAmount: (json['deposit_amount'] as num?)?.toDouble() ?? 0,
+      // Absents de l'historique, du comptoir et d'un serveur antérieur à
+      // l'acompte : paiement total, rien reçu en ligne, aucune absence.
+      paymentOption: json['payment_option'] == 'deposit'
+          ? PaymentOption.deposit
+          : PaymentOption.full,
+      prepaidAmount: (json['prepaid_amount'] as num?)?.toDouble() ?? 0,
+      noShow: json['no_show'] == true,
       // Absents tant que le séjour n'a pas été écourté, et sur les réponses
       // d'un serveur antérieur au départ anticipé.
       refundedAmount: (json['refunded_amount'] as num?)?.toDouble() ?? 0,
@@ -454,3 +478,6 @@ class ReservationModel {
   @override
   String toString() => 'ReservationModel(id: $id, status: ${status.code})';
 }
+
+/// Option de paiement choisie par le client à la réservation en ligne.
+enum PaymentOption { full, deposit }
