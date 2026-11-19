@@ -24,6 +24,10 @@ Future<void> bootstrap(AppConfig config) async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Bord à bord : le fond de chaque écran passe sous la barre d'état et la
+  // barre de navigation, comme sur les maquettes.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

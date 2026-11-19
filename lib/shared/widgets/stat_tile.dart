@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/resi_tokens.dart';
+import '../motion/motion.dart';
 import 'page_header.dart';
 
 /// Couleur de la note d'une tuile : évolution ou point d'attention.
 enum StatNoteTone { up, down, attention }
+
+/// Fond d'une tuile : neutre, ou l'un des deux accents de surface. Un écran
+/// n'en mêle pas plus de deux, pour rester calme.
+enum StatSurface { neutral, lavender, sand }
 
 /// Chiffre clé, avec son icône et une note de contexte — miroir de
 /// `StatTile` du backoffice.
@@ -20,8 +26,11 @@ class StatTile extends StatelessWidget {
     this.noteTone,
     this.onTap,
     this.compact = false,
+    this.surface = StatSurface.neutral,
     super.key,
   });
+
+  final StatSurface surface;
 
   final String label;
   final String value;
@@ -42,6 +51,24 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
+    final tint = switch (surface) {
+      StatSurface.lavender => t.lavender,
+      StatSurface.sand => t.sand,
+      StatSurface.neutral => null,
+    };
+    if (tint == null) return _content(context, null);
+    // Sur un accent, le texte reste sombre dans les deux modes : la tuile se
+    // peint avec le thème clair, comme sur les maquettes.
+    return Theme(
+      data: AppTheme.light(),
+      child: Builder(
+        builder: (context) => HaloSurface(child: _content(context, tint)),
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context, Color? tint) {
+    final t = context.tokens;
     final noteColor = switch (noteTone) {
       StatNoteTone.up => t.accentGreen,
       StatNoteTone.down => t.accentRed,
@@ -51,6 +78,7 @@ class StatTile extends StatelessWidget {
     if (compact) {
       return AppCard(
         onTap: onTap,
+        color: tint,
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,9 +108,8 @@ class StatTile extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(
+              child: CountUpText(
                 value,
-                maxLines: 1,
                 style: context.text.figure.copyWith(fontSize: 20),
               ),
             ),
@@ -92,6 +119,7 @@ class StatTile extends StatelessWidget {
     }
     return AppCard(
       onTap: onTap,
+      color: tint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -115,7 +143,9 @@ class StatTile extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(value, maxLines: 1, style: context.text.figure),
+            // Le chiffre défile jusqu'à sa valeur : il se lit comme un
+            // résultat, et un changement se remarque.
+            child: CountUpText(value, style: context.text.figure),
           ),
           if (note != null) ...[
             const SizedBox(height: 4),
@@ -281,6 +311,217 @@ class Breakdown extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Halo à peine visible dans le coin d'une surface teintée : on devine une
+/// forme sans qu'elle attire l'œil. Il ne capte aucun toucher.
+class HaloSurface extends StatelessWidget {
+  const HaloSurface({
+    required this.child,
+    this.radius = AppRadius.md,
+    super.key,
+  });
+
+  final Widget child;
+  final BorderRadius radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final light = context.tokens.surface;
+    return ClipRRect(
+      borderRadius: radius,
+      child: Stack(
+        children: [
+          child,
+          Positioned(
+            left: -50,
+            bottom: -90,
+            width: 190,
+            height: 190,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      light.withValues(alpha: 0.42),
+                      light.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tuile chiffrée des maquettes : libellé en haut à gauche, disque d'icône à
+/// droite, chiffre en bas. Sable, lavande douce ou neutre.
+class MetricTile extends StatelessWidget {
+  const MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.surface = StatSurface.neutral,
+    this.note,
+    this.noteTone,
+    this.onTap,
+    this.height = 132,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final StatSurface surface;
+  final String? note;
+  final StatNoteTone? noteTone;
+  final VoidCallback? onTap;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final (bg, fg) = switch (surface) {
+      StatSurface.sand => (t.sand, t.onSand),
+      StatSurface.lavender => (t.accentVioletSoft, t.foreground),
+      StatSurface.neutral => (t.surface, t.foreground),
+    };
+    final neutral = surface == StatSurface.neutral;
+    final body = SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelMedium!.copyWith(color: fg),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: neutral ? t.background : t.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: SizedBox.square(
+                    dimension: 34,
+                    child: Icon(icon, size: 15, color: t.foreground),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: CountUpText(
+                value,
+                style: context.text.figure.copyWith(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: fg,
+                ),
+              ),
+            ),
+            if (note != null)
+              Text(
+                note!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodySmall!.copyWith(
+                  color: switch (noteTone) {
+                    StatNoteTone.down => t.accentRed,
+                    StatNoteTone.up => t.accentGreen,
+                    _ => fg.withValues(alpha: 0.7),
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+    return Material(
+      color: bg,
+      shape: AppRadius.outlined(AppRadius.lg, neutral ? t.border : bg),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: HaloSurface(radius: AppRadius.lg, child: body),
+      ),
+    );
+  }
+}
+
+/// Carte de tête des maquettes : libellé, chiffre en grand, note. Lavande,
+/// ou neutre quand le chiffre est une perte — le rouge s'y lit mieux.
+class HeroMetric extends StatelessWidget {
+  const HeroMetric({
+    required this.label,
+    required this.value,
+    this.note,
+    this.loss = false,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final String? note;
+  final bool loss;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final fg = loss ? t.foreground : t.onLavender;
+    final body = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: context.text.titleSmall!.copyWith(color: fg)),
+          const SizedBox(height: 22),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: CountUpText(
+              value,
+              style: context.text.figure.copyWith(
+                fontSize: 36,
+                fontWeight: FontWeight.w700,
+                color: loss ? t.accentRed : fg,
+              ),
+            ),
+          ),
+          if (note != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              note!,
+              style: context.text.bodySmall!.copyWith(
+                color: loss ? t.accentRed : fg.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+    return Material(
+      color: loss ? t.surface : t.lavender,
+      shape: AppRadius.outlined(AppRadius.lg, loss ? t.border : t.lavender),
+      clipBehavior: Clip.antiAlias,
+      child: loss ? body : HaloSurface(radius: AppRadius.lg, child: body),
     );
   }
 }

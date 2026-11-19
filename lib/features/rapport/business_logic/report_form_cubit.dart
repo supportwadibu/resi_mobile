@@ -15,10 +15,14 @@ class ReportFormCubit extends Cubit<ReportFormState> {
   final RapportRepository _repository;
   final ResidenceRepository _residenceRepository;
 
+  // Chaque changement de choix efface le rapport précédent : il ne
+  // correspond plus à ce qui est sélectionné, et rien ne doit se lancer ni
+  // s'ouvrir avant un nouvel appui sur « Générer ».
   void setReportType(ReportType type) =>
-      emit(state.copyWith(selectedType: type));
+      emit(state.copyWith(selectedType: type, clearResult: true));
 
-  void setResidence(String id) => emit(state.copyWith(selectedResidenceId: id));
+  void setResidence(String id) =>
+      emit(state.copyWith(selectedResidenceId: id, clearResult: true));
 
   /// Charge le parc du propriétaire pour peupler le sélecteur.
   ///
@@ -49,15 +53,19 @@ class ReportFormCubit extends Cubit<ReportFormState> {
     }
   }
 
-  void setCommune(String value) => emit(state.copyWith(commune: value));
+  void setCommune(String value) =>
+      emit(state.copyWith(commune: value, clearResult: true));
 
   void setPreset(PeriodPreset preset) =>
-      emit(state.copyWith(selectedPreset: preset));
+      emit(state.copyWith(selectedPreset: preset, clearResult: true));
 
-  void setCustomDates(DateTime start, DateTime end) =>
-      emit(state.copyWith(customStart: start, customEnd: end));
+  void setCustomDates(DateTime start, DateTime end) => emit(
+    state.copyWith(customStart: start, customEnd: end, clearResult: true),
+  );
 
   Future<void> generate() async {
+    // Un second appui pendant la génération ne relance pas une requête.
+    if (state.isGenerating) return;
     emit(
       state.copyWith(isGenerating: true, clearResult: true, clearError: true),
     );

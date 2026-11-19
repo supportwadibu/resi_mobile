@@ -32,6 +32,8 @@ import '../../data/models/subscription_plan_model.dart';
 import '../widgets/plan_feature_line.dart';
 import '../widgets/plan_status_card.dart';
 import '../widgets/plan_style.dart';
+import 'package:resi_africa/core/theme/app_theme.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 
 /// Forfaits : le forfait en cours, puis Pro et Premium, payables par Wave.
 ///
@@ -302,7 +304,7 @@ class _LoadedView extends StatelessWidget {
         final current = currentPlanStyle(plan);
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             const PlanStatusCard(),
 
@@ -404,83 +406,99 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = PlanStyle.of(plan.access) ?? PlanStyle.pro;
-    // Forfait en cours ou recommandé : filet `primary`, comme toute option
-    // mise en avant.
+    // Forfait en cours ou recommandé : la grande carte lavande des maquettes,
+    // les autres en neutre. Sur la lavande, le contenu se peint avec le thème
+    // clair : le texte reste sombre dans les deux modes.
     final highlight = isCurrent || isRecommended;
     final t = context.tokens;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: t.surface,
-        borderRadius: AppRadius.md,
-        border: Border.all(
-          color: highlight ? t.primary : t.border,
-          width: highlight ? 1.5 : 1,
+    final card = Builder(
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: highlight ? t.lavender : context.tokens.surface,
+          borderRadius: AppRadius.lg,
+          border: Border.all(
+            color: highlight ? t.lavender : context.tokens.border,
+          ),
         ),
+        child: _content(context, highlight),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              PlanIconBadge(style: style),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(plan.name, style: context.text.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(style.tagline, style: context.text.bodySmall),
-                  ],
-                ),
+    );
+    if (!highlight) return card;
+    return Theme(
+      data: AppTheme.light(),
+      child: HaloSurface(radius: AppRadius.lg, child: card),
+    );
+  }
+
+  Widget _content(BuildContext context, bool highlight) {
+    final style = PlanStyle.of(plan.access) ?? PlanStyle.pro;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            PlanIconBadge(style: style),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plan.name,
+                    style: context.text.titleLarge!.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(style.tagline, style: context.text.bodySmall),
+                ],
               ),
-              if (isCurrent)
-                PlanChip(label: 'plans.current'.tr(), accent: style.accent)
-              else if (isRecommended)
-                PlanChip(label: 'plans.recommended'.tr(), accent: style.accent),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                CurrencyFormatter.short(plan.price),
-                style: context.text.figure,
-              ),
-              const SizedBox(width: 6),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  'plans.per_days'.tr(args: ['${plan.durationDays}']),
-                  style: context.mutedText,
-                ),
-              ),
-            ],
-          ),
-          if (plan.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            ),
+            if (isCurrent)
+              PlanChip(label: 'plans.current'.tr(), accent: style.accent)
+            else if (isRecommended)
+              PlanChip(label: 'plans.recommended'.tr(), accent: style.accent),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
             Text(
-              plan.description,
-              style: context.mutedText.copyWith(height: 1.45),
+              CurrencyFormatter.short(plan.price),
+              style: context.text.figure.copyWith(
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                'plans.per_days'.tr(args: ['${plan.durationDays}']),
+                style: context.mutedText,
+              ),
             ),
           ],
-          // Les lignes saisies dans le backoffice : c'est là que l'équipe
-          // décrit chaque forfait.
-          if (plan.features.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 14),
-            for (final line in plan.features)
-              PlanFeatureLine(text: line, color: style.colorOf(context)),
-          ],
-          const SizedBox(height: 16),
-          ..._actions(highlight),
+        ),
+        if (plan.description.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            plan.description,
+            style: context.mutedText.copyWith(height: 1.45),
+          ),
         ],
-      ),
+        // Les lignes saisies dans le backoffice : c'est là que l'équipe
+        // décrit chaque forfait.
+        if (plan.features.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          for (final line in plan.features)
+            PlanFeatureLine(text: line, color: style.colorOf(context)),
+        ],
+        const SizedBox(height: 18),
+        ..._actions(highlight),
+      ],
     );
   }
 
@@ -600,8 +618,11 @@ class _TrialCard extends StatelessWidget {
     const style = PlanStyle.trial;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: style.softOf(context),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: style.softOf(context),
+        borderRadius: AppRadius.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -646,8 +667,11 @@ class _FreeCard extends StatelessWidget {
     const style = PlanStyle.free;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: style.softOf(context),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: style.softOf(context),
+        borderRadius: AppRadius.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

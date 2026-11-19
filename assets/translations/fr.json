@@ -196,7 +196,22 @@
     "recent": "Séjours récents",
     "empty": "Aucune réservation pour le moment.",
     "see_all": "Voir toutes les réservations ({})",
-    "load_more": "Charger la suite ({} sur {})"
+    "load_more": "Charger la suite ({} sur {})",
+    "planning_title": "Planning des\nréservations",
+    "planning_previous": "Mois précédent",
+    "planning_next": "Mois suivant",
+    "planning_empty": "Aucune arrivée ni départ ce jour",
+    "planning_arrival": "Arrivée",
+    "planning_departure": "Départ",
+    "planning_moves": {
+      "one": "{} mouvement",
+      "other": "{} mouvements"
+    },
+    "planning_days": {
+      "one": "{} jour",
+      "other": "{} jours"
+    },
+    "month_activity": "Activité du mois"
   },
   "reservation_filters": {
     "search_hint": "Client : nom ou téléphone",
@@ -756,7 +771,9 @@
     "revenue_month": "Revenus du mois",
     "bookings_title": "Réservations",
     "stats_title": "Statistiques",
-    "management": "Gestion"
+    "management": "Gestion",
+    "week_title": "Votre semaine\nen un coup d'œil",
+    "all_properties": "Toutes"
   },
   "stats_actions": {
     "expenses": "Dépenses",
@@ -982,7 +999,8 @@
     "negotiation_add": "Ajouter un palier",
     "negotiation_remove": "Retirer ce palier",
     "negotiation_rule": "Le client voit le palier 1 en appuyant sur « Négocier », puis le suivant à chaque « Négocier encore ». Le dernier palier est votre prix le plus bas. La remise de durée ne s’ajoute pas à un prix négocié.",
-    "negotiation_invalid": "Vérifiez les paliers de négociation : chacun doit être inférieur au prix normal et au palier précédent."
+    "negotiation_invalid": "Vérifiez les paliers de négociation : chacun doit être inférieur au prix normal et au palier précédent.",
+    "photos_min": "Ajoutez au moins {} photos du logement pour continuer."
   },
   "property_page": {
     "fullscreen": "Plein écran",
@@ -1076,7 +1094,11 @@
       "one": "{} logement",
       "other": "{} logements"
     },
-    "price_per_day": "{} /nuit"
+    "price_per_day": "{} /nuit",
+    "count": {
+      "one": "{} résidence",
+      "other": "{} résidences"
+    }
   },
   "reservation_status": {
     "confirmed": "Confirmée",
@@ -1143,7 +1165,8 @@
     "mode_future_hint": "Séjour prévu à une date à venir",
     "length_discounts": "Remises sur la durée",
     "from_days_short": "dès {} n",
-    "phone_placeholder": "+225 07 XX XX XX XX"
+    "phone_placeholder": "+225 07 XX XX XX XX",
+    "check_out_auto": "Calculée automatiquement selon le type de séjour et l'entrée."
   },
   "booking_detail": {
     "check_in_date": "Date d’entrée",
@@ -1405,7 +1428,10 @@
     "period": "Période",
     "select": "Sélectionner",
     "choose_dates": "Choisir les dates",
-    "generate": "Générer le rapport PDF"
+    "generate": "Générer le rapport",
+    "subtitle": "Choisissez le rapport, la résidence et la période, puis générez le PDF.",
+    "summary": "Votre rapport",
+    "last_report": "Dernier rapport généré"
   },
   "finance_page": {
     "range": "{from} - {to}",
@@ -1432,7 +1458,8 @@
     "previous_year": "Année précédente",
     "next_year": "Année suivante",
     "whole_year": "Toute l’année {year}",
-    "year_label": "Année {year}"
+    "year_label": "Année {year}",
+    "activity": "Activité"
   },
   "gerant_errors": {
     "manager_already_exists": "Un compte existe déjà avec ces coordonnées.",
@@ -1746,5 +1773,10 @@
   "wallet_held": {
     "label": "Acomptes en attente d'arrivée",
     "hint": "Débloqués à l'arrivée du client, ou à la fin d'un séjour où il ne s'est pas présenté."
+  },
+  "welcome": {
+    "title": "Gérez vos résidences, encaissez partout.",
+    "subtitle": "Réservations en ligne ou au comptoir, même sans réseau.",
+    "start": "Commencer"
   }
 }

@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -140,7 +141,7 @@ class ActionGrid extends StatelessWidget {
     );
   }
 
-  static const _gap = 12.0;
+  static const _gap = 10.0;
 }
 
 class ActionCard extends StatelessWidget {
@@ -172,6 +173,7 @@ class ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.tokens;
     return AppCard(
       padding: const EdgeInsets.all(14),
       onTap: () => _open(context),
@@ -181,7 +183,7 @@ class ActionCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconChip(icon: action.icon),
+              IconChip(icon: action.icon, size: 42),
               const Spacer(),
               if (locked case final feature?)
                 Flexible(
@@ -190,16 +192,18 @@ class ActionCard extends StatelessWidget {
                     alignment: Alignment.topRight,
                     child: PremiumBadge(feature: feature),
                   ),
-                ),
+                )
+              else
+                Icon(LucideIcons.arrowUpRight, size: 16, color: t.muted),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 22),
           Text(
             action.label.tr(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.titleSmall!.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),

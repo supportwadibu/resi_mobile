@@ -15,6 +15,7 @@ import 'features/reservation/presentation/widgets/sync_result_listener.dart';
 import 'features/subscription/data/models/plan_access.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/core/theme/system_bars.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -143,23 +144,25 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       routerConfig: _router.config(
         navigatorObservers: () => [AutoRouteObserver()],
       ),
-      builder: (context, child) => MultiBlocListener(
-        listeners: [
-          BlocListener<PlanCubit, PlanState>(
-            bloc: sl<PlanCubit>(),
-            listenWhen: (_, current) => _isLockedOut(current.access),
-            listener: _onPlanChanged,
+      builder: (context, child) => SystemBars(
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<PlanCubit, PlanState>(
+              bloc: sl<PlanCubit>(),
+              listenWhen: (_, current) => _isLockedOut(current.access),
+              listener: _onPlanChanged,
+            ),
+            BlocListener<PlanCubit, PlanState>(
+              bloc: sl<PlanCubit>(),
+              listenWhen: (_, current) =>
+                  !_isLockedOut(current.access) &&
+                  _trialGate(current) != TrialGate.none,
+              listener: _onTrialGate,
+            ),
+          ],
+          child: SyncResultListener(
+            child: _LocaleRebuilder(child: child ?? const SizedBox.shrink()),
           ),
-          BlocListener<PlanCubit, PlanState>(
-            bloc: sl<PlanCubit>(),
-            listenWhen: (_, current) =>
-                !_isLockedOut(current.access) &&
-                _trialGate(current) != TrialGate.none,
-            listener: _onTrialGate,
-          ),
-        ],
-        child: SyncResultListener(
-          child: _LocaleRebuilder(child: child ?? const SizedBox.shrink()),
         ),
       ),
     );

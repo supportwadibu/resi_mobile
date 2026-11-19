@@ -67,44 +67,84 @@ class ResiTokens extends ThemeExtension<ResiTokens> {
   Color get overlay => const Color(0xFF000000);
   Color get onOverlay => const Color(0xFFFFFFFF);
 
+  /// Les deux seuls accents de surface : une carte prend la lavande, le sable
+  /// ou reste neutre — deux teintes au plus par écran, pour que l'interface
+  /// reste calme. Identiques dans les deux modes : le texte posé dessus reste
+  /// sombre, comme sur les maquettes.
+  Color get lavender => const Color(0xFFC9C2FF);
+  Color get onLavender => const Color(0xFF14112A);
+  Color get sand => const Color(0xFFFDE9B9);
+  Color get onSand => const Color(0xFF2E2205);
+
+  bool get _isDark => background.computeLuminance() < 0.2;
+
+  /// Verre des surfaces flottantes (barre d'onglets, boutons sur photo ou
+  /// carte) : blanc laiteux en clair, prune fumée en sombre.
+  Color get glass =>
+      _isDark ? const Color(0x8C241A2E) : const Color(0xC7FFFFFF);
+  Color get glassBorder =>
+      _isDark ? const Color(0x1FFFFFFF) : const Color(0xF2FFFFFF);
+
+  /// Fond des écrans racines : la lueur prune descend du coin haut gauche en
+  /// sombre ; en clair elle est transparente et le fond crème reste nu.
+  RadialGradient get glowGradient => RadialGradient(
+    center: const Alignment(-0.6, -1.1),
+    radius: 1.3,
+    colors: [glow, glow.withValues(alpha: 0)],
+  );
+
+  /// Teintes du ruban de l'écran de bienvenue : lavande vers sable, sans
+  /// autre couleur, comme le reste du système.
+  List<Color> get ribbon => const [
+    Color(0xFF8F8DF2),
+    Color(0xFFC9C2FF),
+    Color(0xFFFDE9B9),
+    Color(0xFFE9CFA6),
+    Color(0xFFA9A2F5),
+  ];
+
+  /// Lueur prune du haut des écrans sombres ; transparente en clair, où le
+  /// fond crème suffit.
+  Color get glow => _isDark ? const Color(0xFF2E1838) : const Color(0x00FBF6F0);
+
   static const light = ResiTokens(
-    background: Color(0xFFFAFAFA),
+    background: Color(0xFFFBF6F0),
     surface: Color(0xFFFFFFFF),
-    foreground: Color(0xFF0A0A0A),
-    muted: Color(0xFF5F5F66),
-    border: Color(0xFFE5E5E8),
-    primary: Color(0xFF0A0A0A),
+    foreground: Color(0xFF0B0B0F),
+    muted: Color(0xFF625C6A),
+    border: Color(0xFFE7DED3),
+    primary: Color(0xFF0B0B0F),
     primaryForeground: Color(0xFFFFFFFF),
-    accentViolet: Color(0xFF6D28D9),
-    accentVioletSoft: Color(0xFFF3EFFD),
+    accentViolet: Color(0xFF4B3FC4),
+    accentVioletSoft: Color(0xFFECE8FF),
     accentGreen: Color(0xFF15803D),
-    accentGreenSoft: Color(0xFFECF8F0),
+    accentGreenSoft: Color(0xFFE8F5EC),
     accentRed: Color(0xFFB42318),
     accentRedSoft: Color(0xFFFEF3F2),
-    accentBlue: Color(0xFF1D4ED8),
-    accentBlueSoft: Color(0xFFEEF3FE),
-    accentAmber: Color(0xFFB45309),
-    accentAmberSoft: Color(0xFFFDF6E9),
+    accentBlue: Color(0xFF3B4FC4),
+    accentBlueSoft: Color(0xFFECEFFE),
+    accentAmber: Color(0xFF8A5A00),
+    accentAmberSoft: Color(0xFFFDE9B9),
   );
 
   static const dark = ResiTokens(
-    background: Color(0xFF000000),
-    surface: Color(0xFF121212),
-    foreground: Color(0xFFFAFAFA),
-    muted: Color(0xFFA1A1A8),
-    border: Color(0xFF27272A),
-    primary: Color(0xFFFAFAFA),
-    primaryForeground: Color(0xFF0A0A0A),
-    accentViolet: Color(0xFFA78BFA),
-    accentVioletSoft: Color(0xFF231A3A),
+    background: Color(0xFF07050B),
+    surface: Color(0xFF16101C),
+    foreground: Color(0xFFF5F3F7),
+    muted: Color(0xFFB0A8BA),
+    border: Color(0xFF2A2232),
+    primary: Color(0xFFF5F3F7),
+    primaryForeground: Color(0xFF0B0B0F),
+    accentViolet: Color(0xFFC9C2FF),
+    accentVioletSoft: Color(0xFF2A2340),
     accentGreen: Color(0xFF4ADE80),
     accentGreenSoft: Color(0xFF0F2A1A),
     accentRed: Color(0xFFFDA29B),
     accentRedSoft: Color(0xFF3A1512),
-    accentBlue: Color(0xFF93B4FD),
-    accentBlueSoft: Color(0xFF14203D),
-    accentAmber: Color(0xFFFBBF24),
-    accentAmberSoft: Color(0xFF33240A),
+    accentBlue: Color(0xFFB4C0FF),
+    accentBlueSoft: Color(0xFF1C2140),
+    accentAmber: Color(0xFFFDE9B9),
+    accentAmberSoft: Color(0xFF3A2E14),
   );
 
   /// Ton plein d'un accent. `neutral` rend le texte secondaire.

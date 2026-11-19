@@ -1,42 +1,21 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:resi_africa/shared/widgets/app_button.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 
-/// Barre de l'écran financier, avec le choix du périmètre (tout le parc, une
-/// résidence ou un logement).
+/// Barre de l'écran financier. Les filtres (périmètre, période) vivent sous
+/// le titre, dans l'écran : la barre des maquettes ne porte que le retour.
 class FinanceAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const FinanceAppBar({super.key, this.onFilterTap, this.scopeLabel});
+  const FinanceAppBar({super.key});
 
-  final VoidCallback? onFilterTap;
+  static final _bar = AppTopBar(title: '');
 
-  /// Résidence ou logement retenu, `null` pour tout le parc.
-  final String? scopeLabel;
-
+  /// La hauteur d'`AppTopBar` elle-même : une valeur écrite ici à la main
+  /// (56) écrasait le grand titre sous la barre.
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => _bar.preferredSize;
 
   @override
   Widget build(BuildContext context) {
-    return AppTopBar(
-      title: 'finance_page.title'.tr(),
-      actions: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 150),
-          child: AppButton(
-            label: scopeLabel ?? 'finance_page.whole_portfolio'.tr(),
-            icon: LucideIcons.slidersHorizontal,
-            // Périmètre restreint : le bouton passe en noir, pour qu'on lise
-            // que les chiffres ne couvrent pas tout le parc.
-            variant: scopeLabel == null
-                ? AppButtonVariant.secondary
-                : AppButtonVariant.primary,
-            size: AppButtonSize.sm,
-            onPressed: onFilterTap,
-          ),
-        ),
-      ],
-    );
+    return AppTopBar(title: 'finance_page.title'.tr());
   }
 }

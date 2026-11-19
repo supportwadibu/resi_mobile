@@ -13,8 +13,7 @@ class DateFormatter {
   static String monthYear(DateTime value) => DateFormat('MMM y').format(value);
 
   /// « 14 nov. 2026, 14h42 ».
-  static String dateTime(DateTime value) =>
-      '${date(value)}, ${time(value)}';
+  static String dateTime(DateTime value) => '${date(value)}, ${time(value)}';
 
   /// « 14h42 » en français, « 14:42 » ailleurs : la notation en « h » est
   /// propre au français, un lecteur anglophone attend les deux-points.

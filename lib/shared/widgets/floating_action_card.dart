@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/theme/resi_tokens.dart';
 import 'app_sheet.dart';
 import 'frosted_surface.dart';
 
@@ -35,26 +34,31 @@ class FloatingActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 300),
+      // Presque toute la largeur : une carte étroite laissait de grands vides
+      // de part et d'autre.
+      constraints: const BoxConstraints(maxWidth: 480),
       child: FrostedSurface(
         opacity: 0.85,
         borderRadius: FrostedSurface.card,
         child: Material(
           type: MaterialType.transparency,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final feature in features) ...[
-                if (feature != features.first)
-                  Divider(height: 1, color: context.tokens.border),
-                AppSheetAction(
-                  icon: feature.icon,
-                  label: feature.label.tr(),
-                  description: feature.description?.tr(),
-                  onTap: () => onSelect(feature.action),
-                ),
+          // Les tuiles portent 16 de marge sur les côtés et 4 entre elles :
+          // 12 de plus en haut et en bas égalisent le cadre.
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final feature in features) ...[
+                  AppSheetAction(
+                    icon: feature.icon,
+                    label: feature.label.tr(),
+                    description: feature.description?.tr(),
+                    onTap: () => onSelect(feature.action),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

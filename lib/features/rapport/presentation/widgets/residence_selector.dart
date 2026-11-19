@@ -1,10 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:resi_africa/core/theme/app_radius.dart';
-import 'package:resi_africa/core/theme/resi_tokens.dart';
-import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/features/rapport/business_logic/report_form_state.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 /// Entrée du sélecteur : un `id`/`name` suffisent à l'affichage.
 ///
@@ -19,6 +17,8 @@ class ReportResidenceOption {
   final String name;
 }
 
+/// Résidences en puces : noire pour la choisie, bordées sinon. Elles
+/// passent à la ligne plutôt que de défiler, pour tout voir d'un coup.
 class ResidenceSelector extends StatelessWidget {
   final List<ReportResidenceOption> residences;
   final String selectedId;
@@ -33,39 +33,20 @@ class ResidenceSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.tokens.background,
-        borderRadius: AppRadius.md,
-        border: Border.all(color: context.tokens.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedId,
-          isExpanded: true,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          borderRadius: AppRadius.md,
-          dropdownColor: context.tokens.surface,
-          style: context.text.bodyMedium,
-          icon: Icon(
-            LucideIcons.chevronDown,
-            size: 16,
-            color: context.tokens.muted,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final r in residences)
+          AppChoiceChip(
+            icon: r.id == allResidencesOption.id
+                ? LucideIcons.layers
+                : LucideIcons.building2,
+            label: r.id == allResidencesOption.id ? r.name.tr() : r.name,
+            selected: r.id == selectedId,
+            onTap: () => onChanged(r.id),
           ),
-          items: residences.map((r) {
-            return DropdownMenuItem(
-              value: r.id,
-              child: Text(
-                r.id == allResidencesOption.id ? r.name.tr() : r.name,
-                style: context.text.bodyMedium,
-              ),
-            );
-          }).toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
-      ),
+      ],
     );
   }
 }

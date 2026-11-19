@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_radius.dart';
+import '../motion/motion.dart';
 import '../../core/theme/resi_tokens.dart';
 
 /// Variantes du bouton, miroir de `Button` du backoffice.
@@ -83,9 +83,7 @@ class AppButton extends StatelessWidget {
       ),
       side: side == null ? null : WidgetStatePropertyAll(side),
       elevation: const WidgetStatePropertyAll(0),
-      shape: WidgetStatePropertyAll(
-        isSmall ? AppRadius.smShape : AppRadius.mdShape,
-      ),
+      shape: WidgetStatePropertyAll(const StadiumBorder()),
       padding: WidgetStatePropertyAll(
         isSmall
             ? const EdgeInsets.symmetric(horizontal: 10, vertical: 6)
@@ -100,6 +98,8 @@ class AppButton extends StatelessWidget {
 
     final enabled = onPressed != null && !isLoading;
     final child = isLoading
+        // Seule exception à la règle des squelettes : un bouton occupé
+        // montre un anneau qui tourne, à la couleur de son texte.
         ? SizedBox.square(
             dimension: iconSize,
             child: CircularProgressIndicator(strokeWidth: 2, color: fg),
@@ -136,6 +136,16 @@ class AppButton extends StatelessWidget {
       ),
     );
 
-    return expand ? SizedBox(width: double.infinity, child: button) : button;
+    // Se tasse sous le doigt ; clic haptique sur l'action principale, celle
+    // qui engage (payer, valider, enregistrer).
+    final pressable = PressScale(
+      enabled: enabled,
+      haptic: variant == AppButtonVariant.primary,
+      child: button,
+    );
+
+    return expand
+        ? SizedBox(width: double.infinity, child: pressable)
+        : pressable;
   }
 }

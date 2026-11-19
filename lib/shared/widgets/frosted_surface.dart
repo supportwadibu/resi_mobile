@@ -42,11 +42,13 @@ class FrostedSurface extends StatelessWidget {
     return ClipRRect(
       borderRadius: borderRadius,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: (color ?? t.surface).withValues(alpha: opacity),
-            border: Border.all(color: t.border),
+            // Sans teinte imposée, le verre du thème : laiteux en clair, fumé
+            // en sombre, avec un liseré clair qui détache la surface.
+            color: color?.withValues(alpha: opacity) ?? t.glass,
+            border: Border.all(color: t.glassBorder),
             borderRadius: borderRadius,
           ),
           child: Padding(padding: padding, child: child),

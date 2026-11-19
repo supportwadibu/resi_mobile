@@ -20,6 +20,7 @@ import '../../business_logic/owner_profile_cubit.dart';
 import '../../business_logic/owner_profile_state.dart';
 import '../../../clients/data/models/client_model.dart';
 import '../../../clients/data/services/id_scan_service.dart';
+import '../../../subscription/business_logic/trial_choice.dart';
 import '../../data/models/owner_profile_model.dart';
 import '../widgets/owner_profile/steps/step_identity_document_widget.dart';
 import '../widgets/owner_profile/steps/step_personal_info_widget.dart';
@@ -320,12 +321,18 @@ class _PropertyManagerProfileViewState
     AppToast.error(message, context: context);
   }
 
-  void _continue() {
-    if (widget.isOnboarding) {
-      context.router.replaceAll([const TrialPlanChoiceRoute()]);
-    } else {
+  Future<void> _continue() async {
+    if (!widget.isOnboarding) {
       context.router.maybePop();
+      return;
     }
+    // Le forfait a pu être choisi lors d'une session précédente : l'écran de
+    // choix ne revient que si l'API le réclame encore.
+    final mustChoose = await mustChooseTrialPlan(whenUnknown: true);
+    if (!mounted) return;
+    context.router.replaceAll([
+      if (mustChoose) const TrialPlanChoiceRoute() else const HomeRoute(),
+    ]);
   }
 
   @override

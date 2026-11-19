@@ -14,6 +14,7 @@ class AppBottomActionBar extends StatelessWidget {
     this.secondaryIcon,
     this.primaryVariant = AppButtonVariant.primary,
     this.isLoading = false,
+    this.header,
     this.footer,
   }) : assert(
          secondaryLabel == null || onSecondary != null,
@@ -34,6 +35,10 @@ class AppBottomActionBar extends StatelessWidget {
 
   final bool isLoading;
 
+  /// Posé au-dessus des boutons : un réglage qui accompagne l'action
+  /// principale sans en être une (mise en ligne d'une annonce).
+  final Widget? header;
+
   final Widget? footer;
 
   @override
@@ -51,6 +56,7 @@ class AppBottomActionBar extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (header != null) ...[header!, const SizedBox(height: 12)],
               Row(
                 children: [
                   if (secondaryLabel != null) ...[

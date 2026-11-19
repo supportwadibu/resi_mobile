@@ -9,8 +9,8 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:auto_route/auto_route.dart' as _i8;
-import 'package:flutter/material.dart' as _i9;
+import 'package:auto_route/auto_route.dart' as _i9;
+import 'package:flutter/material.dart' as _i10;
 import 'package:resi_africa/features/auth/presentation/screens/account_deletion_screen.dart'
     as _i1;
 import 'package:resi_africa/features/auth/presentation/screens/auth_screen.dart'
@@ -25,16 +25,18 @@ import 'package:resi_africa/features/auth/presentation/screens/register_screen.d
     as _i6;
 import 'package:resi_africa/features/auth/presentation/screens/trial_welcome_screen.dart'
     as _i7;
+import 'package:resi_africa/features/auth/presentation/screens/welcome_screen.dart'
+    as _i8;
 
 /// generated route for
 /// [_i1.AccountDeletionScreen]
-class AccountDeletionRoute extends _i8.PageRouteInfo<void> {
-  const AccountDeletionRoute({List<_i8.PageRouteInfo>? children})
+class AccountDeletionRoute extends _i9.PageRouteInfo<void> {
+  const AccountDeletionRoute({List<_i9.PageRouteInfo>? children})
     : super(AccountDeletionRoute.name, initialChildren: children);
 
   static const String name = 'AccountDeletionRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       return const _i1.AccountDeletionScreen();
@@ -44,13 +46,13 @@ class AccountDeletionRoute extends _i8.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i2.AuthScreen]
-class AuthRoute extends _i8.PageRouteInfo<void> {
-  const AuthRoute({List<_i8.PageRouteInfo>? children})
+class AuthRoute extends _i9.PageRouteInfo<void> {
+  const AuthRoute({List<_i9.PageRouteInfo>? children})
     : super(AuthRoute.name, initialChildren: children);
 
   static const String name = 'AuthRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       return const _i2.AuthScreen();
@@ -60,11 +62,11 @@ class AuthRoute extends _i8.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i3.ForgotPasswordScreen]
-class ForgotPasswordRoute extends _i8.PageRouteInfo<ForgotPasswordRouteArgs> {
+class ForgotPasswordRoute extends _i9.PageRouteInfo<ForgotPasswordRouteArgs> {
   ForgotPasswordRoute({
     String? identifier,
-    _i9.Key? key,
-    List<_i8.PageRouteInfo>? children,
+    _i10.Key? key,
+    List<_i9.PageRouteInfo>? children,
   }) : super(
          ForgotPasswordRoute.name,
          args: ForgotPasswordRouteArgs(identifier: identifier, key: key),
@@ -73,7 +75,7 @@ class ForgotPasswordRoute extends _i8.PageRouteInfo<ForgotPasswordRouteArgs> {
 
   static const String name = 'ForgotPasswordRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<ForgotPasswordRouteArgs>(
@@ -92,7 +94,7 @@ class ForgotPasswordRouteArgs {
 
   final String? identifier;
 
-  final _i9.Key? key;
+  final _i10.Key? key;
 
   @override
   String toString() {
@@ -112,13 +114,13 @@ class ForgotPasswordRouteArgs {
 
 /// generated route for
 /// [_i4.LoginScreen]
-class LoginRoute extends _i8.PageRouteInfo<void> {
-  const LoginRoute({List<_i8.PageRouteInfo>? children})
+class LoginRoute extends _i9.PageRouteInfo<void> {
+  const LoginRoute({List<_i9.PageRouteInfo>? children})
     : super(LoginRoute.name, initialChildren: children);
 
   static const String name = 'LoginRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       return const _i4.LoginScreen();
@@ -129,11 +131,11 @@ class LoginRoute extends _i8.PageRouteInfo<void> {
 /// generated route for
 /// [_i5.PropertyManagerProfileScreen]
 class PropertyManagerProfileRoute
-    extends _i8.PageRouteInfo<PropertyManagerProfileRouteArgs> {
+    extends _i9.PageRouteInfo<PropertyManagerProfileRouteArgs> {
   PropertyManagerProfileRoute({
-    _i9.Key? key,
+    _i10.Key? key,
     bool isOnboarding = false,
-    List<_i8.PageRouteInfo>? children,
+    List<_i9.PageRouteInfo>? children,
   }) : super(
          PropertyManagerProfileRoute.name,
          args: PropertyManagerProfileRouteArgs(
@@ -145,7 +147,7 @@ class PropertyManagerProfileRoute
 
   static const String name = 'PropertyManagerProfileRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<PropertyManagerProfileRouteArgs>(
@@ -162,7 +164,7 @@ class PropertyManagerProfileRoute
 class PropertyManagerProfileRouteArgs {
   const PropertyManagerProfileRouteArgs({this.key, this.isOnboarding = false});
 
-  final _i9.Key? key;
+  final _i10.Key? key;
 
   final bool isOnboarding;
 
@@ -184,13 +186,13 @@ class PropertyManagerProfileRouteArgs {
 
 /// generated route for
 /// [_i6.RegisterScreen]
-class RegisterRoute extends _i8.PageRouteInfo<void> {
-  const RegisterRoute({List<_i8.PageRouteInfo>? children})
+class RegisterRoute extends _i9.PageRouteInfo<void> {
+  const RegisterRoute({List<_i9.PageRouteInfo>? children})
     : super(RegisterRoute.name, initialChildren: children);
 
   static const String name = 'RegisterRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       return const _i6.RegisterScreen();
@@ -200,16 +202,32 @@ class RegisterRoute extends _i8.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i7.TrialWelcomeScreen]
-class TrialWelcomeRoute extends _i8.PageRouteInfo<void> {
-  const TrialWelcomeRoute({List<_i8.PageRouteInfo>? children})
+class TrialWelcomeRoute extends _i9.PageRouteInfo<void> {
+  const TrialWelcomeRoute({List<_i9.PageRouteInfo>? children})
     : super(TrialWelcomeRoute.name, initialChildren: children);
 
   static const String name = 'TrialWelcomeRoute';
 
-  static _i8.PageInfo page = _i8.PageInfo(
+  static _i9.PageInfo page = _i9.PageInfo(
     name,
     builder: (data) {
       return const _i7.TrialWelcomeScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [_i8.WelcomeScreen]
+class WelcomeRoute extends _i9.PageRouteInfo<void> {
+  const WelcomeRoute({List<_i9.PageRouteInfo>? children})
+    : super(WelcomeRoute.name, initialChildren: children);
+
+  static const String name = 'WelcomeRoute';
+
+  static _i9.PageInfo page = _i9.PageInfo(
+    name,
+    builder: (data) {
+      return const _i8.WelcomeScreen();
     },
   );
 }

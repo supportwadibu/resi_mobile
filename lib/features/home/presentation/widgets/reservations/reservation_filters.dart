@@ -8,6 +8,8 @@ import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import '../../../../reservation/business_logic/reservation_cubit.dart';
 import '../../../../reservation/business_logic/reservation_state.dart';
 import '../../../../reservation/data/models/reservation_model.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
 
 /// Recherche client et puces de statut, au-dessus de la liste des séjours.
 class ReservationFilters extends StatefulWidget {
@@ -55,7 +57,24 @@ class _ReservationFiltersState extends State<ReservationFilters> {
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: 'reservation_filters.search_hint'.tr(),
-              prefixIcon: const Icon(LucideIcons.search, size: 16),
+              // Recherche en pilule, comme celle de « Mes biens ».
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 16, right: 8),
+                child: Icon(LucideIcons.search, size: 18),
+              ),
+              prefixIconConstraints: const BoxConstraints(),
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.pill,
+                borderSide: BorderSide(color: context.tokens.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadius.pill,
+                borderSide: BorderSide(color: context.tokens.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadius.pill,
+                borderSide: BorderSide(color: context.tokens.primary),
+              ),
               suffixIcon: value.text.isEmpty
                   ? null
                   : IconButton(
@@ -66,7 +85,7 @@ class _ReservationFiltersState extends State<ReservationFilters> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         // Reconstruit à chaque état : le statut vit dans le cubit, et la puce
         // choisie doit basculer dès l'appui, avant la réponse du serveur.
         BlocBuilder<ReservationCubit, ReservationState>(

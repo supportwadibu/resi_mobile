@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/config/app_config.dart';
@@ -124,11 +125,7 @@ class _CityPickerWidgetState extends State<CityPickerWidget> {
             label: '',
             hint: 'property_form.city_search_placeholder'.tr(),
             prefixIcon: _isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const SizedBox(width: 40, child: AppLoader(size: 16))
                 : const Icon(LucideIcons.search, size: 16),
             onChanged: _onSearchChanged,
           ),

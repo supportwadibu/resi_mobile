@@ -138,9 +138,7 @@ class _ReviewCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'arbitration.saved_at'.tr(
-              args: [
-                DateFormatter.stayInstant(item.createdAt),
-              ],
+              args: [DateFormatter.stayInstant(item.createdAt)],
             ),
             style: context.mutedText,
           ),

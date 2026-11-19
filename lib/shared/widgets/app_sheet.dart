@@ -7,7 +7,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
 import 'app_icon_button.dart';
 
-/// Ouvre une feuille du bas à l'allure commune : angles droits, poignée,
+/// Ouvre une feuille du bas à l'allure commune : grands coins hauts, poignée,
 /// fond de surface (voir `bottomSheetTheme`). La hauteur suit le contenu et
 /// s'arrête sous la barre d'état.
 Future<T?> showAppSheet<T>({
@@ -16,6 +16,11 @@ Future<T?> showAppSheet<T>({
   bool isDismissible = true,
   bool useRootNavigator = false,
 }) {
+  // Lue sur la vue elle-même : un `Scaffold` comme la feuille retirent la
+  // marge système de leur contexte, où la barre vaudrait zéro.
+  final navigationBar = MediaQueryData.fromView(
+    View.of(context),
+  ).viewPadding.bottom;
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
@@ -23,7 +28,15 @@ Future<T?> showAppSheet<T>({
     isDismissible: isDismissible,
     enableDrag: isDismissible,
     useRootNavigator: useRootNavigator,
-    builder: builder,
+    // Marge basse commune à toutes les feuilles : la barre de navigation
+    // d'Android (l'écran est bord à bord) plus 16. Sans elle, la dernière
+    // ligne passait sous la barre et restait invisible. Le contenu
+    // d'`AppSheet` défile au-delà de la hauteur de l'écran, si bien qu'un
+    // texte agrandi reste entièrement atteignable.
+    builder: (sheetContext) => Padding(
+      padding: EdgeInsets.only(bottom: navigationBar + 16),
+      child: builder(sheetContext),
+    ),
   );
 }
 
@@ -37,7 +50,7 @@ class AppSheet extends StatelessWidget {
     this.description,
     this.footer,
     this.showClose = true,
-    this.padding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 20),
     super.key,
   });
 
@@ -52,33 +65,36 @@ class AppSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.tokens;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppSheetHeader(
-            title: title,
-            description: description,
-            showClose: showClose,
-          ),
+          // Le titre défile avec le contenu : avec un texte agrandi, un titre
+          // fixe prenait presque toute la hauteur et la zone qui défile ne
+          // montrait plus une seule ligne entière.
           Flexible(
-            child: SingleChildScrollView(padding: padding, child: child),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppSheetHeader(
+                    title: title,
+                    description: description,
+                    showClose: showClose,
+                  ),
+                  Padding(padding: padding, child: child),
+                ],
+              ),
+            ),
           ),
           if (footer != null)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: t.border)),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: footer,
-                ),
-              ),
+            // La marge de la barre de navigation est déjà posée par
+            // `showAppSheet`.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+              child: footer,
             ),
         ],
       ),
@@ -102,7 +118,7 @@ class AppSheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, showClose ? 8 : 16, 12),
+      padding: EdgeInsets.fromLTRB(24, 4, showClose ? 16 : 24, 18),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -110,7 +126,12 @@ class AppSheetHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: context.text.titleLarge),
+                Text(
+                  title,
+                  style: context.text.headlineSmall!.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (description != null) ...[
                   const SizedBox(height: 4),
                   Text(description!, style: context.mutedText),
@@ -158,46 +179,60 @@ class AppSheetAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     final color = danger ? t.danger : t.foreground;
-    return InkWell(
-      onTap: onTap,
-      child: Opacity(
-        opacity: onTap == null ? 0.5 : 1,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: danger ? t.dangerSurface : t.background,
-                  border: danger ? null : Border.all(color: t.border),
-                  borderRadius: AppRadius.sm,
-                ),
-                child:
-                    iconWidget ??
-                    Icon(icon, size: 16, color: danger ? t.danger : t.muted),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: context.text.titleSmall!.copyWith(color: color),
+    // Tuile arrondie sur le fond de page, comme les lignes des maquettes.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: t.background,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Opacity(
+            opacity: onTap == null ? 0.5 : 1,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: danger ? t.dangerSurface : t.surface,
+                      shape: BoxShape.circle,
                     ),
-                    if (description != null) ...[
-                      const SizedBox(height: 2),
-                      Text(description!, style: context.text.bodySmall),
-                    ],
-                  ],
-                ),
+                    child:
+                        iconWidget ??
+                        Icon(
+                          icon,
+                          size: 18,
+                          color: danger ? t.danger : t.foreground,
+                        ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: context.text.titleSmall!.copyWith(
+                            color: color,
+                          ),
+                        ),
+                        if (description != null) ...[
+                          const SizedBox(height: 2),
+                          Text(description!, style: context.text.bodySmall),
+                        ],
+                      ],
+                    ),
+                  ),
+                  trailing ??
+                      Icon(LucideIcons.arrowUpRight, size: 16, color: t.muted),
+                ],
               ),
-              trailing ??
-                  Icon(LucideIcons.chevronRight, size: 16, color: t.muted),
-            ],
+            ),
           ),
         ),
       ),
@@ -236,7 +271,7 @@ class AppChoiceChip extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -26,6 +26,8 @@ import '../../../residence/data/repositories/residence_repository.dart';
 import '../../../residence/presentation/widgets/attach_residence_sheet.dart';
 import '../../data/models/property_model.dart';
 import 'package:resi_africa/shared/utils/ensure_online.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/frosted_surface.dart';
 
 @RoutePage()
 class PropertyDetailScreen extends StatefulWidget {
@@ -64,93 +66,135 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         : images[_selectedImageIndex.clamp(0, images.length - 1)];
 
     return Scaffold(
+      // Le contenu défile sous la barre flottante, visible à travers son verre.
+      extendBody: true,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                PropertyCoverImage(
-                  images: images,
-                  currentIndex: _selectedImageIndex,
-                  onIndexChanged: (index) =>
-                      setState(() => _selectedImageIndex = index),
-                ),
-                // Posés sur la photo : fond de surface et filet, pour rester
-                // lisibles sur un visuel clair comme sur un visuel sombre.
-                Positioned(
-                  top: MediaQuery.paddingOf(context).top + 8,
-                  left: 12,
-                  right: 12,
-                  child: Row(
-                    children: [
-                      AppIconButton(
-                        icon: LucideIcons.chevronLeft,
-                        label: 'common.back'.tr(),
-                        bordered: true,
-                        onPressed: () => context.router.maybePop(),
-                      ),
-                      const Spacer(),
-                      if (cover != null)
-                        AppIconButton(
-                          icon: LucideIcons.expand,
-                          label: 'property_page.fullscreen'.tr(),
-                          bordered: true,
-                          onPressed: () => ImageViewerUtils.showFullScreenImage(
-                            context,
-                            cover,
+                Stack(
+                  children: [
+                    PropertyCoverImage(
+                      images: images,
+                      currentIndex: _selectedImageIndex,
+                      onIndexChanged: (index) =>
+                          setState(() => _selectedImageIndex = index),
+                    ),
+                    // Disques de verre posés sur la photo, comme sur les maquettes :
+                    // lisibles sur un visuel clair comme sur un visuel sombre.
+                    Positioned(
+                      top: MediaQuery.paddingOf(context).top + 8,
+                      left: 16,
+                      right: 16,
+                      child: Row(
+                        children: [
+                          FrostedSurface(
+                            borderRadius: FrostedSurface.pill,
+                            child: AppIconButton(
+                              icon: LucideIcons.chevronLeft,
+                              label: 'common.back'.tr(),
+                              onPressed: () => context.router.maybePop(),
+                            ),
                           ),
-                        ),
-                    ],
+                          const Spacer(),
+                          if (cover != null)
+                            FrostedSurface(
+                              borderRadius: FrostedSurface.pill,
+                              child: AppIconButton(
+                                icon: LucideIcons.expand,
+                                label: 'property_page.fullscreen'.tr(),
+                                onPressed: () =>
+                                    ImageViewerUtils.showFullScreenImage(
+                                      context,
+                                      cover,
+                                    ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // La feuille remonte sur la photo, comme la fiche des maquettes.
+                // Dans le même bloc que la photo : dans une liste qui défile, un bloc
+                // est peint sous le précédent, et la photo cachait le haut de la
+                // feuille — les vignettes en premier.
+                Transform.translate(
+                  offset: const Offset(0, -48),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: context.tokens.background,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(34),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(16, 20, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ListImagesWidget(
+                            images: images,
+                            selectedIndex: _selectedImageIndex,
+                            onTap: (index) =>
+                                setState(() => _selectedImageIndex = index),
+                          ),
+                          if (images.isNotEmpty) const SizedBox(height: 18),
+                          PropertyInfosHeader(
+                            name: property.title,
+                            location: property.address.city,
+                            pricePerDay: property.pricing.dailyPrice,
+                            status: StatusBadge(
+                              label: property.status.label,
+                              tone: StatusTones.property(property.status.code),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          PropertyFeatures(features: _features()),
+                          const SizedBox(height: 12),
+                          PropertyResidenceSection(
+                            residenceId: property.residenceId,
+                            unitLabel: property.unitLabel,
+                            onAttachPressed: _attachResidence,
+                          ),
+                          const SizedBox(height: 12),
+                          PropertyPricingDetails(
+                            pricePerDay: property.pricing.dailyPrice,
+                            priceTiers: property.pricing.priceTiers,
+                          ),
+                          const SizedBox(height: 12),
+                          PropertyLocationSection(
+                            address: _fullAddress(),
+                            latitude: property.address.latitude ?? 5.3364,
+                            longitude: property.address.longitude ?? -3.9772,
+                          ),
+                          if (property.description.trim().isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            PropertyDescription(
+                              description: property.description,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+          // Hors de la feuille, dans son propre sliver : la liste des
+          // réservations ne se construit qu'à l'approche, comme avant.
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            sliver: SliverList.list(
-              children: [
-                ListImagesWidget(
-                  images: images,
-                  selectedIndex: _selectedImageIndex,
-                  onTap: (index) => setState(() => _selectedImageIndex = index),
-                ),
-                if (images.isNotEmpty) const SizedBox(height: 16),
-                PropertyInfosHeader(
-                  name: property.title,
-                  location: property.address.city,
-                  pricePerDay: property.pricing.dailyPrice,
-                  status: StatusBadge(
-                    label: property.status.label,
-                    tone: StatusTones.property(property.status.code),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                PropertyFeatures(features: _features()),
-                const SizedBox(height: 12),
-                PropertyResidenceSection(
-                  residenceId: property.residenceId,
-                  unitLabel: property.unitLabel,
-                  onAttachPressed: _attachResidence,
-                ),
-                const SizedBox(height: 12),
-                PropertyPricingDetails(
-                  pricePerDay: property.pricing.dailyPrice,
-                  priceTiers: property.pricing.priceTiers,
-                ),
-                const SizedBox(height: 12),
-                PropertyLocationSection(
-                  address: _fullAddress(),
-                  latitude: property.address.latitude ?? 5.3364,
-                  longitude: property.address.longitude ?? -3.9772,
-                ),
-                if (property.description.trim().isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  PropertyDescription(description: property.description),
-                ],
-                const SizedBox(height: 24),
-                PropertyReservationsSection(propertyId: property.id),
-              ],
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              MediaQuery.paddingOf(context).bottom + 120,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: PropertyReservationsSection(propertyId: property.id),
             ),
           ),
         ],

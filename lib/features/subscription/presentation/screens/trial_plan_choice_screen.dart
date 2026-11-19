@@ -173,7 +173,7 @@ class _OfferCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: t.surface,
-        borderRadius: AppRadius.md,
+        borderRadius: AppRadius.lg,
         border: Border.all(color: t.border),
       ),
       child: Column(

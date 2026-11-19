@@ -21,17 +21,32 @@ class ThemeSwitcher extends StatelessWidget {
             ButtonSegment(
               value: ThemeMode.light,
               icon: const Icon(LucideIcons.sun, size: 16),
-              label: Text('theme.light'.tr()),
+              label: Text(
+                'theme.light'.tr(),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+              ),
             ),
             ButtonSegment(
               value: ThemeMode.dark,
               icon: const Icon(LucideIcons.moon, size: 16),
-              label: Text('theme.dark'.tr()),
+              label: Text(
+                'theme.dark'.tr(),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+              ),
             ),
             ButtonSegment(
               value: ThemeMode.system,
               icon: const Icon(LucideIcons.monitor, size: 16),
-              label: Text('theme.system'.tr()),
+              label: Text(
+                'theme.system'.tr(),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+              ),
             ),
           ],
           selected: {mode},

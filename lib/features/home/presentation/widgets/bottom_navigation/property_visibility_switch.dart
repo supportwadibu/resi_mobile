@@ -1,9 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
-import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
 
 /// Met l'annonce en ligne, ou la retire de la vitrine.
 ///
@@ -28,27 +27,49 @@ class PropertyVisibilitySwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.centerRight,
+    final t = context.tokens;
+    // Compact, une ligne par texte : l'encart complet passait sur trois
+    // lignes à côté du bouton « Modifier » et déformait la barre.
+    return Row(
       children: [
-        AppCallout(
-          icon: isPublished ? LucideIcons.eye : LucideIcons.eyeOff,
-          tone: isPublished ? AppAccent.green : AppAccent.neutral,
-          title: isPublished
-              ? 'property_detail.online'.tr()
-              : 'property_detail.offline'.tr(),
-          message: isPublished
-              ? 'property_detail.visible'.tr()
-              : 'property_detail.hidden'.tr(),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: isPublished ? t.accentGreen : t.muted,
+            shape: BoxShape.circle,
+          ),
+          child: const SizedBox.square(dimension: 8),
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: isBusy
-              // Occupe la largeur de la bascule, pour que la ligne ne
-              // tressaute pas le temps de l'appel.
-              ? const SizedBox(width: 52, child: AppLoader(size: 20))
-              : Switch(value: isPublished, onChanged: onChanged),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isPublished
+                    ? 'property_detail.online'.tr()
+                    : 'property_detail.offline'.tr(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.labelLarge,
+              ),
+              Text(
+                isPublished
+                    ? 'property_detail.visible'.tr()
+                    : 'property_detail.hidden'.tr(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodySmall,
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 4),
+        isBusy
+            // Occupe la largeur de la bascule, pour que la ligne ne tressaute
+            // pas le temps de l'appel.
+            ? const SizedBox(width: 52, child: AppLoader(size: 20))
+            : Switch(value: isPublished, onChanged: onChanged),
       ],
     );
   }

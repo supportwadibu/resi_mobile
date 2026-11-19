@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/loading_shimmer.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/di/service_locator.dart';
 import 'package:resi_africa/features/home/presentation/widgets/stats/action_grid.dart';
@@ -8,7 +10,6 @@ import 'package:resi_africa/features/home/presentation/widgets/stats/occupancy_c
 import 'package:resi_africa/features/home/presentation/widgets/stats/stats_header.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_cubit.dart';
 import 'package:resi_africa/features/stats/business_logic/dashboard_state.dart';
-import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 
@@ -33,6 +34,7 @@ class _StatsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<DashboardCubit, DashboardState>(
         builder: (context, state) => RefreshIndicator(
           onRefresh: () => context.read<DashboardCubit>().load(),
@@ -43,22 +45,19 @@ class _StatsView extends StatelessWidget {
               bottom: MediaQuery.paddingOf(context).bottom + 16,
             ),
             children: [
-              PageHeader(title: 'home.stats_title'.tr()),
+              // L'en-tête reste monté pendant le chargement : le filtre de
+              // période doit rester actionnable, sinon un relevé vide sur la
+              // fenêtre choisie enfermerait le propriétaire dedans.
+              const _Header(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // L'en-tête reste monté pendant le chargement : le filtre
-                    // de période doit rester actionnable, sinon un relevé
-                    // vide sur la fenêtre choisie enfermerait le
-                    // propriétaire dedans.
-                    const _Header(),
-                    const SizedBox(height: 12),
                     _Indicators(state: state),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 26),
                     SectionHeading(title: 'home.management'.tr()),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     const ActionGrid(),
                   ],
                 ),
@@ -80,6 +79,7 @@ class _Header extends StatelessWidget {
     final now = DateTime.now();
 
     return StatsHeader(
+      title: 'home.stats_title'.tr(),
       from: cubit.from ?? DateTime(now.year, now.month),
       to: cubit.to ?? now,
       onPeriodPicked: (range) => cubit.filterByPeriod(range.start, range.end),
@@ -95,9 +95,26 @@ class _Indicators extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (state) {
-      DashboardInitial() || DashboardLoading() => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(child: AppLoader()),
+      // Squelette à la forme des tuiles : la page ne saute pas à l'arrivée
+      // des chiffres.
+      DashboardInitial() || DashboardLoading() => const ShimmerEffect(
+        child: Column(
+          children: [
+            LoadingShimmer(height: 170, radius: AppRadius.lg),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: LoadingShimmer(height: 132, radius: AppRadius.lg),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: LoadingShimmer(height: 132, radius: AppRadius.lg),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
       DashboardError(:final message) => AppCard(
         child: ErrorState(
@@ -113,7 +130,7 @@ class _Indicators extends StatelessWidget {
             rented: overview.summary.unitesLouees,
             idle: overview.summary.unitesLibres,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           KpiRow(
             entrees: overview.summary.caBrut,
             sorties: expensesVisible ? overview.summary.depenses : null,
@@ -130,7 +147,7 @@ class _Indicators extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OccupancyCard(occupancyRate: overview.occupancyRate),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           KpiRow(
             entrees: overview.grossRevenue,
             sorties: overview.expensesTotal,

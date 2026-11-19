@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/resi_tokens.dart';
+import '../motion/motion.dart';
 
 /// Option d'un choix unique présenté en cartes (type de pièce, mode de
 /// réservation, forfait) : icône, titre, description. L'option retenue prend
@@ -34,30 +35,35 @@ class AppOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return Semantics(
+    final tile = Semantics(
       selected: selected,
       button: true,
       child: Material(
-        color: selected ? t.background : t.surface,
+        color: selected ? t.accentVioletSoft : t.surface,
         shape: AppRadius.outlined(
-          AppRadius.md,
-          selected ? t.primary : t.border,
+          AppRadius.lg,
+          selected ? t.accentViolet : t.border,
           selected ? 1.5 : 1,
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(14, 14, 18, 14),
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: selected ? t.foreground : t.muted,
+                  Container(
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected ? t.surface : t.background,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 18, color: t.foreground),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                 ],
                 Expanded(
                   child: Column(
@@ -77,11 +83,24 @@ class AppOptionTile extends StatelessWidget {
                   ),
                 ),
                 if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+                // La coche se substitue au cercle en grossissant : le choix
+                // se confirme sous le doigt.
                 if (trailing == null)
-                  Icon(
-                    selected ? LucideIcons.circleCheck : LucideIcons.circle,
-                    size: 18,
-                    color: selected ? t.foreground : t.border,
+                  AnimatedSwitcher(
+                    duration: AppMotion.base,
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: CurvedAnimation(
+                        parent: animation,
+                        curve: AppMotion.pop,
+                      ),
+                      child: child,
+                    ),
+                    child: Icon(
+                      selected ? LucideIcons.circleCheck : LucideIcons.circle,
+                      key: ValueKey(selected),
+                      size: 18,
+                      color: selected ? t.foreground : t.border,
+                    ),
                   ),
               ],
             ),
@@ -89,5 +108,6 @@ class AppOptionTile extends StatelessWidget {
         ),
       ),
     );
+    return PressScale(scale: 0.98, enabled: onTap != null, child: tile);
   }
 }

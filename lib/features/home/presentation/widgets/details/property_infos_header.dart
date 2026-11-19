@@ -25,44 +25,47 @@ class PropertyInfosHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (status != null) ...[status!, const SizedBox(height: 10)],
+          Text(name, style: context.text.displaySmall!.copyWith(fontSize: 30)),
+          const SizedBox(height: 6),
+          Row(
             children: [
-              Text(name, style: context.text.headlineSmall),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(LucideIcons.mapPin, size: 14, color: t.muted),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      location,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.mutedText,
-                    ),
-                  ),
-                ],
+              Icon(LucideIcons.mapPin, size: 15, color: t.muted),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  location,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.mutedText,
+                ),
               ),
-              if (status != null) ...[const SizedBox(height: 8), status!],
             ],
           ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              CurrencyFormatter.short(pricePerDay),
-              style: context.text.figure.copyWith(fontSize: 20),
+          const SizedBox(height: 12),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: CurrencyFormatter.short(pricePerDay),
+                  style: context.text.figure.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text: ' ${'property_detail.per_day'.tr()}',
+                  style: context.mutedText,
+                ),
+              ],
             ),
-            Text('property_detail.per_day'.tr(), style: context.text.bodySmall),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

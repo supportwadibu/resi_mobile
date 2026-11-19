@@ -1,12 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
 
 class StatsHeader extends StatelessWidget {
   const StatsHeader({
     super.key,
+    required this.title,
     required this.from,
     required this.to,
     required this.onPeriodPicked,
@@ -14,6 +15,7 @@ class StatsHeader extends StatelessWidget {
 
   /// Bornes du relevé affiché, reprises telles quelles dans le titre : le
   /// libellé doit décrire la période des chiffres, pas le mois courant.
+  final String title;
   final DateTime from;
   final DateTime to;
 
@@ -35,21 +37,10 @@ class StatsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('stats.period'.tr(), style: context.text.bodySmall),
-              Text(
-                _label,
-                style: context.text.titleMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
+    return PageHeader(
+      title: title,
+      description: '${'stats.period'.tr()} · $_label',
+      actions: [
         AppButton(
           label: 'stats.change'.tr(),
           icon: LucideIcons.calendarRange,

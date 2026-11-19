@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/motion/motion.dart';
 import 'package:resi_africa/features/property/data/models/property_model.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
 
@@ -134,47 +135,68 @@ class PropertyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return Material(
-      color: t.surface,
-      shape: AppRadius.outlined(AppRadius.md, t.border),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: isListMode ? _buildList() : _buildGrid(),
+    return PressScale(
+      scale: 0.98,
+      enabled: onTap != null,
+      child: Material(
+        color: t.surface,
+        shape: AppRadius.outlined(AppRadius.lg, t.border),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: isListMode ? _buildList(context) : _buildGrid(context),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildGrid() {
+  /// Carte des maquettes : photo encadrée, prix en pastille, flèche en
+  /// disque noir, nom et ville dessous.
+  Widget _buildGrid(BuildContext context) {
+    final t = context.tokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Stack(
-            children: [
-              Positioned.fill(child: _PropertyThumbnail(image: data.image)),
-              if (onDelete != null)
+          child: ClipRRect(
+            borderRadius: AppRadius.md,
+            child: Stack(
+              children: [
+                Positioned.fill(child: _PropertyThumbnail(image: data.image)),
                 Positioned(
                   top: 8,
-                  right: 8,
-                  child: _DeleteButton(onTap: onDelete!),
+                  left: 8,
+                  child: _PriceBadge(price: data.price),
                 ),
-              Positioned(
-                left: 8,
-                bottom: 8,
-                child: _PriceBadge(price: data.price),
-              ),
-            ],
+                if (onDelete != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _DeleteButton(onTap: onDelete!),
+                  ),
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: _ArrowDisc(
+                    color: t.primary,
+                    icon: t.primaryForeground,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _NameRow(name: data.name),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               _RatingRow(rating: data.rating, location: data.location),
             ],
           ),
@@ -183,40 +205,65 @@ class PropertyCard extends StatelessWidget {
     );
   }
 
-  Widget _buildList() {
+  /// Ligne : vignette arrondie, nom, ville et prix, flèche à droite.
+  Widget _buildList(BuildContext context) {
+    final t = context.tokens;
     return Row(
       children: [
-        SizedBox.square(
-          dimension: 96,
-          child: Stack(
-            children: [
-              Positioned.fill(child: _PropertyThumbnail(image: data.image)),
-              if (onDelete != null)
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: _DeleteButton(onTap: onDelete!, size: 28),
-                ),
-            ],
+        ClipRRect(
+          borderRadius: AppRadius.md,
+          child: SizedBox.square(
+            dimension: 84,
+            child: Stack(
+              children: [
+                Positioned.fill(child: _PropertyThumbnail(image: data.image)),
+                if (onDelete != null)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: _DeleteButton(onTap: onDelete!, size: 28),
+                  ),
+              ],
+            ),
           ),
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _NameRow(name: data.name),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 _RatingRow(rating: data.rating, location: data.location),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 _PriceText(price: data.price),
               ],
             ),
           ),
         ),
+        _ArrowDisc(color: t.background, icon: t.foreground),
+        const SizedBox(width: 4),
       ],
+    );
+  }
+}
+
+class _ArrowDisc extends StatelessWidget {
+  const _ArrowDisc({required this.color, required this.icon});
+
+  final Color color;
+  final Color icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: SizedBox.square(
+        dimension: 38,
+        child: Icon(LucideIcons.arrowUpRight, size: 16, color: icon),
+      ),
     );
   }
 }
@@ -229,12 +276,12 @@ class _PriceBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.tokens;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: t.overlay.withValues(alpha: 0.7),
+        color: t.onOverlay,
         borderRadius: AppRadius.pill,
       ),
-      child: _PriceText(price: price, color: t.onOverlay),
+      child: _PriceText(price: price, color: t.overlay),
     );
   }
 }
@@ -274,7 +321,7 @@ class _NameRow extends StatelessWidget {
       name,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600),
+      style: context.text.titleMedium!.copyWith(fontWeight: FontWeight.w700),
     );
   }
 }

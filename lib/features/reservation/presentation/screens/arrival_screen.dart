@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/shared/motion/motion.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
@@ -340,10 +341,13 @@ class _CompletedView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const IconChip(
-                icon: LucideIcons.keyRound,
-                accent: AppAccent.green,
-                size: 72,
+              // La clé arrive avec un rebond : l'arrivée est faite.
+              const PopIn(
+                child: IconChip(
+                  icon: LucideIcons.keyRound,
+                  accent: AppAccent.green,
+                  size: 72,
+                ),
               ),
               const SizedBox(height: 20),
               Text(

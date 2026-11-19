@@ -8,20 +8,28 @@ import 'package:resi_africa/core/theme/resi_tokens.dart';
 /// que s'il occupe la place et la forme des données à venir, sinon la mise en
 /// page saute à l'arrivée du contenu.
 class LoadingShimmer extends StatelessWidget {
-  const LoadingShimmer({super.key, this.height, this.width});
+  const LoadingShimmer({
+    super.key,
+    this.height,
+    this.width,
+    this.radius = AppRadius.xs,
+  });
 
   final double? height;
   final double? width;
 
+  /// Arrondi du contenu annoncé : pilule pour une puce, disque pour un
+  /// avatar, `lg` pour une carte.
+  final BorderRadius radius;
+
   @override
   Widget build(BuildContext context) {
-    // Angles droits, comme le contenu qu'il annonce.
     return Container(
       height: height ?? 16,
       width: width ?? double.infinity,
       decoration: BoxDecoration(
         color: context.tokens.border,
-        borderRadius: AppRadius.xs,
+        borderRadius: radius,
       ),
     );
   }

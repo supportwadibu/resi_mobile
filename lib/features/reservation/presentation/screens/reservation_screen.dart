@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/motion/motion.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/theme/app_icons.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
@@ -157,7 +158,13 @@ class _ReservationListState extends State<_ReservationList> {
       itemCount: items.length + 1,
       itemBuilder: (context, i) {
         if (i < items.length) {
-          return ReservationItem(reservation: items[i], onChanged: cubit.load);
+          return FadeSlideIn(
+            index: i,
+            child: ReservationItem(
+              reservation: items[i],
+              onChanged: cubit.load,
+            ),
+          );
         }
         return _Footer(state: state, onLoadMore: cubit.loadMore);
       },

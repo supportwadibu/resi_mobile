@@ -8,16 +8,16 @@ import 'package:flutter/material.dart';
 /// refuse un arrondi sur une bordure qui n'entoure pas toute la boîte.
 abstract final class AppRadius {
   /// Badges, cases à cocher, barres de jauge, blocs de squelette.
-  static const xs = BorderRadius.all(Radius.circular(6));
+  static const xs = BorderRadius.all(Radius.circular(8));
 
   /// Pastilles d'icône, boutons icône, vignettes, puces.
-  static const sm = BorderRadius.all(Radius.circular(8));
+  static const sm = BorderRadius.all(Radius.circular(14));
 
   /// Boutons, champs, lignes de choix, encarts, toasts, sections et cartes.
-  static const md = BorderRadius.all(Radius.circular(12));
+  static const md = BorderRadius.all(Radius.circular(20));
 
   /// Feuilles, dialogues, grandes cartes à photo.
-  static const lg = BorderRadius.all(Radius.circular(20));
+  static const lg = BorderRadius.all(Radius.circular(30));
 
   /// Pilule ou disque : moitié de la hauteur, quelle qu'elle soit.
   static const pill = BorderRadius.all(Radius.circular(999));

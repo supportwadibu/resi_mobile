@@ -67,17 +67,26 @@ class _TopBarWidgetState extends State<TopBarWidget> {
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: t.background,
+                    color: t.primary,
                     borderRadius: AppRadius.pill,
-                    border: Border.all(color: t.border),
                   ),
                   child: name.isEmpty
-                      ? Icon(LucideIcons.user, size: 18, color: t.muted)
-                      : Text(_initials(name), style: context.text.titleSmall),
+                      ? Icon(
+                          LucideIcons.user,
+                          size: 18,
+                          color: t.primaryForeground,
+                        )
+                      : Text(
+                          _initials(name),
+                          style: context.text.titleSmall!.copyWith(
+                            color: t.primaryForeground,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -85,7 +94,10 @@ class _TopBarWidgetState extends State<TopBarWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_salutation, style: context.text.bodySmall),
+                      Text(
+                        _salutation,
+                        style: context.mutedText.copyWith(fontSize: 13),
+                      ),
                       Text(
                         name.isEmpty ? _tagline : name,
                         maxLines: 1,

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/motion/motion.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
@@ -81,12 +82,19 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
     // cette vue n'avait pas de hauteur bornée dans l'`IndexedStack` de
     // l'écran d'accueil, d'où l'échec de mise en page (`hasSize`).
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // L'encoche est déjà traitée par le `SafeArea` de l'écran hôte.
           PageHeader(
             title: 'home.my_properties'.tr(),
+            description: switch (context.watch<PropertyCubit>().state) {
+              PropertyLoaded(:final items) => 'property_tab.count'.plural(
+                items.length,
+              ),
+              _ => null,
+            },
             actions: [
               AppIconButton(
                 icon: AppSectionIcons.residences,
@@ -136,36 +144,50 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
         physics: const AlwaysScrollableScrollPhysics(),
         // Marge basse : hauteur de la barre flottante, voir `HomeTab`.
         padding: EdgeInsets.fromLTRB(
-          16,
+          24,
           4,
-          16,
+          24,
           MediaQuery.paddingOf(context).bottom + 16,
         ),
         children: [
-          TextField(
-            onChanged: (value) => setState(() => _query = value),
-            style: context.text.bodyMedium,
-            decoration: InputDecoration(
-              hintText: 'property_tab.search_hint'.tr(),
-              prefixIcon: Icon(LucideIcons.search, size: 16),
-            ),
-          ),
-          const SizedBox(height: 16),
+          // Recherche en pilule et bascule grille / liste, sur une ligne,
+          // comme la barre de recherche des maquettes.
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'property_tab.count'.plural(items.length),
-                  style: context.text.bodyMedium!.copyWith(color: t.muted),
+                child: TextField(
+                  onChanged: (value) => setState(() => _query = value),
+                  style: context.text.bodyMedium,
+                  decoration: InputDecoration(
+                    hintText: 'property_tab.search_hint'.tr(),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(left: 16, right: 8),
+                      child: Icon(LucideIcons.search, size: 18),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(),
+                    border: OutlineInputBorder(
+                      borderRadius: AppRadius.pill,
+                      borderSide: BorderSide(color: t.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppRadius.pill,
+                      borderSide: BorderSide(color: t.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppRadius.pill,
+                      borderSide: BorderSide(color: t.primary),
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               _ViewToggle(
                 isGrid: _isGrid,
                 onChanged: (grid) => setState(() => _isGrid = grid),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           if (items.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 24),
@@ -187,14 +209,17 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.8,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 0.72,
       ),
       itemCount: items.length,
-      itemBuilder: (_, i) => PropertyCard(
-        data: propertyCardData(items[i]),
-        onTap: () => _openDetail(items[i]),
+      itemBuilder: (_, i) => FadeSlideIn(
+        index: i,
+        child: PropertyCard(
+          data: propertyCardData(items[i]),
+          onTap: () => _openDetail(items[i]),
+        ),
       ),
     );
   }
@@ -204,11 +229,14 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, i) => PropertyCard(
-        data: propertyCardData(items[i]),
-        isListMode: true,
-        onTap: () => _openDetail(items[i]),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => FadeSlideIn(
+        index: i,
+        child: PropertyCard(
+          data: propertyCardData(items[i]),
+          isListMode: true,
+          onTap: () => _openDetail(items[i]),
+        ),
       ),
     );
   }
@@ -224,7 +252,7 @@ class _PropertyTabViewState extends State<_PropertyTabView> {
   }
 }
 
-/// Bascule grille / liste, deux boutons accolés dans un même cadre.
+/// Bascule grille / liste : pilule bordée à deux disques, l'actif en noir.
 class _ViewToggle extends StatelessWidget {
   const _ViewToggle({required this.isGrid, required this.onChanged});
 
@@ -234,41 +262,48 @@ class _ViewToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    Widget button(IconData icon, String label, bool active, bool value) =>
+    Widget disc(IconData icon, String label, bool active, bool value) =>
         Tooltip(
           message: label,
-          child: Material(
-            color: active ? t.primary : t.surface,
-            child: InkWell(
-              onTap: () => onChanged(value),
-              child: SizedBox.square(
-                dimension: 32,
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: active ? t.primaryForeground : t.muted,
-                ),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => onChanged(value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: active ? t.primary : t.primary.withValues(alpha: 0),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: active ? t.primaryForeground : t.foreground,
               ),
             ),
           ),
         );
-    return Container(
-      clipBehavior: Clip.antiAlias,
+    return DecoratedBox(
       decoration: BoxDecoration(
+        color: t.surface,
         border: Border.all(color: t.border),
-        borderRadius: AppRadius.md,
+        borderRadius: AppRadius.pill,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          button(
-            LucideIcons.layoutGrid,
-            'property_tab.grid'.tr(),
-            isGrid,
-            true,
-          ),
-          button(LucideIcons.list, 'property_tab.list'.tr(), !isGrid, false),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            disc(
+              LucideIcons.layoutGrid,
+              'property_tab.grid'.tr(),
+              isGrid,
+              true,
+            ),
+            disc(LucideIcons.list, 'property_tab.list'.tr(), !isGrid, false),
+          ],
+        ),
       ),
     );
   }

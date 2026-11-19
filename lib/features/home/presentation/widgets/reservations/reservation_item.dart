@@ -32,14 +32,13 @@ class ReservationItem extends StatelessWidget {
     final property = reservation.property;
     final status = reservation.status;
 
+    final client = reservation.client?.fullName.trim();
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: t.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.md,
-          side: BorderSide(color: t.border),
-        ),
+        shape: AppRadius.outlined(AppRadius.lg, t.border),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () async {
@@ -49,83 +48,124 @@ class ReservationItem extends StatelessWidget {
             if (changed == true) onChanged?.call();
           },
           child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Thumbnail(image: property?.image),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                // En-tête : vignette, bien et ville, statut.
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: AppRadius.md,
+                      child: _Thumbnail(image: property?.image),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              property?.title ?? 'home.deleted_property'.tr(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.text.titleSmall!.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          StatusBadge(
-                            label: status.label,
-                            tone: StatusTones.booking(status.code),
-                          ),
-                        ],
-                      ),
-                      // Saisie hors ligne pas encore reçue par le serveur : le
-                      // statut affiché n'est qu'une promesse tant qu'elle n'est
-                      // pas partie.
-                      if (reservation.syncState case final syncState?) ...[
-                        const SizedBox(height: 4),
-                        SyncStateBadge(state: syncState),
-                      ],
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(LucideIcons.calendar, size: 12, color: t.muted),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '${formatReservationPeriod(reservation)} · '
-                              '${reservation.durationLabel.replaceAll(' ', ' ')}',
-                              // Date et heure aux deux bouts ne tiennent pas
-                              // sur une ligne : la période passe à la ligne
-                              // après la flèche plutôt que d'être tronquée.
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.text.bodySmall,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          if (property != null && property.city.isNotEmpty) ...[
-                            Icon(LucideIcons.mapPin, size: 12, color: t.muted),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                property.city,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.text.bodySmall,
-                              ),
-                            ),
-                          ] else
-                            const Spacer(),
                           Text(
-                            formatAmount(reservation.totalAmount),
-                            style: context.text.amount,
+                            property?.title ?? 'home.deleted_property'.tr(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.titleMedium!.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (property != null && property.city.isNotEmpty)
+                            Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.mapPin,
+                                  size: 13,
+                                  color: t.muted,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    property.city,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: context.text.bodySmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              StatusBadge(
+                                label: status.label,
+                                tone: StatusTones.booking(status.code),
+                              ),
+                              // Saisie hors ligne pas encore reçue par le
+                              // serveur : le statut affiché n'est qu'une
+                              // promesse tant qu'elle n'est pas partie.
+                              if (reservation.syncState case final syncState?)
+                                SyncStateBadge(state: syncState),
+                            ],
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Période et durée, sur un bandeau doux.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: t.background,
+                    borderRadius: AppRadius.md,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.calendar, size: 15, color: t.muted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${formatReservationPeriod(reservation)} · '
+                            '${reservation.durationLabel.replaceAll(' ', ' ')}',
+                            // Date et heure aux deux bouts ne tiennent pas sur
+                            // une ligne : la période passe à la ligne plutôt
+                            // que d'être tronquée.
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.bodySmall!.copyWith(
+                              color: t.foreground,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Client et montant.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+                  child: Row(
+                    children: [
+                      Icon(LucideIcons.user, size: 15, color: t.muted),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          client == null || client.isEmpty ? '—' : client,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.labelLarge,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatAmount(reservation.totalAmount),
+                        style: context.text.amount.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -158,7 +198,7 @@ String formatAmount(double amount) {
 class _Thumbnail extends StatelessWidget {
   const _Thumbnail({this.image});
 
-  static const _size = 56.0;
+  static const _size = 64.0;
 
   final String? image;
 

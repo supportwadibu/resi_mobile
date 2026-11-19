@@ -5,11 +5,15 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_logo.dart';
+import 'package:resi_africa/shared/widgets/page_header.dart';
+import 'package:resi_africa/shared/widgets/frosted_surface.dart';
+import 'package:resi_africa/shared/widgets/app_icon_button.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
 
-/// Gabarit des écrans de connexion et d'inscription, transposé de la page de
-/// connexion du backoffice : la photo et son accroche en haut, sur un voile
-/// `overlay` identique dans les deux modes ; le formulaire en dessous, sur le
-/// fond de page, qui suit le thème.
+/// Gabarit des écrans de connexion et d'inscription, d'après les maquettes :
+/// la photo encadrée en carte arrondie, logo et retour en verre dessus,
+/// l'accroche en bas de la photo ; puis le grand titre et le formulaire dans
+/// une carte. La lueur prune du mode sombre couvre tout l'écran.
 class AuthLayout extends StatelessWidget {
   const AuthLayout({
     required this.title,
@@ -29,104 +33,118 @@ class AuthLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    final heroHeight = MediaQuery.sizeOf(context).height * 0.3;
+    final heroHeight = MediaQuery.sizeOf(context).height * 0.28;
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: heroHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset('assets/images/splash.png', fit: BoxFit.cover),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          t.overlay.withValues(alpha: 0.6),
-                          t.overlay.withValues(alpha: 0.35),
-                          t.overlay.withValues(alpha: 0.85),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+      body: DecoratedBox(
+        decoration: BoxDecoration(gradient: t.glowGradient),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              24 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  borderRadius: AppRadius.lg,
+                  child: SizedBox(
+                    height: heroHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/images/splash.png',
+                          fit: BoxFit.cover,
+                        ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                t.overlay.withValues(alpha: 0.25),
+                                t.overlay.withValues(alpha: 0.05),
+                                t.overlay.withValues(alpha: 0.75),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (onBack != null) ...[
-                                Tooltip(
-                                  message: 'common.back'.tr(),
-                                  child: InkWell(
-                                    onTap: onBack,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Icon(
-                                        LucideIcons.chevronLeft,
-                                        color: t.onOverlay,
-                                        size: 20,
+                              Row(
+                                children: [
+                                  if (onBack != null) ...[
+                                    FrostedSurface(
+                                      borderRadius: FrostedSurface.pill,
+                                      child: AppIconButton(
+                                        icon: LucideIcons.chevronLeft,
+                                        label: 'common.back'.tr(),
+                                        onPressed: onBack,
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  FrostedSurface(
+                                    borderRadius: FrostedSurface.pill,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    child: const AppLogo(height: 22),
                                   ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Text(
+                                'auth.tagline'.tr(),
+                                style: context.text.titleLarge!.copyWith(
+                                  color: t.onOverlay,
                                 ),
-                                const SizedBox(width: 8),
-                              ],
-                              const AppLogo(height: 28, onMedia: true),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'auth.tagline_sub'.tr(),
+                                style: context.text.bodySmall!.copyWith(
+                                  color: t.onOverlay.withValues(alpha: 0.8),
+                                ),
+                              ),
                             ],
                           ),
-                          const Spacer(),
-                          Text(
-                            'auth.tagline'.tr(),
-                            style: context.text.titleLarge!.copyWith(
-                              color: t.onOverlay,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'auth.tagline_sub'.tr(),
-                            style: context.text.bodyMedium!.copyWith(
-                              color: t.onOverlay.withValues(alpha: 0.75),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  24,
-                  16,
-                  24 + MediaQuery.viewInsetsOf(context).bottom,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(title, style: context.text.headlineSmall),
-                    const SizedBox(height: 4),
-                    Text(description, style: context.mutedText),
-                    const SizedBox(height: 24),
-                    child,
-                  ],
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: context.text.displayMedium!.copyWith(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(description, style: context.mutedText),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 18),
+                AppCard(padding: const EdgeInsets.all(18), child: child),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -149,6 +167,7 @@ class GoogleSignInButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
+      height: 52,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: SvgPicture.asset(

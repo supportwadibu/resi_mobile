@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:resi_africa/shared/widgets/stat_tile.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:resi_africa/core/di/service_locator.dart';
@@ -229,7 +230,7 @@ class _ProfileContent extends StatelessWidget {
       onRefresh: () => context.read<OwnerProfileCubit>().load(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           _Identity(
             name: profile.fullName,
@@ -385,7 +386,7 @@ class _LanguageSection extends StatelessWidget {
   }
 }
 
-/// Groupe de liens titré, lignes séparées par un filet.
+/// Groupe de liens titré, en tuiles arrondies.
 class _LinkGroup extends StatelessWidget {
   const _LinkGroup({required this.title, required this.children});
 
@@ -394,17 +395,11 @@ class _LinkGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lignes en tuiles espacées, sans filet : l'espace sépare.
     return Section(
       title: title,
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            children[i],
-          ],
-        ],
-      ),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+      child: Column(children: children),
     );
   }
 }
@@ -459,7 +454,7 @@ class _ManagerProfileContent extends StatelessWidget {
       onRefresh: () => context.read<OwnerProfileCubit>().load(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           _Identity(name: account.fullName, subtitle: _subtitle),
           const SizedBox(height: 16),
@@ -556,50 +551,71 @@ class _Identity extends StatelessWidget {
     final t = context.tokens;
     final url = avatarUrl;
     final initials = Center(
-      child: Text(_initials, style: context.text.titleLarge),
+      child: Text(
+        _initials,
+        style: context.text.headlineSmall!.copyWith(color: t.onLavender),
+      ),
     );
 
-    return Row(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: t.background,
-            borderRadius: AppRadius.pill,
-            border: Border.all(color: t.border),
-          ),
-          child: url == null || url.isEmpty
-              ? initials
-              : Image.network(
-                  url,
-                  fit: BoxFit.cover,
-                  // L'URL signée expire : son échec ne doit pas laisser un
-                  // trou à la place de l'avatar.
-                  errorBuilder: (_, _, _) => initials,
-                ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    // Carte de tête des maquettes : lavande, halo discret, avatar sur disque
+    // blanc, nom en grand.
+    return Material(
+      color: t.lavender,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lg),
+      clipBehavior: Clip.antiAlias,
+      child: HaloSurface(
+        radius: AppRadius.lg,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
             children: [
-              Text(
-                name.trim().isEmpty ? 'common.no_name'.tr() : name,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.titleLarge,
+              Container(
+                width: 72,
+                height: 72,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: t.onOverlay,
+                  shape: BoxShape.circle,
+                ),
+                child: url == null || url.isEmpty
+                    ? initials
+                    : Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        // L'URL signée expire : son échec ne doit pas laisser
+                        // un trou à la place de l'avatar.
+                        errorBuilder: (_, _, _) => initials,
+                      ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                overflow: TextOverflow.ellipsis,
-                style: context.mutedText,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name.trim().isEmpty ? 'common.no_name'.tr() : name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.headlineSmall!.copyWith(
+                        color: t.onLavender,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodySmall!.copyWith(
+                        color: t.onLavender.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

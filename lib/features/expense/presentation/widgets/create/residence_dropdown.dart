@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:resi_africa/core/theme/app_radius.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
-import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/shared/widgets/app_picker_field.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 /// Bien auquel imputer la dépense.
 ///
@@ -16,6 +16,9 @@ class ResidenceOption {
   final String label;
 }
 
+/// Champ de choix d'un bien ou d'une résidence : il ouvre une feuille du bas
+/// qui liste les options en tuiles, la retenue cochée. Remplace la liste
+/// déroulante, que les maquettes n'emploient nulle part.
 class ResidenceDropdown extends StatelessWidget {
   final String? value;
   final List<ResidenceOption> residences;
@@ -30,32 +33,47 @@ class ResidenceDropdown extends StatelessWidget {
     this.hint,
   });
 
+  Future<void> _pick(BuildContext context) async {
+    if (residences.isEmpty) return;
+    final title = hint ?? 'expense.choose_property_hint'.tr();
+    final picked = await showAppSheet<String>(
+      context: context,
+      builder: (sheet) => AppSheet(
+        title: title,
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          children: [
+            for (final option in residences)
+              AppSheetAction(
+                icon: LucideIcons.building2,
+                label: option.label,
+                trailing: option.id == value
+                    ? Icon(
+                        LucideIcons.circleCheck,
+                        size: 20,
+                        color: context.tokens.foreground,
+                      )
+                    : const SizedBox.shrink(),
+                onTap: () => Navigator.of(sheet).pop(option.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      isExpanded: true,
-      hint: Text(
-        hint ?? 'expense.choose_property_hint'.tr(),
-        style: context.mutedText,
-      ),
-      style: context.text.bodyMedium,
-      icon: Icon(
-        LucideIcons.chevronDown,
-        size: 16,
-        color: context.tokens.muted,
-      ),
-      borderRadius: AppRadius.md,
-      dropdownColor: context.tokens.surface,
-      items: residences
-          .map(
-            (e) => DropdownMenuItem(
-              value: e.id,
-              child: Text(e.label, overflow: TextOverflow.ellipsis),
-            ),
-          )
-          .toList(),
-      onChanged: residences.isEmpty ? null : onChanged,
+    String? label;
+    for (final option in residences) {
+      if (option.id == value) label = option.label;
+    }
+    return AppPickerField(
+      value: label,
+      placeholder: hint ?? 'expense.choose_property_hint'.tr(),
+      icon: LucideIcons.building2,
+      onTap: () => _pick(context),
     );
   }
 }

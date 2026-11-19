@@ -104,8 +104,8 @@ class _PropertyCoverImageState extends State<PropertyCoverImage> {
           // il n'indiquerait rien.
           if (images.length > 1)
             Positioned(
-              right: 16,
-              bottom: 16,
+              left: 20,
+              bottom: 64,
               child: IgnorePointer(
                 child: _PageDots(
                   count: images.length,

@@ -48,10 +48,7 @@ class ExpenseMonthStepper extends StatelessWidget {
             Expanded(
               child: Text(
                 toBeginningOfSentenceCase(
-                  DateFormat(
-                    'MMM y',
-                    context.locale.toString(),
-                  ).format(month),
+                  DateFormat('MMM y', context.locale.toString()).format(month),
                 ),
                 textAlign: TextAlign.center,
                 style: context.text.titleSmall,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app_radius.dart';
 import 'app_typography.dart';
+import '../../shared/motion/motion.dart';
 import 'resi_tokens.dart';
 
 /// Thèmes clair et sombre, construits sur [ResiTokens].
@@ -17,7 +18,8 @@ abstract final class AppTheme {
 
   static ThemeData dark() => _build(ResiTokens.dark, Brightness.dark);
 
-  static const _control = AppRadius.mdShape;
+  // Boutons en pilule : la forme des maquettes, quelle que soit la hauteur.
+  static const _control = StadiumBorder();
 
   static ThemeData _build(ResiTokens t, Brightness brightness) {
     final text = AppTypography.textTheme(t);
@@ -64,8 +66,8 @@ abstract final class AppTheme {
           borderSide: BorderSide(color: color, width: width),
         );
 
-    const buttonPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 12);
-    const buttonMinSize = Size(0, 44);
+    const buttonPadding = EdgeInsets.symmetric(horizontal: 22, vertical: 14);
+    const buttonMinSize = Size(0, 52);
 
     return ThemeData(
       useMaterial3: true,
@@ -87,7 +89,7 @@ abstract final class AppTheme {
       focusColor: t.foreground.withValues(alpha: 0.08),
       iconTheme: IconThemeData(color: t.foreground, size: 20),
       appBarTheme: AppBarTheme(
-        backgroundColor: t.surface,
+        backgroundColor: t.background,
         foregroundColor: t.foreground,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -98,7 +100,6 @@ abstract final class AppTheme {
         titleTextStyle: text.titleLarge,
         iconTheme: IconThemeData(color: t.foreground, size: 20),
         actionsIconTheme: IconThemeData(color: t.foreground, size: 20),
-        shape: Border(bottom: borderSide),
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
@@ -152,14 +153,14 @@ abstract final class AppTheme {
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: t.foreground,
-          shape: AppRadius.smShape,
+          shape: const CircleBorder(),
           iconSize: 20,
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: t.primary,
         foregroundColor: t.primaryForeground,
-        shape: AppRadius.lgShape,
+        shape: const StadiumBorder(),
         elevation: 2,
         focusElevation: 2,
         hoverElevation: 3,
@@ -169,6 +170,11 @@ abstract final class AppTheme {
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           shape: const WidgetStatePropertyAll(_control),
+          // Trois segments tiennent sur la largeur d'une carte : le
+          // remplissage des boutons pleine taille coupait « Sombre ».
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          ),
           side: WidgetStatePropertyAll(borderSide),
           textStyle: WidgetStatePropertyAll(text.labelLarge),
           backgroundColor: WidgetStateProperty.resolveWith(
@@ -188,11 +194,13 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: t.background,
+        // Champ des maquettes : surface claire, grand arrondi, corps
+        // aéré.
+        fillColor: t.surface,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
+          horizontal: 18,
+          vertical: 17,
         ),
         hintStyle: text.bodyMedium!.copyWith(color: t.muted),
         labelStyle: text.bodyMedium!.copyWith(color: t.muted),
@@ -255,11 +263,11 @@ abstract final class AppTheme {
         modalElevation: 2,
         // Coins hauts seuls : la feuille repose sur le bas de l'écran.
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
         ),
         showDragHandle: true,
         dragHandleColor: t.border,
-        dragHandleSize: const Size(32, 4),
+        dragHandleSize: const Size(40, 5),
         modalBarrierColor: Colors.black.withValues(alpha: 0.5),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -471,7 +479,9 @@ abstract final class AppTheme {
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          // Fondu et légère montée (`motion.dart`). iOS garde son glissement :
+          // le retour par balayage du bord en dépend.
+          TargetPlatform.android: FadeRisePageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),

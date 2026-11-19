@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_radius.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/theme/resi_tokens.dart';
 import 'frosted_surface.dart';
 
@@ -32,7 +30,7 @@ class AppBottomNav extends StatelessWidget {
 
   final VoidCallback? onMenuToggle;
 
-  static const barHeight = 64.0;
+  static const barHeight = 68.0;
 
   static const _items = [
     (icon: AppSectionIcons.home, label: 'nav.home'),
@@ -52,32 +50,35 @@ class AppBottomNav extends StatelessWidget {
             Expanded(
               child: FrostedSurface(
                 borderRadius: FrostedSurface.pill,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Material(
                   type: MaterialType.transparency,
                   child: SizedBox(
                     height: barHeight,
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        for (var i = 0; i < _items.length; i++)
-                          Expanded(
-                            child: _NavItem(
-                              icon: _items[i].icon,
-                              label: _items[i].label.tr(),
-                              selected: i == currentIndex,
-                              onTap: () => onTap(i),
+                        for (var i = 0; i < _items.length; i++) ...[
+                          // « Créer » au milieu de la barre, comme sur les
+                          // maquettes : l'action principale tombe sous le pouce.
+                          if (i == _items.length ~/ 2 && onMenuToggle != null)
+                            _CreateButton(
+                              isOpen: isMenuOpen,
+                              onTap: onMenuToggle!,
                             ),
+                          _NavItem(
+                            icon: _items[i].icon,
+                            label: _items[i].label.tr(),
+                            selected: i == currentIndex,
+                            onTap: () => onTap(i),
                           ),
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            if (onMenuToggle != null) ...[
-              const SizedBox(width: 8),
-              _CreateButton(isOpen: isMenuOpen, onTap: onMenuToggle!),
-            ],
           ],
         ),
       ),
@@ -85,7 +86,8 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
-/// Un onglet : indicateur en pilule derrière l'icône, libellé dessous.
+/// Un onglet : icône seule, sur disque plein quand il est actif. Le libellé
+/// reste pour les lecteurs d'écran et l'infobulle.
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
@@ -102,51 +104,30 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    final color = selected ? t.foreground : t.muted;
     return Semantics(
       container: true,
       button: true,
       selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                height: 30,
-                // Borné par la largeur de l'onglet : l'indicateur ne déborde
-                // jamais sur son voisin ni sur le bord de la pilule.
-                constraints: const BoxConstraints(maxWidth: 56),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? t.background
-                      : t.background.withValues(alpha: 0),
-                  border: Border.all(
-                    color: selected ? t.border : t.border.withValues(alpha: 0),
-                  ),
-                  borderRadius: AppRadius.pill,
-                ),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              const SizedBox(height: 4),
-              // Une seule ligne, quitte à réduire un peu le corps : un
-              // libellé coupé en deux décalait l'onglet entier.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  softWrap: false,
-                  style: context.text.labelMedium!.copyWith(color: color),
-                ),
-              ),
-            ],
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: selected ? t.primary : t.primary.withValues(alpha: 0),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: selected ? t.primaryForeground : t.foreground,
+            ),
           ),
         ),
       ),
@@ -166,11 +147,13 @@ class _CreateButton extends StatelessWidget {
     return Tooltip(
       message: isOpen ? 'common.close'.tr() : 'common.create'.tr(),
       child: SizedBox.square(
-        dimension: AppBottomNav.barHeight,
+        dimension: 54,
         child: FrostedSurface(
           borderRadius: FrostedSurface.pill,
-          color: isOpen ? t.primary : null,
-          opacity: isOpen ? 1 : 0.72,
+          // Lavande au repos : le seul accent de la barre, qui désigne
+          // l'action principale.
+          color: isOpen ? t.primary : t.lavender,
+          opacity: 1,
           child: Material(
             type: MaterialType.transparency,
             child: InkWell(
@@ -183,7 +166,7 @@ class _CreateButton extends StatelessWidget {
                   child: Icon(
                     LucideIcons.plus,
                     size: 24,
-                    color: isOpen ? t.primaryForeground : t.foreground,
+                    color: isOpen ? t.primaryForeground : t.onLavender,
                   ),
                 ),
               ),

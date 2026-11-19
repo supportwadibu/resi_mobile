@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-// Build one transition builder for all routes.
-// Swap the return statement to change the global transition style.
+import '../shared/motion/motion.dart';
+
+/// Transition commune aux modules de routes : fondu et légère montée, la
+/// même que celle du thème (`FadeRisePageTransitionsBuilder`) — un écran
+/// ouvert depuis un module ne doit pas arriver autrement que les autres.
 RouteTransitionsBuilder get customTransitionBuilder =>
-    (context, animation, secondaryAnimation, child) {
-      // Uncomment to disable all transitions:
-      // return child;
-      return FadeTransition(opacity: animation, child: child);
-    };
+    (context, animation, secondaryAnimation, child) =>
+        AppMotion.reduced(context)
+        ? child
+        : FadeRisePageTransitionsBuilder.fadeRise(animation, child);

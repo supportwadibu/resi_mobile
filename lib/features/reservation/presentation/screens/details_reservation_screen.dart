@@ -41,6 +41,7 @@ import '../../data/models/reservation_model.dart';
 import '../../../home/presentation/widgets/reservations/reservation_item.dart';
 import '../widgets/cancel/cancel_reservation_sheet.dart';
 import '../widgets/check_out/early_check_out_sheet.dart';
+import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
 /// Fiche d'une réservation reçue.
 ///
@@ -113,48 +114,43 @@ class DetailsReservationScreen extends StatelessWidget {
     final cubit = context.read<StayCheckOutCubit>();
     final isOverdue = !DateTime.now().isBefore(reservation.checkOutAt);
 
-    final fullStay = await showDialog<bool>(
+    final fullStay = await showAppSheet<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          isOverdue
-              ? 'stay_checkout.overdue_title'.tr()
-              : 'stay_checkout.confirm_title'.tr(),
+      builder: (dialogContext) => AppSheet(
+        title: isOverdue
+            ? 'stay_checkout.overdue_title'.tr()
+            : 'stay_checkout.confirm_title'.tr(),
+        description: isOverdue
+            ? 'stay_checkout.overdue_body'.tr()
+            : 'stay_checkout.confirm_body'.tr(),
+        showClose: false,
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppButton(
+              label: isOverdue
+                  ? 'stay_checkout.action'.tr()
+                  : 'stay_checkout.answer_full'.tr(),
+              expand: true,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+            ),
+            const SizedBox(height: 8),
+            AppButton(
+              label: 'stay_checkout.answer_early'.tr(),
+              variant: AppButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            const SizedBox(height: 8),
+            AppButton(
+              label: 'common.cancel'.tr(),
+              variant: AppButtonVariant.ghost,
+              expand: true,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+          ],
         ),
-        content: Text(
-          isOverdue
-              ? 'stay_checkout.overdue_body'.tr()
-              : 'stay_checkout.confirm_body'.tr(),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AppButton(
-                label: isOverdue
-                    ? 'stay_checkout.action'.tr()
-                    : 'stay_checkout.answer_full'.tr(),
-                expand: true,
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-              ),
-              const SizedBox(height: 8),
-              AppButton(
-                label: 'stay_checkout.answer_early'.tr(),
-                variant: AppButtonVariant.secondary,
-                expand: true,
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-              ),
-              const SizedBox(height: 8),
-              AppButton(
-                label: 'common.cancel'.tr(),
-                variant: AppButtonVariant.ghost,
-                expand: true,
-                onPressed: () => Navigator.of(dialogContext).pop(),
-              ),
-            ],
-          ),
-        ],
+        child: const SizedBox.shrink(),
       ),
     );
 

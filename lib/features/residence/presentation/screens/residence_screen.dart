@@ -20,6 +20,8 @@ import '../../business_logic/residence_cubit.dart';
 import '../../business_logic/residence_state.dart';
 import '../widgets/residence_card.dart';
 import 'package:resi_africa/shared/utils/ensure_online.dart';
+import 'package:resi_africa/core/theme/app_typography.dart';
+import 'package:resi_africa/features/residence/data/models/residence_model.dart';
 
 /// Résidences du propriétaire — les lieux regroupant plusieurs logements.
 @RoutePage()
@@ -77,11 +79,13 @@ class _ResidenceView extends StatelessWidget {
           ResidenceLoaded(:final items) => RefreshIndicator(
             onRefresh: () => context.read<ResidenceCubit>().load(),
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              // Ligne de synthèse en tête, puis une carte par résidence.
+              itemCount: items.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (_, index) {
-                final residence = items[index];
+                if (index == 0) return _Summary(items: items);
+                final residence = items[index - 1];
                 return ResidenceCard(
                   residence: residence,
                   onTap: () => _openDetail(context, residence.id),
@@ -167,6 +171,26 @@ class _EmptyView extends StatelessWidget {
       actionLabel: onCreate == null ? null : 'residence.create_one'.tr(),
       actionIcon: LucideIcons.plus,
       onAction: onCreate,
+    );
+  }
+}
+
+/// « 3 résidences · 12 logements », sous le titre.
+class _Summary extends StatelessWidget {
+  const _Summary({required this.items});
+
+  final List<ResidenceModel> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final units = items.fold<int>(0, (sum, r) => sum + r.unitsCount);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+      child: Text(
+        '${'residence.count'.plural(items.length)} · '
+        '${'residence.unit_count'.plural(units)}',
+        style: context.mutedText,
+      ),
     );
   }
 }

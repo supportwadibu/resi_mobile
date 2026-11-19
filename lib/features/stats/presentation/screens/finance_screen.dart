@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/utils/currency_formatter.dart';
-import 'package:resi_africa/shared/widgets/app_button.dart';
-import 'package:resi_africa/shared/widgets/app_loader.dart';
 import 'package:resi_africa/shared/widgets/empty_state.dart';
 import 'package:resi_africa/shared/widgets/error_state.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
@@ -32,6 +30,8 @@ import '../widgets/finance/finance_period_sheet.dart';
 import '../widgets/finance/finance_scope_sheet.dart';
 import '../widgets/finance/revenue_chart.dart';
 import '../widgets/finance/stats_row.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/shared/widgets/loading_shimmer.dart';
 
 @RoutePage()
 class FinanceScreen extends StatelessWidget {
@@ -156,28 +156,20 @@ class _FinanceViewState extends State<_FinanceView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FinanceAppBar(
-        onFilterTap: _pickScope,
-        // Lu sur le cubit, qui garde le périmètre d'un rechargement à l'autre :
-        // le libellé ne peut pas annoncer un autre périmètre que les chiffres.
-        scopeLabel: context.select<FinanceCubit, String?>(
-          (cubit) => cubit.scope.label,
-        ),
-      ),
+      appBar: const FinanceAppBar(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Hors de la liste : la période reste lisible, et modifiable,
-          // pendant le chargement comme après une erreur.
+          // Hors de la liste : périmètre et période restent lisibles, et
+          // modifiables, pendant le chargement comme après une erreur.
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: _PeriodHeader(onChange: _pickPeriod),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: _Filters(onScope: _pickScope, onPeriod: _pickPeriod),
           ),
           Expanded(
             child: BlocBuilder<FinanceCubit, FinanceState>(
               builder: (context, state) => switch (state) {
-                FinanceInitial() ||
-                FinanceLoading() => const Center(child: AppLoader()),
+                FinanceInitial() || FinanceLoading() => const _Skeleton(),
                 FinanceError(:final message) => ErrorState(
                   message: message,
                   onRetry: () => context.read<FinanceCubit>().load(),
@@ -192,38 +184,31 @@ class _FinanceViewState extends State<_FinanceView>
   }
 }
 
-/// Période couverte par le relevé, et le bouton qui la change.
+/// Périmètre et période en deux puces qui ouvrent chacune leur feuille. Une
+/// puce passe en noir quand son filtre n'est pas celui par défaut : on lit
+/// d'un coup d'œil que les chiffres sont restreints.
 ///
 /// Les bornes sont lues sur le cubit plutôt que recalculées : une seconde
 /// formule dériverait du jour au lendemain et annoncerait une fenêtre
-/// différente de celle des chiffres affichés juste en dessous.
-///
-/// Annoncée avant les montants : les douze mois glissants par défaut diffèrent
-/// de l'onglet Statistiques, qui n'affiche que le mois courant. Le même
-/// `ca_brut` y prend deux valeurs, et sans cette mention les deux écrans
-/// semblent se contredire.
-class _PeriodHeader extends StatelessWidget {
-  const _PeriodHeader({required this.onChange});
+/// différente de celle des chiffres affichés juste en dessous. Les douze mois
+/// glissants par défaut diffèrent de l'onglet Statistiques, qui n'affiche que
+/// le mois courant : sans cette mention, les deux écrans sembleraient se
+/// contredire.
+class _Filters extends StatelessWidget {
+  const _Filters({required this.onScope, required this.onPeriod});
 
-  final VoidCallback onChange;
+  final VoidCallback onScope;
+  final VoidCallback onPeriod;
 
   @override
   Widget build(BuildContext context) {
-    // `watch` : chaque changement de période passe par un nouvel état.
+    // `watch` : chaque changement de filtre passe par un nouvel état.
     final cubit = context.watch<FinanceCubit>();
     final period = cubit.period;
     final from = cubit.from;
     final to = cubit.to;
-
-    // Nom du mois dans la langue de l'application ; le français l'écrit en
-    // minuscule, d'où la majuscule ajoutée en tête de libellé.
     String monthYear(DateTime d) => DateFormat('MMM y').format(d);
-
-    // Mois abrégé pour une plage : « nov. 2025 - nov. 2026 » tient sur une
-    // ligne, là où les mois en toutes lettres étaient coupés.
-    String shortMonthYear(DateTime d) => DateFormat('MMM y').format(d);
-
-    final label = switch ((period.year, period.month)) {
+    final periodLabel = switch ((period.year, period.month)) {
       (final int year, null) => 'finance_page.year_label'.tr(
         namedArgs: {'year': '$year'},
       ),
@@ -231,39 +216,115 @@ class _PeriodHeader extends StatelessWidget {
         monthYear(DateTime(year, month)),
       ),
       _ when from != null && to != null => 'finance_page.range'.tr(
-        namedArgs: {'from': shortMonthYear(from), 'to': shortMonthYear(to)},
+        namedArgs: {'from': monthYear(from), 'to': monthYear(to)},
       ),
-      _ => '',
+      _ => 'stats.period'.tr(),
     };
-
+    final scopeLabel = cubit.scope.label;
     return Row(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Flexible(
+          child: _FilterChip(
+            icon: LucideIcons.building2,
+            label: scopeLabel ?? 'finance_page.whole_portfolio'.tr(),
+            active: scopeLabel != null,
+            onTap: onScope,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: _FilterChip(
+            icon: LucideIcons.calendarRange,
+            label: periodLabel,
+            active: !period.isRolling,
+            onTap: onPeriod,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final fg = active ? t.primaryForeground : t.foreground;
+    return Material(
+      color: active ? t.primary : t.surface,
+      shape: StadiumBorder(
+        side: active ? BorderSide.none : BorderSide(color: t.border),
+      ),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('stats.period'.tr(), style: context.text.bodySmall),
-              Text(
-                label,
-                style: context.text.titleMedium,
-                overflow: TextOverflow.ellipsis,
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelLarge!.copyWith(color: fg),
+                ),
               ),
+              const SizedBox(width: 4),
+              Icon(LucideIcons.chevronDown, size: 16, color: fg),
             ],
           ),
         ),
-        AppButton(
-          label: 'stats.change'.tr(),
-          icon: LucideIcons.calendarRange,
-          // Période restreinte : le bouton passe en noir, comme celui du
-          // périmètre, pour qu'on lise que le relevé n'est pas celui par
-          // défaut.
-          variant: period.isRolling
-              ? AppButtonVariant.secondary
-              : AppButtonVariant.primary,
-          size: AppButtonSize.sm,
-          onPressed: onChange,
+      ),
+    );
+  }
+}
+
+/// Squelette à la forme du contenu : la page ne saute pas à l'arrivée des
+/// chiffres.
+class _Skeleton extends StatelessWidget {
+  const _Skeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ShimmerEffect(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Column(
+          children: [
+            LoadingShimmer(height: 150, radius: AppRadius.lg),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: LoadingShimmer(height: 132, radius: AppRadius.lg),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: LoadingShimmer(height: 132, radius: AppRadius.lg),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            LoadingShimmer(height: 110, radius: AppRadius.lg),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -288,55 +349,59 @@ class _Content extends StatelessWidget {
       },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          StatTile(
+          HeroMetric(
             label: 'finance_page.net_profit'.tr(),
             value: CurrencyFormatter.format(summary.beneficeNet),
-            icon: LucideIcons.wallet,
-            accent: isLoss ? AppAccent.red : AppAccent.green,
+            loss: isLoss,
             note: isLoss ? 'finance_page.period_loss'.tr() : null,
-            noteTone: isLoss ? StatNoteTone.down : null,
           ),
-          const SizedBox(height: 12),
-          StatGrid(
+          const SizedBox(height: 10),
+          Row(
             children: [
-              StatTile(
-                label: 'finance_page.gross_revenue'.tr(),
-                value: CurrencyFormatter.short(summary.caBrut),
-                icon: LucideIcons.trendingUp,
-                accent: AppAccent.green,
-              ),
-              StatTile(
-                label: 'finance_page.expenses'.tr(),
-                value: CurrencyFormatter.short(summary.depenses),
-                icon: LucideIcons.trendingDown,
-                accent: AppAccent.red,
-                // Mention et non tuile : la commission est déjà dans les
-                // dépenses, une tuile à côté se lirait comme une charge de
-                // plus. Absente sans apporteur sur la période.
-                note: summary.commissions > 0
-                    ? 'finance.including_commissions'.tr(
-                        namedArgs: {
-                          'amount': CurrencyFormatter.short(
-                            summary.commissions,
-                          ),
-                        },
-                      )
-                    : null,
-              ),
-              // Masquée à zéro : la plupart des périodes n'ont aucun départ
-              // anticipé, et une tuile vide ferait croire à un manque.
-              if (summary.remboursements > 0)
-                StatTile(
-                  label: 'finance.refunds'.tr(),
-                  value: CurrencyFormatter.short(summary.remboursements),
-                  icon: LucideIcons.undo2,
-                  accent: AppAccent.amber,
+              Expanded(
+                child: MetricTile(
+                  label: 'finance_page.gross_revenue'.tr(),
+                  value: CurrencyFormatter.short(summary.caBrut),
+                  icon: LucideIcons.trendingUp,
+                  surface: StatSurface.sand,
                 ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MetricTile(
+                  label: 'finance_page.expenses'.tr(),
+                  value: CurrencyFormatter.short(summary.depenses),
+                  icon: LucideIcons.trendingDown,
+                  // Mention et non tuile : la commission est déjà dans les
+                  // dépenses, une tuile à côté se lirait comme une charge de
+                  // plus. Absente sans apporteur sur la période.
+                  note: summary.commissions > 0
+                      ? 'finance.including_commissions'.tr(
+                          namedArgs: {
+                            'amount': CurrencyFormatter.short(
+                              summary.commissions,
+                            ),
+                          },
+                        )
+                      : null,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          // Masquée à zéro : la plupart des périodes n'ont aucun départ
+          // anticipé, et une tuile vide ferait croire à un manque.
+          if (summary.remboursements > 0) ...[
+            const SizedBox(height: 10),
+            MetricTile(
+              label: 'finance.refunds'.tr(),
+              value: CurrencyFormatter.short(summary.remboursements),
+              icon: LucideIcons.undo2,
+              height: 108,
+            ),
+          ],
+          const SizedBox(height: 10),
           StatsRow(
             tauxOccupation: summary.tauxOccupation,
             reservations: summary.reservations,

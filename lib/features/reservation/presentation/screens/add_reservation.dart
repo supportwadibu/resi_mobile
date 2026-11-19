@@ -247,14 +247,20 @@ class _AddReservationViewState extends State<_AddReservationView> {
                 ReservationSectionTitle(
                   title: 'booking_form.planned_check_out'.tr(),
                 ),
-                // Pour un séjour à la journée, la sortie découle de la durée
-                // choisie plus haut : la saisir ici ferait deux commandes pour
-                // une seule valeur.
+                // La sortie se calcule toujours, jamais ne se saisit : la durée
+                // choisie pour un séjour à la journée, 12 h pour une
+                // demi-journée, 4 h pour un passage, à partir de l'entrée. La
+                // saisir ici ferait deux commandes pour une seule valeur.
                 DateTimeField(
                   value: state.checkOutAt,
-                  enabled: state.stayType != StayType.fullDay,
+                  enabled: false,
                   firstDate: state.checkInAt,
                   onChanged: cubit.setCheckOut,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'booking_form.check_out_auto'.tr(),
+                  style: context.text.bodySmall,
                 ),
 
                 if (state.occupiedConflict != null) ...[

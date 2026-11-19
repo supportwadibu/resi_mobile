@@ -196,7 +196,22 @@
     "recent": "Recent stays",
     "empty": "No booking yet.",
     "see_all": "See all bookings ({})",
-    "load_more": "Load more ({} of {})"
+    "load_more": "Load more ({} of {})",
+    "planning_title": "Booking\nschedule",
+    "planning_previous": "Previous month",
+    "planning_next": "Next month",
+    "planning_empty": "No check-in or check-out this day",
+    "planning_arrival": "Check-in",
+    "planning_departure": "Check-out",
+    "planning_moves": {
+      "one": "{} movement",
+      "other": "{} movements"
+    },
+    "planning_days": {
+      "one": "{} day",
+      "other": "{} days"
+    },
+    "month_activity": "This month"
   },
   "reservation_filters": {
     "search_hint": "Client: name or phone",
@@ -756,7 +771,9 @@
     "revenue_month": "Revenue this month",
     "bookings_title": "Bookings",
     "stats_title": "Statistics",
-    "management": "Management"
+    "management": "Management",
+    "week_title": "Your week\nat a glance",
+    "all_properties": "All"
   },
   "stats_actions": {
     "expenses": "Expenses",
@@ -982,7 +999,8 @@
     "negotiation_add": "Add a step",
     "negotiation_remove": "Remove this step",
     "negotiation_rule": "Guests see step 1 when they tap “Negotiate”, then the next one each time they tap “Negotiate again”. The last step is your lowest price. Duration discounts do not apply to a negotiated price.",
-    "negotiation_invalid": "Check the negotiation steps: each must be lower than the standard rate and the previous step."
+    "negotiation_invalid": "Check the negotiation steps: each must be lower than the standard rate and the previous step.",
+    "photos_min": "Add at least {} photos of the place to continue."
   },
   "property_page": {
     "fullscreen": "Full screen",
@@ -1076,7 +1094,11 @@
       "one": "{} unit",
       "other": "{} units"
     },
-    "price_per_day": "{} /night"
+    "price_per_day": "{} /night",
+    "count": {
+      "one": "{} residence",
+      "other": "{} residences"
+    }
   },
   "reservation_status": {
     "confirmed": "Confirmed",
@@ -1143,7 +1165,8 @@
     "mode_future_hint": "Stay planned for a later date",
     "length_discounts": "Length-of-stay discounts",
     "from_days_short": "from {} n",
-    "phone_placeholder": "+225 07 XX XX XX XX"
+    "phone_placeholder": "+225 07 XX XX XX XX",
+    "check_out_auto": "Calculated automatically from the stay type and check-in."
   },
   "booking_detail": {
     "check_in_date": "Check-in date",
@@ -1405,7 +1428,10 @@
     "period": "Period",
     "select": "Select",
     "choose_dates": "Choose dates",
-    "generate": "Generate the PDF report"
+    "generate": "Generate report",
+    "subtitle": "Pick the report, the residence and the period, then generate the PDF.",
+    "summary": "Your report",
+    "last_report": "Last generated report"
   },
   "finance_page": {
     "range": "{from} - {to}",
@@ -1432,7 +1458,8 @@
     "previous_year": "Previous year",
     "next_year": "Next year",
     "whole_year": "All of {year}",
-    "year_label": "Year {year}"
+    "year_label": "Year {year}",
+    "activity": "Activity"
   },
   "gerant_errors": {
     "manager_already_exists": "An account already exists with these details.",
@@ -1746,5 +1773,10 @@
   "wallet_held": {
     "label": "Deposits awaiting arrival",
     "hint": "Released when the guest arrives, or at the end of a stay they did not show up for."
+  },
+  "welcome": {
+    "title": "Manage your homes, get paid anywhere.",
+    "subtitle": "Online or front-desk bookings, even offline.",
+    "start": "Get started"
   }
 }

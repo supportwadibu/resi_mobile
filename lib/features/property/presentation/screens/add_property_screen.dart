@@ -31,6 +31,8 @@ import '../../../../shared/models/late_checkout_policy.dart';
 import '../widgets/add_property/steps/step_location_widget.dart';
 import '../widgets/add_property/steps/step_pricing_widget.dart';
 import '../widgets/add_property/steps/step_type_widget.dart';
+import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_sheet.dart';
 
 /// Assistant de dépôt d'une annonce, et de modification d'une annonce déposée.
 ///
@@ -167,6 +169,9 @@ class _AddPropertyViewState extends State<AddPropertyView> {
   // ── Étape 6 : photos
   List<String> _images = [];
 
+  /// Photos exigées au dépôt d'un bien.
+  static const _minPhotos = 2;
+
   // ── Étape 7 : tarification
   double _dailyPrice = 0;
   List<PriceTier> _priceTiers = const [];
@@ -264,6 +269,11 @@ class _AddPropertyViewState extends State<AddPropertyView> {
       // La surface est facultative ; renseignée, elle doit rester plausible.
       3 when _surfaceArea != null && _surfaceArea! <= 0 =>
         'property_form.surface_positive'.tr(),
+      // Deux photos au moins avant d'aller plus loin : une annonce à une
+      // seule image ne montre pas le logement. Exigé au dépôt seulement : une
+      // fiche plus ancienne à une photo reste modifiable sans en ajouter.
+      5 when !_isEditing && _images.length < _minPhotos =>
+        'property_form.photos_min'.tr(args: ['$_minPhotos']),
       6 when _dailyPrice <= 0 => 'property_form.price_required'.tr(),
       6 when !isValidPropertyDeposit(_deposit) =>
         'property_deposit.invalid'.tr(),
@@ -430,30 +440,35 @@ class _AddPropertyViewState extends State<AddPropertyView> {
     // de sortie terminée.
     late final Future<void> dismissed;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppSheet<bool>(
       context: context,
-      builder: (dialogContext) {
-        dismissed = ModalRoute.of(dialogContext)!.completed;
-        return AlertDialog(
-          title: Text('property_form.discard_title'.tr()),
-          content: Text(
-            _touched.length == 1
-                ? 'property_form.discard_one'.tr()
-                : 'property_form.discard_many'.tr(args: ['${_touched.length}']),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('property_form.keep_editing'.tr()),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: TextButton.styleFrom(
-                foregroundColor: context.tokens.danger,
+      builder: (sheetContext) {
+        dismissed = ModalRoute.of(sheetContext)!.completed;
+        return AppSheet(
+          title: 'property_form.discard_title'.tr(),
+          description: _touched.length == 1
+              ? 'property_form.discard_one'.tr()
+              : 'property_form.discard_many'.tr(args: ['${_touched.length}']),
+          showClose: false,
+          footer: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppButton(
+                label: 'property_form.discard'.tr(),
+                variant: AppButtonVariant.danger,
+                expand: true,
+                onPressed: () => Navigator.of(sheetContext).pop(true),
               ),
-              child: Text('property_form.discard'.tr()),
-            ),
-          ],
+              const SizedBox(height: 8),
+              AppButton(
+                label: 'property_form.keep_editing'.tr(),
+                variant: AppButtonVariant.secondary,
+                expand: true,
+                onPressed: () => Navigator.of(sheetContext).pop(false),
+              ),
+            ],
+          ),
+          child: const SizedBox.shrink(),
         );
       },
     );

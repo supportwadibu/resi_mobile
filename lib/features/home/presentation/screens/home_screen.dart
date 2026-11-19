@@ -210,6 +210,15 @@ class _HomeScreenState extends State<HomeScreen>
             final barInset = MediaQuery.paddingOf(bodyContext).bottom;
             return Stack(
               children: [
+                // Sous tout l'écran, encoche comprise : le haut de l'écran
+                // prolonge le fond au lieu de s'arrêter sous la barre d'état.
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: context.tokens.glowGradient,
+                    ),
+                  ),
+                ),
                 SafeArea(
                   bottom: false,
                   child: Column(
@@ -255,11 +264,11 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                 Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: barInset + 8,
+                  left: 12,
+                  right: 12,
+                  bottom: barInset + 12,
                   child: Align(
-                    alignment: Alignment.bottomRight,
+                    alignment: Alignment.bottomCenter,
                     child: IgnorePointer(
                       ignoring: !_menuOpen,
                       child: FadeTransition(
@@ -268,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen>
                           position: _menuSlide,
                           child: ScaleTransition(
                             scale: _menuScale,
-                            alignment: Alignment.bottomRight,
+                            alignment: Alignment.bottomCenter,
                             child: FloatingActionCard(
                               features: actions,
                               onSelect: _handleAdd,

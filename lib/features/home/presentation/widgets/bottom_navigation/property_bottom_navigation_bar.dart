@@ -1,8 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
-// import 'property_visibility_switch.dart';
+
+import 'property_visibility_switch.dart';
+import 'package:resi_africa/core/theme/app_radius.dart';
+import 'package:resi_africa/core/theme/resi_tokens.dart';
+import 'package:resi_africa/shared/widgets/app_button.dart';
+import 'package:resi_africa/shared/widgets/frosted_surface.dart';
 
 class PropertyBottomNavigationBar extends StatelessWidget {
   const PropertyBottomNavigationBar({
@@ -29,15 +33,61 @@ class PropertyBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // if (canChangeVisibility) : PropertyVisibilitySwitch(
-    //   isPublished: isPublished,
-    //   isBusy: isTogglingVisibility,
-    //   onChanged: onVisibilityChanged,
-    // ), posée au-dessus du bouton.
-    return AppBottomActionBar(
-      primaryLabel: 'property_detail.edit'.tr(),
-      primaryIcon: LucideIcons.pencil,
-      onPrimary: onEditPressed,
+    // Hauteur de son contenu, et non celle de l'écran : un `bottomNavigationBar`
+    // reçoit toute la hauteur disponible, et la barre s'y étirait.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            // Liseré sombre très léger et ombre floue : on sent le cadre de la barre
+            // sur la page, sans qu'il se lise comme un trait noir.
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.lg,
+                border: Border.all(
+                  color: context.tokens.foreground.withValues(alpha: 0.10),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.tokens.overlay.withValues(alpha: 0.14),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: FrostedSurface(
+                borderRadius: AppRadius.lg,
+                padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
+                child: Row(
+                  children: [
+                    // Un bien est créé en brouillon : sans cette bascule, le
+                    // propriétaire n'a aucun moyen de mettre son annonce en ligne.
+                    if (canChangeVisibility)
+                      Expanded(
+                        child: PropertyVisibilitySwitch(
+                          isPublished: isPublished,
+                          isBusy: isTogglingVisibility,
+                          onChanged: onVisibilityChanged,
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    const SizedBox(width: 10),
+                    AppButton(
+                      label: 'property_detail.edit'.tr(),
+                      icon: LucideIcons.pencil,
+                      onPressed: onEditPressed,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

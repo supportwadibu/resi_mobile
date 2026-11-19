@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:resi_africa/core/theme/app_theme.dart';
-import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_loader.dart';
+import 'package:resi_africa/shared/widgets/loading_shimmer.dart';
 
 void main() {
   group('AppLoader', () {
-    testWidgets('dessine un anneau à la couleur du texte', (tester) async {
+    testWidgets('dessine des blocs balayés, jamais un anneau', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
@@ -14,42 +14,29 @@ void main() {
         ),
       );
 
-      final indicator = tester.widget<CircularProgressIndicator>(
-        find.byType(CircularProgressIndicator),
-      );
-      // Le texte, et non une teinte de marque : l'anneau reste lisible dans
-      // les deux modes.
-      expect(indicator.color, ResiTokens.light.foreground);
+      expect(find.byType(ShimmerEffect), findsOneWidget);
+      expect(find.byType(LoadingShimmer), findsNWidgets(3));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('suit le mode sombre', (tester) async {
+    testWidgets('une petite taille donne une barre de cette hauteur', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark(),
-          home: const Scaffold(body: AppLoader()),
+          home: const Scaffold(body: Center(child: AppLoader(size: 20))),
         ),
       );
 
-      final indicator = tester.widget<CircularProgressIndicator>(
-        find.byType(CircularProgressIndicator),
-      );
-      expect(indicator.color, ResiTokens.dark.foreground);
+      expect(find.byType(LoadingShimmer), findsOneWidget);
+      expect(tester.getSize(find.byType(AppLoader)).height, 20);
     });
 
-    testWidgets('respecte la taille demandée', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AppLoader(size: 48))),
-      );
-
-      final box = tester.getSize(find.byType(AppLoader));
-      expect(box.width, 48);
-      expect(box.height, 48);
-    });
-
-    testWidgets('AppLoaderScreen centre le loader', (tester) async {
+    testWidgets('AppLoaderScreen montre le squelette de page', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: AppLoaderScreen()));
 
-      expect(find.byType(AppLoader), findsOneWidget);
+      expect(find.byType(PageSkeleton), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
     });
   });
