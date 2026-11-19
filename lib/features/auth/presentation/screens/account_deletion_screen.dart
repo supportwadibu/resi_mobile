@@ -205,14 +205,7 @@ class _DeletionFormState extends State<_DeletionForm> {
             ),
           ),
         ],
-        if (widget.state.error case final error?) ...[
-          const SizedBox(height: 16),
-          AppCallout(
-            icon: LucideIcons.circleAlert,
-            message: error,
-            tone: AppAccent.red,
-          ),
-        ],
+        if (widget.state.error case final error?) AppToastOnMessage(error),
         const SizedBox(height: 24),
         AppButton(
           label: 'account_deletion.submit'.tr(),

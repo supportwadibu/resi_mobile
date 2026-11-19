@@ -301,9 +301,10 @@ void main() {
       // La section fautive s'ouvre d'elle-même.
       expect(find.text('Définissez votre tarif'), findsOneWidget);
 
-      // Le toast d'erreur s'efface au bout de quelques secondes : sans cette
+      // Le toast d'erreur reste 4,8 s puis joue sa sortie : sans cette
       // attente, son minuteur resterait en suspens à la fin du test.
-      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
     });
 
     // Le cas « sortie sans modification » n'est pas couvert ici : il aboutit à

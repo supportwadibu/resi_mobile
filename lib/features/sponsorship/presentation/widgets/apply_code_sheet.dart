@@ -2,15 +2,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
-import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../business_logic/sponsorship_cubit.dart';
 import '../../business_logic/sponsorship_state.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 /// Feuille de saisie du code d'un parrain, pour qui ne l'a pas donné à
 /// l'inscription. Rend `true` une fois le parrain rattaché.
@@ -81,14 +80,8 @@ class _ApplyCodeFormState extends State<_ApplyCodeForm> {
                 enabled: !isSubmitting,
                 onChanged: (_) => setState(() {}),
               ),
-              if (state case SponsorshipActionFailure(:final message)) ...[
-                const SizedBox(height: 12),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: message,
-                ),
-              ],
+              if (state case SponsorshipActionFailure(:final message))
+                AppToastOnMessage(message),
             ],
           ),
         );

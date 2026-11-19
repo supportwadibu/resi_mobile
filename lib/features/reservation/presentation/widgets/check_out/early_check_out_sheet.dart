@@ -18,6 +18,7 @@ import '../../../business_logic/early_check_out_state.dart';
 import '../../../data/models/early_check_out_quote.dart';
 import '../../../data/models/reservation_model.dart';
 import '../create/date_time_field.dart';
+import '../../../../../shared/widgets/app_toast.dart';
 
 /// Feuille de départ anticipé : heure de sortie réelle, chiffrage du serveur
 /// et montant retenu.
@@ -249,14 +250,8 @@ class _EarlyCheckOutFormState extends State<_EarlyCheckOutForm> {
                   message: 'stay_checkout.early_estimate'.tr(),
                 ),
               ],
-              if (state case EarlyCheckOutError(:final message)) ...[
-                const SizedBox(height: 12),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: message,
-                ),
-              ],
+              if (state case EarlyCheckOutError(:final message))
+                AppToastOnMessage(message),
             ],
           ),
         );

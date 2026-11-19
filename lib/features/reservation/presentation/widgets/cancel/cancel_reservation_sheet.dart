@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
-import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
-import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_option_tile.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
 
@@ -15,6 +13,7 @@ import '../../../business_logic/stay_cancel_cubit.dart';
 import '../../../business_logic/stay_cancel_state.dart';
 import '../../../data/models/deposit_action.dart';
 import '../../../data/models/reservation_model.dart';
+import '../../../../../shared/widgets/app_toast.dart';
 
 /// Feuille d'annulation : motif facultatif et, si un acompte a été versé, son
 /// sort — gardé ou rendu.
@@ -159,14 +158,8 @@ class _CancelFormState extends State<_CancelForm> {
                   hintText: 'stay_cancel.reason_hint'.tr(),
                 ),
               ),
-              if (state case StayCancelFailure(:final message)) ...[
-                const SizedBox(height: 12),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: message,
-                ),
-              ],
+              if (state case StayCancelFailure(:final message))
+                AppToastOnMessage(message),
             ],
           ),
         );

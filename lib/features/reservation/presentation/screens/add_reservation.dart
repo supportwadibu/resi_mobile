@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:resi_africa/shared/widgets/app_bottom_action_bar.dart';
 import 'package:resi_africa/shared/widgets/app_callout.dart';
+import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
@@ -317,10 +318,10 @@ class _AddReservationViewState extends State<_AddReservationView> {
                   onPhoneChanged: cubit.setReferrerPhone,
                 ),
 
-                if (state.errorMessage != null) ...[
-                  const SizedBox(height: 16),
-                  _ConflictBanner(message: state.errorMessage!),
-                ],
+                // L'échec de l'envoi s'annonce en toast ; le conflit de dates,
+                // qui dure tant que la période choisie le provoque, reste en
+                // encart au-dessus.
+                AppToastOnMessage(state.errorMessage),
               ],
             ),
           ),

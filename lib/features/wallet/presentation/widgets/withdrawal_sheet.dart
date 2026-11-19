@@ -17,6 +17,7 @@ import '../../business_logic/wallet_cubit.dart';
 import '../../business_logic/wallet_state.dart';
 import '../../data/models/wallet_model.dart';
 import 'wave_logo.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 /// Feuille de demande de retrait : montant, numéro Wave enregistré, frais
 /// annoncés. Le versement ne passe que par Wave.
@@ -185,14 +186,8 @@ class _WithdrawalFormState extends State<_WithdrawalForm> {
                   ),
                 ),
               ],
-              if (state case WithdrawalRequestFailure(:final message)) ...[
-                const SizedBox(height: 12),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: message,
-                ),
-              ],
+              if (state case WithdrawalRequestFailure(:final message))
+                AppToastOnMessage(message),
             ],
           ),
         );

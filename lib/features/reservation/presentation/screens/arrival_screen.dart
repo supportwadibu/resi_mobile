@@ -22,6 +22,7 @@ import '../../../../shared/utils/date_formatter.dart';
 import '../../../home/presentation/widgets/reservations/reservation_item.dart';
 import '../../business_logic/arrival_cubit.dart';
 import '../../business_logic/arrival_state.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 /// Arrivée d'un client au comptoir : scan de son QR « Démarrer mon séjour »
 /// (ou saisie du PIN), encaissement du reste, puis remise des clés.
@@ -116,14 +117,7 @@ class _ScanViewState extends State<_ScanView> {
               ),
             ),
           ),
-          if (widget.message case final message?) ...[
-            const SizedBox(height: 16),
-            AppCallout(
-              icon: LucideIcons.circleAlert,
-              tone: AppAccent.red,
-              message: message,
-            ),
-          ],
+          if (widget.message case final message?) AppToastOnMessage(message),
           const SizedBox(height: 24),
           Section(
             title: 'arrival.pin_title'.tr(),
@@ -306,14 +300,7 @@ class _ArrivalViewState extends State<_ArrivalView> {
               ),
             ),
           ],
-          if (message != null) ...[
-            const SizedBox(height: 16),
-            AppCallout(
-              icon: LucideIcons.circleAlert,
-              tone: AppAccent.red,
-              message: message,
-            ),
-          ],
+          if (message != null) AppToastOnMessage(message),
         ],
       ),
       bottomNavigationBar: AppBottomActionBar(

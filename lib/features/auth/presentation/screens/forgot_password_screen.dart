@@ -101,14 +101,7 @@ class _IdentifierStepState extends State<_IdentifierStep> {
                 ? 'common.field_required'.tr()
                 : null,
           ),
-          if (widget.state.error case final error?) ...[
-            const SizedBox(height: 16),
-            AppCallout(
-              icon: LucideIcons.circleAlert,
-              message: error,
-              tone: AppAccent.red,
-            ),
-          ],
+          if (widget.state.error case final error?) AppToastOnMessage(error),
           const SizedBox(height: 24),
           AppButton(
             label: 'auth.send_code'.tr(),
@@ -212,14 +205,7 @@ class _CodeStepState extends State<_CodeStep> {
             enabled: !busy,
             validator: PasswordRules.confirmation(_password),
           ),
-          if (state.error case final error?) ...[
-            const SizedBox(height: 16),
-            AppCallout(
-              icon: LucideIcons.circleAlert,
-              message: error,
-              tone: AppAccent.red,
-            ),
-          ],
+          if (state.error case final error?) AppToastOnMessage(error),
           const SizedBox(height: 24),
           AppButton(
             label: 'auth.reset_submit'.tr(),

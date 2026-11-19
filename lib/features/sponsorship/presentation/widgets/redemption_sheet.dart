@@ -17,6 +17,7 @@ import '../../../wallet/presentation/widgets/wave_logo.dart';
 import '../../business_logic/sponsorship_cubit.dart';
 import '../../business_logic/sponsorship_state.dart';
 import '../../data/models/sponsorship_model.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 /// Feuille « Utiliser mes gains » : retrait Wave ou crédit d'abonnement.
 ///
@@ -189,14 +190,8 @@ class _RedemptionFormState extends State<_RedemptionForm> {
                   ),
                 ),
               ],
-              if (state case SponsorshipActionFailure(:final message)) ...[
-                const SizedBox(height: 12),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: message,
-                ),
-              ],
+              if (state case SponsorshipActionFailure(:final message))
+                AppToastOnMessage(message),
             ],
           ),
         );

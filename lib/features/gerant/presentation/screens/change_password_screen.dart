@@ -5,9 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/router/app_router.gr.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
-import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
-import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_toast.dart';
 import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 
@@ -116,14 +114,7 @@ class _ChangePasswordFormState extends State<_ChangePasswordForm> {
             enabled: !submitting,
             validator: PasswordRules.confirmation(_password),
           ),
-          if (error != null) ...[
-            const SizedBox(height: 16),
-            AppCallout(
-              icon: LucideIcons.circleAlert,
-              message: error,
-              tone: AppAccent.red,
-            ),
-          ],
+          if (error != null) AppToastOnMessage(error),
           const SizedBox(height: 24),
           AppButton(
             label: 'auth.change_password_submit'.tr(),

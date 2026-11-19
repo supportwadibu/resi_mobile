@@ -4,9 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
-import 'package:resi_africa/core/theme/resi_tokens.dart';
 import 'package:resi_africa/shared/widgets/app_button.dart';
-import 'package:resi_africa/shared/widgets/app_callout.dart';
 import 'package:resi_africa/shared/widgets/app_sheet.dart';
 import 'package:resi_africa/shared/widgets/app_text_field.dart';
 
@@ -15,6 +13,7 @@ import '../../business_logic/wallet_cubit.dart';
 import '../../business_logic/wallet_state.dart';
 import '../../data/models/wallet_model.dart';
 import 'wave_logo.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 /// Feuille des numéros Wave de retrait : deux au plus, choisis à chaque
 /// demande. Un numéro vidé est retiré.
@@ -154,14 +153,8 @@ class _PayoutNumbersFormState extends State<_PayoutNumbersForm> {
                   enabled: !isSaving,
                 ),
               ],
-              if (state case PayoutNumbersFailure(:final message)) ...[
-                const SizedBox(height: 12),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: message,
-                ),
-              ],
+              if (state case PayoutNumbersFailure(:final message))
+                AppToastOnMessage(message),
             ],
           ),
         );

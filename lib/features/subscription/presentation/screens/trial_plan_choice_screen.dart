@@ -23,6 +23,7 @@ import '../../data/models/plan_access.dart';
 import '../../data/models/subscription_plan_model.dart';
 import '../widgets/plan_feature_line.dart';
 import '../widgets/plan_style.dart';
+import '../../../../shared/widgets/app_toast.dart';
 
 /// Choix du forfait de l'essai gratuit : RESI Pro ou RESI Pro+.
 ///
@@ -101,14 +102,7 @@ class _Offers extends StatelessWidget {
                 'trial.choose_body'.tr(),
                 style: context.mutedText.copyWith(height: 1.5),
               ),
-              if (state.message != null) ...[
-                const SizedBox(height: 16),
-                AppCallout(
-                  icon: LucideIcons.circleAlert,
-                  tone: AppAccent.red,
-                  message: state.message,
-                ),
-              ],
+              if (state.message != null) AppToastOnMessage(state.message),
               const SizedBox(height: 24),
               if (state.offers.isEmpty)
                 AppCallout(
