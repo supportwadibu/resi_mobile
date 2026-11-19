@@ -50,6 +50,7 @@ class AppSheet extends StatelessWidget {
     this.description,
     this.footer,
     this.showClose = true,
+    this.action,
     this.padding = const EdgeInsets.fromLTRB(24, 0, 24, 20),
     super.key,
   });
@@ -61,6 +62,9 @@ class AppSheet extends StatelessWidget {
   /// Actions en bas de feuille, hors de la zone qui défile.
   final Widget? footer;
   final bool showClose;
+
+  /// Action d'en-tête (« Réinitialiser »), à la place de la croix.
+  final Widget? action;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -83,6 +87,7 @@ class AppSheet extends StatelessWidget {
                     title: title,
                     description: description,
                     showClose: showClose,
+                    action: action,
                   ),
                   Padding(padding: padding, child: child),
                 ],
@@ -108,6 +113,7 @@ class AppSheetHeader extends StatelessWidget {
     required this.title,
     this.description,
     this.showClose = true,
+    this.action,
     super.key,
   });
 
@@ -115,12 +121,19 @@ class AppSheetHeader extends StatelessWidget {
   final String? description;
   final bool showClose;
 
+  /// Remplace la croix : la feuille se ferme alors en glissant ou par son
+  /// bouton principal.
+  final Widget? action;
+
   @override
   Widget build(BuildContext context) {
+    final closable = showClose && action == null;
     return Padding(
-      padding: EdgeInsets.fromLTRB(24, 4, showClose ? 16 : 24, 18),
+      padding: EdgeInsets.fromLTRB(24, 4, closable ? 16 : 24, 18),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: action == null
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -139,7 +152,9 @@ class AppSheetHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (showClose)
+          if (action != null)
+            action!
+          else if (showClose)
             AppIconButton(
               icon: LucideIcons.x,
               label: 'common.close'.tr(),

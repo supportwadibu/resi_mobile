@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'choice_tiles.dart';
+
 /// Choix de la langue de l'application, à côté du choix d'apparence.
 ///
 /// Sans choix, l'application suit la langue du téléphone. Une fois choisie,
@@ -15,19 +17,23 @@ class LanguageSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = context.locale.languageCode == 'en' ? _english : _french;
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<Locale>(
-        showSelectedIcon: false,
-        // Chaque langue s'écrit dans sa propre langue : un lecteur perdu dans
-        // une interface qu'il ne comprend pas doit reconnaître la sienne.
-        segments: [
-          ButtonSegment(value: _french, label: Text('language.fr'.tr())),
-          ButtonSegment(value: _english, label: Text('language.en'.tr())),
-        ],
-        selected: {current},
-        onSelectionChanged: (selection) => context.setLocale(selection.first),
-      ),
+    // Chaque langue s'écrit dans sa propre langue : un lecteur perdu dans une
+    // interface qu'il ne comprend pas doit reconnaître la sienne.
+    return AppChoiceTiles<Locale>(
+      selected: current,
+      onSelected: context.setLocale,
+      options: [
+        AppChoiceTileOption(
+          value: _french,
+          glyph: 'FR',
+          label: 'language.fr'.tr(),
+        ),
+        AppChoiceTileOption(
+          value: _english,
+          glyph: 'EN',
+          label: 'language.en'.tr(),
+        ),
+      ],
     );
   }
 }
