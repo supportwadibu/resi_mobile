@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,13 @@ import 'package:resi_africa/shared/widgets/app_top_bar.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../clients/data/models/identity_document_model.dart';
+import '../../../clients/data/services/id_card_reading.dart';
+import '../../../clients/data/services/id_scan_service.dart';
+import '../../../clients/presentation/widgets/create/client_identity_controller.dart';
+import '../../../clients/presentation/widgets/create/client_identity_fields.dart';
+import '../../../clients/presentation/widgets/create/id_scan_button.dart';
+import '../../../clients/presentation/widgets/create/identity_document_picker.dart';
 import '../../../../shared/utils/date_formatter.dart';
 import '../../../home/presentation/widgets/reservations/reservation_item.dart';
 import '../../business_logic/arrival_cubit.dart';
@@ -166,6 +175,11 @@ class _ArrivalView extends StatefulWidget {
 class _ArrivalViewState extends State<_ArrivalView> {
   late final _amount = TextEditingController(text: _balanceText);
 
+  /// Pièce du client, à saisir quand le carnet ne l'a pas encore : un client
+  /// de l'app réserve sans pièce, elle s'enregistre à son entrée.
+  final _identity = ClientIdentityController();
+  final Map<DocumentSlot, IdentityDocumentModel> _documents = {};
+
   String get _balanceText =>
       widget.state.arrival.reservation.balanceDue.round().toString();
 
@@ -179,7 +193,44 @@ class _ArrivalViewState extends State<_ArrivalView> {
   @override
   void dispose() {
     _amount.dispose();
+    _identity.dispose();
     super.dispose();
+  }
+
+  /// La pièce scannée fait foi : elle remplace la saisie. Une photo déposée
+  /// ne comble que les champs vides.
+  void _applyReading(IdCardReading reading, {required bool overwrite}) =>
+      setState(() => _identity.apply(reading, overwrite: overwrite));
+
+  /// Lit une face déposée, en arrière-plan : son échec ne se signale pas.
+  Future<void> _readDocument(File file) async {
+    final reading = await const IdScanService().scan(file.path);
+    if (reading == null || !mounted) return;
+    _applyReading(reading, overwrite: false);
+  }
+
+  /// Nature de la pièce et recto : le minimum que le serveur exige.
+  bool get _documentsReady =>
+      _identity.documentType != null &&
+      _documents.containsKey(DocumentSlot.recto);
+
+  Future<void> _saveDocuments(ArrivalCubit cubit) async {
+    final type = _identity.documentType;
+    final front = _documents[DocumentSlot.recto];
+    if (type == null || front == null) return;
+    final message = await cubit.saveDocuments(
+      documentType: type,
+      frontPath: front.file.path,
+      backPath: _documents[DocumentSlot.verso]?.file.path,
+      documentNumber: _identity.documentNumberValue,
+      identity: _identity.identity,
+    );
+    if (!mounted) return;
+    if (message != null) {
+      AppToast.error(message, context: context);
+    } else {
+      AppToast.success('arrival.documents_saved'.tr(), context: context);
+    }
   }
 
   @override
@@ -247,7 +298,76 @@ class _ArrivalViewState extends State<_ArrivalView> {
             ),
           ),
           const SizedBox(height: 16),
-          if (arrival.canCheckIn)
+          if (!arrival.documentsComplete) ...[
+            AppCallout(
+              icon: LucideIcons.idCard,
+              tone: AppAccent.amber,
+              title: 'arrival.documents_title'.tr(),
+              message: 'arrival.documents_message'.tr(),
+            ),
+            const SizedBox(height: 16),
+            Section(
+              title: 'arrival.documents_section'.tr(),
+              icon: LucideIcons.idCard,
+              child: ListenableBuilder(
+                listenable: _identity,
+                builder: (context, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    IdScanButton(
+                      onScanned: (path, reading) {
+                        setState(() {
+                          _documents[DocumentSlot.verso] =
+                              IdentityDocumentModel(
+                                slot: DocumentSlot.verso,
+                                file: File(path),
+                              );
+                        });
+                        if (reading != null) {
+                          _applyReading(reading, overwrite: true);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    IdentityDocumentPicker(
+                      documents: _documents,
+                      onAdd: (slot, file) {
+                        setState(() {
+                          _documents[slot] = IdentityDocumentModel(
+                            slot: slot,
+                            file: file,
+                          );
+                        });
+                        if (slot != DocumentSlot.photo) _readDocument(file);
+                      },
+                      onRemove: (slot) =>
+                          setState(() => _documents.remove(slot)),
+                    ),
+                    const SizedBox(height: 20),
+                    ClientIdentityFields(controller: _identity),
+                    const SizedBox(height: 16),
+                    if (!_documentsReady)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'arrival.documents_required'.tr(),
+                          style: context.mutedText,
+                        ),
+                      ),
+                    AppButton(
+                      label: 'arrival.documents_save'.tr(),
+                      icon: LucideIcons.save,
+                      expand: true,
+                      isLoading: busy,
+                      onPressed: busy || !_documentsReady
+                          ? null
+                          : () => _saveDocuments(cubit),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else if (arrival.canCheckIn)
             AppCallout(
               icon: LucideIcons.circleCheck,
               tone: AppAccent.green,
@@ -306,9 +426,13 @@ class _ArrivalViewState extends State<_ArrivalView> {
       bottomNavigationBar: AppBottomActionBar(
         primaryLabel: 'arrival.check_in'.tr(),
         primaryIcon: LucideIcons.keyRound,
-        isLoading: busy && arrival.canCheckIn,
+        isLoading: busy && arrival.canCheckIn && arrival.documentsComplete,
         // Le serveur refuserait de toute façon : le bouton suit son verdict.
-        onPrimary: arrival.canCheckIn && !busy ? cubit.checkIn : null,
+        // La pièce, elle, est exigée ici : les clés ne se remettent pas à un
+        // client dont le carnet n'a pas l'identité.
+        onPrimary: arrival.canCheckIn && arrival.documentsComplete && !busy
+            ? cubit.checkIn
+            : null,
       ),
     );
   }

@@ -193,6 +193,10 @@ abstract final class ApiEndpoints {
   static String bookingCheckIn(String role, String id) =>
       '${basePathForRole(role)}/bookings/$id/check-in';
 
+  /// Pièce d'identité saisie à l'arrivée, rangée dans le carnet.
+  static String bookingArrivalDocuments(String role, String id) =>
+      '${basePathForRole(role)}/bookings/$id/arrival-documents';
+
   /// Réservation présentée au comptoir : contenu du QR scanné, ou PIN saisi.
   /// Le serveur borne le nombre d'essais : le PIN n'a que six chiffres.
   static String bookingArrival(String role, String code) =>

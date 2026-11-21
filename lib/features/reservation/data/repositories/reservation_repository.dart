@@ -4,6 +4,7 @@ import '../../../../core/api/api_endpoints.dart';
 import '../../../../core/session/session_role.dart';
 import '../../../../core/error/exception_mapper.dart';
 import '../../../../core/error/failures.dart';
+import '../../../clients/data/models/client_model.dart';
 import '../models/arrival_model.dart';
 import '../models/booking_stats_model.dart';
 import '../models/deposit_action.dart';
@@ -214,6 +215,45 @@ class ReservationRepository {
       throw AppFailure.unexpected(message: e.toString());
     }
   }
+
+  /// Pièce d'identité du client présentée à l'arrivée.
+  ///
+  /// Rangée dans le carnet du propriétaire — fiche créée au besoin pour un
+  /// client de l'app —, jamais partagée avec un autre propriétaire. Le recto
+  /// est exigé ; un 422 `arrival_client_unknown` signale un compte sans
+  /// numéro, à enregistrer depuis le carnet.
+  Future<void> recordArrivalDocuments(
+    String id, {
+    required ClientIdDocumentType documentType,
+    required String frontPath,
+    String? documentNumber,
+    String? backPath,
+    ClientIdentity? identity,
+  }) async {
+    try {
+      final form = FormData.fromMap({
+        'id_document_type': documentType.code,
+        'id_document_number': ?documentNumber,
+        ...?identity?.toFormFields(),
+        'id_document_front': await _imageFile(frontPath),
+        if (backPath != null) 'id_document_back': await _imageFile(backPath),
+      });
+      await _dio.post(
+        ApiEndpoints.bookingArrivalDocuments(_role.value, id),
+        data: form,
+        options: Options(contentType: Headers.multipartFormDataContentType),
+      );
+    } on DioException catch (e) {
+      throw mapDioExceptionToFailure(e);
+    } catch (e) {
+      throw AppFailure.unexpected(message: e.toString());
+    }
+  }
+
+  Future<MultipartFile> _imageFile(String path) =>
+      MultipartFile.fromFile(path, filename: path.split(_separator).last);
+
+  static final RegExp _separator = RegExp(r'[/\\]');
 
   /// Enregistre l'arrivée du client sur une réservation à venir.
   ///

@@ -1756,7 +1756,13 @@
     "next_client": "Client suivant",
     "finish": "Terminer",
     "no_show": "Arrivée",
-    "no_show_value": "Client absent"
+    "no_show_value": "Client absent",
+    "documents_title": "Pièce d'identité à enregistrer",
+    "documents_message": "Ce client a réservé sans pièce. Enregistrez-la avant de remettre les clés : elle reste dans votre carnet.",
+    "documents_section": "Pièce d'identité",
+    "documents_required": "Choisissez la nature de la pièce et ajoutez au moins le recto.",
+    "documents_save": "Enregistrer la pièce",
+    "documents_saved": "Pièce enregistrée dans votre carnet"
   },
   "property_deposit": {
     "title": "Acompte",

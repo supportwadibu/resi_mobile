@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/failures.dart';
+import '../../clients/data/models/client_model.dart';
 import '../data/repositories/reservation_repository.dart';
 import 'arrival_state.dart';
 
@@ -55,6 +56,37 @@ class ArrivalCubit extends Cubit<ArrivalState> {
       if (!isClosed) {
         emit(current.copyWith(busy: false, message: f.userMessage));
       }
+    }
+  }
+
+  /// Enregistre la pièce du client puis relit la fiche, qui débloque alors
+  /// la remise des clés. Rend le message d'échec, `null` en cas de succès.
+  Future<String?> saveDocuments({
+    required ClientIdDocumentType documentType,
+    required String frontPath,
+    String? documentNumber,
+    String? backPath,
+    ClientIdentity? identity,
+  }) async {
+    final current = state;
+    final code = _code;
+    if (current is! ArrivalReady || current.busy || code == null) return null;
+    emit(current.copyWith(busy: true));
+    try {
+      await _repository.recordArrivalDocuments(
+        current.arrival.reservation.id,
+        documentType: documentType,
+        frontPath: frontPath,
+        documentNumber: documentNumber,
+        backPath: backPath,
+        identity: identity,
+      );
+      final arrival = await _repository.findArrival(code);
+      if (!isClosed) emit(ArrivalReady(arrival));
+      return null;
+    } on AppFailure catch (f) {
+      if (!isClosed) emit(current.copyWith(busy: false));
+      return f.userMessage;
     }
   }
 

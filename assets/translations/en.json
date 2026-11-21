@@ -1756,7 +1756,13 @@
     "next_client": "Next guest",
     "finish": "Done",
     "no_show": "Arrival",
-    "no_show_value": "Guest did not show up"
+    "no_show_value": "Guest did not show up",
+    "documents_title": "ID document to record",
+    "documents_message": "This guest booked without an ID. Record it before handing over the keys: it stays in your client book.",
+    "documents_section": "ID document",
+    "documents_required": "Choose the document type and add at least the front side.",
+    "documents_save": "Save ID document",
+    "documents_saved": "ID saved to your client book"
   },
   "property_deposit": {
     "title": "Deposit",

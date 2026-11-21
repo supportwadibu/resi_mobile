@@ -7,6 +7,7 @@ class ArrivalModel {
     required this.reservation,
     required this.onlinePaid,
     required this.canCheckIn,
+    this.documentsComplete = true,
     this.blockerCode,
     this.blockerMessage,
   });
@@ -20,6 +21,9 @@ class ArrivalModel {
       ),
       onlinePaid: check['online_paid'] == true,
       canCheckIn: check['can_check_in'] == true,
+      // Serveur antérieur à la saisie des pièces à l'arrivée : rien ne
+      // l'exige, l'arrivée ne doit pas se bloquer pour autant.
+      documentsComplete: check['documents_complete'] != false,
       blockerCode: blocker?['code'] as String?,
       blockerMessage: blocker?['message'] as String?,
     );
@@ -32,6 +36,10 @@ class ArrivalModel {
 
   /// Rien ne s'oppose à la remise des clés.
   final bool canCheckIn;
+
+  /// Le carnet a déjà la pièce d'identité du client. Sinon, elle s'enregistre
+  /// avant la remise des clés.
+  final bool documentsComplete;
 
   /// Code stable de ce qui bloque — `booking_balance_due`,
   /// `check_in_too_early`… — lu pour choisir l'écran, jamais le message.
