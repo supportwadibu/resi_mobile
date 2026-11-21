@@ -1628,6 +1628,7 @@
     },
     "status": {
       "pending": "En attente",
+      "processing": "Versement en cours",
       "paid": "Versé",
       "rejected": "Refusé"
     }

@@ -8,12 +8,16 @@ enum PushDestination {
   subscription,
 
   /// Nouvelle réservation sur un de ses biens : la liste des réservations.
-  reservations;
+  reservations,
+
+  /// Retrait versé sur son compte Wave : le portefeuille.
+  wallet;
 
   static PushDestination? fromData(Map<String, dynamic> data) {
     return switch (data['type']) {
       'subscription_expiry' => PushDestination.subscription,
       'booking_created' => PushDestination.reservations,
+      'withdrawal_paid' => PushDestination.wallet,
       _ => null,
     };
   }

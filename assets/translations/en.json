@@ -1628,6 +1628,7 @@
     },
     "status": {
       "pending": "Pending",
+      "processing": "Payout in progress",
       "paid": "Paid",
       "rejected": "Rejected"
     }

@@ -72,6 +72,13 @@ void main() {
       );
     });
 
+    test('un retrait versé ouvre le portefeuille', () {
+      expect(
+        PushDestination.fromData({'type': 'withdrawal_paid'}),
+        PushDestination.wallet,
+      );
+    });
+
     test('des données absentes ou inconnues sont ignorées', () {
       expect(PushDestination.fromData(const {}), isNull);
       expect(PushDestination.fromData({'type': 'autre'}), isNull);

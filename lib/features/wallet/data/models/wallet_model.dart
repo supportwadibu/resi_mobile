@@ -145,6 +145,9 @@ class WalletTransactionPage {
 /// Statut d'une demande de retrait.
 enum WithdrawalStatus {
   pending('pending'),
+
+  /// Versement Wave lancé par l'équipe, pas encore arrivé.
+  processing('processing'),
   paid('paid'),
   rejected('rejected');
 
@@ -153,6 +156,7 @@ enum WithdrawalStatus {
   final String code;
 
   static WithdrawalStatus fromCode(String? code) => switch (code) {
+    'processing' => WithdrawalStatus.processing,
     'paid' => WithdrawalStatus.paid,
     'rejected' => WithdrawalStatus.rejected,
     _ => WithdrawalStatus.pending,

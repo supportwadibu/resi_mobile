@@ -199,6 +199,8 @@ class PushNotificationService {
         _router.push(SubscriptionPlansRoute());
       case PushDestination.reservations:
         _router.push(const ReservationRoute());
+      case PushDestination.wallet:
+        _router.push(const WalletRoute());
       case null:
         break;
     }

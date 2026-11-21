@@ -328,10 +328,11 @@ class _WithdrawalTile extends StatelessWidget {
 
   final WithdrawalModel withdrawal;
 
-  /// Même grammaire que les autres statuts : ambre en attente, vert abouti,
-  /// rouge arrêté par une décision.
+  /// Même grammaire que les autres statuts : ambre en attente, violet en
+  /// cours, vert abouti, rouge arrêté par une décision.
   static StatusTone _tone(WithdrawalStatus status) => switch (status) {
     WithdrawalStatus.pending => StatusTone.waiting,
+    WithdrawalStatus.processing => StatusTone.ongoing,
     WithdrawalStatus.paid => StatusTone.done,
     WithdrawalStatus.rejected => StatusTone.stopped,
   };
