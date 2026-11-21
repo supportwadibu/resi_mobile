@@ -4,17 +4,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:resi_africa/core/theme/app_typography.dart';
 import 'package:resi_africa/core/theme/resi_tokens.dart';
-import 'package:resi_africa/shared/widgets/app_logo.dart';
 import 'package:resi_africa/shared/widgets/page_header.dart';
-import 'package:resi_africa/shared/widgets/frosted_surface.dart';
 import 'package:resi_africa/shared/widgets/app_icon_button.dart';
 import 'package:resi_africa/core/theme/app_radius.dart';
 
-/// Gabarit des écrans de connexion et d'inscription, d'après les maquettes :
-/// la photo encadrée en carte arrondie, logo et retour en verre dessus,
-/// l'accroche en bas de la photo ; puis le grand titre et le formulaire dans
-/// une carte. La lueur prune du mode sombre couvre tout l'écran.
-class AuthLayout extends StatelessWidget {
+/// Gabarit des écrans de connexion, d'inscription et de mot de passe oublié :
+/// sur la lueur du fond, trois pastilles inclinées aux accents du système
+/// (lavande, sable, neutre) arrivent d'un petit rebond, puis le grand titre
+/// et la carte du formulaire montent en fondu. Pas de photo ni de logo :
+/// l'écran va droit au formulaire.
+class AuthLayout extends StatefulWidget {
   const AuthLayout({
     required this.title,
     required this.description,
@@ -27,13 +26,59 @@ class AuthLayout extends StatelessWidget {
   final String description;
   final Widget child;
 
-  /// Bouton retour posé sur la photo, pour l'inscription.
+  /// Bouton retour en haut à gauche, pour l'inscription et le mot de passe
+  /// oublié.
   final VoidCallback? onBack;
+
+  @override
+  State<AuthLayout> createState() => _AuthLayoutState();
+}
+
+class _AuthLayoutState extends State<AuthLayout>
+    with SingleTickerProviderStateMixin {
+  late final _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // « Réduire les animations » : tout est en place d'emblée.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _intro.value = 1;
+    } else if (_intro.isDismissed) {
+      _intro.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _intro.dispose();
+    super.dispose();
+  }
+
+  /// Fondu montant d'un bloc, entre `start` et `end` (fractions de l'intro).
+  Widget _rise(double start, double end, Widget child) {
+    final a = CurvedAnimation(
+      parent: _intro,
+      curve: Interval(start, end, curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: a,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.06),
+          end: Offset.zero,
+        ).animate(a),
+        child: child,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    final heroHeight = MediaQuery.sizeOf(context).height * 0.28;
 
     return Scaffold(
       body: DecoratedBox(
@@ -49,103 +94,151 @@ class AuthLayout extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ClipRRect(
-                  borderRadius: AppRadius.lg,
-                  child: SizedBox(
-                    height: heroHeight,
-                    child: Stack(
-                      fit: StackFit.expand,
+                SizedBox(
+                  height: 48,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: widget.onBack == null
+                        ? null
+                        : AppIconButton(
+                            icon: LucideIcons.chevronLeft,
+                            label: 'common.back'.tr(),
+                            bordered: true,
+                            onPressed: widget.onBack,
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _Stickers(intro: _intro),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                _rise(
+                  0.25,
+                  0.75,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.asset(
-                          'assets/images/splash.png',
-                          fit: BoxFit.cover,
-                        ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                t.overlay.withValues(alpha: 0.25),
-                                t.overlay.withValues(alpha: 0.05),
-                                t.overlay.withValues(alpha: 0.75),
-                              ],
-                            ),
+                        Text(
+                          widget.title,
+                          style: context.text.displayMedium!.copyWith(
+                            fontSize: 34,
+                            height: 1.1,
+                            letterSpacing: -0.6,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  if (onBack != null) ...[
-                                    FrostedSurface(
-                                      borderRadius: FrostedSurface.pill,
-                                      child: AppIconButton(
-                                        icon: LucideIcons.chevronLeft,
-                                        label: 'common.back'.tr(),
-                                        onPressed: onBack,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  FrostedSurface(
-                                    borderRadius: FrostedSurface.pill,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    child: const AppLogo(height: 22),
-                                  ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Text(
-                                'auth.tagline'.tr(),
-                                style: context.text.titleLarge!.copyWith(
-                                  color: t.onOverlay,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'auth.tagline_sub'.tr(),
-                                style: context.text.bodySmall!.copyWith(
-                                  color: t.onOverlay.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.description,
+                          style: context.mutedText.copyWith(height: 1.45),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: context.text.displayMedium!.copyWith(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(description, style: context.mutedText),
-                    ],
+                const SizedBox(height: 22),
+                _rise(
+                  0.4,
+                  1,
+                  AppCard(
+                    padding: const EdgeInsets.all(20),
+                    child: widget.child,
                   ),
                 ),
-                const SizedBox(height: 18),
-                AppCard(padding: const EdgeInsets.all(18), child: child),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Trois pastilles posées de biais qui se chevauchent : une clé sur la
+/// lavande, une maison sur le sable, des étincelles sur la surface neutre.
+/// Chacune arrive d'un rebond, l'une après l'autre.
+class _Stickers extends StatelessWidget {
+  const _Stickers({required this.intro});
+
+  final Animation<double> intro;
+
+  static const _size = 64.0;
+  static const _step = 46.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final stickers = [
+      (
+        icon: LucideIcons.keyRound,
+        bg: t.lavender,
+        fg: t.onLavender,
+        border: t.lavender,
+        turn: -0.035,
+      ),
+      (
+        icon: LucideIcons.house,
+        bg: t.sand,
+        fg: t.onSand,
+        border: t.sand,
+        turn: 0.025,
+      ),
+      (
+        icon: LucideIcons.sparkles,
+        bg: t.surface,
+        fg: t.foreground,
+        border: t.border,
+        turn: -0.012,
+      ),
+    ];
+
+    return SizedBox(
+      width: _size + _step * (stickers.length - 1) + 8,
+      height: _size + 12,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (var i = 0; i < stickers.length; i++)
+            Positioned(
+              left: i * _step,
+              top: i.isOdd ? 0 : 10,
+              child: ScaleTransition(
+                scale: CurvedAnimation(
+                  parent: intro,
+                  curve: Interval(
+                    i * 0.12,
+                    0.45 + i * 0.12,
+                    curve: Curves.easeOutBack,
+                  ),
+                ),
+                child: RotationTransition(
+                  turns: AlwaysStoppedAnimation(stickers[i].turn),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: stickers[i].bg,
+                      borderRadius: AppRadius.md,
+                      border: Border.all(color: stickers[i].border),
+                    ),
+                    child: SizedBox.square(
+                      dimension: _size,
+                      child: Icon(
+                        stickers[i].icon,
+                        size: 26,
+                        color: stickers[i].fg,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

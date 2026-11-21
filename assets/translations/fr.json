@@ -1781,8 +1781,10 @@
     "hint": "Débloqués à l'arrivée du client, ou à la fin d'un séjour où il ne s'est pas présenté."
   },
   "welcome": {
+    "eyebrow": "Résidences meublées",
     "title": "Gérez vos résidences, encaissez partout.",
     "subtitle": "Réservations en ligne ou au comptoir, même sans réseau.",
-    "start": "Commencer"
+    "start": "Commencer",
+    "slide": "Glisser pour commencer"
   }
 }

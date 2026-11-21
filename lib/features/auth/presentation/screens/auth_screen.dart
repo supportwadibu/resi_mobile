@@ -30,11 +30,6 @@ class _AuthScreenState extends State<AuthScreen> {
         await context.router.replaceAll([const WelcomeRoute()]);
         return;
       }
-
-      // Le dossier d'identité n'est imposé qu'à l'inscription : « Plus tard »
-      // y a été proposé, et le bandeau de l'accueil invite à le compléter.
-      // Le rouvrir à chaque lancement annulerait ce choix. Seul le forfait
-      // de l'essai, s'il n'est pas encore choisi, passe avant l'accueil.
       final mustChoose = await mustChooseTrialPlan(whenUnknown: false);
       if (!mounted) return;
 

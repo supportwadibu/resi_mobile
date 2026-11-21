@@ -1781,8 +1781,10 @@
     "hint": "Released when the guest arrives, or at the end of a stay they did not show up for."
   },
   "welcome": {
+    "eyebrow": "Furnished residences",
     "title": "Manage your homes, get paid anywhere.",
     "subtitle": "Online or front-desk bookings, even offline.",
-    "start": "Get started"
+    "start": "Get started",
+    "slide": "Slide to get started"
   }
 }

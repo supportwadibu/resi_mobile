@@ -93,16 +93,6 @@ class ResiTokens extends ThemeExtension<ResiTokens> {
     colors: [glow, glow.withValues(alpha: 0)],
   );
 
-  /// Teintes du ruban de l'écran de bienvenue : lavande vers sable, sans
-  /// autre couleur, comme le reste du système.
-  List<Color> get ribbon => const [
-    Color(0xFF8F8DF2),
-    Color(0xFFC9C2FF),
-    Color(0xFFFDE9B9),
-    Color(0xFFE9CFA6),
-    Color(0xFFA9A2F5),
-  ];
-
   /// Lueur prune du haut des écrans sombres ; transparente en clair, où le
   /// fond crème suffit.
   Color get glow => _isDark ? const Color(0xFF2E1838) : const Color(0x00FBF6F0);
