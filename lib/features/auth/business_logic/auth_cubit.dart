@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../../sponsorship/data/repositories/sponsorship_repository.dart';
 import '../data/services/auth_service.dart';
 import '../data/services/google_auth_service.dart';

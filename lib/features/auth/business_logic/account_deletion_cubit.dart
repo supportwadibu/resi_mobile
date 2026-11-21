@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../data/repositories/account_repository.dart';
 import 'account_deletion_state.dart';
 

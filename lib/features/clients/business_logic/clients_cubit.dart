@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../../reservation/data/datasources/reservation_local_store.dart';
 import '../data/models/client_filter_model.dart';
 import '../data/models/client_model.dart';

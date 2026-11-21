@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../data/repositories/gerant_repository.dart';
 
 /// États du changement de mot de passe du gérant.

@@ -5,7 +5,7 @@ import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../../clients/data/models/client_creation_result.dart';
 import '../../clients/data/models/client_model.dart';
 import '../../clients/data/repositories/clients_repository.dart';

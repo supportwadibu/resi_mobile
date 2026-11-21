@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
-import '../../../../core/offline/offline_action_queue.dart';
-import '../../../../core/offline/pending_action.dart';
+import 'package:resi_africa/core/error/failures.dart';
+import 'package:resi_africa/core/offline/offline_action_queue.dart';
+import 'package:resi_africa/core/offline/pending_action.dart';
 import '../data/models/expense_model.dart';
 import '../data/repositories/expense_repository.dart';
 import 'add_expense_state.dart';

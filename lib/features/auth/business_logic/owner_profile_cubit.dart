@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../../gerant/data/repositories/gerant_repository.dart';
 import '../data/models/owner_profile_model.dart';
 import '../data/services/property_manager_service.dart';

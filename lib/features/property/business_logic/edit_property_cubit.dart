@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/error/failures.dart';
+import 'package:resi_africa/core/error/failures.dart';
 import '../data/models/property_deposit.dart';
 import '../data/models/property_model.dart';
 import '../data/repositories/property_repository.dart';
