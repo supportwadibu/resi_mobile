@@ -65,6 +65,13 @@ void main() {
       expect(PushDestination.fromData({'type': 'admin_message'}), isNull);
     });
 
+    test('une nouvelle réservation ouvre les réservations', () {
+      expect(
+        PushDestination.fromData({'type': 'booking_created'}),
+        PushDestination.reservations,
+      );
+    });
+
     test('des données absentes ou inconnues sont ignorées', () {
       expect(PushDestination.fromData(const {}), isNull);
       expect(PushDestination.fromData({'type': 'autre'}), isNull);

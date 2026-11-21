@@ -197,6 +197,8 @@ class PushNotificationService {
     switch (PushDestination.fromData({'type': type})) {
       case PushDestination.subscription:
         _router.push(SubscriptionPlansRoute());
+      case PushDestination.reservations:
+        _router.push(const ReservationRoute());
       case null:
         break;
     }

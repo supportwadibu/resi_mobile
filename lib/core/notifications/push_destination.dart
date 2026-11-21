@@ -5,11 +5,15 @@
 /// s'ouvre simplement, sans écran d'erreur.
 enum PushDestination {
   /// Relance d'échéance : les forfaits, pour renouveler.
-  subscription;
+  subscription,
+
+  /// Nouvelle réservation sur un de ses biens : la liste des réservations.
+  reservations;
 
   static PushDestination? fromData(Map<String, dynamic> data) {
     return switch (data['type']) {
       'subscription_expiry' => PushDestination.subscription,
+      'booking_created' => PushDestination.reservations,
       _ => null,
     };
   }
